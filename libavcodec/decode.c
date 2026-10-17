@@ -896,8 +896,8 @@ static int recode_subtitle(AVCodecContext *avctx, const AVPacket **outpkt,
         iconv(cd, NULL, NULL, &outb, &outl) == (size_t)-1 ||
         outl >= buf_pkt->size || inl != 0) {
         ret = FFMIN(AVERROR(errno), -1);
-        av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%s\" "
-               "from %s to UTF-8\n", inpkt->data, avctx->sub_charenc);
+        av_log(avctx, AV_LOG_ERROR, "Unable to recode subtitle event \"%.*s\" "
+               "from %s to UTF-8\n", inpkt->size, inpkt->data, avctx->sub_charenc);
         goto end;
     }
     buf_pkt->size -= outl;
