@@ -3780,12 +3780,13 @@ static int mov_write_iinf_tag(AVIOContext *pb, MOVMuxContext *mov, AVFormatConte
     avio_wb32(pb, 0); /* Version & flags */
     avio_wb16(pb, mov->nb_streams); /* entry_count */
 
+    av_assert2(mov->nb_streams <= 2);
     for (int i = 0; i < mov->nb_streams; i++) {
         int64_t infe_pos = avio_tell(pb);
         avio_wb32(pb, 0); /* size */
         ffio_wfourcc(pb, "infe");
         avio_w8(pb, 0x2); /* Version */
-        avio_wb24(pb, 0); /* flags */
+        avio_wb24(pb, !!i); /* flags (0x1 == hidden) */
         avio_wb16(pb, i + 1); /* item_id */
         avio_wb16(pb, 0); /* item_protection_index */
         avio_write(pb, "av01", 4); /* item_type */
