@@ -135,32 +135,42 @@ int ff_vaapi_decode_make_slice_buffer(AVCodecContext *avctx,
     return 0;
 }
 
-static void ff_vaapi_decode_destroy_buffers(AVCodecContext *avctx,
+static void ff_vaapi_decode_destroy_buffers(void *logctx, VADisplay display,
                                             VAAPIDecodePicture *pic)
 {
-    VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
     VAStatus vas;
     int i;
 
     for (i = 0; i < pic->nb_param_buffers; i++) {
-        vas = vaDestroyBuffer(ctx->hwctx->display,
-                              pic->param_buffers[i]);
+        vas = vaDestroyBuffer(display, pic->param_buffers[i]);
         if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to destroy "
+            av_log(logctx, AV_LOG_ERROR, "Failed to destroy "
                    "parameter buffer %#x: %d (%s).\n",
                    pic->param_buffers[i], vas, vaErrorStr(vas));
         }
     }
 
     for (i = 0; i < 2 * pic->nb_slices; i++) {
-        vas = vaDestroyBuffer(ctx->hwctx->display,
-                              pic->slice_buffers[i]);
+        vas = vaDestroyBuffer(display, pic->slice_buffers[i]);
         if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to destroy slice "
+            av_log(logctx, AV_LOG_ERROR, "Failed to destroy slice "
                    "slice buffer %#x: %d (%s).\n",
                    pic->slice_buffers[i], vas, vaErrorStr(vas));
         }
     }
+}
+
+static void vaapi_decode_free_buffers(void *logctx, VADisplay display,
+                                      VAAPIDecodePicture *pic)
+{
+    ff_vaapi_decode_destroy_buffers(logctx, display, pic);
+
+    pic->nb_param_buffers           = 0;
+    pic->nb_param_buffers_allocated = 0;
+    av_freep(&pic->param_buffers);
+    pic->nb_slices                  = 0;
+    pic->nb_slice_buffers_allocated = 0;
+    av_freep(&pic->slice_buffers);
 }
 
 int ff_vaapi_decode_issue(AVCodecContext *avctx,
@@ -219,7 +229,7 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
 
     if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
-        ff_vaapi_decode_destroy_buffers(avctx, pic);
+        ff_vaapi_decode_destroy_buffers(avctx, ctx->hwctx->display, pic);
 
     err = 0;
     goto exit;
@@ -231,7 +241,7 @@ fail_with_picture:
                "after error: %d (%s).\n", vas, vaErrorStr(vas));
     }
 fail:
-    ff_vaapi_decode_destroy_buffers(avctx, pic);
+    ff_vaapi_decode_destroy_buffers(avctx, ctx->hwctx->display, pic);
 fail_at_end:
 exit:
     pic->nb_param_buffers           = 0;
@@ -247,16 +257,19 @@ exit:
 int ff_vaapi_decode_cancel(AVCodecContext *avctx,
                            VAAPIDecodePicture *pic)
 {
-    ff_vaapi_decode_destroy_buffers(avctx, pic);
+    VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
 
-    pic->nb_param_buffers           = 0;
-    pic->nb_param_buffers_allocated = 0;
-    av_freep(&pic->param_buffers);
-    pic->nb_slices                  = 0;
-    pic->nb_slice_buffers_allocated = 0;
-    av_freep(&pic->slice_buffers);
+    vaapi_decode_free_buffers(avctx, ctx->hwctx->display, pic);
 
     return 0;
+}
+
+void ff_vaapi_decode_free_frame_priv(AVRefStructOpaque hwctx, void *data)
+{
+    AVHWDeviceContext    *device_ctx = hwctx.nc;
+    AVVAAPIDeviceContext *vactx      = device_ctx->hwctx;
+
+    vaapi_decode_free_buffers(device_ctx, vactx->display, data);
 }
 
 static const struct {
