@@ -1,0 +1,9 @@
+290ef2eafee354da0c92c5a9d5a9a545 *tests/data/fate/mov-avif-mux-still-image-1-item.avif
+8908 tests/data/fate/mov-avif-mux-still-image-1-item.avif
+#extradata 0:        4, 0x026400a1
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: av1
+#dimensions 0: 256x256
+#sar 0: 0/1
+0,          0,          0,        1,     8619, 0xfc43b8fa

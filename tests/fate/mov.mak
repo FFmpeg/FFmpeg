@@ -233,6 +233,12 @@ $(eval $(call FATE_MOV_CENC_TEST,h264_iso,H264,matroska,MATROSKA,h264/dts_5frame
 $(eval $(call FATE_MOV_CENC_TEST,hevc,HEVC,hevc,HEVC,hevc-conformance/ipcm_A_NEC_3.bit))
 $(eval $(call FATE_MOV_CENC_TEST,hevc_iso,HEVC,mov,MOV,hevc/extradata-reload-multi-stsd.mov))
 
+# avif muxing - still image with 1 item.
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, AVIF OBU, AV1_DECODER AV1_PARSER) \
+                           += fate-mov-avif-mux-still-image-1-item
+fate-mov-avif-mux-still-image-1-item: CMD = stream_remux obu $(TARGET_SAMPLES)/av1/still_picture_rgb.obu "" avif \
+  "" "-c:v av1" "-c:v copy"
+
 # avif demuxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-1-item
