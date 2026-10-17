@@ -309,8 +309,8 @@ void ff_rfps_calculate(AVFormatContext *ic);
  *
  * The upper (lower) bound of the output interval is rounded up (down) such that
  * the output interval always falls within the input interval. The timestamp is
- * rounded to the nearest integer and halfway cases away from zero, and can
- * therefore fall outside of the output interval.
+ * rounded to the nearest integer and halfway cases away from zero, then
+ * clamped to the output interval.
  *
  * Useful to simplify the rescaling of the arguments of FFInputFormat::read_seek2()
  *

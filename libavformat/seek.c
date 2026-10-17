@@ -684,14 +684,8 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
         ff_read_frame_flush(s);
 
         if (stream_index == -1 && s->nb_streams == 1) {
-            AVRational time_base = s->streams[0]->time_base;
-            ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
-            min_ts = av_rescale_rnd(min_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_UP   | AV_ROUND_PASS_MINMAX);
-            max_ts = av_rescale_rnd(max_ts, time_base.den,
-                                    time_base.num * (int64_t)AV_TIME_BASE,
-                                    AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
+            ff_rescale_interval(AV_TIME_BASE_Q, s->streams[0]->time_base,
+                                &min_ts, &ts, &max_ts);
             stream_index = 0;
         }
 
@@ -760,4 +754,6 @@ void ff_rescale_interval(AVRational tb_in, AVRational tb_out,
                                AV_ROUND_UP   | AV_ROUND_PASS_MINMAX);
     *max_ts = av_rescale_q_rnd(*max_ts, tb_in, tb_out,
                                AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
+    // Rounding to the nearest can take the target out of the interval.
+    *ts     = FFMAX(FFMIN(*ts, *max_ts), *min_ts);
 }
