@@ -2864,7 +2864,10 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
     return 0;
 }
 
-static void write_slice_end(MPVEncContext *const s)
+/**
+ * @param last_mb_y row of the last coded macroblock
+ */
+static void write_slice_end(MPVEncContext *const s, int last_mb_y)
 {
     if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4) {
         if (s->partitioned_frame)
@@ -2873,7 +2876,7 @@ static void write_slice_end(MPVEncContext *const s)
         ff_mpeg4_stuffing(&s->pb);
     } else if ((CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER) &&
                s->c.out_format == FMT_MJPEG) {
-        ff_mjpeg_encode_stuffing(s);
+        ff_mjpeg_encode_stuffing(s, last_mb_y);
     } else if (CONFIG_SPEEDHQ_ENCODER && s->c.out_format == FMT_SPEEDHQ) {
         ff_speedhq_end_slice(s);
     }
@@ -3082,7 +3085,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 if(is_gob_start){
                     if (s->c.start_mb_y != mb_y || mb_x != 0) {
-                        write_slice_end(s);
+                        write_slice_end(s, mb_y - !mb_x);
 
                         if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4 && s->partitioned_frame)
                             ff_mpeg4_init_partitions(s);
@@ -3586,7 +3589,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         ff_msmpeg4_encode_ext_header(s);
 #endif
 
-    write_slice_end(s);
+    write_slice_end(s, s->c.mb_y);
 
     return 0;
 }

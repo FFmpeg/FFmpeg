@@ -233,13 +233,13 @@ static void mjpeg_build_optimal_huffman(MJpegContext *m)
  * Header + values + stuffing.
  *
  * @param s The MPVEncContext.
+ * @param last_mb_y Row of the last coded macroblock.
  * @return int Error code, 0 if successful.
  */
-int ff_mjpeg_encode_stuffing(MPVEncContext *const s)
+int ff_mjpeg_encode_stuffing(MPVEncContext *const s, int last_mb_y)
 {
     MJpegContext *const m = s->mjpeg_ctx;
     PutBitContext *pbc = &s->pb;
-    int mb_y = s->c.mb_y - !s->c.mb_x;
     int ret;
 
 #if CONFIG_MJPEG_ENCODER
@@ -273,8 +273,8 @@ int ff_mjpeg_encode_stuffing(MPVEncContext *const s)
 
     ff_mjpeg_escape_FF(pbc, s->esc_pos);
 
-    if (s->c.slice_context_count > 1 && mb_y < s->c.mb_height - 1)
-        put_marker(pbc, RST0 + (mb_y&7));
+    if (s->c.slice_context_count > 1 && last_mb_y < s->c.mb_height - 1)
+        put_marker(pbc, RST0 + (last_mb_y & 7));
     s->esc_pos = put_bytes_count(pbc, 0);
 
 fail:

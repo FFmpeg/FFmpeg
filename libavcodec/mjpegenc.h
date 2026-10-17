@@ -97,6 +97,6 @@ static inline void put_marker(PutBitContext *p, enum JpegMarker code)
 
 typedef struct MPVEncContext MPVEncContext;
 
-int ff_mjpeg_encode_stuffing(MPVEncContext *s);
+int ff_mjpeg_encode_stuffing(MPVEncContext *s, int last_mb_y);
 
 #endif /* AVCODEC_MJPEGENC_H */
