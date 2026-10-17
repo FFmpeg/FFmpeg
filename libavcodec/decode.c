@@ -2371,14 +2371,13 @@ int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_pr
     av_assert0(!*hwaccel_picture_private);
 
     if (hwaccel->free_frame_priv) {
-        AVHWFramesContext *frames_ctx;
+        AVHWDeviceContext *device_ctx = NULL;
 
-        if (!avctx->hw_frames_ctx)
-            return AVERROR(EINVAL);
+        if (avctx->hw_frames_ctx)
+            device_ctx = ((AVHWFramesContext *)avctx->hw_frames_ctx->data)->device_ctx;
 
-        frames_ctx = (AVHWFramesContext *) avctx->hw_frames_ctx->data;
         *hwaccel_picture_private = av_refstruct_alloc_ext(hwaccel->frame_priv_data_size, 0,
-                                                          frames_ctx->device_ctx,
+                                                          device_ctx,
                                                           hwaccel->free_frame_priv);
     } else {
         *hwaccel_picture_private = av_refstruct_allocz(hwaccel->frame_priv_data_size);

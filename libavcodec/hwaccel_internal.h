@@ -154,7 +154,8 @@ typedef struct FFHWAccel {
     /**
      * Callback to free the hwaccel-specific frame data.
      *
-     * @param hwctx a pointer to an AVHWDeviceContext.
+     * @param hwctx a pointer to an AVHWDeviceContext, NULL when the decoder
+     *              has no hw_frames_ctx.
      * @param data the per-frame hardware accelerator private data to be freed.
      */
     void (*free_frame_priv)(AVRefStructOpaque hwctx, void *data);
