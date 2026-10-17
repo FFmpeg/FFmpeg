@@ -57,6 +57,8 @@ static const AVOption gfxcapture_options[] = {
     { "crop_bottom",     "number of pixels to crop from the bottom of the captured area",
                                                               OFFSET(crop_bottom),    AV_OPT_TYPE_INT,        { .i64 = 0 },      0, INT_MAX,    FLAGS },
     { "premultiplied",   "return premultiplied alpha frames", OFFSET(premult_alpha),  AV_OPT_TYPE_BOOL,       { .i64 = 0 },      0, 1,          FLAGS },
+    { "dup_frames",      "repeat the last frame if the source delivers none in time",
+                                                              OFFSET(dup_frames),     AV_OPT_TYPE_BOOL,       { .i64 = 1 },      0, 1,          FLAGS },
     { "resize_mode",     "capture source resize behavior",    OFFSET(resize_mode),    AV_OPT_TYPE_INT,        { .i64 = GFX_RESIZE_CROP },  0, GFX_RESIZE_NB - 1, FLAGS, .unit = "resize_mode" },
     { "crop",            "crop or add black bars into frame", 0,                      AV_OPT_TYPE_CONST,      { .i64 = GFX_RESIZE_CROP  }, 0, 0, FLAGS, .unit = "resize_mode" },
     { "scale",           "scale source to fit initial size",  0,                      AV_OPT_TYPE_CONST,      { .i64 = GFX_RESIZE_SCALE }, 0, 0, FLAGS, .unit = "resize_mode" },

@@ -67,6 +67,7 @@ typedef struct GfxCaptureContext {
     int resize_mode;
     int scale_mode;
     int premult_alpha;
+    int dup_frames;
 } GfxCaptureContext;
 
 #ifdef __cplusplus

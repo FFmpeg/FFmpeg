@@ -164,6 +164,10 @@ struct GfxCaptureContextCpp {
 
     int64_t first_pts { 0 };
     int64_t last_pts { 0 };
+
+    // dup_frames: last output frame and the QPC time (100 ns units) the next repeat is due
+    AVFrame *last_frame { nullptr };
+    int64_t next_pts { 0 };
 };
 
 template <typename T>
@@ -974,6 +978,7 @@ static av_cold void gfxcapture_uninit(AVFilterContext *avctx)
 
     stop_wgc_thread(avctx);
 
+    av_frame_free(&ctx->last_frame);
     ctx->d3d.reset();
 
     av_buffer_unref(&ctx->frames_ref);
@@ -1264,6 +1269,46 @@ static int gfxcapture_config_props(AVFilterLink *outlink)
     return 0;
 }
 
+static HRESULT create_frame_rtv(ID3D11Device *dev, const AVFrame *frame,
+                                const D3D11_TEXTURE2D_DESC &dst_tex_desc,
+                                ID3D11RenderTargetView **rtv)
+{
+    D3D11_RENDER_TARGET_VIEW_DESC target_desc = {};
+    target_desc.Format = dst_tex_desc.Format;
+
+    if (dst_tex_desc.ArraySize > 1) {
+        target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+        target_desc.Texture2DArray.ArraySize = 1;
+        target_desc.Texture2DArray.FirstArraySlice = (uintptr_t)frame->data[1];
+        target_desc.Texture2DArray.MipSlice = 0;
+    } else {
+        target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        target_desc.Texture2D.MipSlice = 0;
+    }
+
+    return dev->CreateRenderTargetView(
+        reinterpret_cast<ID3D11Resource*>(frame->data[0]), &target_desc, rtv);
+}
+
+static int clear_frame(AVFilterContext *avctx, AVFrame *frame)
+{
+    GfxCaptureContextCpp *ctx = CCTX(avctx->priv)->ctx;
+    ID3D11DeviceContext *dev_ctx = ctx->device_hwctx->device_context;
+
+    D3D11_TEXTURE2D_DESC dst_tex_desc;
+    reinterpret_cast<ID3D11Texture2D*>(frame->data[0])->GetDesc(&dst_tex_desc);
+
+    ComPtr<ID3D11RenderTargetView> rtv;
+    CHECK_HR_RET(create_frame_rtv(ctx->device_hwctx->device, frame, dst_tex_desc, &rtv));
+
+    const float clear_color[4] = {0.f, 0.f, 0.f, 1.f};
+    ctx->device_hwctx->lock(ctx->device_hwctx->lock_ctx);
+    dev_ctx->ClearRenderTargetView(rtv.Get(), clear_color);
+    ctx->device_hwctx->unlock(ctx->device_hwctx->lock_ctx);
+
+    return 0;
+}
+
 static int render_capture_to_frame(AVFilterContext *avctx, AVFrame *frame, const ComPtr<ID3D11Texture2D> &src_tex)
 {
     GfxCaptureContext *cctx = CCTX(avctx->priv);
@@ -1281,22 +1326,8 @@ static int render_capture_to_frame(AVFilterContext *avctx, AVFrame *frame, const
     D3D11_TEXTURE2D_DESC src_tex_desc;
     src_tex->GetDesc(&src_tex_desc);
 
-    D3D11_RENDER_TARGET_VIEW_DESC target_desc = {};
-    target_desc.Format = dst_tex_desc.Format;
-
-    if (dst_tex_desc.ArraySize > 1) {
-        target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-        target_desc.Texture2DArray.ArraySize = 1;
-        target_desc.Texture2DArray.FirstArraySlice = (uintptr_t)frame->data[1];
-        target_desc.Texture2DArray.MipSlice = 0;
-    } else {
-        target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        target_desc.Texture2D.MipSlice = 0;
-    }
-
     ComPtr<ID3D11RenderTargetView> rtv;
-    CHECK_HR_RET(dev->CreateRenderTargetView(
-        reinterpret_cast<ID3D11Resource*>(frame->data[0]), &target_desc, &rtv));
+    CHECK_HR_RET(create_frame_rtv(dev, frame, dst_tex_desc, &rtv));
 
     ComPtr<ID3D11ShaderResourceView> srv;
     CHECK_HR_RET(dev->CreateShaderResourceView(src_tex.Get(), nullptr, &srv));
@@ -1392,6 +1423,66 @@ static int render_capture_to_frame(AVFilterContext *avctx, AVFrame *frame, const
     return 0;
 }
 
+static void set_frame_props(GfxCaptureContextCpp *ctx, AVFrame *frame)
+{
+    frame->sample_aspect_ratio = AVRational{1, 1};
+
+    if (ctx->frames_ctx->sw_format == AV_PIX_FMT_RGBAF16) {
+        // According to MSDN, all floating point formats contain sRGB image data with linear 1.0 gamma.
+        frame->color_range     = AVCOL_RANGE_JPEG;
+        frame->color_primaries = AVCOL_PRI_BT709;
+        frame->color_trc       = AVCOL_TRC_LINEAR;
+        frame->colorspace      = AVCOL_SPC_RGB;
+    } else {
+        // According to MSDN, all integer formats contain sRGB image data
+        frame->color_range     = AVCOL_RANGE_JPEG;
+        frame->color_primaries = AVCOL_PRI_BT709;
+        frame->color_trc       = AVCOL_TRC_IEC61966_2_1;
+        frame->colorspace      = AVCOL_SPC_RGB;
+    }
+}
+
+// Current time in the clock and unit of WGC's SystemRelativeTime (QPC, 100 ns)
+static int64_t qpc_now()
+{
+    static const int64_t freq = []() {
+        LARGE_INTEGER f;
+        QueryPerformanceFrequency(&f);
+        return f.QuadPart;
+    }();
+
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+
+    if (freq == TIMESPAN_RES64)
+        return now.QuadPart;
+    else
+        return av_rescale(now.QuadPart, TIMESPAN_RES64, freq);
+}
+
+static int64_t dup_interval(GfxCaptureContext *cctx)
+{
+    return av_rescale(TIMESPAN_RES64, cctx->frame_rate.den, cctx->frame_rate.num);
+}
+
+// frame->pts is in QPC 100 ns units, as SystemRelativeTime
+static int output_frame(AVFilterLink *outlink, AVFrame *frame)
+{
+    GfxCaptureContextCpp *ctx = CCTX(outlink->src->priv)->ctx;
+
+    // a captured frame can carry a time slightly before an already sent repeat
+    if (ctx->last_pts && frame->pts <= ctx->last_pts)
+        frame->pts = ctx->last_pts + 1;
+
+    ctx->last_pts = frame->pts;
+
+    if (!ctx->first_pts)
+        ctx->first_pts = frame->pts;
+    frame->pts -= ctx->first_pts;
+
+    return ff_filter_frame(outlink, frame);
+}
+
 static int process_frame_if_exists(AVFilterLink *outlink)
 {
     AVFilterContext *avctx = outlink->src;
@@ -1432,29 +1523,61 @@ static int process_frame_if_exists(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    frame->sample_aspect_ratio = AVRational{1, 1};
+    set_frame_props(ctx, frame);
 
-    if (ctx->frames_ctx->sw_format == AV_PIX_FMT_RGBAF16) {
-        // According to MSDN, all floating point formats contain sRGB image data with linear 1.0 gamma.
-        frame->color_range     = AVCOL_RANGE_JPEG;
-        frame->color_primaries = AVCOL_PRI_BT709;
-        frame->color_trc       = AVCOL_TRC_LINEAR;
-        frame->colorspace      = AVCOL_SPC_RGB;
-    } else {
-        // According to MSDN, all integer formats contain sRGB image data
-        frame->color_range     = AVCOL_RANGE_JPEG;
-        frame->color_primaries = AVCOL_PRI_BT709;
-        frame->color_trc       = AVCOL_TRC_IEC61966_2_1;
-        frame->colorspace      = AVCOL_SPC_RGB;
+    if (cctx->dup_frames) {
+        // Half an interval of slack, so a source running at max_framerate does not get
+        // repeats interleaved on timer jitter.
+        ctx->next_pts = qpc_now() + dup_interval(cctx) * 3 / 2;
+
+        if (!ctx->last_frame && !(ctx->last_frame = av_frame_alloc())) {
+            av_frame_free(&frame);
+            return AVERROR(ENOMEM);
+        }
+        ret = av_frame_replace(ctx->last_frame, frame);
+        if (ret < 0) {
+            av_frame_free(&frame);
+            return ret;
+        }
     }
 
-    ctx->last_pts = frame->pts;
+    return output_frame(outlink, frame);
+}
 
-    if (!ctx->first_pts)
-        ctx->first_pts = frame->pts;
-    frame->pts -= ctx->first_pts;
+// dup_frames: no new frame arrived in time, repeat the last one, or send black before the first.
+static int output_dup_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *avctx = outlink->src;
+    GfxCaptureContext *cctx = CCTX(avctx->priv);
+    GfxCaptureContextCpp *ctx = cctx->ctx;
+    AVFrame *frame;
+    int ret;
 
-    return ff_filter_frame(outlink, frame);
+    if (!ctx->last_frame) {
+        ctx->last_frame = ff_get_video_buffer(outlink, cctx->canvas_width, cctx->canvas_height);
+        if (!ctx->last_frame)
+            return AVERROR(ENOMEM);
+        ret = clear_frame(avctx, ctx->last_frame);
+        if (ret < 0) {
+            av_frame_free(&ctx->last_frame);
+            return ret;
+        }
+        set_frame_props(ctx, ctx->last_frame);
+    }
+
+    frame = av_frame_clone(ctx->last_frame);
+    if (!frame)
+        return AVERROR(ENOMEM);
+
+    // Stamp with the deadline and advance from it, so timer overshoot shows up
+    // neither in the timestamps nor in the rate. Restart from now after a stall.
+    int64_t now = qpc_now();
+    frame->pts = ctx->next_pts;
+    ctx->next_pts += dup_interval(cctx);
+    if (ctx->next_pts <= now)
+        ctx->next_pts = now + dup_interval(cctx);
+
+    return output_frame(outlink, frame);
 }
 
 static int gfxcapture_activate(AVFilterContext *avctx)
@@ -1487,10 +1610,24 @@ static int gfxcapture_activate(AVFilterContext *avctx)
             break;
         }
 
-        if (!wgctx->frame_arrived_cond.wait_for(frame_lock, std::chrono::seconds(1), [&]() {
+        int64_t timeout = TIMESPAN_RES64;
+        if (cctx->dup_frames) {
+            if (!ctx->next_pts)
+                ctx->next_pts = qpc_now() + dup_interval(cctx);
+            timeout = av_clip64(ctx->next_pts - qpc_now(), 0, TIMESPAN_RES64);
+        }
+
+        if (wgctx->frame_arrived_cond.wait_for(frame_lock, std::chrono::nanoseconds(timeout * 100), [&]() {
             return wgctx->frame_seq != last_seq || wgctx->window_closed;
         }))
-            break;
+            continue;
+
+        if (cctx->dup_frames && qpc_now() >= ctx->next_pts) {
+            frame_lock.unlock();
+            return output_dup_frame(outlink);
+        }
+
+        break;
     }
 
     return 0;

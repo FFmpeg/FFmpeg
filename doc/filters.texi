@@ -30671,6 +30671,8 @@ window matching the provided regular expressions is captured.
 This source does NOT hold a stable FPS. It returns frames at whatever rate the compositor
 provides them, only capped by the @option{max_framerate}.
 If you need a stable rate, you need to add an fps filter to drop/duplicate frames as needed.
+Note that a static source may not deliver any frames at all, which also stalls
+the fps filter; see @option{dup_frames}.
 
 If the capture source disappears mid-capture (window closed, monitor disconnected), the filter will return EOF.
 
@@ -30744,6 +30746,13 @@ Crop this many pixels from the left side of the captured frames.
 @item premultiplied
 If set to 1, return frames with premultiplied alpha. Default is 0 (straight
 alpha).
+
+@item dup_frames
+If enabled (the default), the last frame is output again whenever the source
+delivered no new frame within one @option{max_framerate} interval, and black
+frames are output until the source delivered its first frame. This keeps the
+output flowing while the captured content is static. The output rate is still
+not constant, add an @code{fps} filter if needed.
 
 @item resize_mode
 Defines how the captured content is fitted into the output canvas size.
