@@ -1508,7 +1508,7 @@ check_class_headers_cxx(){
             i=$(expr $i + 1)
         done
         echo "return 0; }"
-    } | test_ld "cxx" "$@" && enable $funcs && enable_sanitized $headers
+    } | test_ld "cxx" "$@" && enable_sanitized $headers
 }
 
 test_cpp_condition(){
