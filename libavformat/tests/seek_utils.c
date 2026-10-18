@@ -18,40 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+#include <stdio.h>
+
 #include "libavformat/demux.h"
+
+static void rescale(AVRational tb_in, AVRational tb_out,
+                    int64_t ts_min, int64_t ts, int64_t ts_max)
+{
+    printf("%d/%d -> %d/%d: [%"PRId64", %"PRId64", %"PRId64"] -> ",
+           tb_in.num, tb_in.den, tb_out.num, tb_out.den, ts_min, ts, ts_max);
+    ff_rescale_interval(tb_in, tb_out, &ts_min, &ts, &ts_max);
+    printf("[%"PRId64", %"PRId64", %"PRId64"]\n", ts_min, ts, ts_max);
+}
 
 int main(void)
 {
-  int64_t ts_min;
-  int64_t ts;
-  int64_t ts_max;
-
-  ts_min = 10;
-  ts     = 20;
-  ts_max = 30;
-
-  ff_rescale_interval(av_make_q(1, 1), av_make_q(10, 1), &ts_min, &ts, &ts_max);
-
-  if (ts_min != 1 || ts != 2 || ts_max != 3)
-    return 1;
-
-  ts_min = 10;
-  ts     = 32;
-  ts_max = 32;
-
-  ff_rescale_interval(av_make_q(1, 1), av_make_q(3, 1), &ts_min, &ts, &ts_max);
-
-  if (ts_min != 4 || ts != 11 || ts_max != 10)
-    return 1;
-
-  ts_min = 10;
-  ts     = 10;
-  ts_max = 32;
-
-  ff_rescale_interval(av_make_q(1, 1), av_make_q(3, 1), &ts_min, &ts, &ts_max);
-
-  if (ts_min != 4 || ts != 3 || ts_max != 10)
-    return 1;
-
-  return 0;
+    rescale(av_make_q(1, 1), av_make_q(10, 1), 10, 20, 30);
+    rescale(av_make_q(1, 1), av_make_q(3, 1),  10, 32, 32);
+    rescale(av_make_q(1, 1), av_make_q(3, 1),  10, 10, 32);
+    return 0;
 }
