@@ -61,6 +61,15 @@
 #include "libavcodec/aaccoder_trellis.h"
 #include "libavcodec/aaccoder_nmr.h"
 
+/* c * cbrtf(c), the reconstruction of every escape magnitude c */
+static float esc_pow43[1 << 13];
+
+av_cold void ff_aac_coder_init_tables(void)
+{
+    for (int c = 0; c < FF_ARRAY_ELEMS(esc_pow43); c++)
+        esc_pow43[c] = c * cbrtf(c);
+}
+
 typedef float (*quantize_and_encode_band_func)(struct AACEncContext *s, PutBitContext *pb,
                                                const float *in, float *quant, const float *scaled,
                                                int size, int scale_idx, int cb,
@@ -138,7 +147,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
                         curbits += 21;
                     } else {
                         int c = av_clip_uintp2(quant(t, Q, ROUNDING), 13);
-                        quantized = c*cbrtf(c)*IQ;
+                        quantized = esc_pow43[c]*IQ;
                         curbits += av_log2(c)*2 - 4 + 1;
                     }
                 } else {

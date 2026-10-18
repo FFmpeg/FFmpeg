@@ -36,6 +36,7 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
@@ -1822,6 +1823,7 @@ static av_cold int check_height_ext(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int aac_encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     AACEncContext *s = avctx->priv_data;
     int i, ret = 0;
     int chcfg;
@@ -1980,6 +1982,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     // Initialize static tables
     ff_aac_float_common_init();
+    ff_thread_once(&init_static_once, ff_aac_coder_init_tables);
 
     if ((ret = dsp_init(avctx, s)) < 0)
         return ret;
