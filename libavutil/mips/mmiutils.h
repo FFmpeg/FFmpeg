@@ -29,6 +29,16 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/mips/asmdefs.h"
 
+#if !HAVE_LOONGSON_MMI_MNEMONICS
+/* GNU binutils lacks Loongson's names for these MMI instructions */
+__asm__(".macro pxor  d, s, t\n\txor  \\d, \\s, \\t\n\t.endm\n"
+        ".macro pand  d, s, t\n\tand  \\d, \\s, \\t\n\t.endm\n"
+        ".macro por   d, s, t\n\tor   \\d, \\s, \\t\n\t.endm\n"
+        ".macro pnor  d, s, t\n\tnor  \\d, \\s, \\t\n\t.endm\n"
+        ".macro ssrld d, s, t\n\tdsrl \\d, \\s, \\t\n\t.endm\n"
+        ".macro sslld d, s, t\n\tdsll \\d, \\s, \\t\n\t.endm\n");
+#endif
+
 /*
  * These were used to define temporary registers for MMI marcos
  * however now we're using $at. They're theoretically unnecessary

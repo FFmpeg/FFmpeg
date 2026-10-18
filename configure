@@ -2597,6 +2597,7 @@ TOOLCHAIN_FEATURES="
     ibm_asm
     inline_asm_direct_symbol_refs
     inline_asm_nonlocal_labels
+    loongson_mmi_mnemonics
     pragma_deprecated
     rsync_contimeout
     symver_asm_label
@@ -6658,7 +6659,14 @@ elif enabled mips; then
     enabled loongson3 && check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"' '-mloongson-ext' && append MMIFLAGS '-mloongson-ext'
 
     # MMI can be detected at runtime too
-    enabled mmi && check_inline_asm mmi '"pxor $f0, $f0, $f0"' '-mloongson-mmi' && append MMIFLAGS '-mloongson-mmi'
+    enabled mmi && {
+        check_inline_asm loongson_mmi_mnemonics '"pxor $f0, $f0, $f0\n\tssrld $f0, $f0, $f0"' '-mloongson-mmi' || {
+            # the MMI code does not build for O32 and assumes little-endian
+            disable mmi
+            enabled mips64 && ! enabled bigendian &&
+                check_inline_asm mmi '"xor $f0, $f0, $f0"' '-mloongson-mmi'
+        }
+    } && append MMIFLAGS '-mloongson-mmi'
 
     if enabled bigendian && enabled msa; then
         disable msa
