@@ -1280,6 +1280,12 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EINVAL);
         }
     }
+    /* the text is written as an AMF0 string with a 16-bit length */
+    if (par->codec_id == AV_CODEC_ID_TEXT &&
+        strlen((const char *)pkt->data) > UINT16_MAX) {
+        av_log(s, AV_LOG_ERROR, "Text packet is too long for FLV\n");
+        return AVERROR(EINVAL);
+    }
 
     ts = pkt->dts;
 
