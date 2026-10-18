@@ -362,7 +362,7 @@ static int cbs_jpeg_assemble_fragment(CodedBitstreamContext *ctx,
         unit = &frag->units[i];
         size += 2 + unit->data_size;
         if (unit->type == JPEG_MARKER_SOS) {
-            for (sp = 0; sp < unit->data_size; sp++) {
+            for (sp = AV_RB16(unit->data); sp < unit->data_size; sp++) {
                 if (unit->data[sp] == 0xff)
                     ++size;
             }
