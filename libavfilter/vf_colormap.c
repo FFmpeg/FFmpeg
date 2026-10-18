@@ -192,7 +192,7 @@ static void build_map(AVFilterContext *ctx)
         case 1:
             {
                 float div = fabsf(s->source[0][c]) < 1e-6f ? 1e-6f : s->source[0][c];
-                s->icoeff[c][1+c] = s->target[0][c] / div;
+                s->icoeff[1+c][c] = s->target[0][c] / div;
             }
             break;
         case 2:
