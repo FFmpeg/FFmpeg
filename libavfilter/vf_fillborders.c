@@ -617,6 +617,14 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
+    /* reflect does not repeat the edge pixel, so it reads 2 * border + 1 lines */
+    if (s->mode == FM_REFLECT &&
+        (inlink->w <= s->left * 2 || inlink->w <= s->right * 2 ||
+         inlink->h <= s->top  * 2 || inlink->h <= s->bottom * 2)) {
+        av_log(ctx, AV_LOG_ERROR, "Borders must be smaller than half the input frame size in reflect mode.\n");
+        return AVERROR(EINVAL);
+    }
+
     s->borders[0].left   = s->borders[3].left = s->left;
     s->borders[0].right  = s->borders[3].right = s->right;
     s->borders[0].top    = s->borders[3].top = s->top;
