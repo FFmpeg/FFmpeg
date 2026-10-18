@@ -69,6 +69,10 @@ tests/data/fate/%.amr: TAG = GEN
 tests/data/fate/%.amr: tests/amrgen$(HOSTEXESUF) | tests/data/fate
 	$(M)./$< $@
 
+tests/data/fate/apng-small-bpp-%.png: TAG = GEN
+tests/data/fate/apng-small-bpp-%.png: tests/apnggen$(HOSTEXESUF) | tests/data/fate
+	$(M)./$< $@
+
 RUNNING_FATE := $(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS)))
 
 # Check sanity of dependencies when running FATE tests.
