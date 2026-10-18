@@ -444,7 +444,13 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     int ret = AVERROR(ENOSYS);
 
     if (!strcmp(cmd, "next")) {
+        ConcatContext *cat = ctx->priv;
+
         av_log(ctx, AV_LOG_VERBOSE, "Command received: next\n");
+        if (cat->cur_idx + ctx->nb_outputs >= ctx->nb_inputs) {
+            av_log(ctx, AV_LOG_WARNING, "There is no next segment\n");
+            return AVERROR(EINVAL);
+        }
         return flush_segment(ctx);
     }
 
