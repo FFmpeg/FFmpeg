@@ -8011,21 +8011,30 @@ if enabled icc; then
             disable aligned_stack
     fi
 elif enabled gcc; then
-    gcc_version=$($cc -dumpversion)
+    gcc_version=$($cc -dumpfullversion -dumpversion)
     major_version=${gcc_version%%[!0-9]*}
+    minor_version=${gcc_version#$major_version}
+    minor_version=${minor_version#.}
+    minor_version=${minor_version%%[!0-9]*}
     if [ $major_version -lt 13 ]; then
         # Disable tree-vectorize for GCC <13 - it has historically been buggy.
         check_optflags -fno-tree-vectorize
     else
         case $arch in
-        x86|arm|aarch64)
-            # Allow the default of having tree-vectorize enabled on well tested
-            # architectures.
+        x86|arm|aarch64|ppc|riscv|mips)
+            # Allow the default of having tree-vectorize enabled on
+            # architectures covered by CI and FATE.
+            ;;
+        loongarch)
+            # GCC 14.0-14.3 and 15.0-15.1 miscompile vector permutations,
+            # see https://gcc.gnu.org/PR121064. Fixed in 14.4, 15.2 and newer.
+            case $major_version.${minor_version:-0} in
+            14.[0-3]|15.[01]) check_optflags -fno-tree-vectorize ;;
+            esac
             ;;
         *)
             # Disable tree-vectorize on potentially less tested
-            # architectures. Known issues:
-            # - https://gcc.gnu.org/PR121064 on Loongarch
+            # architectures.
             check_optflags -fno-tree-vectorize
             ;;
         esac

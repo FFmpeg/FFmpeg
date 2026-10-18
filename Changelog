@@ -28,6 +28,7 @@ version 9.1:
 - D3D12 DirectML zero-copy inference for the ONNX Runtime DNN backend
 - side_data bitstream filter
 - JPEG Multi-Picture Format demuxer
+- No longer disabling GCC autovectorization on PowerPC, RISC-V, MIPS and LoongArch
 
 
 version 9.0:
