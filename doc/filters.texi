@@ -32593,7 +32593,8 @@ do not have exactly the same duration in the first file.
 This filter supports the following commands:
 @table @option
 @item next
-Close the current segment and step to the next one
+Close the current segment and step to the next one.
+Fails if the current segment is the last one.
 @end table
 
 @anchor{ebur128}
