@@ -749,6 +749,8 @@ yuv2mono_2_c_template(SwsInternal *c, const int16_t *buf[2],
                 output_pixel(*dest++, acc);
         }
         c->dither_error[0][i] = err;
+        if (i & 6)
+            output_pixel(*dest, acc << (8 - (i & 7)));
     } else {
         for (i = 0; i < dstW; i += 8) {
             int Y;
@@ -807,6 +809,8 @@ yuv2mono_1_c_template(SwsInternal *c, const int16_t *buf0,
                 output_pixel(*dest++, acc);
         }
         c->dither_error[0][i] = err;
+        if (i & 6)
+            output_pixel(*dest, acc << (8 - (i & 7)));
     } else {
         for (i = 0; i < dstW; i += 8) {
             unsigned acc = 0;
