@@ -1,0 +1,3 @@
+testsrc2=s=64x48:r=10:d=0.2[a];
+testsrc2=s=64x48:r=10:d=1[b];
+[a][b]concat=n=2:v=1:a=0,sendcmd=c='0.3 concat next'
