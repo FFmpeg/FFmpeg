@@ -166,7 +166,9 @@ IDCT_ADD16_10
 ;-----------------------------------------------------------------------------
 ; void ff_h264_idct_dc_add_10(pixel *dst, int16_t *block, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
-%macro IDCT_DC_ADD_OP_10 3
+; %4 selects the dst traffic: mova for 16-byte (8-wide) rows, movq
+; for 8-byte (4-wide) rows whose alignment is only guaranteed to 8.
+%macro IDCT_DC_ADD_OP_10 3-4 mova
     pxor      m5, m5
 %if avx_enabled
     paddw     m1, m0, [%1+0   ]
@@ -174,10 +176,10 @@ IDCT_ADD16_10
     paddw     m3, m0, [%1+%2*2]
     paddw     m4, m0, [%1+%3  ]
 %else
-    mova      m1, [%1+0   ]
-    mova      m2, [%1+%2  ]
-    mova      m3, [%1+%2*2]
-    mova      m4, [%1+%3  ]
+    %4        m1, [%1+0   ]
+    %4        m2, [%1+%2  ]
+    %4        m3, [%1+%2*2]
+    %4        m4, [%1+%3  ]
     paddw     m1, m0
     paddw     m2, m0
     paddw     m3, m0
@@ -187,22 +189,22 @@ IDCT_ADD16_10
     CLIPW     m2, m5, m6
     CLIPW     m3, m5, m6
     CLIPW     m4, m5, m6
-    mova [%1+0   ], m1
-    mova [%1+%2  ], m2
-    mova [%1+%2*2], m3
-    mova [%1+%3  ], m4
+    %4   [%1+0   ], m1
+    %4   [%1+%2  ], m2
+    %4   [%1+%2*2], m3
+    %4   [%1+%3  ], m4
 %endmacro
 
-INIT_MMX mmxext
-cglobal h264_idct_dc_add_10,3,3
+INIT_XMM sse2
+cglobal h264_idct_dc_add_10,3,3,7
     movd      m0, [r1]
     mov dword [r1], 0
     paddd     m0, [pd_32]
     psrad     m0, 6
     lea       r1, [r2*3]
-    pshufw    m0, m0, 0
+    pshuflw   m0, m0, 0
     mova      m6, [pw_pixel_max]
-    IDCT_DC_ADD_OP_10 r0, r2, r1
+    IDCT_DC_ADD_OP_10 r0, r2, r1, movq
     RET
 
 ;-----------------------------------------------------------------------------
