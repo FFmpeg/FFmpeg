@@ -296,7 +296,7 @@ static int cbs_jpeg_write_scan(CodedBitstreamContext *ctx,
         return err;
 
     if (scan->data) {
-        if (scan->data_size * 8 > put_bits_left(pbc))
+        if (scan->data_size > put_bits_left(pbc) / 8)
             return AVERROR(ENOSPC);
 
         av_assert0(put_bits_count(pbc) % 8 == 0);
