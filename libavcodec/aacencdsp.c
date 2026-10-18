@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#include "libavutil/common.h"
 #include "libavutil/macros.h"
 #include "aacencdsp.h"
 
@@ -53,15 +54,17 @@ static void nmr_trellis_step_c(float *dp, uint8_t *bp, const float *dpp,
                                const float *node, const float *lamsf,
                                int n_cur, int n_prev, int base, int step, int mdiff)
 {
+    /* d = base + (o - op) * step lies in [-mdiff, mdiff] for op in [o - dlo, o + dhi] */
+    const int dlo = FFUDIV(mdiff - base, step);
+    const int dhi = FFUDIV(mdiff + base, step);
+
     for (int o = 0; o < n_cur; o++) {
+        const int op_end = FFMIN(n_prev, o + dhi + 1);
+        const int edge   = base + o * step + mdiff;
         int best = -1;
         float bestc = FLT_MAX;
-        for (int op = 0; op < n_prev; op++) {
-            int d = base + (o - op) * step;
-            float c;
-            if (d < -mdiff || d > mdiff)
-                continue;
-            c = dpp[op] + lamsf[d + mdiff];
+        for (int op = FFMAX(0, o - dlo); op < op_end; op++) {
+            float c = dpp[op] + lamsf[edge - op * step];
             if (c < bestc) {
                 bestc = c;
                 best  = op;
