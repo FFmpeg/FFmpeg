@@ -194,7 +194,7 @@ static av_cold int init(AVCodecParserContext *s)
     return 0;
 }
 
-static av_cold void close(AVCodecParserContext *s)
+static av_cold void apv_close(AVCodecParserContext *s)
 {
     APVParseContext *p = s->priv_data;
     ParseContext *pc = &p->pc;
@@ -209,5 +209,5 @@ const FFCodecParser ff_apv_parser = {
     .priv_data_size = sizeof(APVParseContext),
     .init           = init,
     .parse          = parse,
-    .close          = close,
+    .close          = apv_close,
 };
