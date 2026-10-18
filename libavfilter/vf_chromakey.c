@@ -128,10 +128,28 @@ static int do_chromakey_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
     memset(v, ctx->chromakey_uv[1], sizeof(v));
 
     for (y = slice_start; y < slice_end; ++y) {
+        const int interior = y > 0 && y < frame->height - 1;
+        const uint8_t *urow[3], *vrow[3];
+
+        for (yo = 0; yo < 3 && interior; ++yo) {
+            urow[yo] = frame->data[1] + frame->linesize[1] * ((y + yo - 1) >> ctx->vsub_log2);
+            vrow[yo] = frame->data[2] + frame->linesize[2] * ((y + yo - 1) >> ctx->vsub_log2);
+        }
+
         for (x = 0; x < frame->width; ++x) {
-            for (yo = 0; yo < 3; ++yo) {
-                for (xo = 0; xo < 3; ++xo) {
-                    get_pixel_uv(frame, ctx->hsub_log2, ctx->vsub_log2, x + xo - 1, y + yo - 1, &u[yo * 3 + xo], &v[yo * 3 + xo]);
+            if (interior && x > 0 && x < frame->width - 1) {
+                /* all nine neighbours lie inside the frame */
+                for (yo = 0; yo < 3; ++yo) {
+                    for (xo = 0; xo < 3; ++xo) {
+                        u[yo * 3 + xo] = urow[yo][(x + xo - 1) >> ctx->hsub_log2];
+                        v[yo * 3 + xo] = vrow[yo][(x + xo - 1) >> ctx->hsub_log2];
+                    }
+                }
+            } else {
+                for (yo = 0; yo < 3; ++yo) {
+                    for (xo = 0; xo < 3; ++xo) {
+                        get_pixel_uv(frame, ctx->hsub_log2, ctx->vsub_log2, x + xo - 1, y + yo - 1, &u[yo * 3 + xo], &v[yo * 3 + xo]);
+                    }
                 }
             }
 
