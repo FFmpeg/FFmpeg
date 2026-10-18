@@ -397,7 +397,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
 
         pos = 0;
         for (i = 0; i <= sfi.frames_in_superframe_minus_1; i++) {
-            if (pos + sfi.frame_sizes[i] + index_size > frag->data_size) {
+            if (sfi.frame_sizes[i] > frag->data_size - index_size - pos) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR, "Frame %d too large "
                        "in superframe: %"PRIu32" bytes.\n",
                        i, sfi.frame_sizes[i]);
