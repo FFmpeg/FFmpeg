@@ -70,6 +70,8 @@ typedef struct ASFStream {
 
     int payload_ext_ct;
     ASFPayload payload[8];
+
+    AVDictionary *metadata;
 } ASFStream;
 
 typedef struct ASFContext {
@@ -645,7 +647,9 @@ static int asf_read_metadata(AVFormatContext *s)
             if(stream_num < 128)
                 asf->dar[stream_num].den = aspect_y;
         } else {
-            get_tag(s, &s->metadata, name, value_type, value_len);
+            get_tag(s, stream_num > 0 && stream_num < 128 ? &asf->streams[stream_num].metadata
+                                                          : &s->metadata,
+                    name, value_type, value_len);
         }
         av_freep(&name);
     }
@@ -818,6 +822,10 @@ static int asf_read_header(AVFormatContext *s)
         int stream_num = asf->asfid2avid[i];
         if (stream_num >= 0) {
             AVStream *st = s->streams[stream_num];
+            int ret = av_dict_copy(&st->metadata, asf->streams[i].metadata, 0);
+            if (ret < 0)
+                return ret;
+            ff_metadata_conv(&st->metadata, NULL, ff_asf_metadata_conv);
             if (!st->codecpar->bit_rate)
                 st->codecpar->bit_rate = asf->stream_bitrates[i];
             if (asf->dar[i].num > 0 && asf->dar[i].den > 0) {
@@ -1431,7 +1439,11 @@ static void skip_to_key(AVFormatContext *s)
 
 static int asf_read_close(AVFormatContext *s)
 {
+    ASFContext *asf = s->priv_data;
+
     asf_reset_header(s);
+    for (int i = 0; i < 128; i++)
+        av_dict_free(&asf->streams[i].metadata);
 
     return 0;
 }
@@ -1618,6 +1630,7 @@ const FFInputFormat ff_asf_demuxer = {
     .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH,
     .p.priv_class   = &asf_class,
     .priv_data_size = sizeof(ASFContext),
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
     .read_probe     = asf_probe,
     .read_header    = asf_read_header,
     .read_packet    = asf_read_packet,

@@ -169,6 +169,10 @@ static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
 
             for (i = 0; i < rt->asf_ctx->nb_streams; i++) {
                 if (s->streams[stream_index]->id == rt->asf_ctx->streams[i]->id) {
+                    int ret = av_dict_copy(&s->streams[stream_index]->metadata,
+                                           rt->asf_ctx->streams[i]->metadata, 0);
+                    if (ret < 0)
+                        return ret;
                     avcodec_parameters_copy(s->streams[stream_index]->codecpar,
                                             rt->asf_ctx->streams[i]->codecpar);
                     ffstream(s->streams[stream_index])->need_parsing =

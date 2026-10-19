@@ -83,7 +83,11 @@ fate-vc1: $(FATE_VC1-yes)
 FATE_MICROSOFT-$(call ALLYES, PIPE_PROTOCOL ASF_DEMUXER FRAMECRC_MUXER) += fate-asf-repldata
 fate-asf-repldata: CMD = framecrc -i $(TARGET_SAMPLES)/asf/bug821-2.asf -c copy
 
+FATE_MICROSOFT_FFPROBE-$(CONFIG_ASF_DEMUXER) += fate-asf-stream-metadata
+fate-asf-stream-metadata: CMD = probe -show_entries format_tags:stream_tags $(TARGET_SAMPLES)/wmv8/wmv8_x8intra.wmv
+
 FATE_MICROSOFT += $(FATE_MICROSOFT-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_MICROSOFT)
-fate-microsoft: $(FATE_MICROSOFT)
+FATE_SAMPLES_FFPROBE += $(FATE_MICROSOFT_FFPROBE-yes)
+fate-microsoft: $(FATE_MICROSOFT) $(FATE_MICROSOFT_FFPROBE-yes)
