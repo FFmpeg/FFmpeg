@@ -236,6 +236,7 @@ typedef enum SwsCompFlags {
 } SwsCompFlags;
 
 typedef struct SwsOpPad {
+    SwsPixelType type;  /* pixel type of this output component */
     SwsCompFlags flags; /* knowledge about (output) component contents */
 
     /* Keeps track of the known possible value range, or {0, 0} for undefined

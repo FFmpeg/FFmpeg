@@ -345,7 +345,9 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         }
         }
 
+        SwsCompMask invalid = 0;
         for (int i = 0; i < 4; i++) {
+            op->outputs[i].type   = SWS_PIXEL_NONE;
             op->outputs[i].flags  = SWS_COMP_IDENTITY;
             op->outputs[i].dep_in = SWS_COMP_NONE;
         }
@@ -354,12 +356,16 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             SwsOpPad *dst = &op->outputs[I];                                    \
             const SwsOpPad *src = &prev[J];                                     \
             SwsCompFlags flags = src->flags;                                    \
+            if (!src->type || dst->type && dst->type != src->type)              \
+                invalid |= SWS_COMP(I);                                         \
             dst->flags = merge_comp_flags(dst->flags, (EXPR));                  \
             dst->dep_in |= src->dep_in;                                         \
+            dst->type = src->type;                                              \
         } while (0)
 
         #define RESET(I) do {                                                   \
             SwsOpPad *dst = &op->outputs[I];                                    \
+            dst->type = SWS_PIXEL_NONE;                                         \
             dst->flags = SWS_COMP_GARBAGE;                                      \
             dst->min = dst->max = (AVRational64) {0};                           \
             dst->dep_in = SWS_COMP_NONE;                                        \
@@ -380,6 +386,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 const SwsOpPad *src = &ops->inputs[idx];
                 SwsOpPad *dst = &op->outputs[i];
                 av_assert0(!(src->flags & SWS_COMP_GARBAGE));
+                dst->type   = op->rw.type;
                 dst->flags  = src->flags & SWS_COMP_DIRTY;
                 dst->min    = src->min;
                 dst->max    = src->max;
@@ -399,6 +406,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             if (op->rw.filter.op) {
                 memcpy(prev, op->outputs, sizeof(prev));
                 apply_filter_weights(op->outputs, prev, op->rw.filter.kernel);
+                for (int i = 0; i < op->rw.elems; i++)
+                    op->outputs[i].type = op->rw.filter.type;
             }
             break;
         case SWS_OP_SWAP_BYTES:
@@ -470,6 +479,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (SWS_COMP_TEST(op->clear.mask, i)) {
+                    op->outputs[i].type = op->clear.type[i];
                     op->outputs[i].flags = SWS_COMP_CONST;
                     if (op->clear.value[i].num == 0)
                         op->outputs[i].flags |= SWS_COMP_ZERO;
@@ -487,6 +497,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CONVERT:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, flags);
+                op->outputs[i].type = op->convert.to;
                 if (!(prev[i].flags & SWS_COMP_EXACT))
                     op->outputs[i].flags &= SWS_COMP_DIRTY;
                 if (ff_sws_pixel_type_is_int(op->convert.to))
@@ -497,6 +508,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             for (int i = 0; i < 4; i++) {
                 SwsOpPad *dst = &op->outputs[i];
                 bool first = true;
+                dst->type = op->lin.type[i];
                 dst->min = dst->max = Q(0);
                 for (int j = 0; j < 4; j++) {
                     const SwsOpPad *src = &prev[j];
@@ -537,6 +549,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V: {
             apply_filter_weights(op->outputs, prev, op->filter.kernel);
+            for (int i = 0; i < 4; i++)
+                op->outputs[i].type = op->filter.type;
             break;
         }
         case SWS_OP_LUT_3D:
@@ -557,6 +571,12 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_INVALID:
         case SWS_OP_TYPE_NB:
             av_unreachable("Invalid operation type!");
+        }
+
+        /* Explicitly reset any pads that did not receive valid data */
+        for (int i = 0; i < 4; i++) {
+            if (!op->outputs[i].type || SWS_COMP_TEST(invalid, i))
+                RESET(i);
         }
 
         memcpy(prev, op->outputs, sizeof(prev));
@@ -999,21 +1019,6 @@ static void desc_plane_order(AVBPrint *bp, int nb_planes, const uint8_t *order)
     av_bprintf(bp, "}");
 }
 
-static SwsPixelType op_result_type(const SwsOp *op)
-{
-    switch (op->op) {
-    case SWS_OP_CONVERT:
-        return op->convert.to;
-    case SWS_OP_READ:
-        return op->rw.filter.op ? op->rw.filter.type : op->type;
-    case SWS_OP_FILTER_H:
-    case SWS_OP_FILTER_V:
-        return op->filter.type;
-    default:
-        return op->type;
-    }
-}
-
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
@@ -1045,7 +1050,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
             if (!SWS_COMP_TEST(mask, i))
                 continue;
             av_bprint_clear(bp);
-            av_bprintf(bp, "    %c: %3s,", "XYZW"[i], ff_sws_pixel_type_name(op_result_type(op)));
+            av_bprintf(bp, "    %c: %3s,", "XYZW"[i], ff_sws_pixel_type_name(pad->type));
             print_deps(bp, pad->dep_in);
             av_bprintf(bp, " ->");
             print_deps(bp, pad->dep_out);
