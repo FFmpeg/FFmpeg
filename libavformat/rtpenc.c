@@ -279,6 +279,7 @@ static int rtp_write_header(AVFormatContext *s1)
             ret = AVERROR_EXPERIMENTAL;
             goto fail;
         }
+        payload_header_size = 3;
         break;
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
