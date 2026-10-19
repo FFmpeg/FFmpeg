@@ -1193,6 +1193,30 @@ static void discard_frame(const struct pl_source_frame *src)
     av_frame_free(&avframe);
 }
 
+/* Push an input frame to the queue, returning its first field */
+static enum pl_field push_frame(LibplaceboContext *s, pl_queue queue,
+                                const AVFilterLink *inlink, AVFrame *in,
+                                bool deinterlace)
+{
+    struct pl_source_frame src = {
+        .pts         = TS2T(in->pts, inlink->time_base),
+        .duration    = TS2T(in->duration, inlink->time_base),
+        .first_field = deinterlace ? pl_field_from_avframe(in) : PL_FIELD_NONE,
+        .frame_data  = in,
+        .map         = map_frame,
+        .unmap       = unmap_frame,
+        .discard     = discard_frame,
+    };
+
+    /* Input without a chroma location is assumed to be sited like the output. */
+    if (in->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
+        in->chroma_location = inlink->dst->outputs[0]->chroma_location;
+
+    in->opaque = s;
+    pl_queue_push(queue, &src);
+    return src.first_field;
+}
+
 static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
 {
     int ret, status;
@@ -1203,29 +1227,15 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
     int64_t pts;
 
     while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0) {
-        struct pl_source_frame src = {
-            .pts         = TS2T(in->pts, inlink->time_base),
-            .duration    = TS2T(in->duration, inlink->time_base),
-            .first_field = s->deinterlace ? pl_field_from_avframe(in) : PL_FIELD_NONE,
-            .frame_data  = in,
-            .map         = map_frame,
-            .unmap       = unmap_frame,
-            .discard     = discard_frame,
-        };
-
-        /* Input without a chroma location is assumed to be sited like the output. */
-        if (in->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
-            in->chroma_location = outlink->chroma_location;
-
-        in->opaque = s;
-        pl_queue_push(input->queue, &src);
+        const enum pl_field field = push_frame(s, input->queue, inlink, in,
+                                               s->deinterlace);
 
         if (!s->fps.num) {
             /* Internally queue an output frame for the same PTS */
             pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
             av_fifo_write(input->out_pts, &pts, 1);
 
-            if (s->send_fields && src.first_field != PL_FIELD_NONE) {
+            if (s->send_fields && field != PL_FIELD_NONE) {
                 /* Queue the second field for interlaced content */
                 pts += av_rescale_q(in->duration, inlink->time_base, outlink->time_base) / 2;
                 av_fifo_write(input->out_pts, &pts, 1);
