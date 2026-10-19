@@ -61,7 +61,7 @@ typedef struct WebPAnimDemuxContext {
     /*
      * variables for the key frame detection
      */
-    int cur_frame;                  ///< number of frames of the current animation file
+    int64_t first_anmf_offset;
     int vp8x_flags;
 
     int has_iccp;
@@ -70,8 +70,6 @@ typedef struct WebPAnimDemuxContext {
     int has_xmp;
 
     int usebgcolor;
-
-    int64_t first_anmf_offset;
 } WebPAnimDemuxContext;
 
 /**
@@ -253,7 +251,6 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (avio_feof(pb)) {
             if (!ctx->ignore_loop &&
                 (ctx->loop_count == 0 || ++ctx->cur_loop < ctx->loop_count)) {
-                ctx->cur_frame = 0;
                 ret = avio_seek(pb, ctx->first_anmf_offset, SEEK_SET);
                 if (ret < 0)
                     return ret;
@@ -273,7 +270,7 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0)
                 return ret;
             pkt->pos = offset;
-            if (!ctx->cur_frame++)
+            if (offset == ctx->first_anmf_offset)
                 pkt->flags |= AV_PKT_FLAG_KEY;
             pkt->pts = AV_NOPTS_VALUE;
             pkt->dts = AV_NOPTS_VALUE;
