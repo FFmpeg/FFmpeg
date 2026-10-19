@@ -272,6 +272,7 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_get_packet(pb, pkt, size);
             if (ret < 0)
                 return ret;
+            pkt->pos = offset;
             if (!ctx->cur_frame++)
                 pkt->flags |= AV_PKT_FLAG_KEY;
             pkt->pts = AV_NOPTS_VALUE;
