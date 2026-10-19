@@ -551,6 +551,26 @@ static int init_common(AVFilterContext *avctx)
     return 0;
 }
 
+static int append_inputs(AVFilterContext *avctx, int nb_inputs,
+                         int (*config_props)(AVFilterLink *link))
+{
+    int err;
+
+    for (int i = 0; i < nb_inputs; i++) {
+        AVFilterPad pad = {
+            .name         = av_asprintf("input%d", i),
+            .type         = AVMEDIA_TYPE_VIDEO,
+            .config_props = config_props,
+        };
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+        if ((err = ff_append_inpad_free_name(avctx, &pad)) < 0)
+            return err;
+    }
+
+    return 0;
+}
+
 static int libplacebo_init(AVFilterContext *avctx)
 {
     int err = 0;
@@ -572,17 +592,7 @@ static int libplacebo_init(AVFilterContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    for (int i = 0; i < s->nb_inputs; i++) {
-        AVFilterPad pad = {
-            .name         = av_asprintf("input%d", i),
-            .type         = AVMEDIA_TYPE_VIDEO,
-            .config_props = &libplacebo_config_input,
-        };
-        if (!pad.name)
-            return AVERROR(ENOMEM);
-        RET(ff_append_inpad_free_name(avctx, &pad));
-    }
-
+    RET(append_inputs(avctx, s->nb_inputs, &libplacebo_config_input));
     RET(update_settings(avctx));
     RET(av_expr_parse(&s->crop_x_pexpr, s->crop_x_expr, var_names,
                       NULL, NULL, NULL, NULL, 0, s));
