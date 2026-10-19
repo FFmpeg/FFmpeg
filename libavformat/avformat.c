@@ -123,6 +123,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_STREAM_GROUP_PARAMS_LCEVC:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
     case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
+    case AV_STREAM_GROUP_PARAMS_ALPHA:
         av_opt_free(stg->params.layered_video);
         av_freep(&stg->params.layered_video);
         break;
@@ -290,6 +291,7 @@ const char *avformat_stream_group_name(enum AVStreamGroupParamsType type)
     case AV_STREAM_GROUP_PARAMS_TREF:                      return "Track Reference";
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:              return "Dolby Vision (Split base and enhancement layer)";
     case AV_STREAM_GROUP_PARAMS_GAIN_MAP:                  return "Gain Map (Split base rendition and gain map)";
+    case AV_STREAM_GROUP_PARAMS_ALPHA:                     return "Alpha (Split color and alpha channels)";
     }
     return NULL;
 }
