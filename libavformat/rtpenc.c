@@ -100,6 +100,7 @@ static int rtp_write_header(AVFormatContext *s1)
 {
     RTPMuxContext *s = s1->priv_data;
     int n, ret = AVERROR(EINVAL);
+    int payload_header_size = 0;
     AVStream *st;
 
     if (s1->nb_streams != 1) {
@@ -211,12 +212,14 @@ static int rtp_write_header(AVFormatContext *s1)
             ret = AVERROR_EXPERIMENTAL;
             goto fail;
         }
+        payload_header_size = 4;
         break;
     case AV_CODEC_ID_H264:
         /* check for H.264 MP4 syntax */
         if (st->codecpar->extradata_size > 4 && st->codecpar->extradata[0] == 1) {
             s->nal_length_size = (st->codecpar->extradata[4] & 0x03) + 1;
         }
+        payload_header_size = 2;
         break;
     case AV_CODEC_ID_HEVC:
         /* Only check for the standardized hvcC version of extradata, keeping
@@ -226,6 +229,10 @@ static int rtp_write_header(AVFormatContext *s1)
         if (st->codecpar->extradata_size > 21 && st->codecpar->extradata[0] == 1) {
             s->nal_length_size = (st->codecpar->extradata[21] & 0x03) + 1;
         }
+        payload_header_size = 3;
+        break;
+    case AV_CODEC_ID_VP8:
+        payload_header_size = 4;
         break;
     case AV_CODEC_ID_BITPACKED:
     case AV_CODEC_ID_RAWVIDEO:
@@ -306,9 +313,17 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_AAC:
         s->max_frames_per_packet = 50;
+        if (!(s->flags & FF_RTP_FLAG_MP4A_LATM))
+            payload_header_size = 4;
         break;
     default:
         break;
+    }
+
+    if (s->max_payload_size <= payload_header_size) {
+        av_log(s1, AV_LOG_ERROR, "Max packet size %u too low for a %d byte payload header\n",
+               s1->packet_size, payload_header_size);
+        goto fail;
     }
 
     return 0;
