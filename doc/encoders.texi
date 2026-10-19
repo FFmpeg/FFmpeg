@@ -3793,6 +3793,731 @@ Import closed captions (which must be ATSC compatible format) into output.
 Default is 1 (on).
 @end table
 
+@section NVENC encoders
+
+The @code{h264_nvenc}, @code{hevc_nvenc} and @code{av1_nvenc} encoders use
+NVIDIA NVENC hardware to encode H.264, HEVC and AV1 video, respectively.
+Building them requires the @code{ffnvcodec} headers provided by
+@url{https://code.ffmpeg.org/FFmpeg/nv-codec-headers, nv-codec-headers}.
+They are autodetected by configure; they can also be enabled explicitly
+with @option{--enable-ffnvcodec} and @option{--enable-nvenc}.
+
+Available options and values depend on the SDK version exposed by the headers
+at build time. Feature checks in @file{libavcodec/nvenc.h} distinguish SDK
+versions 12.0, 12.1, 12.2, 13.0 and 13.1. Runtime support also depends on the
+GPU and driver. Use @command{ffmpeg -h encoder=hevc_nvenc}, or substitute
+@code{h264_nvenc} or @code{av1_nvenc}, to list the options, devices and pixel
+formats available in a particular build.
+
+@subsection Hardware input and devices
+
+These encoders accept system-memory frames and CUDA hardware frames
+(@code{AV_PIX_FMT_CUDA}). Builds using SDK 13.1 or newer also accept CUDA array
+frames (@code{AV_PIX_FMT_CUARRAY}). Builds with @code{d3d11va} support accept
+D3D11 hardware frames (@code{AV_PIX_FMT_D3D11}). The input pixel format and
+encoding features must be supported by the selected GPU.
+
+For CUDA decoding followed by encoding, use the input options
+@option{-hwaccel cuda -hwaccel_output_format cuda} to keep decoded frames on
+the device. A hardware device can also be created with @option{-init_hw_device}
+and supplied to the encoder, directly or through its hardware frames context.
+For system-memory input without a supplied hardware device, the encoder
+option @option{gpu} selects the device. See its entry under
+@ref{nvenc_other_options,,Other common options} below.
+
+@subsection Generic options
+
+Several generic encoding options are mapped to NVENC settings. The bitrate
+options @option{b}, @option{maxrate} and @option{bufsize} set the average
+bitrate, the maximum bitrate and the VBV buffer size; the NVENC default for
+@option{b} is @samp{2M}. @option{g} sets the GOP length, with 0 requesting
+intra-only encoding. @option{bf} sets the number of B-frames between
+non-B-frames. @option{refs} sets the number of reference frames in each
+reference list. @option{g} and @option{bf} default to @code{-1} and
+@option{refs} defaults to 0; these defaults leave the values of the preset
+unchanged.
+
+The generic @option{qmin} and @option{qmax} options are honoured in VBR mode
+with a warning; API users should set the encoder options of the same names
+listed below instead.
+
+Only applications calling the libavcodec API can change
+@code{AVCodecContext.bit_rate}, @code{AVCodecContext.rc_max_rate} and
+@code{AVCodecContext.rc_buffer_size} during encoding. The encoder checks
+these fields before encoding each frame. When dynamic bitrate changes are
+supported and rate control is not @samp{constqp}, changed positive values
+trigger reconfiguration, reset the encoder and force an IDR.
+A change to the display aspect ratio also triggers reconfiguration.
+
+@subsection Common options
+
+The following option names are shared by all three encoders. Differences in
+values and build requirements are noted below. Boolean options accept 0
+(disabled) and 1 (enabled), unless otherwise stated.
+
+@subsubsection Presets and tuning
+
+@table @option
+@item preset @var{integer}
+Select the encoding preset using a named value from the table (recommended)
+or its integer. The range is @code{0} to @code{9}; the default is
+@samp{p4} (6).
+
+@table @samp
+@item slow
+Deprecated alias for high quality with two passes (0).
+@item medium
+Deprecated alias for high quality with one pass (1).
+@item fast
+Deprecated alias for high performance with one pass (2).
+@item p1
+Fastest, lowest quality (3).
+@item p2
+Faster, lower quality (4).
+@item p3
+Fast, low quality (5).
+@item p4
+Medium (6); the default.
+@item p5
+Slow, good quality (7).
+@item p6
+Slower, better quality (8).
+@item p7
+Slowest, best quality (9).
+@end table
+
+Use @samp{p1} through @samp{p7} with @option{tune} and @option{multipass}
+instead of the deprecated aliases.
+
+@item tune @var{integer}
+Select encoding tuning using a named value from the table (recommended)
+or its integer. The default is @samp{hq} (1).
+
+H.264 accepts @code{1} to @code{4}; HEVC and AV1 also expose @samp{uhq} when
+built with the required SDK.
+
+@table @samp
+@item hq
+High quality (1).
+@item ll
+Low latency (2).
+@item ull
+Ultra low latency (3).
+@item lossless
+Lossless (4).
+@item uhq
+Ultra high quality (5).
+
+HEVC requires SDK 12.2 or newer; AV1 requires SDK 13.0 or newer. Not available
+for H.264.
+@end table
+@end table
+
+@subsubsection Rate control
+
+@table @option
+@item rc @var{integer}
+Override preset rate control using a named value from the table
+(recommended) or its integer. The range is @code{-1} to @code{INT_MAX};
+the default is @code{-1} (no explicit override).
+
+@table @samp
+@item constqp
+Constant QP (0).
+@item vbr
+Variable bitrate (1).
+@item cbr
+Constant bitrate (2).
+@end table
+
+@item multipass @var{integer}
+Select multipass encoding using a named value from the table (recommended)
+or its integer. The range is @code{0} to @code{2}; the default is
+@samp{disabled} (0).
+
+@table @samp
+@item disabled
+Single pass (0).
+@item qres
+Two passes, with the first pass at quarter resolution (1).
+@item fullres
+Two passes, with the first pass at full resolution (2).
+@end table
+
+@item cq @var{float}
+Set the target quality for constant quality mode in VBR rate control.
+The default is 0 (automatic).
+
+The range is @code{0} to @code{51} for H.264 and HEVC, or @code{0} to
+@code{63} for AV1.
+
+@item qp @var{integer}
+Set the constant quantization parameter. The default is @code{-1} (unset).
+
+The range is @code{-1} to @code{51} for H.264 and HEVC, or @code{-1} to
+@code{255} for AV1.
+
+@item init_qpP @var{integer}
+@itemx init_qpB @var{integer}
+@itemx init_qpI @var{integer}
+Set the initial QP for P-, B- and I-frames, respectively. Each defaults to
+@code{-1} (unset).
+
+The range is @code{-1} to @code{51} for H.264 and HEVC, or @code{-1} to
+@code{255} for AV1.
+
+@item qmin @var{integer}
+@itemx qmax @var{integer}
+Set the minimum and maximum QP used for rate control. Each defaults to
+@code{-1} (unset).
+
+The range is @code{-1} to @code{51} for H.264 and HEVC, or @code{-1} to
+@code{255} for AV1.
+
+@item qp_cb_offset @var{integer}
+@itemx qp_cr_offset @var{integer}
+Set the chroma QP offsets for the Cb and Cr channels, respectively. Each
+accepts @code{-12} to @code{12} and defaults to 0.
+
+@item strict_gop @var{boolean}
+Minimize GOP-to-GOP rate fluctuations. The default is 0.
+
+@item ldkfs @var{integer}
+Set the low-delay keyframe scale, which specifies the scene-change frame
+size increase allowed with a single-frame VBV buffer and CBR. The range is
+@code{0} to @code{255} and the default is 0.
+
+@item cbr_padding @var{boolean}
+Pad the bitstream to prevent the bitrate falling below the target in CBR
+mode. The default is 0.
+@end table
+
+@subsubsection Lookahead, adaptive quantization and B-frames
+
+@table @option
+@item rc-lookahead @var{integer}
+Set the number of frames to look ahead for rate control. The range is @code{0}
+to @code{INT_MAX} and the default is 0.
+
+@item lookahead_level @var{integer}
+Set the lookahead level using a named value from the table (recommended)
+or its integer. Higher levels may improve quality at the expense of
+performance. Requires SDK 12.2 or newer. The range is @code{-1} to
+@code{15}; the default is @code{-1} (no override).
+
+@table @samp
+@item 0
+@itemx 1
+@itemx 2
+@itemx 3
+Select the corresponding lookahead level.
+@item auto
+Automatic selection (15).
+@end table
+
+@item no-scenecut @var{boolean}
+Disable adaptive I-frame insertion at scene cuts when lookahead is enabled.
+The default is 0.
+
+@item b_adapt @var{boolean}
+Enable adaptive B-frame decisions when lookahead is enabled. The default is 1.
+
+@item spatial-aq @var{boolean}
+Enable spatial adaptive quantization. The default is 0.
+
+@item temporal-aq @var{boolean}
+Enable temporal adaptive quantization. The default is 0.
+
+@item aq-strength @var{integer}
+Set spatial adaptive quantization strength when @option{spatial-aq} is
+enabled, from @code{1} (low) to @code{15} (aggressive). The default is 8.
+
+@item b_ref_mode @var{integer}
+Select the use of B-frames as references using a named value from the table
+(recommended) or its integer. The default is @code{-1} (no override).
+
+H.264 and HEVC accept @code{-1} to @code{2}. AV1 accepts @code{-1} to
+@code{4} with SDK 13.1 or newer, or @code{-1} to @code{2} with older headers.
+
+@table @samp
+@item disabled
+Do not use B-frames as references (0).
+@item each
+Use each B-frame as a reference (1).
+@item middle
+For H.264 and HEVC, use only half the B-frames as references (2).
+
+For AV1, use every other B-frame as an Altref2 reference (2), except the last
+in the Altref interval.
+@item hierarchical
+Use B-frames as references hierarchically (4).
+
+AV1 only; requires SDK 13.1 or newer.
+@end table
+
+@item weighted_pred @var{integer}
+Enable weighted prediction with 1, or disable it with 0 (the default).
+
+This is a boolean option for AV1.
+
+@item tf_level @var{integer}
+Set temporal filtering strength. The range is @code{-1} to @code{INT_MAX}; the
+default is @code{-1} (no override).
+
+Requires SDK 12.2 or newer for HEVC, or SDK 13.0 or newer for H.264 and AV1.
+
+@table @samp
+@item 0
+@itemx 4
+Select the corresponding temporal filtering strength.
+@end table
+@end table
+
+@subsubsection SEI and side data
+
+@table @option
+@item extra_sei @var{boolean}
+Pass extra frame side data. The default is 1.
+
+H.264 and HEVC use SEI payloads; AV1 uses metadata OBUs. This gates the
+payload array used for @option{a53cc}, HEVC and AV1 @option{s12m_tc}, and
+H.264 and HEVC @option{udu_sei}.
+
+@item a53cc @var{boolean}
+Use @code{AV_FRAME_DATA_A53_CC} side data for A53 closed captions when
+available. Requires @option{extra_sei}. The default is 1.
+
+H.264 and HEVC carry it in ITU-T T.35 registered user-data SEI;
+AV1 uses an ITU-T T.35 metadata OBU.
+
+@item s12m_tc @var{boolean}
+Use @code{AV_FRAME_DATA_S12M_TIMECODE} side data when available.
+The default is 1.
+
+H.264 uses picture timing and requires SDK 12.2 or newer; HEVC uses timecode
+SEI; AV1 uses timecode metadata OBUs. The HEVC and AV1 paths require
+@option{extra_sei}; the H.264 path is independent of it.
+@end table
+
+With SDK 13.0 or newer, HEVC and AV1 also support mastering-display and
+content-light-level metadata. The corresponding
+@code{AV_FRAME_DATA_MASTERING_DISPLAY_METADATA} and
+@code{AV_FRAME_DATA_CONTENT_LIGHT_LEVEL} entries in
+@code{AVCodecContext.decoded_side_data} enable output at initialization.
+Frame side data supplies per-frame values, falling back to those stream
+values when absent. This path is independent of @option{extra_sei}.
+
+@anchor{nvenc_other_options}
+@subsubsection Other common options
+
+@table @option
+@item level @var{integer}
+Set the encoding level restriction using a named value (recommended) or
+its integer. The tables below list the values, numeric ranges and default
+integers for each codec. The default is @samp{auto} (0 for H.264 and HEVC,
+24 for AV1).
+
+@item gpu @var{integer}
+Select the NVENC-capable GPU for system-memory input without a supplied
+hardware device using a named value from the table (recommended) or its
+integer. Device indices start at 0. The range is @code{-2} to
+@code{INT_MAX} and the default is @samp{any} (-1).
+
+@table @samp
+@item list
+List the available devices (-2).
+@item any
+Use the first available device (-1).
+@end table
+
+@item surfaces @var{integer}
+Set the number of concurrent surfaces, from @code{0} to @code{64}. The default
+is 0 (automatic).
+
+@item delay @var{integer}
+Delay frame output by the specified number of frames, from @code{0} to
+@code{INT_MAX}. The default is @code{INT_MAX}; the actual delay is limited
+by the number of surfaces.
+
+@item rgb_mode @var{integer}
+Select how packed RGB input is handled using a named value from the table
+(recommended) or its integer. The range is @code{0} to @code{INT_MAX};
+the default is @samp{yuv420} (1).
+
+@table @samp
+@item disabled
+Reject packed RGB input (0).
+@item yuv420
+Convert to YUV 4:2:0 (1).
+@item yuv444
+Convert to YUV 4:4:4 (2).
+@end table
+
+@item highbitdepth @var{boolean}
+Enable 10-bit encoding for 8-bit input. The default is 0.
+
+For H.264 this requires SDK 13.0 or newer.
+
+@item forced-idr @var{boolean}
+When forcing keyframes, force IDR frames. The range is @code{-1} to @code{1} and
+the default is 0. A value of @code{-1} leaves the picture-type decision to
+the encoder.
+
+@item zerolatency @var{boolean}
+Request zero-latency operation with no reordering delay. The default is 0.
+
+@item nonref_p @var{boolean}
+Enable automatic insertion of non-reference P-frames. The default is 0.
+
+@item dpb_size @var{integer}
+Set the decoded picture buffer size, from @code{0} to @code{INT_MAX}. The
+default is 0 (automatic).
+
+@item intra-refresh @var{boolean}
+Use periodic intra refresh instead of IDR frames. The default is 0.
+@end table
+
+@subsection H.264 and HEVC options
+
+The following options are available for @code{h264_nvenc} and
+@code{hevc_nvenc} only.
+
+@table @option
+@item aud @var{boolean}
+Use access unit delimiters. The default is 0.
+
+@item bluray-compat @var{boolean}
+Enable Blu-ray compatibility workarounds. The default is 0.
+
+@item udu_sei @var{boolean}
+Pass @code{AV_FRAME_DATA_SEI_UNREGISTERED} frame side data as unregistered
+user-data SEI. Requires @option{extra_sei}. The default is 0.
+
+@item single-slice-intra-refresh @var{boolean}
+Use single-slice intra refresh. This also enables @option{intra-refresh}.
+The default is 0.
+
+@item max_slice_size @var{integer}
+Set the maximum encoded slice size in bytes, from @code{0} to @code{INT_MAX}.
+The default is 0 (no override).
+
+@item constrained-encoding @var{boolean}
+Enable constrained-frame encoding, making each slice in a constrained
+picture independent of the other slices. The default is 0.
+@end table
+
+@subsection HEVC and AV1 options
+
+The following option is available for @code{hevc_nvenc} and
+@code{av1_nvenc} only.
+
+@table @option
+@item split_encode_mode @var{integer}
+Set split-frame encoding mode using a named value from the table
+(recommended) or its integer. Requires SDK 12.1 or newer. The range is
+@code{0} to @code{15} and the default is @samp{auto} (0).
+
+@table @samp
+@item auto
+Enable or disable it according to the preset and tuning (0).
+@item forced
+Enable it with the number of horizontal strips selected by the driver (1).
+@item 2
+Force two horizontal strips when more than one NVENC engine is available (2).
+@item 3
+Force three horizontal strips when more than two NVENC engines are
+available (3).
+@item 4
+Force four horizontal strips when more than three NVENC engines are
+available (4). Requires SDK 13.0 or newer.
+@item disabled
+Disable split encoding (15).
+@end table
+@end table
+
+@subsection H.264 options
+
+@table @option
+@item profile @var{integer}
+Set the H.264 profile using a named value from the table (recommended)
+or its integer. The default is @samp{high} (2).
+
+@table @samp
+@item baseline
+baseline profile (0).
+@item main
+main profile (1).
+@item high
+high profile (2).
+@item high10
+high10 profile (3).
+@item high422
+high422 profile (4).
+@item high444p
+high444p profile (5).
+@end table
+
+The @samp{high10} and @samp{high422} values require SDK 13.0 or newer.
+With headers older than SDK 13.0, @samp{high444p} has integer value 3
+instead of 5.
+
+@item level @var{integer}
+Set the H.264 level restriction using a named value from the table
+(recommended) or its integer. The range is @code{0} to @code{62}; the
+default is @samp{auto} (0).
+
+@table @samp
+@item auto
+Automatic selection (0).
+@item 1b
+Level 1b (9).
+@item 1.0b
+Level 1.0b (9).
+@item 1
+Level 1 (10).
+@item 1.0
+Level 1.0 (10).
+@item 1.1
+Level 1.1 (11).
+@item 1.2
+Level 1.2 (12).
+@item 1.3
+Level 1.3 (13).
+@item 2
+Level 2 (20).
+@item 2.0
+Level 2.0 (20).
+@item 2.1
+Level 2.1 (21).
+@item 2.2
+Level 2.2 (22).
+@item 3
+Level 3 (30).
+@item 3.0
+Level 3.0 (30).
+@item 3.1
+Level 3.1 (31).
+@item 3.2
+Level 3.2 (32).
+@item 4
+Level 4 (40).
+@item 4.0
+Level 4.0 (40).
+@item 4.1
+Level 4.1 (41).
+@item 4.2
+Level 4.2 (42).
+@item 5
+Level 5 (50).
+@item 5.0
+Level 5.0 (50).
+@item 5.1
+Level 5.1 (51).
+@item 5.2
+Level 5.2 (52).
+@item 6.0
+Level 6.0 (60).
+@item 6.1
+Level 6.1 (61).
+@item 6.2
+Level 6.2 (62).
+@end table
+
+@item coder @var{integer}
+Set the entropy coder using a named value from the table (recommended)
+or its integer. The range is @code{-1} to @code{2}; the default is
+@samp{default} (-1).
+
+@table @samp
+@item default
+Leave the preset entropy coding mode unchanged (-1).
+@item auto
+Automatic selection (0).
+@item cabac
+@itemx ac
+CABAC (1).
+@item cavlc
+@itemx vlc
+CAVLC (2).
+@end table
+@end table
+
+@subsection HEVC options
+
+@table @option
+@item profile @var{integer}
+Set the HEVC profile using a named value from the table (recommended)
+or its integer. The default is @samp{main} (0).
+
+@table @samp
+@item main
+main profile (0).
+@item main10
+main10 profile (1).
+@item rext
+rext profile (2).
+@item mv
+mv profile (3).
+@end table
+
+The @samp{mv} value requires SDK 13.0 or newer.
+
+@item level @var{integer}
+Set the HEVC level restriction using a named value from the table
+(recommended) or its integer. The range is @code{0} to @code{186}; the
+default is @samp{auto} (0).
+
+@table @samp
+@item auto
+Automatic selection (0).
+@item 1
+Level 1 (30).
+@item 1.0
+Level 1.0 (30).
+@item 2
+Level 2 (60).
+@item 2.0
+Level 2.0 (60).
+@item 2.1
+Level 2.1 (63).
+@item 3
+Level 3 (90).
+@item 3.0
+Level 3.0 (90).
+@item 3.1
+Level 3.1 (93).
+@item 4
+Level 4 (120).
+@item 4.0
+Level 4.0 (120).
+@item 4.1
+Level 4.1 (123).
+@item 5
+Level 5 (150).
+@item 5.0
+Level 5.0 (150).
+@item 5.1
+Level 5.1 (153).
+@item 5.2
+Level 5.2 (156).
+@item 6
+Level 6 (180).
+@item 6.0
+Level 6.0 (180).
+@item 6.1
+Level 6.1 (183).
+@item 6.2
+Level 6.2 (186).
+@end table
+
+@item tier @var{integer}
+Set the HEVC encoding tier using a named value from the table (recommended)
+or its integer. The range is @code{0} to @code{1}; the default is
+@samp{main} (0).
+
+@table @samp
+@item main
+Main tier (0).
+@item high
+High tier (1).
+@end table
+
+@item unidir_b @var{boolean}
+Enable unidirectional B-frames. Requires SDK 12.2 or newer. The default is 0.
+@end table
+
+@subsection AV1 options
+
+@table @option
+@item level @var{integer}
+Set the AV1 level restriction using a named value from the table
+(recommended) or its integer. The range is @code{0} to @code{24}; the
+default is @samp{auto} (24).
+
+@table @samp
+@item 2
+Level 2 (0).
+@item 2.0
+Level 2.0 (0).
+@item 2.1
+Level 2.1 (1).
+@item 2.2
+Level 2.2 (2).
+@item 2.3
+Level 2.3 (3).
+@item 3
+Level 3 (4).
+@item 3.0
+Level 3.0 (4).
+@item 3.1
+Level 3.1 (5).
+@item 3.2
+Level 3.2 (6).
+@item 3.3
+Level 3.3 (7).
+@item 4
+Level 4 (8).
+@item 4.0
+Level 4.0 (8).
+@item 4.1
+Level 4.1 (9).
+@item 4.2
+Level 4.2 (10).
+@item 4.3
+Level 4.3 (11).
+@item 5
+Level 5 (12).
+@item 5.0
+Level 5.0 (12).
+@item 5.1
+Level 5.1 (13).
+@item 5.2
+Level 5.2 (14).
+@item 5.3
+Level 5.3 (15).
+@item 6
+Level 6 (16).
+@item 6.0
+Level 6.0 (16).
+@item 6.1
+Level 6.1 (17).
+@item 6.2
+Level 6.2 (18).
+@item 6.3
+Level 6.3 (19).
+@item 7
+Level 7 (20).
+@item 7.0
+Level 7.0 (20).
+@item 7.1
+Level 7.1 (21).
+@item 7.2
+Level 7.2 (22).
+@item 7.3
+Level 7.3 (23).
+@item auto
+Automatic selection (24).
+@end table
+
+@item tier @var{integer}
+Set the AV1 encoding tier, from @code{0} to @code{1}. The default is 0.
+
+@table @samp
+@item 0
+Tier 0.
+@item 1
+Tier 1.
+@end table
+
+@item tile-rows @var{integer}
+@itemx tile-columns @var{integer}
+Set the number of tile rows and columns, respectively. Each accepts
+@code{-1} to @code{64} and defaults to @code{-1} (no override).
+
+@item timing-info @var{boolean}
+Include timing information in sequence and frame headers. The default is 0.
+@end table
+
 @section png
 
 PNG image encoder.
