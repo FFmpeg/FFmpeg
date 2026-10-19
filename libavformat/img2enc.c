@@ -106,7 +106,12 @@ static int write_header(AVFormatContext *s)
                              && !av_strcasecmp(str + 1, "y")
                              && s->nb_streams == 1
                              && desc
-                             &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
+                            /* Semi-planar formats such as NV12 keep several
+                             * components in one plane, so splitting per
+                             * component needs one plane per component.
+                             */
+                             && av_pix_fmt_count_planes(st->codecpar->format)
+                                == desc->nb_components
                              && desc->nb_components >= 3;
     }
     img->img_number = img->start_img_number;
