@@ -177,6 +177,7 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO:
+        payload_header_size = 4;
         break;
     case AV_CODEC_ID_MPEG2TS:
         if (s->max_payload_size < TS_PACKET_SIZE) {
