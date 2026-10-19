@@ -11114,28 +11114,22 @@ static int set_exif_from_item(AVFormatContext *s,
                                                     AV_PKT_DATA_EXIF);
     const AVExifMetadata *ifd = &item->ifd;
     AVBufferRef *buf = NULL;
-    int64_t offset;
     int err;
 
     if (sd)
         return 0;
 
-    err = av_exif_write(s, ifd, &buf, AV_EXIF_T_OFF);
+    err = av_exif_write(s, ifd, &buf, AV_EXIF_TIFF_HEADER);
     if (err < 0)
         return err;
 
-    offset = AV_RB32(buf->data) + 4;
-    if (offset >= buf->size) {
-        av_buffer_unref(&buf);
-        return AVERROR_INVALIDDATA;
-    }
     sd = av_packet_side_data_new(coded_side_data, nb_coded_side_data,
-                                 AV_PKT_DATA_EXIF, buf->size - offset, 0);
+                                 AV_PKT_DATA_EXIF, buf->size, 0);
     if (!sd) {
         av_buffer_unref(&buf);
         return AVERROR(ENOMEM);
     }
-    memcpy(sd->data, buf->data + offset, buf->size - offset);
+    memcpy(sd->data, buf->data, buf->size);
 
     av_buffer_unref(&buf);
 
