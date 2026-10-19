@@ -510,15 +510,10 @@ static void libplacebo_uninit(AVFilterContext *avctx);
 static int libplacebo_config_input(AVFilterLink *inlink);
 static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx);
 
-static int libplacebo_init(AVFilterContext *avctx)
+/* Creates the log, shader cache and output format shared by all filters */
+static int init_common(AVFilterContext *avctx)
 {
-    int err = 0;
     LibplaceboContext *s = avctx->priv;
-
-    if (s->normalize_sar && s->fit_mode != FIT_FILL) {
-        av_log(avctx, AV_LOG_WARNING, "normalize_sar has no effect when using "
-               "a fit mode other than 'fill'\n");
-    }
 
     /* Create libplacebo log context */
     s->log = pl_log_create(PL_API_VER, pl_log_params(
@@ -530,12 +525,6 @@ static int libplacebo_init(AVFilterContext *avctx)
     if (!s->log)
         return AVERROR(ENOMEM);
 
-    s->opts = pl_options_alloc(s->log);
-    if (!s->opts) {
-        libplacebo_uninit(avctx);
-        return AVERROR(ENOMEM);
-    }
-
     if (s->shader_cache && s->shader_cache[0]) {
         s->cache = pl_cache_create(pl_cache_params(
             .log  = s->log,
@@ -543,10 +532,8 @@ static int libplacebo_init(AVFilterContext *avctx)
             .set  = pl_cache_set_file,
             .priv = s->shader_cache,
         ));
-        if (!s->cache) {
-            libplacebo_uninit(avctx);
+        if (!s->cache)
             return AVERROR(ENOMEM);
-        }
     }
 
     if (s->out_format_string) {
@@ -554,11 +541,34 @@ static int libplacebo_init(AVFilterContext *avctx)
         if (s->out_format == AV_PIX_FMT_NONE) {
             av_log(avctx, AV_LOG_ERROR, "Invalid output format: %s\n",
                    s->out_format_string);
-            libplacebo_uninit(avctx);
             return AVERROR(EINVAL);
         }
     } else {
         s->out_format = AV_PIX_FMT_NONE;
+    }
+
+    return 0;
+}
+
+static int libplacebo_init(AVFilterContext *avctx)
+{
+    int err = 0;
+    LibplaceboContext *s = avctx->priv;
+
+    if (s->normalize_sar && s->fit_mode != FIT_FILL) {
+        av_log(avctx, AV_LOG_WARNING, "normalize_sar has no effect when using "
+               "a fit mode other than 'fill'\n");
+    }
+
+    if ((err = init_common(avctx)) < 0) {
+        libplacebo_uninit(avctx);
+        return err;
+    }
+
+    s->opts = pl_options_alloc(s->log);
+    if (!s->opts) {
+        libplacebo_uninit(avctx);
+        return AVERROR(ENOMEM);
     }
 
     for (int i = 0; i < s->nb_inputs; i++) {
