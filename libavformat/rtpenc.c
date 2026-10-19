@@ -433,6 +433,11 @@ static int rtp_send_samples(AVFormatContext *s1,
     int aligned_samples_size = sample_size_bits/av_gcd(sample_size_bits, 8);
 
     max_packet_size = (s->max_payload_size / aligned_samples_size) * aligned_samples_size;
+    if (!max_packet_size) {
+        av_log(s1, AV_LOG_ERROR, "RTP max payload size too small for %d byte samples\n",
+               aligned_samples_size);
+        return AVERROR(EINVAL);
+    }
     /* Not needed, but who knows. Don't check if samples aren't an even number of bytes. */
     if ((sample_size_bits % 8) == 0 && ((8 * size) % sample_size_bits) != 0)
         return AVERROR(EINVAL);
