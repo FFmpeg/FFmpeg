@@ -1493,18 +1493,42 @@ static inline AVRational max_q(AVRational a, AVRational b)
     return av_cmp_q(a, b) < 0 ? b : a;
 }
 
+static int config_output_vulkan(AVFilterLink *outlink)
+{
+    int err;
+    FilterLink *l = ff_filter_link(outlink);
+    LibplaceboContext *s = outlink->src->priv;
+    AVHWFramesContext *hwfc;
+    AVVulkanFramesContext *vkfc;
+
+    if (outlink->format != AV_PIX_FMT_VULKAN)
+        return 0;
+
+    s->vkctx.output_width = outlink->w;
+    s->vkctx.output_height = outlink->h;
+    /* Default to reusing the input format */
+    if (s->out_format == AV_PIX_FMT_NONE || s->out_format == AV_PIX_FMT_VULKAN) {
+        s->vkctx.output_format = s->vkctx.input_format;
+    } else {
+        s->vkctx.output_format = s->out_format;
+    }
+    if ((err = ff_vk_filter_config_output(outlink)) < 0)
+        return err;
+    hwfc = (AVHWFramesContext *)l->hw_frames_ctx->data;
+    vkfc = hwfc->hwctx;
+    vkfc->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    return 0;
+}
+
 static int libplacebo_config_output(AVFilterLink *outlink)
 {
     int err;
-    FilterLink          *l = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     LibplaceboContext *s   = avctx->priv;
     AVFilterLink *inlink   = outlink->src->inputs[0];
     FilterLink       *ol   = ff_filter_link(outlink);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
-    AVHWFramesContext *hwfc;
-    AVVulkanFramesContext *vkfc;
 
     /* Frame dimensions */
     RET(ff_scale_eval_dimensions(s, s->w_expr, s->h_expr, inlink, outlink,
@@ -1604,23 +1628,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     s->var_values[VAR_OHSUB]    = 1 << out_desc->log2_chroma_w;
     s->var_values[VAR_OVSUB]    = 1 << out_desc->log2_chroma_h;
 
-    if (outlink->format != AV_PIX_FMT_VULKAN)
-        return 0;
-
-    s->vkctx.output_width = outlink->w;
-    s->vkctx.output_height = outlink->h;
-    /* Default to reusing the input format */
-    if (s->out_format == AV_PIX_FMT_NONE || s->out_format == AV_PIX_FMT_VULKAN) {
-        s->vkctx.output_format = s->vkctx.input_format;
-    } else {
-        s->vkctx.output_format = s->out_format;
-    }
-    RET(ff_vk_filter_config_output(outlink));
-    hwfc = (AVHWFramesContext *)l->hw_frames_ctx->data;
-    vkfc = hwfc->hwctx;
-    vkfc->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-    return 0;
+    return config_output_vulkan(outlink);
 
 fail:
     return err;
