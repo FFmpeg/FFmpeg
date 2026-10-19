@@ -54,8 +54,7 @@ endif
 ifeq ($(ARCH_AARCH64),yes)
 SWS_UNSTABLE_BACKENDS-$(HAVE_NEON)                   += aarch64
 endif
-SWS_UNSTABLE_BACKENDS-$(HAVE_SPIRV_HEADERS_SPIRV_H)  += spirv
-SWS_UNSTABLE_BACKENDS-$(HAVE_SPIRV_UNIFIED1_SPIRV_H) += spirv
+SWS_UNSTABLE_BACKENDS-$(CONFIG_SWSCALE_VULKAN)       += spirv
 
 # Set -hw default for Vulkan tests.
 fate-sws-unscaled-spirv fate-sws-unstable-spirv: SWS_HW = -hw default

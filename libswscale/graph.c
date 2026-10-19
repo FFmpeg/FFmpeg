@@ -39,7 +39,7 @@
 #include "graph.h"
 #include "ops.h"
 #include "ops_dispatch.h"
-#if CONFIG_VULKAN
+#if CONFIG_SWSCALE_VULKAN
 #include "vulkan/ops.h"
 #endif
 
@@ -102,7 +102,7 @@ static int frame_alloc_planes_ref(AVFrame *dst, const AVFrame *src,
     return 0;
 }
 
-#if CONFIG_VULKAN
+#if CONFIG_SWSCALE_VULKAN
 static int pass_alloc_output_hw(SwsPass *pass, AVFrame *avframe,
                                 AVBufferRef *dev_ref)
 {
@@ -141,7 +141,7 @@ static int pass_alloc_output(SwsPass *pass)
 
     int ret;
 
-#if CONFIG_VULKAN
+#if CONFIG_SWSCALE_VULKAN
     const SwsGraph *graph = pass->graph;
     if (graph->src.hw_format == AV_PIX_FMT_VULKAN &&
         graph->dst.hw_format == AV_PIX_FMT_VULKAN) {
@@ -166,7 +166,7 @@ static int pass_alloc_output(SwsPass *pass)
         return ret;
     }
 
-#if CONFIG_VULKAN
+#if CONFIG_SWSCALE_VULKAN
 done:
 #endif
     buffer->avframe = avframe;

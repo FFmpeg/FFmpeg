@@ -52,7 +52,7 @@
 #include "graph.h"
 #include "jit.h"
 
-#if CONFIG_VULKAN
+#if CONFIG_SWSCALE_VULKAN
 #include "vulkan/ops.h"
 #endif
 

@@ -35,7 +35,7 @@ extern const SwsOpBackend backend_c;
 extern const SwsOpBackend backend_murder;
 extern const SwsOpBackend backend_aarch64;
 extern const SwsOpBackend backend_x86;
-#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
+#if CONFIG_SWSCALE_VULKAN
 extern const SwsOpBackend backend_spirv;
 #endif
 
@@ -47,7 +47,7 @@ const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_x86,
 #endif
     &backend_c,
-#if HAVE_SPIRV_HEADERS_SPIRV_H || HAVE_SPIRV_UNIFIED1_SPIRV_H
+#if CONFIG_SWSCALE_VULKAN
     &backend_spirv,
 #endif
     NULL
