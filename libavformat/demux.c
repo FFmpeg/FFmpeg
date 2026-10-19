@@ -3232,21 +3232,34 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     /* update the stream group parameters from the stream contexts if needed */
     for (unsigned i = 0; i < ic->nb_stream_groups; i++) {
         AVStreamGroup *const stg  = ic->stream_groups[i];
-        AVStreamGroupLayeredVideo *lcevc;
-        const AVStream *st;
+        AVStreamGroupLayeredVideo *stglv;
+        const AVStreamGroupEntry *stge;
 
-        if (stg->type != AV_STREAM_GROUP_PARAMS_LCEVC)
+        switch (stg->type) {
+        case AV_STREAM_GROUP_PARAMS_LCEVC:
+            /* For LCEVC in mpegts, the parser is needed to get the
+             * enhancement layer dimensions */
+            stglv = stg->params.layered_video;
+            stge = stg->entries[stglv->el_index];
+            break;
+        case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
+            /* A gain map is presented at the size of its base rendition */
+            stglv = stg->params.layered_video;
+            if (stg->nb_entries != 2 || stglv->el_index >= 2)
+                continue;
+            stge = stg->entries[!stglv->el_index];
+            if (stge->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                continue;
+            break;
+        default:
             continue;
+        }
 
-        /* For LCEVC in mpegts, the parser is needed to get the enhancement layer
-         * dimensions */
-        lcevc = stg->params.layered_video;
-        if (lcevc->width && lcevc->height)
+        if (stglv->width && stglv->height)
             continue;
-        av_assert0(stg->entries[lcevc->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM);
-        st = stg->entries[lcevc->el_index]->stream;
-        lcevc->width  = st->codecpar->width;
-        lcevc->height = st->codecpar->height;
+        av_assert0(stge->type == AV_STREAM_GROUP_ENTRY_STREAM);
+        stglv->width  = stge->stream->codecpar->width;
+        stglv->height = stge->stream->codecpar->height;
     }
 
 find_stream_info_err:
