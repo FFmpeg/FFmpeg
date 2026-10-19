@@ -177,6 +177,7 @@ static av_cold int apv_decode_close(AVCodecContext *avctx)
 {
     APVDecodeContext *apv = avctx->priv_data;
 
+    av_refstruct_unref(&apv->hwaccel_picture_private);
     ff_cbs_fragment_free(&apv->au);
     ff_cbs_close(&apv->cbc);
 
@@ -382,6 +383,7 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
 
     apv_derive_tile_info(tile_info, &input->frame_header);
 
+    av_refstruct_unref(&apv->hwaccel_picture_private);
     err = ff_hwaccel_frame_priv_alloc(avctx, &apv->hwaccel_picture_private);
     if (err < 0)
         return err;
