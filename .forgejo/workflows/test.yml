@@ -25,6 +25,9 @@ jobs:
           - runner: linux-amd64
             shared: 'shared'
             bits: '64'
+          - runner: linux-loongarch64
+            shared: 'static'
+            bits: '64'
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
