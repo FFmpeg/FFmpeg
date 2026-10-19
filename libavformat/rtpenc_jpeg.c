@@ -208,6 +208,12 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
         if (off == 0 && nb_qtables)
             hdr_size += 4 + 64 * nb_qtables;
 
+        if (hdr_size >= s->max_payload_size) {
+            av_log(s1, AV_LOG_ERROR, "RTP max payload size %d too small for the %d byte JPEG header\n",
+                   s->max_payload_size, hdr_size);
+            return;
+        }
+
         /* payload max in one packet */
         len = FFMIN(size, s->max_payload_size - hdr_size);
 
