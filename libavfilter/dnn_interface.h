@@ -39,7 +39,7 @@ typedef enum {
     DNN_ONNX = 1 << 3
 } DNNBackendType;
 
-typedef enum {DNN_FLOAT = 1, DNN_UINT8 = 4} DNNDataType;
+typedef enum {DNN_AUTO = 0, DNN_FLOAT = 1, DNN_UINT8 = 2} DNNDataType;
 
 typedef enum {
     DCO_NONE,
@@ -167,6 +167,7 @@ typedef struct DnnContext {
     int batch_size;
     char *device;
     int device_id;
+    int input_dtype;
 
     AVBufferRef *hw_frames_ctx;
     int zero_copy_negotiated;

@@ -103,7 +103,8 @@ static const enum AVPixelFormat pix_fmts[] = {
            av_get_pix_fmt_name(fmt),                        \
            model_input->dims[dnn_get_channel_idx_by_layout(model_input->layout)]);
 
-static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLink *inlink)
+static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLink *inlink,
+                                   DNNBackendType backend_type)
 {
     AVFilterContext *ctx   = inlink->dst;
     enum AVPixelFormat fmt = inlink->format;
@@ -126,8 +127,13 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
                                    inlink->w);
         return AVERROR(EIO);
     }
-    if (model_input->dt != DNN_FLOAT) {
-        avpriv_report_missing_feature(ctx, "data type rather than DNN_FLOAT");
+    if (model_input->dt != DNN_FLOAT && model_input->dt != DNN_UINT8) {
+        avpriv_report_missing_feature(ctx, "data type other than DNN_FLOAT or DNN_UINT8");
+        return AVERROR(EIO);
+    }
+
+    if (model_input->dt == DNN_UINT8 && backend_type == DNN_TF) {
+        avpriv_report_missing_feature(ctx, "DNN_UINT8 input for the TensorFlow backend");
         return AVERROR(EIO);
     }
 
@@ -231,7 +237,7 @@ static int config_input(AVFilterLink *inlink)
         return result;
     }
 
-    check = check_modelinput_inlink(&model_input, inlink);
+    check = check_modelinput_inlink(&model_input, inlink, ctx->dnnctx.backend_type);
     if (check != 0) {
         return check;
     }

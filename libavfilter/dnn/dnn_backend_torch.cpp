@@ -65,7 +65,6 @@ typedef struct THRequestItem {
     DNNAsyncExecModule exec_module;
 } THRequestItem;
 
-
 #define OFFSET(x) offsetof(THOptions, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption dnn_th_options[] = {
@@ -153,13 +152,51 @@ static void dnn_free_model_th(DNNModel **model)
 
 static int get_input_th(DNNModel *model, DNNData *input, const char *input_name)
 {
-    input->dt = DNN_FLOAT;
+    THModel *th_model = (THModel *)model;
+
     input->order = DCO_RGB;
     input->layout = DL_NCHW;
     input->dims[0] = 1;
     input->dims[1] = 3;
     input->dims[2] = -1;
     input->dims[3] = -1;
+
+    switch (th_model->ctx->input_dtype) {
+    case DNN_FLOAT:
+        input->dt = DNN_FLOAT;
+        break;
+    case DNN_UINT8:
+        input->dt = DNN_UINT8;
+        break;
+    case DNN_AUTO:
+    default:
+        input->dt = DNN_FLOAT;
+
+        /* save/reload via torch::jit::load() erases graph scalar types, so
+         * detection rarely succeeds; set input_dtype=uint8 when it fails. */
+        try {
+            auto forward_method = th_model->jit_model->get_method("forward");
+            auto graph = forward_method.graph();
+            auto graph_inputs = graph->inputs();
+            for (auto gi : graph_inputs) {
+                if (auto tt = gi->type()->cast<c10::TensorType>()) {
+                    if (tt->scalarType().has_value()) {
+                        if (*tt->scalarType() == c10::kByte) {
+                            input->dt = DNN_UINT8;
+                            av_log(th_model->ctx, AV_LOG_VERBOSE,
+                                   "Detected UINT8 input tensor dtype from model graph\n");
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (const c10::Error& e) {
+            av_log(th_model->ctx, AV_LOG_VERBOSE,
+                   "Could not inspect model graph for input dtype, defaulting to DNN_FLOAT\n");
+        }
+        break;
+    }
+
     return 0;
 }
 
@@ -296,7 +333,8 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
     DnnContext *ctx = th_model->ctx;
     int ret, width_idx, height_idx, channel_idx;
     int batch_size = ctx->batch_size;
-    float *batch_data = NULL;
+    void *batch_data = NULL;
+    size_t input_tensor_size;
     int frame_size = 0;
 
     infer_request = request->infer_request;
@@ -319,7 +357,8 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
     input.dims[width_idx] = task->in_frame->width;
 
     frame_size = input.dims[height_idx] * input.dims[width_idx] * input.dims[channel_idx];
-    batch_data = (float *)av_malloc(batch_size * frame_size * sizeof(float));
+    input_tensor_size = (input.dt == DNN_UINT8) ? sizeof(uint8_t) : sizeof(float);
+    batch_data = av_malloc(batch_size * frame_size * input_tensor_size);
     if (!batch_data) {
         ret = AVERROR(ENOMEM);
         goto err;
@@ -334,11 +373,11 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
         request->lltask_count = i + 1;
         task = lltask->task;
 
-        input.data = batch_data + i * frame_size;
+        input.data = (char *)batch_data + i * frame_size * input_tensor_size;
 
         switch (th_model->model.func_type) {
         case DFT_PROCESS_FRAME:
-            input.scale = 255;
+            input.scale = (input.dt == DNN_UINT8) ? 1 : 255;
             if (task->do_ioproc) {
                 if (th_model->model.frame_pre_proc != NULL) {
                     th_model->model.frame_pre_proc(task->in_frame, &input, th_model->model.filter_ctx);
@@ -357,7 +396,7 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
     infer_request->output = new torch::Tensor();
     *infer_request->input_tensor = torch::from_blob(batch_data,
         {request->lltask_count, input.dims[channel_idx], input.dims[height_idx], input.dims[width_idx]},
-        deleter, torch::kFloat32);
+        deleter, (input.dt == DNN_UINT8) ? torch::kUInt8 : torch::kFloat32);
 
     return 0;
 
@@ -427,7 +466,7 @@ static void infer_completion_callback(void *args) {
 
         outputs.order = DCO_RGB;
         outputs.layout = DL_NCHW;
-        outputs.dt = DNN_FLOAT;
+        outputs.dt = (out_slice.dtype() == torch::kUInt8) ? DNN_UINT8 : DNN_FLOAT;
 
         if (sizes.size() == 4) {
             // 4 dimensions: [batch_size, channel, height, width]
@@ -446,12 +485,18 @@ static void infer_completion_callback(void *args) {
             if (task->do_ioproc) {
 #if CONFIG_CUDA
                 if (task->out_frame->format == AV_PIX_FMT_CUDA) {
+                    if (outputs.dt == DNN_UINT8) {
+                        av_log(th_model->ctx, AV_LOG_ERROR,
+                               "UINT8 output is not supported for CUDA frames; the "
+                               "model must return a FLOAT tensor for CUDA inference\n");
+                        goto err;
+                    }
                     fill_model_output_th_cuda(th_model, task, out_slice);
                 } else {
 #endif
                     if (out_slice.device() != torch::kCPU)
                         out_slice = out_slice.to(torch::kCPU);
-                    outputs.scale = 255;
+                    outputs.scale = (outputs.dt == DNN_UINT8) ? 1 : 255;
                     outputs.data = out_slice.data_ptr();
                     if (th_model->model.frame_post_proc != NULL) {
                         th_model->model.frame_post_proc(task->out_frame, &outputs,
@@ -512,6 +557,19 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
 
 #if CONFIG_CUDA
     if (task->in_frame->format == AV_PIX_FMT_CUDA) {
+        DNNData input = { 0 };
+
+        ret = get_input_th(&th_model->model, &input, NULL);
+        if (ret != 0) {
+            goto err;
+        }
+        if (input.dt == DNN_UINT8) {
+            av_log(th_model->ctx, AV_LOG_ERROR,
+                   "UINT8 input is not supported for CUDA frames; use software "
+                   "frames, or set input_dtype=float for CUDA inference\n");
+            ret = AVERROR(ENOSYS);
+            goto err;
+        }
         ret = fill_model_input_th_cuda(th_model, request);
     } else {
         ret = fill_model_input_th(th_model, request);

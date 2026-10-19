@@ -60,6 +60,11 @@ static const AVOption dnn_base_options[] = {
                 OFFSET(device), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS},
         {"device_id", "device ID to run model",
                 OFFSET(device_id), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS},
+        {"input_dtype", "input tensor data type",
+                OFFSET(input_dtype), AV_OPT_TYPE_INT, {.i64 = DNN_AUTO}, DNN_AUTO, DNN_UINT8, FLAGS, "input_dtype"},
+        {"auto",  "auto-detect from model graph, fall back to float", 0, AV_OPT_TYPE_CONST, {.i64 = DNN_AUTO},  0, 0, FLAGS, "input_dtype"},
+        {"float", "float32 input tensor",                             0, AV_OPT_TYPE_CONST, {.i64 = DNN_FLOAT}, 0, 0, FLAGS, "input_dtype"},
+        {"uint8", "uint8 input tensor",                                0, AV_OPT_TYPE_CONST, {.i64 = DNN_UINT8}, 0, 0, FLAGS, "input_dtype"},
         {NULL}
 };
 

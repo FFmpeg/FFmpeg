@@ -12324,18 +12324,30 @@ when the input format qualifies; no additional options are required.
 When the input format is not @code{AV_PIX_FMT_CUDA}, the backend uses
 the standard CPU tensor path.
 
+The common @option{input_dtype} option currently selects the LibTorch
+input tensor element type: @code{auto} (default), @code{float}, or
+@code{uint8}. @code{auto} tries to detect the type from the model graph
+and falls back to @code{float} if that fails; set
+@code{input_dtype=uint8} explicitly for a model requiring UINT8 input
+when auto-detection fails. Other backends do not currently use this
+option to override their input tensor type.
+
+For LibTorch software-frame processing, input and output tensors may
+be @code{float} or @code{uint8}. Processing CUDA-backed frames requires
+a model accepting @code{float} input and returning @code{float} output.
+
 @item onnx
 ONNX Runtime backend. To enable this backend you need to install the
 ONNX Runtime library (see @url{https://onnxruntime.ai/}) and configure
 FFmpeg with @code{--enable-libonnxruntime}.
 
 The current ONNX Runtime backend expects 4-D input and output tensors
-with NCHW layout and 32-bit floating-point element type (ONNX
-@code{FLOAT}); models with integer or other element types (e.g.
-@code{UINT8}) are not supported and will be rejected at load time.
-Models using NHWC layout or other ranks are not yet
-supported. Only single-input models are supported; the backend binds
-exactly one input tensor when running the model.
+with NCHW layout. For @code{dnn_processing}, both 32-bit floating-point
+(ONNX @code{FLOAT}) and 8-bit unsigned integer (ONNX @code{UINT8})
+element types are supported; other element types are not supported and
+will be rejected at load time. Models using NHWC layout or other ranks
+are not yet supported. Only single-input models are supported; the
+backend binds exactly one input tensor when running the model.
 
 The @option{input} and @option{output} options are optional for the
 ONNX Runtime backend; when they are omitted the backend resolves the

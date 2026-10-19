@@ -151,9 +151,28 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
         }
         break;
     case AV_PIX_FMT_GRAYF32:
-        av_image_copy_plane(frame->data[0], frame->linesize[0],
-                            output->data, bytewidth,
-                            bytewidth, frame->height);
+        if (output->dt == DNN_FLOAT) {
+            av_image_copy_plane(frame->data[0], frame->linesize[0],
+                                output->data, bytewidth,
+                                bytewidth, frame->height);
+        } else {
+            av_assert0(output->dt == DNN_UINT8);
+            sws_ctx = sws_getContext(frame->width, frame->height,
+                                     AV_PIX_FMT_GRAY8,
+                                     frame->width, frame->height,
+                                     AV_PIX_FMT_GRAYF32,
+                                     0, NULL, NULL, NULL);
+            if (!sws_ctx) {
+                ret = AVERROR(EINVAL);
+                goto err;
+            }
+            sws_scale(sws_ctx,
+                      (const uint8_t *[4]){(const uint8_t *)output->data, 0, 0, 0},
+                      (const int[4]){frame->width * src_datatype_size, 0, 0, 0},
+                      0, frame->height,
+                      (uint8_t * const*)frame->data, frame->linesize);
+            sws_freeContext(sws_ctx);
+        }
         break;
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
@@ -164,7 +183,7 @@ int ff_proc_from_dnn_to_frame(AVFrame *frame, DNNData *output, void *log_ctx)
     case AV_PIX_FMT_NV12:
         sws_ctx = sws_getContext(frame->width,
                                  frame->height,
-                                 AV_PIX_FMT_GRAYF32,
+                                 src_fmt,
                                  frame->width,
                                  frame->height,
                                  AV_PIX_FMT_GRAY8,
@@ -293,9 +312,28 @@ int ff_proc_from_frame_to_dnn(AVFrame *frame, DNNData *input, void *log_ctx)
         sws_freeContext(sws_ctx);
         break;
     case AV_PIX_FMT_GRAYF32:
-        av_image_copy_plane(input->data, bytewidth,
-                            frame->data[0], frame->linesize[0],
-                            bytewidth, frame->height);
+        if (input->dt == DNN_FLOAT) {
+            av_image_copy_plane(input->data, bytewidth,
+                                frame->data[0], frame->linesize[0],
+                                bytewidth, frame->height);
+        } else {
+            sws_ctx = sws_getContext(frame->width, frame->height,
+                                     AV_PIX_FMT_GRAYF32,
+                                     frame->width, frame->height,
+                                     AV_PIX_FMT_GRAY8,
+                                     0, NULL, NULL, NULL);
+            if (!sws_ctx) {
+                ret = AVERROR(EINVAL);
+                goto err;
+            }
+            sws_scale(sws_ctx,
+                      (const uint8_t *[4]){frame->data[0], 0, 0, 0},
+                      (const int[4]){frame->linesize[0], 0, 0, 0},
+                      0, frame->height,
+                      (uint8_t * const[4]){input->data, 0, 0, 0},
+                      (const int[4]){frame->width * dst_datatype_size, 0, 0, 0});
+            sws_freeContext(sws_ctx);
+        }
         break;
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:

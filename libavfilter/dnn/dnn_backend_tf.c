@@ -716,7 +716,18 @@ static void infer_completion_callback(void *args) {
         outputs[i].dims[dnn_get_channel_idx_by_layout(outputs[i].layout)] =
             TF_Dim(infer_request->output_tensors[i], 3);
         outputs[i].data = TF_TensorData(infer_request->output_tensors[i]);
-        outputs[i].dt = (DNNDataType)TF_TensorType(infer_request->output_tensors[i]);
+        switch (TF_TensorType(infer_request->output_tensors[i])) {
+        case TF_FLOAT:
+            outputs[i].dt = DNN_FLOAT;
+            break;
+        case TF_UINT8:
+            outputs[i].dt = DNN_UINT8;
+            break;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "Unsupported output type %d in model\n",
+                   TF_TensorType(infer_request->output_tensors[i]));
+            goto err;
+        }
     }
     switch (tf_model->model.func_type) {
     case DFT_PROCESS_FRAME:
@@ -815,6 +826,24 @@ static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_p
     ret = ff_check_exec_params(ctx, DNN_TF, model->func_type, exec_params);
     if (ret != 0) {
         return ret;
+    }
+
+    for (uint32_t i = 0; i < exec_params->nb_output; i++) {
+        TF_Output tf_output;
+        TF_DataType dt;
+
+        tf_output.oper = TF_GraphOperationByName(tf_model->graph, exec_params->output_names[i]);
+        if (!tf_output.oper || TF_OperationNumOutputs(tf_output.oper) < 1) {
+            av_log(ctx, AV_LOG_ERROR, "Could not find output \"%s\" in model\n",
+                   exec_params->output_names[i]);
+            return AVERROR(EINVAL);
+        }
+        tf_output.index = 0;
+        dt = TF_OperationOutputType(tf_output);
+        if (dt != TF_FLOAT && dt != TF_UINT8) {
+            av_log(ctx, AV_LOG_ERROR, "Unsupported output type %d in model\n", dt);
+            return AVERROR(ENOSYS);
+        }
     }
 
     task = av_malloc(sizeof(*task));

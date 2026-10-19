@@ -472,8 +472,11 @@ static int get_input_onnx(DNNModel *model, DNNData *input, const char *input_nam
 
     if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
         input->dt = DNN_FLOAT;
+    } else if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8) {
+        input->dt = DNN_UINT8;
     } else {
-        av_log(ctx, AV_LOG_ERROR, "Unsupported input tensor data type, only float is supported\n");
+        av_log(ctx, AV_LOG_ERROR, "Unsupported input tensor data type, "
+               "only float and uint8 are supported\n");
         av_free(dims);
         g_ort->ReleaseTypeInfo(type_info);
         return AVERROR(ENOSYS);
@@ -579,7 +582,7 @@ static int fill_model_input_onnx(ONNXModel *onnx_model, ONNXRequestItem *request
      * Build the byte count with checked size_t multiplications instead of
      * multiplying four int64_t shape values in one expression.
      */
-    input_tensor_size = sizeof(float);
+    input_tensor_size = (input.dt == DNN_UINT8) ? sizeof(uint8_t) : sizeof(float);
     if (av_size_mult(input_tensor_size, (size_t)input_shape[0], &input_tensor_size) < 0 ||
         av_size_mult(input_tensor_size, (size_t)input_shape[1], &input_tensor_size) < 0 ||
         av_size_mult(input_tensor_size, (size_t)input_shape[2], &input_tensor_size) < 0 ||
@@ -598,7 +601,7 @@ static int fill_model_input_onnx(ONNXModel *onnx_model, ONNXRequestItem *request
 
     switch (onnx_model->model.func_type) {
     case DFT_PROCESS_FRAME:
-        input.scale = 255;
+        input.scale = (input.dt == DNN_UINT8) ? 1 : 255;
         if (task->do_ioproc) {
             if (onnx_model->model.frame_pre_proc != NULL) {
                 ret = onnx_model->model.frame_pre_proc(task->in_frame, &input,
@@ -634,7 +637,9 @@ static int fill_model_input_onnx(ONNXModel *onnx_model, ONNXRequestItem *request
 
     status = g_ort->CreateTensorWithDataAsOrtValue(
         memory_info, input.data, input_tensor_size,
-        input_shape, 4, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+        input_shape, 4,
+        (input.dt == DNN_UINT8) ? ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8
+                                : ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
         &infer_request->input_tensor);
 
     g_ort->ReleaseMemoryInfo(memory_info);
@@ -863,9 +868,21 @@ static void infer_completion_callback(void *args)
         }
         if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
             outputs[i].dt = DNN_FLOAT;
+        } else if (tensor_type == ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8) {
+            outputs[i].dt = DNN_UINT8;
         } else {
             av_log(ctx, AV_LOG_ERROR,
-                   "Unsupported output tensor[%u] data type, only float supported\n", i);
+                   "Unsupported output tensor[%u] data type, "
+                   "only float and uint8 are supported\n", i);
+            av_free(dims);
+            g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
+            goto err;
+        }
+
+        if (outputs[i].dt == DNN_UINT8 &&
+            onnx_model->model.func_type != DFT_PROCESS_FRAME) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "UINT8 output tensors are only supported for frame processing\n");
             av_free(dims);
             g_ort->ReleaseTensorTypeAndShapeInfo(tensor_info);
             goto err;
@@ -941,7 +958,7 @@ static void infer_completion_callback(void *args)
     switch (onnx_model->model.func_type) {
     case DFT_PROCESS_FRAME:
         if (task->do_ioproc) {
-            outputs[0].scale = 255;
+            outputs[0].scale = (outputs[0].dt == DNN_UINT8) ? 1 : 255;
             if (onnx_model->model.frame_post_proc != NULL) {
                 onnx_model->model.frame_post_proc(task->out_frame, outputs, onnx_model->model.filter_ctx);
             } else {
