@@ -342,6 +342,7 @@ OP_RES2SRC(OpSLessThanEqual, 179)
 OP_RES2SRC(OpShiftRightLogical, 194)
 OP_RES2SRC(OpShiftLeftLogical, 196)
 
+OP_RES2SRC(OpBitwiseOr, 197)
 OP_RES2SRC(OpBitwiseAnd, 199)
 OP_1SRC(OpReturnValue, 254)
 
