@@ -203,6 +203,7 @@ static int rtp_write_header(AVFormatContext *s1)
             ret = AVERROR_EXPERIMENTAL;
             goto fail;
         }
+        payload_header_size = 20;
         break;
     case AV_CODEC_ID_H263:
         if (s->flags & FF_RTP_FLAG_RFC2190) {
