@@ -92,6 +92,7 @@ struct SwsPass {
      */
     SwsPassFunc run;
     SwsBackend backend; /* backend this pass is using, or 0 */
+    int cpu_flags;      /* CPU flags used by the backend (informative) */
     enum AVPixelFormat format; /* new pixel format */
     int lines;         /* pass dispatch size */
     int slice_h;       /* filter granularity */

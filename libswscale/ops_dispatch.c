@@ -571,7 +571,8 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
                                     input, 0, c.slice_align, c.func_opaque,
                                     NULL, c.priv, c.free, output);
         if (ret >= 0) {
-            (*output)->backend = c.backend->flags;
+            (*output)->backend   = c.backend->flags;
+            (*output)->cpu_flags = c.cpu_flags;
             op_list_get_plane_copy(ops, *output);
             ff_sws_pass_link_output(*output, link);
         }
@@ -689,7 +690,8 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
     if (ret < 0)
         return ret;
 
-    (*output)->backend = comp->backend->flags;
+    (*output)->backend   = comp->backend->flags;
+    (*output)->cpu_flags = comp->cpu_flags;
     op_list_get_plane_copy(ops, *output);
     ff_sws_pass_link_output(*output, link);
     align_pass(*output, comp->block_size, comp->over_write, p->pixel_bits_out);
