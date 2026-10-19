@@ -1678,10 +1678,95 @@ fail:
 #define STATIC (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 #define DYNAMIC (STATIC | AV_OPT_FLAG_RUNTIME_PARAM)
 
+#define OPTS_COMMON                                                                                                                                                 \
+    { "format", "Output video format", OFFSET(out_format_string), AV_OPT_TYPE_STRING, .flags = STATIC },                                                            \
+    { "inherit_device", "Inherit the Vulkan device from the input's hardware frames context",                                                                       \
+        OFFSET(inherit_device), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = STATIC },                                                                              \
+    { "shader_cache",  "Set shader cache path", OFFSET(shader_cache), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = STATIC },                                         \
+    { "apply_filmgrain", "Apply film grain metadata", OFFSET(apply_filmgrain), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },                                       \
+    { "apply_dolbyvision", "Apply Dolby Vision metadata", OFFSET(apply_dovi), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },                                        \
+                                                                                                                                                                    \
+    {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, STATIC, .unit = "colorspace"},                          \
+    {"auto", "use the negotiated colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},           \
+    {"gbr",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_RGB},               INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"bt709",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT709},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"unknown",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_UNSPECIFIED},       INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"bt470bg",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT470BG},           INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"smpte170m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE170M},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"smpte240m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE240M},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"ycgco",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"bt2020nc",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_NCL},        INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"bt2020c",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_CL},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+    {"ictcp",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_ICTCP},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},                \
+                                                                                                                                                                    \
+    {"range", "select color range", OFFSET(color_range), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_RANGE_NB-1, STATIC, .unit = "range"},                                \
+    {"auto",  "use the negotiated color range",   0, AV_OPT_TYPE_CONST, {.i64=-1},                       0, 0, STATIC, .unit = "range"},                            \
+    {"unspecified",                  NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_UNSPECIFIED},  0, 0, STATIC, .unit = "range"},                                 \
+    {"unknown",                      NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_UNSPECIFIED},  0, 0, STATIC, .unit = "range"},                                 \
+    {"limited",                      NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},                                 \
+    {"tv",                           NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},                                 \
+    {"mpeg",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},                                 \
+    {"full",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},                                 \
+    {"pc",                           NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},                                 \
+    {"jpeg",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},                                 \
+                                                                                                                                                                    \
+    {"color_primaries", "select color primaries", OFFSET(color_primaries), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_PRI_EXT_NB-1, DYNAMIC, .unit = "color_primaries"}, \
+    {"auto", "keep the same color primaries",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"bt709",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT709},        INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"unknown",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_UNSPECIFIED},  INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"bt470m",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470M},       INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"bt470bg",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470BG},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"smpte170m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE170M},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"smpte240m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE240M},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"film",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_FILM},         INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"bt2020",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT2020},       INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"smpte428",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE428},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"smpte431",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE431},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"smpte432",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE432},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"jedec-p22",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_JEDEC_P22},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"ebu3213",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_EBU3213},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+    {"vgamut",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_V_GAMUT},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},           \
+                                                                                                                                                                    \
+    {"color_trc", "select color transfer", OFFSET(color_trc), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_TRC_EXT_NB-1, DYNAMIC, .unit = "color_trc"},                    \
+    {"auto", "keep the same color transfer",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt709",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT709},        INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"unknown",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_UNSPECIFIED},  INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"gamma22",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt470m",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"gamma28",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt470bg",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"smpte170m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE170M},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"smpte240m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE240M},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"linear",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LINEAR},       INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"iec61966-2-4",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_4}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt1361e",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT1361_ECG},   INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"iec61966-2-1",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_1}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt2020-10",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_10},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"bt2020-12",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_12},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"smpte2084",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE2084},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"arib-std-b67",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+    {"vlog",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_V_LOG},        INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},                  \
+                                                                                                                                                                    \
+    {"chroma_location", "select chroma location", OFFSET(chroma_location), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCHROMA_LOC_NB-1, STATIC, .unit = "chroma_location"},   \
+    {"auto",  "use the negotiated chroma location",  0, AV_OPT_TYPE_CONST, {.i64=-1},                        0, 0, STATIC, .unit = "chroma_location"},              \
+    {"unspecified",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"unknown",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"left",                             NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_LEFT},         0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"center",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_CENTER},       0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"topleft",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOPLEFT},      0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"top",                              NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},          0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"bottomleft",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},   0, 0, STATIC, .unit = "chroma_location"},                   \
+    {"bottom",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},       0, 0, STATIC, .unit = "chroma_location"},                   \
+                                                                                                                                                                    \
+    {"alpha_mode", "select alpha moda", OFFSET(alpha_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVALPHA_MODE_NB-1, STATIC, .unit = "alpha_mode"},                       \
+    {"auto", "use the negotiated alpha mode",  0, AV_OPT_TYPE_CONST, {.i64=-1},                              0, 0, STATIC, .unit = "alpha_mode"},                   \
+    {"unspecified",                      NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, STATIC, .unit = "alpha_mode"},                        \
+    {"unknown",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, STATIC, .unit = "alpha_mode"},                        \
+    {"premultiplied",                    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_PREMULTIPLIED}, 0, 0, STATIC, .unit = "alpha_mode"},                        \
+    {"straight",                         NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_STRAIGHT},      0, 0, STATIC, .unit = "alpha_mode"},
+
 static const AVOption libplacebo_options[] = {
     { "inputs", "Number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, .flags = STATIC },
-    { "inherit_device", "Inherit the Vulkan device from the input's hardware frames context",
-        OFFSET(inherit_device), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = STATIC },
     { "w", "Output video frame width",  OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, .flags = STATIC },
     { "h", "Output video frame height", OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, .flags = STATIC },
     { "fps", "Output video frame rate", OFFSET(fps_string), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = STATIC },
@@ -1693,7 +1778,6 @@ static const AVOption libplacebo_options[] = {
     { "pos_y", "Output video placement y", OFFSET(pos_y_expr), AV_OPT_TYPE_STRING, {.str = "(oh-ph)/2"}, .flags = DYNAMIC },
     { "pos_w", "Output video placement w", OFFSET(pos_w_expr), AV_OPT_TYPE_STRING, {.str = "ow"}, .flags = DYNAMIC },
     { "pos_h", "Output video placement h", OFFSET(pos_h_expr), AV_OPT_TYPE_STRING, {.str = "oh"}, .flags = DYNAMIC },
-    { "format", "Output video format", OFFSET(out_format_string), AV_OPT_TYPE_STRING, .flags = STATIC },
     { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, SCALE_FORCE_OAR_NB-1, STATIC, .unit = "force_oar" },
         { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = SCALE_FORCE_OAR_DISABLE  }, 0, 0, STATIC, .unit = "force_oar" },
         { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = SCALE_FORCE_OAR_DECREASE }, 0, 0, STATIC, .unit = "force_oar" },
@@ -1722,79 +1806,8 @@ static const AVOption libplacebo_options[] = {
         { "conversion", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = PL_LUT_CONVERSION }, 0, 0, STATIC, .unit = "lut_type" },
 
     { "extra_opts", "Pass extra libplacebo-specific options using a :-separated list of key=value pairs", OFFSET(extra_opts), AV_OPT_TYPE_DICT, .flags = DYNAMIC },
-    { "shader_cache",  "Set shader cache path", OFFSET(shader_cache), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = STATIC },
 
-    {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, STATIC, .unit = "colorspace"},
-    {"auto", "use the negotiated colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"gbr",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_RGB},               INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"bt709",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT709},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"unknown",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_UNSPECIFIED},       INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"bt470bg",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT470BG},           INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"smpte170m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE170M},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"smpte240m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE240M},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"ycgco",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"bt2020nc",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_NCL},        INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"bt2020c",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_CL},         INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-    {"ictcp",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_ICTCP},             INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
-
-    {"range", "select color range", OFFSET(color_range), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_RANGE_NB-1, STATIC, .unit = "range"},
-    {"auto",  "use the negotiated color range",   0, AV_OPT_TYPE_CONST, {.i64=-1},                       0, 0, STATIC, .unit = "range"},
-    {"unspecified",                  NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_UNSPECIFIED},  0, 0, STATIC, .unit = "range"},
-    {"unknown",                      NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_UNSPECIFIED},  0, 0, STATIC, .unit = "range"},
-    {"limited",                      NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},
-    {"tv",                           NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},
-    {"mpeg",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_MPEG},         0, 0, STATIC, .unit = "range"},
-    {"full",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},
-    {"pc",                           NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},
-    {"jpeg",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, STATIC, .unit = "range"},
-
-    {"color_primaries", "select color primaries", OFFSET(color_primaries), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_PRI_EXT_NB-1, DYNAMIC, .unit = "color_primaries"},
-    {"auto", "keep the same color primaries",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"bt709",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT709},        INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"unknown",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_UNSPECIFIED},  INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"bt470m",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470M},       INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"bt470bg",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470BG},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"smpte170m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE170M},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"smpte240m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE240M},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"film",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_FILM},         INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"bt2020",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT2020},       INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"smpte428",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE428},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"smpte431",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE431},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"smpte432",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE432},     INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"jedec-p22",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_JEDEC_P22},    INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"ebu3213",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_EBU3213},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-    {"vgamut",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_V_GAMUT},      INT_MIN, INT_MAX, STATIC, .unit = "color_primaries"},
-
-    {"color_trc", "select color transfer", OFFSET(color_trc), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_TRC_EXT_NB-1, DYNAMIC, .unit = "color_trc"},
-    {"auto", "keep the same color transfer",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt709",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT709},        INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"unknown",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_UNSPECIFIED},  INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"gamma22",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt470m",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"gamma28",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt470bg",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},      INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"smpte170m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE170M},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"smpte240m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE240M},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"linear",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LINEAR},       INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"iec61966-2-4",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_4}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt1361e",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT1361_ECG},   INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"iec61966-2-1",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_1}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt2020-10",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_10},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"bt2020-12",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_12},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"smpte2084",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE2084},    INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"arib-std-b67",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67}, INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-    {"vlog",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_V_LOG},        INT_MIN, INT_MAX, STATIC, .unit = "color_trc"},
-
-    {"chroma_location", "select chroma location", OFFSET(chroma_location), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCHROMA_LOC_NB-1, STATIC, .unit = "chroma_location"},
-    {"auto",  "use the negotiated chroma location",  0, AV_OPT_TYPE_CONST, {.i64=-1},                        0, 0, STATIC, .unit = "chroma_location"},
-    {"unspecified",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},
-    {"unknown",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED},  0, 0, STATIC, .unit = "chroma_location"},
-    {"left",                             NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_LEFT},         0, 0, STATIC, .unit = "chroma_location"},
-    {"center",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_CENTER},       0, 0, STATIC, .unit = "chroma_location"},
-    {"topleft",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOPLEFT},      0, 0, STATIC, .unit = "chroma_location"},
-    {"top",                              NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},          0, 0, STATIC, .unit = "chroma_location"},
-    {"bottomleft",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},   0, 0, STATIC, .unit = "chroma_location"},
-    {"bottom",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},       0, 0, STATIC, .unit = "chroma_location"},
+    OPTS_COMMON
 
     {"rotate", "rotate the input clockwise", OFFSET(rotation), AV_OPT_TYPE_INT, {.i64=PL_ROTATION_0}, PL_ROTATION_0, PL_ROTATION_360, DYNAMIC, .unit = "rotation"},
     {"0",                              NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_0},   .flags = STATIC, .unit = "rotation"},
@@ -1803,20 +1816,11 @@ static const AVOption libplacebo_options[] = {
     {"270",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_270}, .flags = STATIC, .unit = "rotation"},
     {"360",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_360}, .flags = STATIC, .unit = "rotation"},
 
-    {"alpha_mode", "select alpha moda", OFFSET(alpha_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVALPHA_MODE_NB-1, STATIC, .unit = "alpha_mode"},
-    {"auto", "use the negotiated alpha mode",  0, AV_OPT_TYPE_CONST, {.i64=-1},                              0, 0, STATIC, .unit = "alpha_mode"},
-    {"unspecified",                      NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, STATIC, .unit = "alpha_mode"},
-    {"unknown",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, STATIC, .unit = "alpha_mode"},
-    {"premultiplied",                    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_PREMULTIPLIED}, 0, 0, STATIC, .unit = "alpha_mode"},
-    {"straight",                         NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_STRAIGHT},      0, 0, STATIC, .unit = "alpha_mode"},
-
     { "upscaler", "Upscaler function", OFFSET(upscaler), AV_OPT_TYPE_STRING, {.str = "spline36"}, .flags = DYNAMIC },
     { "downscaler", "Downscaler function", OFFSET(downscaler), AV_OPT_TYPE_STRING, {.str = "mitchell"}, .flags = DYNAMIC },
     { "frame_mixer", "Frame mixing function", OFFSET(frame_mixer), AV_OPT_TYPE_STRING, {.str = "none"}, .flags = DYNAMIC },
     { "antiringing", "Antiringing strength (for non-EWA filters)", OFFSET(antiringing), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, DYNAMIC },
     { "sigmoid", "Enable sigmoid upscaling", OFFSET(sigmoid), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
-    { "apply_filmgrain", "Apply film grain metadata", OFFSET(apply_filmgrain), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
-    { "apply_dolbyvision", "Apply Dolby Vision metadata", OFFSET(apply_dovi), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
 
     { "deinterlace", "Deinterlacing mode", OFFSET(deinterlace), AV_OPT_TYPE_INT, {.i64 = PL_DEINTERLACE_WEAVE}, 0, PL_DEINTERLACE_ALGORITHM_COUNT - 1, DYNAMIC, .unit = "deinterlace" },
         { "weave", "Weave fields together (no-op)",    0, AV_OPT_TYPE_CONST, {.i64 = PL_DEINTERLACE_WEAVE}, 0, 0, STATIC, .unit = "deinterlace" },
