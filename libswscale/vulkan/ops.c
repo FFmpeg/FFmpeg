@@ -534,6 +534,23 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
                 }
             }
             break;
+        case SWS_OP_PACK:
+        case SWS_OP_UNPACK: {
+            uint64_t mask[4];
+            int shift[4], tmp[4];
+            ff_sws_pack_op_decode(op, mask, shift);
+            for (int i = 0; i < 4; i++)
+                tmp[i] = spi_OpConstantUInt(spi, u32_type, shift[i]);
+            id->const_ids[id->nb_const_ids++] =
+                spi_OpConstantComposite(spi, id->u32vec4_type,
+                                        tmp[0], tmp[1], tmp[2], tmp[3]);
+            for (int i = 0; i < 4; i++)
+                tmp[i] = spi_OpConstantUInt(spi, u32_type, mask[i]);
+            id->const_ids[id->nb_const_ids++] =
+                spi_OpConstantComposite(spi, id->u32vec4_type,
+                                        tmp[0], tmp[1], tmp[2], tmp[3]);
+            break;
+        }
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT: {
             int tmp = spi_OpConstantUInt(spi, u32_type, op->shift.amount);
@@ -886,10 +903,26 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
                                     acc_s[0], acc_s[1], acc_s[2], acc_s[3]);
 }
 
+/* Sub-packed formats are accessed as a single raw word per pixel, which is
+ * then (un)packed manually. */
+static VkFormat packed_word_fmt(const SwsOp *op)
+{
+    if (!op || op->rw.mode != SWS_RW_PACKED || op->rw.elems != 1)
+        return VK_FORMAT_UNDEFINED;
+
+    switch (op->type) {
+    case SWS_PIXEL_U8:  return VK_FORMAT_R8_UINT;
+    case SWS_PIXEL_U16: return VK_FORMAT_R16_UINT;
+    case SWS_PIXEL_U32: return VK_FORMAT_R32_UINT;
+    default:            return VK_FORMAT_UNDEFINED;
+    }
+}
+
 static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
                          enum AVPixelFormat fmt, const SwsOp *op)
 {
     const VkFormat *vk_fmts = av_vkfmt_from_pixfmt(fmt);
+    const VkFormat word_fmt = packed_word_fmt(op);
     enum FFVkShaderRepFormat rep = FF_VK_REP_NATIVE;
     if (op)
         rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
@@ -897,7 +930,7 @@ static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
         return AVERROR(ENOTSUP);
 
     for (int i = 0; i < av_pix_fmt_count_planes(fmt); i++) {
-        view_fmts[i] = ff_vk_map_fmt_to_rep(vk_fmts[i], rep);
+        view_fmts[i] = word_fmt ? word_fmt : ff_vk_map_fmt_to_rep(vk_fmts[i], rep);
         if (view_fmts[i] == VK_FORMAT_UNDEFINED)
             return AVERROR(ENOTSUP);
     }
@@ -1270,18 +1303,27 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             nb_const_ids += 5*5 + 1;
             break;
         }
-        case SWS_OP_UNPACK:
-            if (ops->src.format == AV_PIX_FMT_X2BGR10)
-                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 2, 1, 0);
-            else
-                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 0, 1, 2);
+        case SWS_OP_UNPACK: {
+            int shift = id->const_ids[nb_const_ids++];
+            int mask  = id->const_ids[nb_const_ids++];
+            data = spi_OpVectorShuffle(spi, type_v, data, data, 0, 0, 0, 0);
+            data = spi_OpShiftRightLogical(spi, type_v, data, shift);
+            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
             break;
-        case SWS_OP_PACK:
-            if (ops->dst.format == AV_PIX_FMT_X2BGR10)
-                data = spi_OpVectorShuffle(spi, type_v, data, data, 3, 2, 1, 0);
-            else
-                data = spi_OpVectorShuffle(spi, type_v, data, data, 1, 2, 3, 0);
+        }
+        case SWS_OP_PACK: {
+            int shift = id->const_ids[nb_const_ids++];
+            int mask  = id->const_ids[nb_const_ids++];
+            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
+            data = spi_OpShiftLeftLogical(spi, type_v, data, shift);
+            int val = spi_OpCompositeExtract(spi, type_s, data, 0);
+            for (int i = 1; i < 4; i++) {
+                int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
+                val = spi_OpBitwiseOr(spi, type_s, val, tmp);
+            }
+            data = spi_OpCompositeConstruct(spi, type_v, val, val, val, val);
             break;
+        }
         default:
             return AVERROR(ENOTSUP);
         }
