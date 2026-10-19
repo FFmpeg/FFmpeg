@@ -205,6 +205,15 @@ static int rtp_write_header(AVFormatContext *s1)
             goto fail;
         }
         break;
+    case AV_CODEC_ID_H263:
+        if (s->flags & FF_RTP_FLAG_RFC2190) {
+            payload_header_size = 8;
+            break;
+        }
+        av_fallthrough;
+    case AV_CODEC_ID_H263P:
+        payload_header_size = 2;
+        break;
     case AV_CODEC_ID_H261:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(s, AV_LOG_ERROR,
