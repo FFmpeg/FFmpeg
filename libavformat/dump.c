@@ -853,16 +853,33 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         }
         break;
     }
+    case AV_STREAM_GROUP_PARAMS_ALPHA:
     case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+    case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
     case AV_STREAM_GROUP_PARAMS_LCEVC: {
         const AVStreamGroupLayeredVideo *layered_video = stg->params.layered_video;
         AVCodecContext *avctx = avcodec_alloc_context3(NULL);
         const char *ptr = NULL;
-        av_log(NULL, AV_LOG_INFO, " %s:", stg->type == AV_STREAM_GROUP_PARAMS_DOLBY_VISION ?
-                                          "Dolby Vision" : "LCEVC");
+        switch (stg->type) {
+        case AV_STREAM_GROUP_PARAMS_ALPHA:
+            av_log(NULL, AV_LOG_INFO, " Alpha:");
+            break;
+        case AV_STREAM_GROUP_PARAMS_DOLBY_VISION:
+            av_log(NULL, AV_LOG_INFO, " Dolby Vision:");
+            break;
+        case AV_STREAM_GROUP_PARAMS_GAIN_MAP:
+            av_log(NULL, AV_LOG_INFO, " Gain Map:");
+            break;
+        case AV_STREAM_GROUP_PARAMS_LCEVC:
+            av_log(NULL, AV_LOG_INFO, " LCEVC:");
+            break;
+        }
         if (avctx && stg->nb_entries == 2 &&
-            stg->entries[!layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM) {
-            const AVStream *st = stg->entries[!layered_video->el_index]->stream;
+            (stg->entries[ layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM ||
+             stg->entries[!layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM)) {
+            const AVStream *st = stg->entries[!layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM ?
+                                 stg->entries[!layered_video->el_index]->stream :
+                                 stg->entries[ layered_video->el_index]->stream;
             if (!avcodec_parameters_to_context(avctx, st->codecpar)) {
                 avctx->width  = layered_video->width;
                 avctx->height = layered_video->height;
@@ -874,45 +891,11 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
                 avcodec_string(buf, sizeof(buf), avctx, is_output);
                 ptr = av_stristr(buf, " ");
             }
+        } else {
+            buf[0] = 0;
+            av_strlcatf(buf, sizeof(buf), " %dx%d", layered_video->width, layered_video->height);
         }
         avcodec_free_context(&avctx);
-        if (ptr)
-            av_log(NULL, log_level, "%s", ptr);
-        dump_disposition(stg->disposition, log_level);
-        av_log(NULL, log_level, "\n");
-        dump_metadata(NULL, stg->metadata, extra_indent, log_level);
-        dump_sidedata(NULL, stg->coded_side_data, stg->nb_coded_side_data,
-                      layered_video->width, layered_video->height, (AVRational) {0,1},
-                      extra_indent, log_level);
-        for (int i = 0; i < stg->nb_entries; i++) {
-            const AVStreamGroupEntry *entry = stg->entries[i];
-            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
-                continue;
-            const AVStream *st = entry->stream;
-            dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
-            printed[st->index] = 1;
-        }
-        break;
-    }
-    case AV_STREAM_GROUP_PARAMS_TREF: {
-        av_log(NULL, log_level, " Track Reference:\n");
-        for (int i = 0; i < stg->nb_entries; i++) {
-            const AVStreamGroupEntry *entry = stg->entries[i];
-            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
-                continue;
-            const AVStream *st = entry->stream;
-            dump_stream_format(ic, st->index, i, index, is_output, log_level);
-            printed[st->index] = 1;
-        }
-        break;
-    }
-    case AV_STREAM_GROUP_PARAMS_GAIN_MAP: {
-        const AVStreamGroupLayeredVideo *layered_video = stg->params.layered_video;
-        const char *ptr = NULL;
-        av_log(NULL, AV_LOG_INFO, " Gain Map:");
-        buf[0] = 0;
-        av_strlcatf(buf, sizeof(buf), " %dx%d", layered_video->width, layered_video->height);
-        ptr = av_stristr(buf, " ");
         if (ptr)
             av_log(NULL, log_level, "%s", ptr);
         dump_disposition(stg->disposition, log_level);
@@ -930,6 +913,18 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
             } else if (entry->type == AV_STREAM_GROUP_ENTRY_STREAM_GROUP)
                 dump_stream_group(ic, printed, entry->stream_group->index, index,
                                   is_output, AV_LOG_VERBOSE);
+        }
+        break;
+    }
+    case AV_STREAM_GROUP_PARAMS_TREF: {
+        av_log(NULL, log_level, " Track Reference:\n");
+        for (int i = 0; i < stg->nb_entries; i++) {
+            const AVStreamGroupEntry *entry = stg->entries[i];
+            if (entry->type != AV_STREAM_GROUP_ENTRY_STREAM)
+                continue;
+            const AVStream *st = entry->stream;
+            dump_stream_format(ic, st->index, i, index, is_output, log_level);
+            printed[st->index] = 1;
         }
         break;
     }
