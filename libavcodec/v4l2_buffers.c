@@ -270,10 +270,10 @@ static int v4l2_buf_increase_ref(V4L2Buffer *in)
         in->context_ref = av_refstruct_ref(s->self_ref);
 
         in->context_refcount = 1;
+        atomic_fetch_add_explicit(&s->refcount, 1, memory_order_relaxed);
     }
 
     in->status = V4L2BUF_RET_USER;
-    atomic_fetch_add_explicit(&s->refcount, 1, memory_order_relaxed);
 
     return 0;
 }
