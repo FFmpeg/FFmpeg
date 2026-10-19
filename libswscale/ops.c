@@ -498,7 +498,7 @@ static void update_output_pads(SwsOpList *ops, SwsOp *op)
         for (int i = 0; i < 4; i++) {
             if (op->pack.pattern[i])
                 FORWARD(0, i, flags & SWS_COMP_DIRTY);
-            if (i > 0) /* clear remaining comps for sanity */
+            if (i > 0) /* clear remaining pads for sanity */
                 RESET(i);
         }
         break;
