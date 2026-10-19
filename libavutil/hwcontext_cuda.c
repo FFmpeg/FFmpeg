@@ -566,8 +566,10 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
     CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
+    const AVFrame *sw_frame = src->hw_frames_ctx ? dst : src;
+    AVFrame *top_down = NULL, *bottom_up_dst = NULL;
     CUcontext dummy;
-    int i, ret, copy_queued = 0;
+    int i, ret, copy_queued = 0, bottom_up = 0;
 
     {
         enum AVPixelFormat src_fmt = cuda_frame_hw_format(src);
@@ -579,9 +581,37 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
             return AVERROR(ENOSYS);
     }
 
+    for (i = 0; i < FF_ARRAY_ELEMS(sw_frame->linesize); i++)
+        bottom_up |= sw_frame->linesize[i] < 0;
+
+    /* The device copies rows upwards through memory, so a bottom-up frame is
+     * transferred through a top-down copy of it. */
+    if (bottom_up) {
+        top_down = av_frame_alloc();
+        if (!top_down)
+            return AVERROR(ENOMEM);
+        top_down->format = ctx->sw_format;
+        top_down->width  = ctx->width;
+        top_down->height = ctx->height;
+        ret = av_hwframe_get_transfer_buffer((src->hw_frames_ctx ? src : dst)->hw_frames_ctx,
+                                             top_down);
+        if (ret < 0)
+            goto free_top_down;
+        top_down->width  = src->width;
+        top_down->height = src->height;
+        if (sw_frame == src) {
+            av_image_copy2(top_down->data, top_down->linesize, src->data, src->linesize,
+                           ctx->sw_format, src->width, src->height);
+            src = top_down;
+        } else {
+            bottom_up_dst = dst;
+            dst           = top_down;
+        }
+    }
+
     ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
     if (ret < 0)
-        return ret;
+        goto free_top_down;
 
     /*
      * Copy one plane per iteration, bounded by the AVFrame linesizes. src and
@@ -695,6 +725,13 @@ fail:
         CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+
+    if (bottom_up_dst && ret >= 0)
+        av_image_copy2(bottom_up_dst->data, bottom_up_dst->linesize,
+                       top_down->data, top_down->linesize,
+                       ctx->sw_format, src->width, src->height);
+free_top_down:
+    av_frame_free(&top_down);
 
     return ret;
 }
