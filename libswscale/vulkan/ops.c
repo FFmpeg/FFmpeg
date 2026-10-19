@@ -201,7 +201,7 @@ static int create_filter_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
 
 fail:
     ff_vk_free_buf(&p->s->vkctx, buf);
-    return 0;
+    return err;
 }
 
 static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
