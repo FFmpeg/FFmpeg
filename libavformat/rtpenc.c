@@ -173,6 +173,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         s->buf_ptr = s->buf + 4;
+        payload_header_size = 4;
         avpriv_set_pts_info(st, 32, 1, 90000);
         break;
     case AV_CODEC_ID_MPEG1VIDEO:
