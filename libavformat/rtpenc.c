@@ -307,6 +307,10 @@ static int rtp_write_header(AVFormatContext *s1)
             goto fail;
         }
         s->max_frames_per_packet = s->max_payload_size / st->codecpar->block_align;
+        if (!s->max_frames_per_packet) {
+            av_log(s1, AV_LOG_ERROR, "RTP max payload size too small for iLBC\n");
+            goto fail;
+        }
         break;
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_AMR_WB:
