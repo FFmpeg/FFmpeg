@@ -268,6 +268,7 @@ static int rtp_write_header(AVFormatContext *s1)
             ret = AVERROR_EXPERIMENTAL;
             goto fail;
         }
+        payload_header_size = 1;
         break;
     case AV_CODEC_ID_AV1:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
