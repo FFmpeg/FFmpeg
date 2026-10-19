@@ -958,14 +958,43 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
     }
 }
 
+static int map_output(LibplaceboContext *s, AVFrame *out, struct pl_frame *target)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
+    bool ok;
+
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        ok = pl_map_avframe_ex(s->gpu, target, pl_avframe_params(
+            .frame    = out,
+            .map_dovi = false,
+        ));
+    } else {
+        ok = pl_frame_recreate_from_avframe(s->gpu, target, s->tex, out);
+    }
+
+    return ok ? 0 : AVERROR_EXTERNAL;
+}
+
+static int unmap_output(LibplaceboContext *s, struct pl_frame *target, AVFrame *out)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
+
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        pl_unmap_avframe(s->gpu, target);
+    } else if (!pl_download_avframe(s->gpu, target, out)) {
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
 /* Construct and emit an output frame for a given timestamp */
 static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
-    int err = 0, ok, changed = 0;
+    int err = 0, changed = 0;
     LibplaceboContext *s = ctx->priv;
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
-    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
     const double target_pts = TS2T(pts, outlink->time_base);
     struct pl_frame target;
     const AVFrame *ref = NULL;
@@ -1048,18 +1077,7 @@ props_done:
         out->duration = 1;
 
     /* Map, render and unmap output frame */
-    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-        ok = pl_map_avframe_ex(s->gpu, &target, pl_avframe_params(
-            .frame    = out,
-            .map_dovi = false,
-        ));
-    } else {
-        ok = pl_frame_recreate_from_avframe(s->gpu, &target, s->tex, out);
-    }
-    if (!ok) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
+    RET(map_output(s, out, &target));
 
     struct pl_frame orig_target = target;
     bool use_linear_compositor = false;
@@ -1116,12 +1134,7 @@ props_done:
         pl_render_image(s->linear_rr, NULL, &target, &opts->params);
     }
 
-    if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-        pl_unmap_avframe(s->gpu, &target);
-    } else if (!pl_download_avframe(s->gpu, &target, out)) {
-        err = AVERROR_EXTERNAL;
-        goto fail;
-    }
+    RET(unmap_output(s, &target, out));
     return ff_filter_frame(outlink, out);
 
 fail:
