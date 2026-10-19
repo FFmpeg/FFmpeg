@@ -773,6 +773,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     buf =  avpkt->data + offset;
     dpx->frame = p;
 
+    av_refstruct_unref(&dpx->hwaccel_picture_private);
     ret = ff_hwaccel_frame_priv_alloc(avctx, &dpx->hwaccel_picture_private);
     if (ret < 0)
         return ret;
