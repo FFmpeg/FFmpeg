@@ -11990,15 +11990,13 @@ static int mov_parse_heif_items(AVFormatContext *s)
         mov_build_index(mov, st);
     }
 
-    if (mov->nb_heif_group) {
-        err = mov_parse_tiles(s);
-        if (err < 0)
-            return err;
+    err = mov_parse_tiles(s);
+    if (err < 0)
+        return err;
 
-        err = mov_parse_heif_layered_video(s);
-        if (err < 0)
-            return err;
-    }
+    err = mov_parse_heif_layered_video(s);
+    if (err < 0)
+        return err;
 
     return 0;
 }
