@@ -708,7 +708,7 @@ static void op_ref(SwsOp *op)
     }
 }
 
-static void op_uninit(SwsOp *op)
+static void op_unref(SwsOp *op)
 {
     switch (op->op) {
     case SWS_OP_READ:
@@ -749,7 +749,7 @@ void ff_sws_op_list_free(SwsOpList **p_ops)
         return;
 
     for (int i = 0; i < ops->num_ops; i++)
-        op_uninit(&ops->ops[i]);
+        op_unref(&ops->ops[i]);
 
     av_freep(&ops->ops);
     av_free(ops);
@@ -804,7 +804,7 @@ void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count)
     const int end = ops->num_ops - count;
     av_assert2(index >= 0 && count >= 0 && index + count <= ops->num_ops);
     for (int i = 0; i < count; i++)
-        op_uninit(&ops->ops[index + i]);
+        op_unref(&ops->ops[index + i]);
     for (int i = index; i < end; i++)
         ops->ops[i] = ops->ops[i + count];
     ops->num_ops = end;
@@ -814,7 +814,7 @@ int ff_sws_op_list_insert_at(SwsOpList *ops, int index, SwsOp *op)
 {
     void *ret = av_dynarray2_add((void **) &ops->ops, &ops->num_ops, sizeof(*op), NULL);
     if (!ret) {
-        op_uninit(op);
+        op_unref(op);
         return AVERROR(ENOMEM);
     }
 
