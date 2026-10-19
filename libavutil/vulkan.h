@@ -449,6 +449,12 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
                                  enum FFVkShaderRepFormat rep_fmt);
 
 /**
+ * Returns the view format for the given representation of fmt, or
+ * VK_FORMAT_UNDEFINED if there is none.
+ */
+VkFormat ff_vk_map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt);
+
+/**
  * Loads props/mprops/driver_props
  */
 int ff_vk_load_props(FFVulkanContext *s);

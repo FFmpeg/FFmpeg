@@ -1996,7 +1996,7 @@ FFVkImageViews *ff_vk_imageviews_alloc(FFVulkanContext *s, int nb_views)
     return iv;
 }
 
-static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
+VkFormat ff_vk_map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
 {
 #define REPS_FMT(fmt) \
     [FF_VK_REP_NATIVE] = fmt ## _UINT, \
@@ -2118,7 +2118,7 @@ int ff_vk_create_imageview(FFVulkanContext *s,
         .pNext      = &view_usage_info,
         .image      = vkf->img[FFMIN(plane, nb_images - 1)],
         .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-        .format     = map_fmt_to_rep(rep_fmts[plane], rep_fmt),
+        .format     = ff_vk_map_fmt_to_rep(rep_fmts[plane], rep_fmt),
         .components = ff_comp_identity_map,
         .subresourceRange = {
             .aspectMask = ff_vk_aspect_flag(f, plane),
@@ -2173,7 +2173,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
             .pNext      = &view_usage_info,
             .image      = vkf->img[FFMIN(i, nb_images - 1)],
             .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-            .format     = map_fmt_to_rep(rep_fmts[i], rep_fmt),
+            .format     = ff_vk_map_fmt_to_rep(rep_fmts[i], rep_fmt),
             .components = ff_comp_identity_map,
             .subresourceRange = {
                 .aspectMask = ff_vk_aspect_flag(f, i),
