@@ -302,11 +302,6 @@ SwsPixelType ff_sws_op_output_type(const SwsOp *op);
 void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op);
 
 /**
- * Frees any allocations associated with an SwsOp and sets it to {0}.
- */
-void ff_sws_op_uninit(SwsOp *op);
-
-/**
  * Apply an operation to an AVRational64. No-op for read/write operations.
  */
 void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4]);
