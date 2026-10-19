@@ -86,8 +86,8 @@ typedef struct VulkanPriv {
     FFVulkanShader shd;
     FFVkBuffer data_bufs[MAX_DATA_BUFS];
     int nb_data_bufs;
-    enum FFVkShaderRepFormat src_rep;
-    enum FFVkShaderRepFormat dst_rep;
+    VkFormat src_view_fmt[AV_NUM_DATA_POINTERS];
+    VkFormat dst_view_fmt[AV_NUM_DATA_POINTERS];
     int interlaced;
 } VulkanPriv;
 
@@ -110,8 +110,10 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
 
     VkImageView src_views[AV_NUM_DATA_POINTERS];
     VkImageView dst_views[AV_NUM_DATA_POINTERS];
-    ff_vk_create_imageviews(&p->s->vkctx, ec, src_views, src_f, p->src_rep);
-    ff_vk_create_imageviews(&p->s->vkctx, ec, dst_views, dst_f, p->dst_rep);
+    ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, src_views, src_f,
+                                p->src_view_fmt);
+    ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, dst_views, dst_f,
+                                p->dst_view_fmt);
 
     ff_vk_shader_update_img_array(&p->s->vkctx, ec, &p->shd, src_f, src_views,
                                   0, 0, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
@@ -884,6 +886,25 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
                                     acc_s[0], acc_s[1], acc_s[2], acc_s[3]);
 }
 
+static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
+                         enum AVPixelFormat fmt, const SwsOp *op)
+{
+    const VkFormat *vk_fmts = av_vkfmt_from_pixfmt(fmt);
+    enum FFVkShaderRepFormat rep = FF_VK_REP_NATIVE;
+    if (op)
+        rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
+    if (!vk_fmts)
+        return AVERROR(ENOTSUP);
+
+    for (int i = 0; i < av_pix_fmt_count_planes(fmt); i++) {
+        view_fmts[i] = ff_vk_map_fmt_to_rep(vk_fmts[i], rep);
+        if (view_fmts[i] == VK_FORMAT_UNDEFINED)
+            return AVERROR(ENOTSUP);
+    }
+
+    return 0;
+}
+
 /* Plane indices refer to actual frame planes, so the image handle arrays
  * have to cover the highest plane referenced, not just the plane count. */
 static int rw_op_img_count(const SwsOp *op, const uint8_t *planes)
@@ -916,12 +937,15 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     /* Image ops, to determine types */
     const SwsOp *op_w = ff_sws_op_list_output(ops);
     int out_img_count = rw_op_img_count(op_w, ops->plane_dst);
-    p->dst_rep = op_w->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
-
     const SwsOp *op_r = ff_sws_op_list_input(ops);
     int in_img_count = op_r ? rw_op_img_count(op_r, ops->plane_src) : 0;
-    if (op_r)
-        p->src_rep = op_r->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
+
+    int err = get_view_fmts(p->dst_view_fmt, ops->dst.format, op_w);
+    if (err < 0)
+        return err;
+    err = get_view_fmts(p->src_view_fmt, ops->src.format, op_r);
+    if (err < 0)
+        return err;
 
     FFVulkanDescriptorSetBinding desc_set[MAX_DATA_BUFS] = {
         {
@@ -938,7 +962,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     ff_vk_shader_add_descriptor_set(&s->vkctx, shd, desc_set, 2, 0);
 
     /* Create dither buffers */
-    int err = create_bufs(s, p, ops);
+    err = create_bufs(s, p, ops);
     if (err < 0)
         return err;
 
