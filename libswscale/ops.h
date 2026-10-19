@@ -307,6 +307,12 @@ void ff_sws_op_uninit(SwsOp *op);
 void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4]);
 
 /**
+ * Return the previous/next operation in the list, or NULL if there is none.
+ */
+const SwsOp *ff_sws_op_prev(const SwsOp *op);
+const SwsOp *ff_sws_op_next(const SwsOp *op);
+
+/**
  * Helper struct for representing a list of operations.
  */
 typedef struct SwsOpList {

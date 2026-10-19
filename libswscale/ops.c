@@ -143,6 +143,31 @@ int ff_sws_rw_op_planes(const SwsOp *op)
     return 0;
 }
 
+static inline int op_index(const SwsOp *op)
+{
+    SwsOpList *ops = op->ops;
+    av_assert1(op >= ops->ops && op < ops->ops + ops->num_ops);
+    return op - ops->ops;
+}
+
+const SwsOp *ff_sws_op_prev(const SwsOp *op)
+{
+    if (!op)
+        return NULL;
+    SwsOpList *ops = op->ops;
+    const int idx = op_index(op);
+    return idx > 0 ? &ops->ops[idx - 1] : NULL;
+}
+
+const SwsOp *ff_sws_op_next(const SwsOp *op)
+{
+    if (!op)
+        return NULL;
+    SwsOpList *ops = op->ops;
+    const int idx = op_index(op);
+    return idx < ops->num_ops - 1 ? &ops->ops[idx + 1] : NULL;
+}
+
 /* biased towards `a` */
 static AVRational64 av_min_q64(AVRational64 a, AVRational64 b)
 {

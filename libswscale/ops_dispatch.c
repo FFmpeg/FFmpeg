@@ -479,7 +479,7 @@ static void op_list_get_plane_copy(const SwsOpList *ops, SwsPass *pass)
         read->rw.frac != write->rw.frac)
         return; /* only regular planes can be directly ref'd */
 
-    const SwsOp *prev = &ops->ops[ops->num_ops - 2];
+    const SwsOp *prev = ff_sws_op_prev(write);
     int *plane_copy = pass->output->plane_copy;
     for (int i = 0; i < write->rw.elems; i++) {
         SwsCompFlags flags = prev->outputs[i].flags;
@@ -729,7 +729,8 @@ static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
         /* Split off copied and constant planes into a separate subpass,
          * since these are likely to be handled by the memcpy backend */
         av_assert0(ops->num_ops >= 2);
-        const SwsOp *prev = &ops->ops[ops->num_ops - 2];
+        const SwsOp *write = ff_sws_op_list_output(ops);
+        const SwsOp *prev = ff_sws_op_prev(write);
         SwsCompMask planes = plane_mask_flags(prev, SWS_COMP_COPY | SWS_COMP_CONST);
         RET(ff_sws_op_list_split_planes(ops, &rest, planes));
         if (rest) {
