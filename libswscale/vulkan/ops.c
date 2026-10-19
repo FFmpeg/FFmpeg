@@ -506,7 +506,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
 
     /* Constants */
     id->u32_p = spi_OpUndef(spi, u32_type);
-    id->f32_p = spi_OpUndef(spi, f32_type);
+    id->f32_p = spi_OpConstantFloat(spi, f32_type, 0);
     id->f32_0 = spi_OpConstantFloat(spi, f32_type, 0);
     for (int i = 0; i < 5; i++)
         id->u32_cid[i] = spi_OpConstantUInt(spi, u32_type, i);
