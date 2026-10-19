@@ -217,7 +217,8 @@ static uint64_t get_value(AVIOContext *pb, int type)
     }
 }
 
-static void get_tag(AVFormatContext *s, const char *key, int type, int len)
+static void get_tag(AVFormatContext *s, AVDictionary **metadata,
+                    const char *key, int type, int len)
 {
     ASFContext *asf = s->priv_data;
     char *value = NULL;
@@ -264,7 +265,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         goto finish;
     }
     if (*value)
-        av_dict_set(&s->metadata, key, value, 0);
+        av_dict_set(metadata, key, value, 0);
 
 finish:
     av_freep(&value);
@@ -536,10 +537,10 @@ static int asf_read_content_desc(AVFormatContext *s)
     len3 = avio_rl16(pb);
     len4 = avio_rl16(pb);
     len5 = avio_rl16(pb);
-    get_tag(s, "title", 0, len1);
-    get_tag(s, "author", 0, len2);
-    get_tag(s, "copyright", 0, len3);
-    get_tag(s, "comment", 0, len4);
+    get_tag(s, &s->metadata, "title", 0, len1);
+    get_tag(s, &s->metadata, "author", 0, len2);
+    get_tag(s, &s->metadata, "copyright", 0, len3);
+    get_tag(s, &s->metadata, "comment", 0, len4);
     avio_skip(pb, len5);
 
     return 0;
@@ -577,7 +578,7 @@ static int asf_read_ext_content_desc(AVFormatContext *s)
         else if (!strcmp(name, "AspectRatioY"))
             asf->dar[0].den = get_value(s->pb, value_type);
         else
-            get_tag(s, name, value_type, value_len);
+            get_tag(s, &s->metadata, name, value_type, value_len);
     }
 
     return 0;
@@ -644,7 +645,7 @@ static int asf_read_metadata(AVFormatContext *s)
             if(stream_num < 128)
                 asf->dar[stream_num].den = aspect_y;
         } else {
-            get_tag(s, name, value_type, value_len);
+            get_tag(s, &s->metadata, name, value_type, value_len);
         }
         av_freep(&name);
     }
@@ -775,17 +776,17 @@ static int asf_read_header(AVFormatContext *s)
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_Protection_Type", -1, len);
+                    get_tag(s, &s->metadata, "ASF_Protection_Type", -1, len);
 
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_Key_ID", -1, len);
+                    get_tag(s, &s->metadata, "ASF_Key_ID", -1, len);
 
                     len= avio_rl32(pb);
                     if (len > UINT16_MAX)
                         return AVERROR_INVALIDDATA;
-                    get_tag(s, "ASF_License_URL", -1, len);
+                    get_tag(s, &s->metadata, "ASF_License_URL", -1, len);
                 } else if (!ff_guidcmp(&g, &ff_asf_ext_content_encryption)) {
                     av_log(s, AV_LOG_WARNING,
                            "Ext DRM protected stream detected, decoding will likely fail!\n");
