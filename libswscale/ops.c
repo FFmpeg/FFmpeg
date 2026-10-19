@@ -806,33 +806,31 @@ uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
     return mask;
 }
 
-static char describe_comp_flags(SwsCompFlags flags)
+static const char *describe_comp_flags(SwsCompFlags flags)
 {
     if (flags & SWS_COMP_GARBAGE)
-        return 'X';
+        return "garbage";
     else if (flags & SWS_COMP_ZERO)
-        return '0';
+        return "zero";
     else if (flags & SWS_COMP_SWAPPED)
-        return 'z';
+        return "swapped";
     else if (flags & SWS_COMP_CONST)
-        return '$';
+        return "const";
     else if (flags & SWS_COMP_COPY)
-        return '=';
+        return "copy";
     else if (flags & SWS_COMP_EXACT)
-        return '+';
+        return "exact";
     else
-        return '.';
+        return "normal";
 }
 
-static void print_deps(AVBPrint *bp, const SwsCompMask *deps)
+static void print_deps(AVBPrint *bp, SwsCompMask dep)
 {
-    av_bprintf(bp, "{");
-    for (int i = 0; i < 4; i++) {
-        if (i)
-            av_bprintf(bp, " ");
-        av_bprintf(bp, "%s", deps[i] ? ff_sws_comp_mask_str(deps[i]) : "_");
-    }
-    av_bprintf(bp, "}");
+    av_bprintf(bp, " {%c%c%c%c}",
+               SWS_COMP_TEST(dep, 0) ? 'x' : ' ',
+               SWS_COMP_TEST(dep, 1) ? 'y' : ' ',
+               SWS_COMP_TEST(dep, 2) ? 'z' : ' ',
+               SWS_COMP_TEST(dep, 3) ? 'w' : ' ');
 }
 
 static void print_q(AVBPrint *bp, const AVRational64 q)
@@ -881,9 +879,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_READ:
     case SWS_OP_WRITE:
-        av_bprintf(bp, "%-20s: %d elem(s) %s >> %d", name,
-                   op->rw.elems, rw_mode_names[op->rw.mode],
-                   op->rw.frac);
+        av_bprintf(bp, "%-20s: %dx %s %s >> %d", name,
+                   op->rw.elems, ff_sws_pixel_type_name(op->type),
+                   rw_mode_names[op->rw.mode], op->rw.frac);
         if (!op->rw.filter.op)
             break;
         const SwsFilterWeights *kernel = op->rw.filter.kernel;
@@ -978,66 +976,77 @@ static void desc_plane_order(AVBPrint *bp, int nb_planes, const uint8_t *order)
     av_bprintf(bp, "}");
 }
 
+static SwsPixelType op_result_type(const SwsOp *op)
+{
+    switch (op->op) {
+    case SWS_OP_CONVERT:
+        return op->convert.to;
+    case SWS_OP_READ:
+        return op->rw.filter.op ? op->rw.filter.type : op->type;
+    case SWS_OP_FILTER_H:
+    case SWS_OP_FILTER_V:
+        return op->filter.type;
+    default:
+        return op->type;
+    }
+}
+
 void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
-    AVBPrint bp;
+    AVBPrint bpc, *bp = &bpc;
     if (!ops->num_ops) {
         av_log(log, lev, "  (empty)\n");
         return;
     }
 
-    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
-    for (int i = 0; i < ops->num_ops; i++) {
-        const SwsOp *op = &ops->ops[i];
+    for (int n = 0; n < ops->num_ops; n++) {
+        const SwsOp *op = &ops->ops[n];
         const SwsCompMask mask = ff_sws_comp_mask_needed(op);
-        av_bprint_clear(&bp);
-        av_bprintf(&bp, "  [%3s %c%c%c%c] ",
-                   ff_sws_pixel_type_name(op->type),
-                   describe_comp_flags(op->comps.flags[0]),
-                   describe_comp_flags(op->comps.flags[1]),
-                   describe_comp_flags(op->comps.flags[2]),
-                   describe_comp_flags(op->comps.flags[3]));
-
-        ff_sws_op_desc(&bp, op);
-
+        av_bprint_clear(bp);
+        av_bprintf(bp, "  ");
+        ff_sws_op_desc(bp, op);
         if (op->op == SWS_OP_READ || op->op == SWS_OP_WRITE) {
             const int planes = ff_sws_rw_op_planes(op);
-            desc_plane_order(&bp, planes,
+            desc_plane_order(bp, planes,
                 op->op == SWS_OP_READ ? ops->plane_src : ops->plane_dst);
         }
 
-        av_assert0(av_bprint_is_complete(&bp));
-        av_log(log, lev, "%s\n", bp.str);
+        av_assert0(av_bprint_is_complete(bp));
+        av_log(log, lev, "%s\n", bp->str);
 
-        /* Only print value ranges if any are relevant */
-        SwsCompMask range_mask = ff_sws_comp_mask_q4(op->comps.min) |
-                                 ff_sws_comp_mask_q4(op->comps.max);
-        if (range_mask & mask) {
-            av_bprint_clear(&bp);
-            av_bprintf(&bp, "    min: ");
-            print_q4(&bp, op->comps.min, mask);
-            av_bprintf(&bp, ", max: ");
-            print_q4(&bp, op->comps.max, mask);
-            av_assert0(av_bprint_is_complete(&bp));
-            av_log(log, lev_extra, "%s\n", bp.str);
+        for (int i = 0; i < 4; i++) {
+            if (!SWS_COMP_TEST(mask, i))
+                continue;
+            av_bprint_clear(bp);
+            av_bprintf(bp, "    %c: %3s,", "XYZW"[i], ff_sws_pixel_type_name(op_result_type(op)));
+            print_deps(bp, op->comps.dep_in[i]);
+            av_bprintf(bp, " ->");
+            print_deps(bp, op->comps.dep_out[i]);
+            av_bprintf(bp, " %7s", describe_comp_flags(op->comps.flags[i]));
+
+            const AVRational64 min = op->comps.min[i];
+            const AVRational64 max = op->comps.max[i];
+            if (min.den || max.den) {
+                if (op->comps.flags[i] & SWS_COMP_ZERO) {
+                    /* don't print any value */
+                } else if (op->comps.flags[i] & SWS_COMP_CONST) {
+                    av_bprintf(bp, " = ");
+                    av_assert1(ff_cmp_q64(min, max) == 0);
+                    print_q(bp, min);
+                } else {
+                    av_bprintf(bp, " in [");
+                    print_q(bp, min);
+                    av_bprintf(bp, ", ");
+                    print_q(bp, max);
+                    av_bprintf(bp, "]");
+                }
+            }
+
+            av_assert0(av_bprint_is_complete(bp));
+            av_log(log, lev_extra, "%s\n", bp->str);
         }
-
-        bool has_deps = false;
-        for (int i = 0; i < 4; i++)
-            has_deps |= op->comps.dep_in[i] || op->comps.dep_out[i];
-        if (has_deps) {
-            av_bprint_clear(&bp);
-            av_bprintf(&bp, "    inputs: ");
-            print_deps(&bp, op->comps.dep_in);
-            av_bprintf(&bp, ", outputs: ");
-            print_deps(&bp, op->comps.dep_out);
-            av_assert0(av_bprint_is_complete(&bp));
-            av_log(log, lev_extra, "%s\n", bp.str);
-        }
-
     }
-
-    av_log(log, lev, "    ('X' unused, 'z' byteswapped, '=' copied, '$' const, '+' integer, '0' zero)\n");
 }
