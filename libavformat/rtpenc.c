@@ -479,7 +479,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
     }
 
     /* add the packet */
-    if (size > max_packet_size) {
+    if (size > max_packet_size - 4) {
         /* big packet: fragment */
         count = 0;
         while (size > 0) {
