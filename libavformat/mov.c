@@ -9451,9 +9451,13 @@ static int mov_read_auxc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
            c->cur_item_id, aux_type.str);
 
     item = get_heif_item(c, c->cur_item_id);
-    if (item && (av_stristr(aux_type.str, "hdrgainmap")))
-        item->is_gainmap = 1;
-
+    if (item) {
+        if ((av_stristr(aux_type.str, "hdrgainmap")))
+            item->is_gainmap = 1;
+        else if (strstr(aux_type.str, "urn:mpeg:hevc:2015:auxid:1") ||
+                 strstr(aux_type.str, "urn:mpeg:mpegB:cicp:systems:auxiliary:alpha"))
+            item->is_alpha = 1;
+    }
     return 0;
 }
 
@@ -11759,9 +11763,66 @@ fail:
     return err;
 }
 
+static int mov_parse_heif_layered_video_auxl_alpha(AVFormatContext *s,
+                                                   HEIFItem *base, HEIFItem *alpha)
+{
+    AVStreamGroupLayeredVideo *layered_video;
+    AVStreamGroup *stg;
+    int err;
+
+    if ((!alpha->st && !alpha->stg) ||
+        (!base->st && !base->stg)) {
+        av_log(s, AV_LOG_WARNING, "HEIF alpha id %d or its base doesn't reference "
+                                  "a stream or group\n",
+               alpha->item_id);
+        return 0;
+    }
+
+    stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_ALPHA, NULL);
+    if (!stg)
+        return AVERROR(ENOMEM);
+
+    stg->id = alpha->item_id;
+    layered_video = stg->params.layered_video;
+
+    layered_video->width  = base->width;
+    layered_video->height = base->height;
+    layered_video->el_index = 1;
+
+    av_assert0(!base->st != !base->stg);
+    if (base->st)
+        err = avformat_stream_group_add_stream(stg, base->st);
+    else
+        err = avformat_stream_group_add_stream_group(stg, base->stg);
+    if (err < 0) {
+        if (err == AVERROR(EEXIST))
+            err = AVERROR_INVALIDDATA;
+        return err;
+    }
+
+    av_assert0(!alpha->st != !alpha->stg);
+    if (alpha->st)
+        err = avformat_stream_group_add_stream(stg, alpha->st);
+    else
+        err = avformat_stream_group_add_stream_group(stg, alpha->stg);
+    if (err < 0) {
+        if (err == AVERROR(EEXIST))
+            err = AVERROR_INVALIDDATA;
+        return err;
+    }
+
+    // Apply all references from the base image to the Alpha group
+    err = mov_apply_heif_item_references(s, base, &stg->coded_side_data,
+                                                  &stg->nb_coded_side_data);
+    if (err < 0)
+        return err;
+
+    return 0;
+}
+
 // Parse Apple style Gain Map metadata from Exif values
 // See https://developer.apple.com/documentation/appkit/applying-apple-hdr-effect-to-your-photos
-static int mov_parse_heif_layered_video_auxl(AVFormatContext *s,
+static int mov_parse_heif_layered_video_auxl_gmap(AVFormatContext *s,
                                              HEIFItem *base, HEIFItem *gain_map)
 {
     AVStreamGroupLayeredVideo *layered_video;
@@ -11922,13 +11983,18 @@ static int mov_parse_heif_layered_video(AVFormatContext *s)
             av_assert0(ref);
             switch(item->iref_to_list[j].type) {
             case MKTAG('a','u','x','l'):
-                if (!item->is_gainmap)
+                if (item->is_alpha) {
+                    err = mov_parse_heif_layered_video_auxl_alpha(s, ref, item);
+                    if (err < 0)
+                       return err;
                     break;
-
-                err = mov_parse_heif_layered_video_auxl(s, ref, item);
-                if (err < 0)
-                   return err;
-                break;
+                }
+                if (item->is_gainmap) {
+                    err = mov_parse_heif_layered_video_auxl_gmap(s, ref, item);
+                    if (err < 0)
+                       return err;
+                    break;
+                }
             }
         }
     }
