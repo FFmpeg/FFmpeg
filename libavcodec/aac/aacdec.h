@@ -458,6 +458,7 @@ typedef struct AACDecProc {
     void (*sbr_apply)(AACDecContext *ac, ChannelElement *che, int id_aac, int fl960,
                       void /* INTFLOAT */ *L, void /* INTFLOAT */ *R);
     void (*sbr_ctx_close)(ChannelElement *che);
+    void (*sbr_ctx_reset)(AACDecContext *ac, ChannelElement *che);
 } AACDecProc;
 
 /**

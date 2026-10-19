@@ -566,6 +566,7 @@ static av_cold void flush(AVCodecContext *avctx)
                 for (j = 0; j <= 1; j++) {
                     memset(che->ch[j].saved, 0, sizeof(che->ch[j].saved));
                 }
+                ac->proc.sbr_ctx_reset(ac, che);
             }
         }
     }

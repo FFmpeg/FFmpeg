@@ -82,6 +82,11 @@ int ff_aac_sbr_ctx_alloc_init_fixed(AACDecContext *ac, ChannelElement **che, int
 void ff_aac_sbr_ctx_close(ChannelElement *che);
 void ff_aac_sbr_ctx_close_fixed(ChannelElement *che);
 
+/** Reset the SBR context contained in a ChannelElement, discarding all
+ *  inter-frame state while keeping the allocated transform contexts. */
+void ff_aac_sbr_ctx_reset(AACDecContext *ac, ChannelElement *che);
+void ff_aac_sbr_ctx_reset_fixed(AACDecContext *ac, ChannelElement *che);
+
 /** Decode one SBR element. */
 int ff_aac_sbr_decode_extension(AACDecContext *ac, ChannelElement *che,
                                 GetBitContext *gb, int crc, int cnt, int id_aac,

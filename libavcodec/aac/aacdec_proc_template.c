@@ -444,5 +444,6 @@ static av_cold void AAC_RENAME(aac_proc_init)(AACDecProc *aac_proc)
     SET(sbr_decode_extension);
     SET(sbr_apply);
     SET(sbr_ctx_close);
+    SET(sbr_ctx_reset);
 #undef SET
 }
