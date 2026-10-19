@@ -582,6 +582,15 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                             VkImageView views[AV_NUM_DATA_POINTERS],
                             AVFrame *f, enum FFVkShaderRepFormat rep_fmt);
 
+/**
+ * Same as ff_vk_create_imageviews(), but with an explicit view format for
+ * each plane, which must be compatible with the format of the image.
+ */
+int ff_vk_create_imageviews_fmt(FFVulkanContext *s, FFVkExecContext *e,
+                                VkImageView views[AV_NUM_DATA_POINTERS],
+                                AVFrame *f,
+                                const VkFormat fmts[AV_NUM_DATA_POINTERS]);
+
 #define ff_vk_buf_barrier(dst, vkb, s_stage, s_access, s_access2,              \
                           d_stage, d_access, d_access2, offs, bsz)             \
     do {                                                                       \
