@@ -1663,6 +1663,25 @@ fail:
     return ret;
 }
 
+static int64_t score_new_packets_event_flag(const AVStreamGroup *stg)
+{
+    int64_t score = 0;
+
+    for (int j = 0; j < stg->nb_entries; j++) {
+        if (stg->entries[j]->type != AV_STREAM_GROUP_ENTRY_STREAM)
+            continue;
+
+        AVStream *st = stg->entries[j]->stream;
+
+        if (st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS) {
+            score += 100000000;
+            break;
+        }
+    }
+
+    return score;
+}
+
 static int map_auto_video(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
@@ -1683,27 +1702,32 @@ static int map_auto_video(Muxer *mux, const OptionsContext *o)
         int64_t file_best_score = 0;
         for (int i = 0; i < ifile->nb_stream_groups; i++) {
             InputStreamGroup *istg = ifile->stream_groups[i];
-            int64_t score = 0;
+            int64_t score;
 
             if (!istg->fg)
                 continue;
 
-            for (int j = 0; j < istg->stg->nb_entries; j++) {
-                if (istg->stg->entries[j]->type != AV_STREAM_GROUP_ENTRY_STREAM)
-                    continue;
-
-                AVStream *st = istg->stg->entries[j]->stream;
-
-                if (st->event_flags & AVSTREAM_EVENT_FLAG_NEW_PACKETS) {
-                    score = 100000000;
-                    break;
-                }
-            }
+            score = score_new_packets_event_flag(istg->stg);
 
             switch (istg->stg->type) {
             case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
                 const AVStreamGroupTileGrid *tg = istg->stg->params.tile_grid;
                 score += tg->width * (int64_t)tg->height
+                           + 5000000*!!(istg->stg->disposition & AV_DISPOSITION_DEFAULT);
+                break;
+            }
+            case AV_STREAM_GROUP_PARAMS_ALPHA: {
+                const AVStreamGroupLayeredVideo *layered_video = istg->stg->params.layered_video;
+                for (int k = 0; k < istg->stg->nb_entries; k++) {
+                    const AVStreamGroupEntry *entry = istg->stg->entries[k];
+                    int disposition = entry->type == AV_STREAM_GROUP_ENTRY_STREAM
+                                       ? entry->stream->disposition
+                                       : entry->stream_group->disposition;
+                    if (istg->stg->entries[k]->type == AV_STREAM_GROUP_ENTRY_STREAM_GROUP)
+                        score += score_new_packets_event_flag(entry->stream_group);
+                    score += 5000000*!!(disposition & AV_DISPOSITION_DEFAULT);
+                }
+                score += layered_video->width * (int64_t)layered_video->height
                            + 5000000*!!(istg->stg->disposition & AV_DISPOSITION_DEFAULT);
                 break;
             }

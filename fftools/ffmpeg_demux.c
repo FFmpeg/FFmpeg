@@ -1942,6 +1942,63 @@ static DemuxStreamGroup *demux_stream_group_alloc(Demuxer *d, AVStreamGroup *stg
     return dsg;
 }
 
+static int istg_parse_alpha(const OptionsContext *o, Demuxer *d, InputStreamGroup *istg)
+{
+    InputFile *f = &d->f;
+    AVStreamGroup *stg = istg->stg;
+    const AVStreamGroupLayeredVideo *layered_video = stg->params.layered_video;
+    OutputFilterOptions opts;
+    AVBPrint bp;
+    char *graph_str;
+    int ret;
+
+    if (stg->nb_entries != 2) {
+        av_log(istg, AV_LOG_FATAL, "A demuxer exported an invalid Alpha stream group. "
+                                   "This is a bug, please report it.\n");
+        return AVERROR_BUG;
+    }
+
+    memset(&opts, 0, sizeof(opts));
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    if (stg->entries[!layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM)
+        av_bprintf(&bp, "[%d:g:%d:%d]", f->index, stg->index, !layered_video->el_index);
+    else
+        av_bprintf(&bp, "[%d:g:%d]", f->index,
+                   stg->entries[!layered_video->el_index]->stream_group->index);
+    if (stg->entries[layered_video->el_index]->type == AV_STREAM_GROUP_ENTRY_STREAM)
+        av_bprintf(&bp, "[%d:g:%d:%d]", f->index, stg->index, layered_video->el_index);
+    else
+        av_bprintf(&bp, "[%d:g:%d]", f->index,
+                   stg->entries[layered_video->el_index]->stream_group->index);
+    av_bprintf(&bp, "alphamerge[%d:g:%d]", f->index, stg->index);
+    ret = av_bprint_finalize(&bp, &graph_str);
+    if (ret < 0)
+        return ret;
+
+    for (int i = 0; i < stg->nb_coded_side_data; i++) {
+        const AVPacketSideData *sd = &stg->coded_side_data[i];
+
+        ret = av_packet_side_data_to_frame(&opts.side_data, &opts.nb_side_data, sd, 0);
+        if (ret < 0 && ret != AVERROR(EINVAL))
+            goto fail;
+    }
+
+    ret = fg_create(NULL, &graph_str, d->sch, &opts);
+    if (ret < 0)
+        goto fail;
+
+    istg->fg = filtergraphs[nb_filtergraphs-1];
+    istg->fg->is_internal = 1;
+
+    ret = 0;
+fail:
+    if (ret < 0)
+        av_freep(&graph_str);
+
+    return ret;
+}
+
 static int istg_parse_tile_grid(const OptionsContext *o, Demuxer *d, InputStreamGroup *istg)
 {
     InputFile *f = &d->f;
@@ -2114,6 +2171,11 @@ static int istg_add(const OptionsContext *o, Demuxer *d, AVStreamGroup *stg)
     }
 
     switch (stg->type) {
+    case AV_STREAM_GROUP_PARAMS_ALPHA:
+        ret = istg_parse_alpha(o, d, istg);
+        if (ret < 0)
+            return ret;
+        break;
     case AV_STREAM_GROUP_PARAMS_TILE_GRID:
         ret = istg_parse_tile_grid(o, d, istg);
         if (ret < 0)
