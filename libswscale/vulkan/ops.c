@@ -427,6 +427,37 @@ static int const_zero(const SPIRVIDs *id, SwsPixelType type)
     return ff_sws_pixel_type_is_int(type) ? id->u32_cid[0] : id->f32_0;
 }
 
+/* Arithmetic on operands of the given pixel type */
+static int emit_mul(SPICtx *spi, SwsPixelType type, int res_type, int a, int b)
+{
+    return ff_sws_pixel_type_is_int(type) ? spi_OpIMul(spi, res_type, a, b)
+                                          : spi_OpFMul(spi, res_type, a, b);
+}
+
+static int emit_min(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
+                    int res_type, int a, int b)
+{
+    const int op = ff_sws_pixel_type_is_int(type) ? GLSLstd450UMin : GLSLstd450FMin;
+    return spi_OpExtInst(spi, res_type, id->glfn, op, a, b);
+}
+
+static int emit_max(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
+                    int res_type, int a, int b)
+{
+    const int op = ff_sws_pixel_type_is_int(type) ? GLSLstd450UMax : GLSLstd450FMax;
+    return spi_OpExtInst(spi, res_type, id->glfn, op, a, b);
+}
+
+/* Converts between float and integer values, if needed */
+static int emit_convert(SPICtx *spi, SwsPixelType from, SwsPixelType to,
+                        int res_type, int a)
+{
+    if (ff_sws_pixel_type_is_int(from) == ff_sws_pixel_type_is_int(to))
+        return a;
+    return ff_sws_pixel_type_is_int(to) ? spi_OpConvertFToU(spi, res_type, a)
+                                        : spi_OpConvertUToF(spi, res_type, a);
+}
+
 /* Number of arithmetic instructions emitted by insert_bitexact_linear() */
 static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
 {
@@ -849,7 +880,6 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     const int is_h = f->filter == SWS_OP_FILTER_H;
     const int src_interlaced = ops->src.interlaced;
 
-    const int src_float = op->rw.type == SWS_PIXEL_F32;
     const int read_vtype = type_vec4(id, op->rw.type);
 
     /* Buffer array index along the filtered axis: pos.x (H) or pos.y (V) */
@@ -898,12 +928,8 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
             int px = spi_OpImageRead(spi, read_vtype,
                                      in_img[ops->plane_src[e]], coord,
                                      SpvImageOperandsMaskNone);
-            if (src_float) {
-                px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
-            } else {
-                px = spi_OpCompositeExtract(spi, id->u32_type, px, 0);
-                px = spi_OpConvertUToF(spi, id->f32_type, px);
-            }
+            px = spi_OpCompositeExtract(spi, type_scalar(id, op->rw.type), px, 0);
+            px = emit_convert(spi, op->rw.type, SWS_PIXEL_F32, id->f32_type, px);
             px = spi_OpFMul(spi, id->f32_type, w, px);
             acc[e] = spi_OpFAdd(spi, id->f32_type, acc[e], px);
         }
@@ -1238,10 +1264,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                        op->swizzle.in[3]);
             break;
         case SWS_OP_CONVERT:
-            if (type_in == SWS_PIXEL_F32 && type_s == id->u32_type)
-                data = spi_OpConvertFToU(spi, type_v, data);
-            else if (type_in != SWS_PIXEL_F32 && type_s == id->f32_type)
-                data = spi_OpConvertUToF(spi, type_v, data);
+            data = emit_convert(spi, type_in, type_out, type_v, data);
             break;
         case SWS_OP_LSHIFT:
             data = spi_OpShiftLeftLogical(spi, type_v, data, oid->vec);
@@ -1250,25 +1273,21 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             data = spi_OpShiftRightLogical(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_SCALE:
-            if (type_in == SWS_PIXEL_F32)
-                data = spi_OpFMul(spi, type_v, data, oid->vec);
-            else
-                data = spi_OpIMul(spi, type_v, data, oid->vec);
+            data = emit_mul(spi, type_in, type_v, data, oid->vec);
             break;
         case SWS_OP_MIN:
-        case SWS_OP_MAX: {
-            int t = type_in == SWS_PIXEL_F32 ?
-                    op->op == SWS_OP_MIN ? GLSLstd450FMin : GLSLstd450FMax :
-                    op->op == SWS_OP_MIN ? GLSLstd450UMin : GLSLstd450UMax;
+        case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
                 if (!op->clamp.limit[i].den)
                     continue;
                 int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                tmp = spi_OpExtInst(spi, type_s, id->glfn, t, tmp, oid->comp[i]);
+                if (op->op == SWS_OP_MIN)
+                    tmp = emit_min(spi, id, type_in, type_s, tmp, oid->comp[i]);
+                else
+                    tmp = emit_max(spi, id, type_in, type_s, tmp, oid->comp[i]);
                 data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
             }
             break;
-        }
         case SWS_OP_DITHER: {
             const struct DitherData *d = &id->dither[oid->buf];
             int x_id = spi_OpCompositeExtract(spi, id->u32_type, gid, 0);
