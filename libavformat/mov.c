@@ -7351,6 +7351,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
+    av_freep(&sc->spherical);
     sc->spherical = av_spherical_alloc(&sc->spherical_size);
     if (!sc->spherical)
         return AVERROR(ENOMEM);
@@ -7435,6 +7436,7 @@ static int mov_read_vexu_proj(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
+    av_freep(&sc->spherical);
     sc->spherical = av_spherical_alloc(&sc->spherical_size);
     if (!sc->spherical)
         return AVERROR(ENOMEM);
