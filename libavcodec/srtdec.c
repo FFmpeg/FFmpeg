@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "htmlsubtitles.h"
 
 static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
@@ -75,9 +76,13 @@ static int srt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
     if (avpkt->size <= 0)
         return avpkt->size;
 
+    const char *text = ff_decode_subtitle_text(avctx, avpkt);
+    if (!text)
+        return AVERROR(ENOMEM);
+
     av_bprint_init(&buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    ret = srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
+    ret = srt_to_ass(avctx, &buffer, text, x1, y1, x2, y2);
     if (ret >= 0)
         ret = ff_ass_add_rect(sub, buffer.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buffer, NULL);
