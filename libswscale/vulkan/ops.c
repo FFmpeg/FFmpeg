@@ -1282,6 +1282,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             }
             break;
         case SWS_OP_DITHER: {
+            if (type_in != SWS_PIXEL_F32)
+                return AVERROR(ENOTSUP);
             const struct DitherData *d = &id->dither[oid->buf];
             int x_id = spi_OpCompositeExtract(spi, id->u32_type, gid, 0);
             int y_pos = spi_OpCompositeExtract(spi, id->u32_type, gid, 1);
