@@ -415,9 +415,11 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
                    SpvBuiltInGlobalInvocationId);
 
     /* Input image descriptor decorations */
-    spi_OpDecorate(spi, id->in_img_var, SpvDecorationNonWritable);
-    spi_OpDecorate(spi, id->in_img_var, SpvDecorationDescriptorSet, 0);
-    spi_OpDecorate(spi, id->in_img_var, SpvDecorationBinding, 0);
+    if (id->in_img_var) {
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationNonWritable);
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationDescriptorSet, 0);
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationBinding, 0);
+    }
 
     /* Output image descriptor decorations */
     spi_OpDecorate(spi, id->out_img_var, SpvDecorationNonReadable);
@@ -1002,7 +1004,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
     /* Entrypoint inputs; gl_GlobalInvocationID, input and output images, dither */
     id->gid_var     = id->iface[id->nb_iface++] = spi_get_id(spi);
-    id->in_img_var  = id->iface[id->nb_iface++] = spi_get_id(spi);
+    if (op_r)
+        id->in_img_var = id->iface[id->nb_iface++] = spi_get_id(spi);
     id->out_img_var = id->iface[id->nb_iface++] = spi_get_id(spi);
 
     /* Create dither and filter buffer descriptor set. Both are collected in
