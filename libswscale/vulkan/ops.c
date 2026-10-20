@@ -76,6 +76,7 @@ AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws)
     return s ? s->vkctx.device_ref : NULL;
 }
 
+#define MAX_OPS 32
 #define MAX_DITHER_BUFS 4
 #define MAX_FILT_BUFS 4
 #define MAX_DATA_BUFS (MAX_DITHER_BUFS + MAX_FILT_BUFS*4)
@@ -299,6 +300,26 @@ struct FilterData {
     int tap_const_base;
 };
 
+typedef struct LinearIDs {
+    int m[4][4];  /* matrix coefficients */
+    int mat;      /* full matrix, only valid without SWS_BITEXACT */
+    int off[4];   /* offset coefficients */
+    int off_vec;
+    int deco_off; /* space reserved for NoContraction decorations */
+    int nb_deco;
+} LinearIDs;
+
+/* Constants and buffers used by a single op */
+typedef struct OpIDs {
+    union {
+        int vec;                          /* LSHIFT, RSHIFT, SCALE */
+        int comp[4];                      /* CLEAR, MIN, MAX, DITHER */
+        struct { int shift, mask; } pack; /* PACK, UNPACK */
+        LinearIDs lin;                    /* LINEAR */
+    };
+    int buf; /* index into dither[] or filt[] */
+} OpIDs;
+
 typedef struct SPIRVIDs {
     /* Entrypoint interface variables */
     int iface[3 + MAX_DATA_BUFS + 1];
@@ -335,12 +356,7 @@ typedef struct SPIRVIDs {
     int f32_0;
     int u32_cid[5];
 
-    int const_ids[128];
-    int nb_const_ids;
-
-    int linear_deco_off[16];
-    int linear_deco_ops[16];
-    int nb_linear_ops;
+    OpIDs op[MAX_OPS];
 
     struct DitherData dither[MAX_DITHER_BUFS];
     int dither_ptr_elem_id;
@@ -453,7 +469,6 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
         const SwsOp *op = &ops->ops[n];
         if (op->op != SWS_OP_LINEAR)
             continue;
-        av_assert0((id->nb_linear_ops + 1) <= FF_ARRAY_ELEMS(id->linear_deco_off));
 
         int nb_ops = 0;
         for (int j = 0; j < 4; j++) {
@@ -466,9 +481,9 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
             }
         }
 
-        id->linear_deco_off[id->nb_linear_ops] = spi_reserve(spi, nb_ops*4*3);
-        id->linear_deco_ops[id->nb_linear_ops] = nb_ops;
-        id->nb_linear_ops++;
+        LinearIDs *lin = &id->op[n].lin;
+        lin->deco_off = spi_reserve(spi, nb_ops*4*3);
+        lin->nb_deco  = nb_ops;
     }
 }
 
@@ -504,12 +519,9 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         id->u32_cid[i] = spi_OpConstantUInt(spi, u32_type, i);
 
     /* Operation constants */
-    id->nb_const_ids = 0;
     for (int n = 0; n < ops->num_ops; n++) {
-        /* Make sure there's always enough space for the maximum number of
-         * constants a single operation needs (currently linear, 31 consts). */
-        av_assert0((id->nb_const_ids + 31) <= FF_ARRAY_ELEMS(id->const_ids));
         const SwsOp *op = &ops->ops[n];
+        OpIDs *oid = &id->op[n];
         switch (op->op) {
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
@@ -518,12 +530,10 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
                 AVRational64 cv = op->clear.value[i];
                 if (op->type == SWS_PIXEL_F32) {
                     float q = (float)cv.num/cv.den;
-                    id->const_ids[id->nb_const_ids++] =
-                        spi_OpConstantFloat(spi, f32_type, q);
+                    oid->comp[i] = spi_OpConstantFloat(spi, f32_type, q);
                 } else {
                     av_assert0(cv.den == 1);
-                    id->const_ids[id->nb_const_ids++] =
-                        spi_OpConstantUInt(spi, u32_type, cv.num);
+                    oid->comp[i] = spi_OpConstantUInt(spi, u32_type, cv.num);
                 }
             }
             break;
@@ -534,22 +544,19 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
             ff_sws_pack_op_decode(op, mask, shift);
             for (int i = 0; i < 4; i++)
                 tmp[i] = spi_OpConstantUInt(spi, u32_type, shift[i]);
-            id->const_ids[id->nb_const_ids++] =
-                spi_OpConstantComposite(spi, id->u32vec4_type,
-                                        tmp[0], tmp[1], tmp[2], tmp[3]);
+            oid->pack.shift = spi_OpConstantComposite(spi, id->u32vec4_type,
+                                                      tmp[0], tmp[1], tmp[2], tmp[3]);
             for (int i = 0; i < 4; i++)
                 tmp[i] = spi_OpConstantUInt(spi, u32_type, mask[i]);
-            id->const_ids[id->nb_const_ids++] =
-                spi_OpConstantComposite(spi, id->u32vec4_type,
-                                        tmp[0], tmp[1], tmp[2], tmp[3]);
+            oid->pack.mask = spi_OpConstantComposite(spi, id->u32vec4_type,
+                                                     tmp[0], tmp[1], tmp[2], tmp[3]);
             break;
         }
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT: {
             int tmp = spi_OpConstantUInt(spi, u32_type, op->shift.amount);
-            tmp = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                          tmp, tmp, tmp, tmp);
-            id->const_ids[id->nb_const_ids++] = tmp;
+            oid->vec = spi_OpConstantComposite(spi, id->u32vec4_type,
+                                               tmp, tmp, tmp, tmp);
             break;
         }
         case SWS_OP_SCALE: {
@@ -565,7 +572,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
                 tmp = spi_OpConstantComposite(spi, id->u32vec4_type,
                                               tmp, tmp, tmp, tmp);
             }
-            id->const_ids[id->nb_const_ids++] = tmp;
+            oid->vec = tmp;
             break;
         }
         case SWS_OP_MIN:
@@ -582,55 +589,43 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
                     av_assert0(cl.den == 1);
                     tmp = spi_OpConstantUInt(spi, u32_type, cl.num);
                 }
-                id->const_ids[id->nb_const_ids++] = tmp;
+                oid->comp[i] = tmp;
             }
             break;
         case SWS_OP_DITHER:
             for (int i = 0; i < 4; i++) {
                 if (op->dither.y_offset[i] < 0)
                     continue;
-                int tmp = spi_OpConstantUInt(spi, u32_type, op->dither.y_offset[i]);
-                id->const_ids[id->nb_const_ids++] = tmp;
+                oid->comp[i] = spi_OpConstantUInt(spi, u32_type,
+                                                  op->dither.y_offset[i]);
             }
             break;
         case SWS_OP_LINEAR: {
-            int tmp;
+            LinearIDs *lin = &oid->lin;
+            int vec[4], tmp[4];
             float val;
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
                     int k = sws->flags & SWS_BITEXACT ? i : j;
                     int l = sws->flags & SWS_BITEXACT ? j : i;
                     val = op->lin.m[k][l].num/(float)op->lin.m[k][l].den;
-                    id->const_ids[id->nb_const_ids++] =
-                        spi_OpConstantFloat(spi, f32_type, val);
+                    tmp[j] = lin->m[k][l] = spi_OpConstantFloat(spi, f32_type, val);
                 }
-                tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
-                                              id->const_ids[id->nb_const_ids - 4],
-                                              id->const_ids[id->nb_const_ids - 3],
-                                              id->const_ids[id->nb_const_ids - 2],
-                                              id->const_ids[id->nb_const_ids - 1]);
-                id->const_ids[id->nb_const_ids++] = tmp;
+                vec[i] = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                                 tmp[0], tmp[1], tmp[2], tmp[3]);
             }
 
-            tmp = spi_OpConstantComposite(spi, id->f32mat4_type,
-                                          id->const_ids[id->nb_const_ids - 5*4 + 4],
-                                          id->const_ids[id->nb_const_ids - 5*3 + 4],
-                                          id->const_ids[id->nb_const_ids - 5*2 + 4],
-                                          id->const_ids[id->nb_const_ids - 5*1 + 4]);
-            id->const_ids[id->nb_const_ids++] = tmp;
+            lin->mat = spi_OpConstantComposite(spi, id->f32mat4_type,
+                                               vec[0], vec[1], vec[2], vec[3]);
 
             for (int i = 0; i < 4; i++) {
                 val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
-                id->const_ids[id->nb_const_ids++] =
-                    spi_OpConstantFloat(spi, f32_type, val);
+                lin->off[i] = spi_OpConstantFloat(spi, f32_type, val);
             }
 
-            tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
-                                          id->const_ids[id->nb_const_ids - 4],
-                                          id->const_ids[id->nb_const_ids - 3],
-                                          id->const_ids[id->nb_const_ids - 2],
-                                          id->const_ids[id->nb_const_ids - 1]);
-            id->const_ids[id->nb_const_ids++] = tmp;
+            lin->off_vec = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                                   lin->off[0], lin->off[1],
+                                                   lin->off[2], lin->off[3]);
             break;
         }
         default:
@@ -750,18 +745,15 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     }
 }
 
-static int insert_vmat_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
-                              int data, int const_off)
+static int insert_vmat_linear(SPICtx *spi, SPIRVIDs *id, const LinearIDs *lin,
+                              int data)
 {
-    data =  spi_OpMatrixTimesVector(spi, id->f32vec4_type,
-                                    id->const_ids[const_off + 4*5],
-                                    data);
-    return spi_OpFAdd(spi, id->f32vec4_type,
-                      id->const_ids[const_off + 4*5 + 1 + 4], data);
+    data = spi_OpMatrixTimesVector(spi, id->f32vec4_type, lin->mat, data);
+    return spi_OpFAdd(spi, id->f32vec4_type, lin->off_vec, data);
 }
 
 static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
-                                  int data, int linear_ops_idx, int const_off)
+                                  const LinearIDs *lin, int data)
 {
     int type_s = op->type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
     int type_v = op->type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
@@ -773,8 +765,8 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     tmp[3] = spi_OpCompositeExtract(spi, type_s, data, 3);
 
     int off = spi_reserve(spi, 0); /* Current offset */
-    spi->off = id->linear_deco_off[linear_ops_idx];
-    for (int i = 0; i < id->linear_deco_ops[linear_ops_idx]; i++)
+    spi->off = lin->deco_off;
+    for (int i = 0; i < lin->nb_deco; i++)
         spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
     spi->off = off;
 
@@ -782,21 +774,18 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     for (int j = 0; j < 4; j++) {
         res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
         if (op->lin.m[j][0].num)
-            res[j] = spi_OpFMul(spi, type_s, tmp[0],
-                                id->const_ids[const_off + j*5 + 0]);
+            res[j] = spi_OpFMul(spi, type_s, tmp[0], lin->m[j][0]);
 
         if (op->lin.m[j][0].num && op->lin.m[j][4].num)
-            res[j] = spi_OpFAdd(spi, type_s,
-                                id->const_ids[const_off + 4*5 + 1 + j], res[j]);
+            res[j] = spi_OpFAdd(spi, type_s, lin->off[j], res[j]);
         else if (op->lin.m[j][4].num)
-            res[j] = id->const_ids[const_off + 4*5 + 1 + j];
+            res[j] = lin->off[j];
 
         for (int i = 1; i < 4; i++) {
             if (!op->lin.m[j][i].num)
                 continue;
 
-            int v = spi_OpFMul(spi, type_s, tmp[i],
-                               id->const_ids[const_off + j*5 + i]);
+            int v = spi_OpFMul(spi, type_s, tmp[i], lin->m[j][i]);
             if (op->lin.m[j][0].num || op->lin.m[j][4].num)
                 res[j] = spi_OpFAdd(spi, type_s, res[j], v);
             else
@@ -932,6 +921,9 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     SPIRVIDs spid_data = { 0 }, *id = &spid_data;
     spi_init(spi, spvbuf, sizeof(spvbuf));
 
+    if (ops->num_ops > MAX_OPS)
+        return AVERROR(ENOTSUP);
+
     id->interlaced = ops->src.interlaced || ops->dst.interlaced;
     p->interlaced = id->interlaced;
 
@@ -994,6 +986,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         if (op->op == SWS_OP_DITHER) {
             if (id->nb_dither_bufs >= MAX_DITHER_BUFS)
                 return AVERROR(ENOTSUP);
+            id->op[n].buf = id->nb_dither_bufs;
             struct DitherData *d = &id->dither[id->nb_dither_bufs++];
             d->size      = 1 << op->dither.size_log2;
             d->arr_1d_id = spi_get_id(spi);
@@ -1006,6 +999,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             if (id->nb_filter_bufs >= MAX_FILT_BUFS)
                 return AVERROR(ENOTSUP);
             const SwsFilterWeights *wd = op->rw.filter.kernel;
+            id->op[n].buf = id->nb_filter_bufs;
             struct FilterData *f = &id->filt[id->nb_filter_bufs++];
             f->filter       = op->rw.filter.op;
             f->filter_size  = wd->filter_size;
@@ -1129,15 +1123,10 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                         id->u32_p, id->u32_p,
                                         id->u32_p, id->u32_p);
 
-    /* Keep track of which constant/buffer to use */
-    int nb_const_ids = 0;
-    int nb_dither_bufs = 0;
-    int nb_linear_ops = 0;
-    int nb_filter_used = 0;
-
     /* Operations */
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
+        const OpIDs *oid = &id->op[n];
         SwsPixelType cur_type = op->op == SWS_OP_CONVERT ?
                                 op->convert.to : op->type;
         int type_v = cur_type == SWS_PIXEL_F32 ?
@@ -1156,7 +1145,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                     op->rw.filter.type != SWS_PIXEL_F32)
                     return AVERROR(ENOTSUP);
                 data = read_filtered(spi, id, ops, op,
-                                     &id->filt[nb_filter_used++],
+                                     &id->filt[oid->buf],
                                      in_img, gid, gi2);
             } else if (op->rw.mode == SWS_RW_PACKED) {
                 data = spi_OpImageRead(spi, type_v, in_img[ops->plane_src[0]],
@@ -1194,9 +1183,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             for (int i = 0; i < 4; i++) {
                 if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
-                data = spi_OpCompositeInsert(spi, type_v,
-                                             id->const_ids[nb_const_ids++],
-                                             data, i);
+                data = spi_OpCompositeInsert(spi, type_v, oid->comp[i], data, i);
             }
             break;
         case SWS_OP_SWIZZLE:
@@ -1213,20 +1200,16 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 data = spi_OpConvertUToF(spi, type_v, data);
             break;
         case SWS_OP_LSHIFT:
-            data = spi_OpShiftLeftLogical(spi, type_v, data,
-                                          id->const_ids[nb_const_ids++]);
+            data = spi_OpShiftLeftLogical(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_RSHIFT:
-            data = spi_OpShiftRightLogical(spi, type_v, data,
-                                           id->const_ids[nb_const_ids++]);
+            data = spi_OpShiftRightLogical(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_SCALE:
             if (op->type == SWS_PIXEL_F32)
-                data = spi_OpFMul(spi, type_v, data,
-                                  id->const_ids[nb_const_ids++]);
+                data = spi_OpFMul(spi, type_v, data, oid->vec);
             else
-                data = spi_OpIMul(spi, type_v, data,
-                                  id->const_ids[nb_const_ids++]);
+                data = spi_OpIMul(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX: {
@@ -1237,30 +1220,25 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 if (!op->clamp.limit[i].den)
                     continue;
                 int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                tmp = spi_OpExtInst(spi, type_s, id->glfn, t,
-                                    tmp, id->const_ids[nb_const_ids++]);
+                tmp = spi_OpExtInst(spi, type_s, id->glfn, t, tmp, oid->comp[i]);
                 data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
             }
             break;
         }
         case SWS_OP_DITHER: {
-            int did = nb_dither_bufs++;
+            const struct DitherData *d = &id->dither[oid->buf];
             int x_id = spi_OpCompositeExtract(spi, id->u32_type, gid, 0);
             int y_pos = spi_OpCompositeExtract(spi, id->u32_type, gid, 1);
-            x_id = spi_OpBitwiseAnd(spi, id->u32_type, x_id,
-                                    id->dither[did].mask_id);
+            x_id = spi_OpBitwiseAnd(spi, id->u32_type, x_id, d->mask_id);
             for (int i = 0; i < 4; i++) {
                 if (op->dither.y_offset[i] < 0)
                     continue;
 
-                int y_id = spi_OpIAdd(spi, id->u32_type, y_pos,
-                                      id->const_ids[nb_const_ids++]);
-                y_id = spi_OpBitwiseAnd(spi, id->u32_type, y_id,
-                                        id->dither[did].mask_id);
+                int y_id = spi_OpIAdd(spi, id->u32_type, y_pos, oid->comp[i]);
+                y_id = spi_OpBitwiseAnd(spi, id->u32_type, y_id, d->mask_id);
 
-                int ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id,
-                                            id->dither[did].id, id->u32_cid[0],
-                                            y_id, x_id);
+                int ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, d->id,
+                                            id->u32_cid[0], y_id, x_id);
                 int val = spi_OpLoad(spi, id->f32_type, ptr,
                                      SpvMemoryAccessMaskNone, 0);
 
@@ -1274,26 +1252,19 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             if (op->type != SWS_PIXEL_F32)
                 return AVERROR(ENOTSUP);
             if (sws->flags & SWS_BITEXACT)
-                data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
+                data = insert_bitexact_linear(op, spi, id, &oid->lin, data);
             else
-                data = insert_vmat_linear(op, spi, id, data, nb_const_ids);
-            nb_linear_ops++;
-            nb_const_ids += 5*5 + 1;
+                data = insert_vmat_linear(spi, id, &oid->lin, data);
             break;
         }
-        case SWS_OP_UNPACK: {
-            int shift = id->const_ids[nb_const_ids++];
-            int mask  = id->const_ids[nb_const_ids++];
+        case SWS_OP_UNPACK:
             data = spi_OpVectorShuffle(spi, type_v, data, data, 0, 0, 0, 0);
-            data = spi_OpShiftRightLogical(spi, type_v, data, shift);
-            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
+            data = spi_OpShiftRightLogical(spi, type_v, data, oid->pack.shift);
+            data = spi_OpBitwiseAnd(spi, type_v, data, oid->pack.mask);
             break;
-        }
         case SWS_OP_PACK: {
-            int shift = id->const_ids[nb_const_ids++];
-            int mask  = id->const_ids[nb_const_ids++];
-            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
-            data = spi_OpShiftLeftLogical(spi, type_v, data, shift);
+            data = spi_OpBitwiseAnd(spi, type_v, data, oid->pack.mask);
+            data = spi_OpShiftLeftLogical(spi, type_v, data, oid->pack.shift);
             int val = spi_OpCompositeExtract(spi, type_s, data, 0);
             for (int i = 1; i < 4; i++) {
                 int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
