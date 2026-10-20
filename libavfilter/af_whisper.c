@@ -240,6 +240,8 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
         return;
     }
 
+    const int lang_id = whisper_full_lang_id(wctx->ctx_wsp);
+    const char *detected_language = lang_id >= 0 ? whisper_lang_str(lang_id) : NULL;
     const int n_segments = whisper_full_n_segments(wctx->ctx_wsp);
     char *segments_text = NULL;
 
@@ -292,7 +294,9 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
 
                 wctx->index++;
             } else if (!av_strcasecmp(wctx->format, "json")) {
-                buf = av_asprintf("{\"start\":%" PRId64 ",\"end\":%" PRId64 ",\"text\":\"%s\"}\n", start_t, end_t, text_cleaned);
+                buf = av_asprintf("{\"start\":%" PRId64 ",\"end\":%" PRId64 ",\"text\":\"%s\",\"language\":\"%s\"}\n",
+                                  start_t, end_t, text_cleaned,
+                                  detected_language ? detected_language : "unknown");
             } else
                 buf = av_asprintf("%s\n", text_cleaned);
 

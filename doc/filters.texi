@@ -7792,6 +7792,9 @@ If the destination is a file and it already exists, it will be overwritten.
 @item format
 The destination format string; it could be "text" (only the transcribed text
 will be sent to the destination), "srt" (subtitle format) or "json".
+JSON segments include a @code{language} field containing the language
+code reported by whisper.cpp for the transcription chunk, or @code{unknown}
+if none is available. All segments from the same chunk have the same language.
 Default value: @code{"text"}
 
 @item max_len
