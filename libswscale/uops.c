@@ -228,18 +228,15 @@ static bool exact_product_f32(float a, float b)
     return !b || result == a;
 }
 
-static bool exact_prod(SwsPixelType type, SwsPixel coef,
-                       const SwsComps *comps, int idx)
+static bool exact_prod(SwsPixelType type, SwsPixel coef, const SwsOpPad *input)
 {
-    const AVRational64 minq = comps->min[idx];
-    const AVRational64 maxq = comps->max[idx];
     if (ff_sws_pixel_type_is_int(type))
         return true;
-    else if (!minq.den || !maxq.den)
+    else if (!input->min.den || !input->max.den)
         return false; /* unknown bounds */
 
-    const SwsPixel min = ff_sws_pixel_from_q64(type, minq);
-    const SwsPixel max = ff_sws_pixel_from_q64(type, maxq);
+    const SwsPixel min = ff_sws_pixel_from_q64(type, input->min);
+    const SwsPixel max = ff_sws_pixel_from_q64(type, input->max);
     switch (type) {
     case SWS_PIXEL_F32:
         return exact_product_f32(coef.f32, min.f32) &&
@@ -476,7 +473,7 @@ static int translate_dither_op(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *
 
 static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
                                SwsUOpFlags flags, const SwsOp *op,
-                               const SwsComps *input)
+                               const SwsOpPad inputs[4])
 {
     SwsUOp uop = {
         .type = op->type,
@@ -502,7 +499,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
                 uop.par.lin.zero |= SWS_MASK(i, j);
             else if (j < 4 && k.num == k.den)
                 uop.par.lin.one |= SWS_MASK(i, j);
-            else if (j < 4 && nonzero && (!bitexact || exact_prod(uop.type, px, input, j)))
+            else if (j < 4 && nonzero && (!bitexact || exact_prod(uop.type, px, &inputs[j])))
                 exact |= SWS_MASK(i, j);
             if (k.num != 0)
                 nonzero = true;
@@ -519,7 +516,7 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
 }
 
 static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
-                        const SwsOp *op, const SwsComps *input)
+                        const SwsOp *op, const SwsOpPad inputs[4])
 {
     switch (op->op) {
     case SWS_OP_FILTER_H:
@@ -533,7 +530,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
     case SWS_OP_DITHER:
         return translate_dither_op(uops, flags, op);
     case SWS_OP_LINEAR:
-        return translate_linear_op(ctx, uops, flags, op, input);
+        return translate_linear_op(ctx, uops, flags, op, inputs);
     default:
         break;
     }
@@ -618,17 +615,17 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
 int ff_sws_ops_translate(SwsContext *ctx, const SwsOpList *ops,
                          SwsUOpFlags flags, SwsUOpList *uops)
 {
-    SwsComps input = ops->comps_src;
+    const SwsOpPad *inputs = ops->inputs;
     for (int i = 0; i < ops->num_ops; i++) {
         const SwsOp *op = &ops->ops[i];
         const int pixel_size = ff_sws_pixel_type_size(op->type);
         if (pixel_size > uops->pixel_size_max)
             uops->pixel_size_max = pixel_size;
 
-        int ret = translate_op(ctx, uops, flags, op, &input);
+        int ret = translate_op(ctx, uops, flags, op, inputs);
         if (ret < 0)
             return ret;
-        input = ops->ops[i].comps;
+        inputs = op->outputs;
     }
 
     return ff_sws_uop_list_optimize(ctx, flags, uops);

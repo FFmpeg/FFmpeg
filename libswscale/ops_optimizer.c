@@ -235,7 +235,7 @@ static int exact_log2_q64(const AVRational64 x)
  * the corresponding scaling factor, or 0 otherwise.
  */
 static bool extract_scalar(const SwsLinearOp *c,
-                           const SwsComps *comps, const SwsComps *prev,
+                           const SwsOpPad outputs[4], const SwsOpPad inputs[4],
                            SwsScaleOp *out_scale)
 {
     SwsScaleOp scale = {0};
@@ -246,8 +246,8 @@ static bool extract_scalar(const SwsLinearOp *c,
 
     for (int i = 0; i < 4; i++) {
         const AVRational64 s = c->m[i][i];
-        if ((prev->flags[i]  & SWS_COMP_ZERO) ||
-            (comps->flags[i] & SWS_COMP_GARBAGE))
+        if ((inputs[i].flags  & SWS_COMP_ZERO) ||
+            (outputs[i].flags & SWS_COMP_GARBAGE))
             continue;
         if (scale.factor.den && ff_cmp_q64(s, scale.factor))
             return false;
@@ -260,7 +260,7 @@ static bool extract_scalar(const SwsLinearOp *c,
 }
 
 /* Extracts an integer clear operation (subset) from the given linear op. */
-static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
+static bool extract_constant_rows(SwsLinearOp *c, const SwsOpPad inputs[4],
                                   SwsClearOp *out_clear)
 {
     const uint32_t mask = ff_sws_linear_mask(c);
@@ -271,7 +271,7 @@ static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
         bool const_row = c->m[i][4].den == 1; /* offset is integer */
         for (int j = 0; j < 4; j++) {
             const_row &= c->m[i][j].num == 0 || /* scalar is zero */
-                         (prev->flags[j] & SWS_COMP_ZERO); /* input is zero */
+                         (inputs[j].flags & SWS_COMP_ZERO); /* input is zero */
         }
         if (const_row && (mask & SWS_MASK_ROW(i))) {
             clear.mask |= SWS_COMP(i);
@@ -289,7 +289,7 @@ static bool extract_constant_rows(SwsLinearOp *c, const SwsComps *prev,
 
 /* Unswizzle a linear operation by aligning single-input rows with
  * their corresponding diagonal */
-static bool extract_swizzle(SwsLinearOp *op, const SwsComps *prev,
+static bool extract_swizzle(SwsLinearOp *op, const SwsOpPad inputs[4],
                             SwsSwizzleOp *out_swiz)
 {
     SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
@@ -299,7 +299,7 @@ static bool extract_swizzle(SwsLinearOp *op, const SwsComps *prev,
     uint32_t nonzero = 0;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            if (!c.m[i][j].num || (prev->flags[j] & SWS_COMP_ZERO))
+            if (!c.m[i][j].num || (inputs[j].flags & SWS_COMP_ZERO))
                 continue;
             nonzero |= SWS_MASK(i, j);
         }
@@ -332,7 +332,7 @@ static bool extract_swizzle(SwsLinearOp *op, const SwsComps *prev,
 static int op_result_is_exact(const SwsOp *op)
 {
     for (int i = 0; i < 4; i++) {
-        if (SWS_OP_NEEDED(op, i) && !(op->comps.flags[i] & SWS_COMP_EXACT))
+        if (SWS_OP_NEEDED(op, i) && !(op->outputs[i].flags & SWS_COMP_EXACT))
             return false;
     }
 
@@ -464,8 +464,8 @@ retry:
                 if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
 
-                if ((prev->comps.flags[i] & SWS_COMP_ZERO) &&
-                    !(prev->comps.flags[i] & SWS_COMP_GARBAGE) &&
+                if ((prev->outputs[i].flags & SWS_COMP_ZERO) &&
+                    !(prev->outputs[i].flags & SWS_COMP_GARBAGE) &&
                     op->clear.value[i].num == 0)
                 {
                     /* Redundant clear-to-zero of zero component */
@@ -585,7 +585,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (ff_cmp_q64(op->clamp.limit[i], prev->comps.max[i]) >= 0)
+                if (ff_cmp_q64(op->clamp.limit[i], prev->outputs[i].max) >= 0)
                     op->clamp.limit[i] = (AVRational64) {0}; /* no-op */
                 else
                     noop = false;
@@ -601,7 +601,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_OP_NEEDED(op, i) || !op->clamp.limit[i].den)
                     continue;
-                if (ff_cmp_q64(prev->comps.min[i], op->clamp.limit[i]) >= 0)
+                if (ff_cmp_q64(prev->outputs[i].min, op->clamp.limit[i]) >= 0)
                     op->clamp.limit[i] = (AVRational64) {0};
                 else
                     noop = false;
@@ -617,7 +617,7 @@ retry:
             for (int i = 0; i < 4; i++) {
                 if (op->dither.y_offset[i] < 0)
                     continue;
-                if (!SWS_OP_NEEDED(op, i) || (prev->comps.flags[i] & SWS_COMP_EXACT)) {
+                if (!SWS_OP_NEEDED(op, i) || (prev->outputs[i].flags & SWS_COMP_EXACT)) {
                     op->dither.y_offset[i] = -1; /* unnecessary dither */
                     goto retry;
                 } else {
@@ -664,7 +664,7 @@ retry:
             /* Optimize away zero columns */
             for (int j = 0; j < 4; j++) {
                 const uint32_t col = SWS_MASK_COL(j);
-                if (!(prev->comps.flags[j] & SWS_COMP_ZERO) || !(mask & col))
+                if (!(prev->outputs[j].flags & SWS_COMP_ZERO) || !(mask & col))
                     continue;
                 for (int i = 0; i < 4; i++)
                     op->lin.m[i][j] = Q(i == j);
@@ -682,7 +682,7 @@ retry:
             }
 
             /* Convert constant rows to explicit clear instruction */
-            if (extract_constant_rows(&op->lin, &prev->comps, &clear)) {
+            if (extract_constant_rows(&op->lin, prev->outputs, &clear)) {
                 RET(ff_sws_op_list_insert_at(ops, n + 1, &(SwsOp) {
                     .op    = SWS_OP_CLEAR,
                     .type  = op->type,
@@ -692,14 +692,14 @@ retry:
             }
 
             /* Multiplication by scalar constant */
-            if (extract_scalar(&op->lin, &op->comps, &prev->comps, &scale)) {
+            if (extract_scalar(&op->lin, op->outputs, prev->outputs, &scale)) {
                 op->op    = SWS_OP_SCALE;
                 op->scale = scale;
                 goto retry;
             }
 
             /* Swizzle by fixed pattern */
-            if (extract_swizzle(&op->lin, &prev->comps, &swizzle)) {
+            if (extract_swizzle(&op->lin, prev->outputs, &swizzle)) {
                 RET(ff_sws_op_list_insert_at(ops, n, &(SwsOp) {
                     .op      = SWS_OP_SWIZZLE,
                     .type    = op->type,
@@ -1203,9 +1203,9 @@ int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **out_ops2, int index)
     for (int i = 0; i < nb_planes; i++) {
         const int idx = swiz_wr.in[i];
         ops1->plane_dst[i] = ops2->plane_src[i] = i;
-        ops2->comps_src.flags[i]  = prev->comps.flags[idx];
-        ops2->comps_src.min[i]    = prev->comps.min[idx];
-        ops2->comps_src.max[i]    = prev->comps.max[idx];
+        ops2->inputs[i].flags  = prev->outputs[idx].flags;
+        ops2->inputs[i].min    = prev->outputs[idx].min;
+        ops2->inputs[i].max    = prev->outputs[idx].max;
     }
 
     ff_sws_op_list_remove_at(ops1, index, ops1->num_ops - index);

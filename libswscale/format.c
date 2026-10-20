@@ -1093,7 +1093,7 @@ static int decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
     SwsReadWriteOp rw_op;
     SwsSwizzleOp swizzle;
     SwsPackOp unpack;
-    SwsComps *comps = &ops->comps_src;
+    SwsOpPad *inputs = ops->inputs;
     SwsShiftOp shift;
 
     RET(fmt_analyze(fmt->format, &rw_op, &unpack, &swizzle, &shift,
@@ -1106,7 +1106,7 @@ static int decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
     const int swapped = ff_sws_pixel_type_size(raw_type) > 1 &&
                         (desc->flags & AV_PIX_FMT_FLAG_BE) != NATIVE_ENDIAN_FLAG;
     for (int i = 0; i < rw_op.elems; i++) {
-        comps->flags[i] = (integer ? SWS_COMP_EXACT   : 0) |
+        inputs[i].flags = (integer ? SWS_COMP_EXACT   : 0) |
                           (swapped ? SWS_COMP_SWAPPED : 0);
     }
 
@@ -1118,8 +1118,8 @@ static int decode_pixfmt(SwsOpList *ops, const SwsFormat *fmt)
         for (int c = 0; c < desc->nb_components; c++) {
             const int bits  = desc->comp[c].depth + shift.amount;
             const int idx   = swizzle.in[is_ya ? 3 * c : c];
-            comps->min[idx] = Q(0);
-            comps->max[idx] = intmax_q64(bits);
+            inputs[idx].min = Q(0);
+            inputs[idx].max = intmax_q64(bits);
         }
     }
 

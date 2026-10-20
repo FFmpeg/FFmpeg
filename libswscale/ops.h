@@ -83,16 +83,16 @@ typedef enum SwsCompFlags {
     SWS_COMP_CONST   = 1 << 5, /* value is a fixed constant */
 } SwsCompFlags;
 
-typedef struct SwsComps {
-    SwsCompFlags flags[4]; /* knowledge about (output) component contents */
+typedef struct SwsOpPad {
+    SwsCompFlags flags; /* knowledge about (output) component contents */
 
     /* Keeps track of the known possible value range, or {0, 0} for undefined
      * or (unknown range) floating point inputs */
-    AVRational64 min[4], max[4];
+    AVRational64 min, max;
 
     /* Keeps track of input (forward) and output (reverse) dependencies */
-    SwsCompMask dep_in[4], dep_out[4];
-} SwsComps;
+    SwsCompMask dep_in, dep_out;
+} SwsOpPad;
 
 typedef enum SwsReadWriteMode {
     /**
@@ -263,10 +263,10 @@ typedef struct SwsOp {
      * Note that backends may rely on the presence and accuracy of this
      * metadata for all operations, during ff_sws_ops_compile().
      */
-    SwsComps comps;
+    SwsOpPad outputs[4];
 } SwsOp;
 
-#define SWS_OP_NEEDED(op, idx) (!((op)->comps.flags[idx] & SWS_COMP_GARBAGE))
+#define SWS_OP_NEEDED(op, idx) (!((op)->outputs[idx].flags & SWS_COMP_GARBAGE))
 
 /* Compute SwsCompMask from a mask of needed components */
 SwsCompMask ff_sws_comp_mask_needed(const SwsOp *op);
@@ -313,7 +313,7 @@ typedef struct SwsOpList {
      * The default value of {0} is safe to pass in the case that no additional
      * information is known.
      */
-    SwsComps comps_src;
+    SwsOpPad inputs[4];
 } SwsOpList;
 
 SwsOpList *ff_sws_op_list_alloc(void);

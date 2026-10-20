@@ -482,12 +482,12 @@ static void op_list_get_plane_copy(const SwsOpList *ops, SwsPass *pass)
     const SwsOp *prev = &ops->ops[ops->num_ops - 2];
     int *plane_copy = pass->output->plane_copy;
     for (int i = 0; i < write->rw.elems; i++) {
-        SwsCompFlags flags = prev->comps.flags[i];
+        SwsCompFlags flags = prev->outputs[i].flags;
         if (!(flags & SWS_COMP_COPY))
             continue;
 
         const int out_idx = ops->plane_dst[i];
-        switch (prev->comps.dep_in[i]) {
+        switch (prev->outputs[i].dep_in) {
         case SWS_COMP(0): plane_copy[out_idx] = ops->plane_src[0]; break;
         case SWS_COMP(1): plane_copy[out_idx] = ops->plane_src[1]; break;
         case SWS_COMP(2): plane_copy[out_idx] = ops->plane_src[2]; break;
@@ -707,7 +707,7 @@ static SwsCompMask plane_mask_flags(const SwsOp *op, SwsCompFlags flags)
 {
     SwsCompMask planes = 0;
     for (int c = 0; c < 4; c++) {
-        if (op->comps.flags[c] & flags)
+        if (op->outputs[c].flags & flags)
             planes |= SWS_COMP(c);
     }
 

@@ -287,31 +287,34 @@ static SwsCompFlags merge_comp_flags(SwsCompFlags a, SwsCompFlags b)
     return ((a & b) & flags_and) | ((a | b) & flags_or);
 }
 
-static void apply_filter_weights(SwsComps *comps, const SwsComps *prev,
+static void apply_filter_weights(SwsOpPad outputs[4], const SwsOpPad inputs[4],
                                  const SwsFilterWeights *weights)
 {
     const AVRational64 posw = { weights->sum_positive, SWS_FILTER_SCALE };
     const AVRational64 negw = { weights->sum_negative, SWS_FILTER_SCALE };
     for (int i = 0; i < 4; i++) {
-        comps->flags[i]  = prev->flags[i] & SWS_COMP_DIRTY;
-        comps->dep_in[i] = prev->dep_in[i];
+        outputs[i].flags  = inputs[i].flags & SWS_COMP_DIRTY;
+        outputs[i].dep_in = inputs[i].dep_in;
         /* Only point sampling preserves exactness */
         if (weights->filter_size != 1)
-            comps->flags[i] &= ~SWS_COMP_EXACT;
+            outputs[i].flags &= ~SWS_COMP_EXACT;
         /* Update min/max assuming extremes */
-        comps->min[i] = ff_add_q64(ff_mul_q64(prev->min[i], posw),
-                                   ff_mul_q64(prev->max[i], negw));
-        comps->max[i] = ff_add_q64(ff_mul_q64(prev->min[i], negw),
-                                   ff_mul_q64(prev->max[i], posw));
+        outputs[i].min = ff_add_q64(ff_mul_q64(inputs[i].min, posw),
+                                    ff_mul_q64(inputs[i].max, negw));
+        outputs[i].max = ff_add_q64(ff_mul_q64(inputs[i].min, negw),
+                                    ff_mul_q64(inputs[i].max, posw));
     }
 }
 
 /* Infer + propagate known information about components */
 void ff_sws_op_list_update_comps(SwsOpList *ops)
 {
-    SwsComps prev = { .flags = {
-        SWS_COMP_GARBAGE, SWS_COMP_GARBAGE, SWS_COMP_GARBAGE, SWS_COMP_GARBAGE,
-    }};
+    SwsOpPad prev[4] = {
+        { .flags = SWS_COMP_GARBAGE },
+        { .flags = SWS_COMP_GARBAGE },
+        { .flags = SWS_COMP_GARBAGE },
+        { .flags = SWS_COMP_GARBAGE },
+    };
 
     /* Forwards pass, propagates knowledge about the incoming pixel values */
     for (int n = 0; n < ops->num_ops; n++) {
@@ -326,29 +329,40 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_FILTER_V:
         case SWS_OP_LUT_3D:
             break; /* special cases, handled below */
-        default:
-            memcpy(op->comps.min, prev.min, sizeof(prev.min));
-            memcpy(op->comps.max, prev.max, sizeof(prev.max));
-            ff_sws_apply_op_q(op, op->comps.min);
-            ff_sws_apply_op_q(op, op->comps.max);
+        default: {
+            AVRational64 min[4], max[4];
+            for (int i = 0; i < 4; i++) {
+                min[i] = prev[i].min;
+                max[i] = prev[i].max;
+            }
+            ff_sws_apply_op_q(op, min);
+            ff_sws_apply_op_q(op, max);
+            for (int i = 0; i < 4; i++) {
+                op->outputs[i].min = min[i];
+                op->outputs[i].max = max[i];
+            }
             break;
+        }
         }
 
         for (int i = 0; i < 4; i++) {
-            op->comps.flags[i]  = SWS_COMP_IDENTITY;
-            op->comps.dep_in[i] = SWS_COMP_NONE;
+            op->outputs[i].flags  = SWS_COMP_IDENTITY;
+            op->outputs[i].dep_in = SWS_COMP_NONE;
         }
 
         #define FORWARD(I, J, EXPR) do {                                        \
-            SwsCompFlags flags = prev.flags[J];                                 \
-            op->comps.flags[I] = merge_comp_flags(op->comps.flags[I], (EXPR));  \
-            op->comps.dep_in[I] |= prev.dep_in[J];                              \
+            SwsOpPad *dst = &op->outputs[I];                                    \
+            const SwsOpPad *src = &prev[J];                                     \
+            SwsCompFlags flags = src->flags;                                    \
+            dst->flags = merge_comp_flags(dst->flags, (EXPR));                  \
+            dst->dep_in |= src->dep_in;                                         \
         } while (0)
 
         #define RESET(I) do {                                                   \
-            op->comps.flags[I] = SWS_COMP_GARBAGE;                              \
-            op->comps.min[I] = op->comps.max[I] = (AVRational64) {0};           \
-            op->comps.dep_in[I] = SWS_COMP_NONE;                                \
+            SwsOpPad *dst = &op->outputs[I];                                    \
+            dst->flags = SWS_COMP_GARBAGE;                                      \
+            dst->min = dst->max = (AVRational64) {0};                           \
+            dst->dep_in = SWS_COMP_NONE;                                        \
         } while (0)
 
         switch (op->op) {
@@ -363,11 +377,13 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 case SWS_RW_PLANAR:  idx = ops->plane_src[i]; break;
                 }
 
-                av_assert0(!(ops->comps_src.flags[idx] & SWS_COMP_GARBAGE));
-                op->comps.flags[i] = ops->comps_src.flags[idx] & SWS_COMP_DIRTY;
-                op->comps.min[i]   = ops->comps_src.min[idx];
-                op->comps.max[i]   = ops->comps_src.max[idx];
-                op->comps.dep_in[i] = SWS_COMP(i);
+                const SwsOpPad *src = &ops->inputs[idx];
+                SwsOpPad *dst = &op->outputs[i];
+                av_assert0(!(src->flags & SWS_COMP_GARBAGE));
+                dst->flags  = src->flags & SWS_COMP_DIRTY;
+                dst->min    = src->min;
+                dst->max    = src->max;
+                dst->dep_in = SWS_COMP(i);
 
                 /**
                  * Don't mark packed or fractional reads as a copy, because the
@@ -377,24 +393,24 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                  * is already covered by the no-op check.
                  */
                 if (op->rw.mode == SWS_RW_PLANAR && !op->rw.frac)
-                    op->comps.flags[i] |= SWS_COMP_COPY;
+                    dst->flags |= SWS_COMP_COPY;
             }
 
             if (op->rw.filter.op) {
-                const SwsComps prev = op->comps;
-                apply_filter_weights(&op->comps, &prev, op->rw.filter.kernel);
+                memcpy(prev, op->outputs, sizeof(prev));
+                apply_filter_weights(op->outputs, prev, op->rw.filter.kernel);
             }
             break;
         case SWS_OP_SWAP_BYTES:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, (flags ^ SWS_COMP_SWAPPED) & SWS_COMP_DIRTY);
-                op->comps.min[i] = prev.min[i];
-                op->comps.max[i] = prev.max[i];
+                op->outputs[i].min = prev[i].min;
+                op->outputs[i].max = prev[i].max;
             }
             break;
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
-                av_assert1(!(prev.flags[i] & SWS_COMP_GARBAGE));
+                av_assert1(!(prev[i].flags & SWS_COMP_GARBAGE));
             for (int i = 0; i < 4; i++)
                 FORWARD(i, i, flags);
             break;
@@ -405,27 +421,30 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX: {
-            AVRational64 *bound = op->op == SWS_OP_MIN ? op->comps.max : op->comps.min;
             for (int i = 0; i < 4; i++) {
+                SwsOpPad *dst = &op->outputs[i];
                 FORWARD(i, i, flags);
                 if (op->clamp.limit[i].den)
-                    op->comps.flags[i] &= SWS_COMP_DIRTY;
-                if (!bound[i].den) /* reset undefined bounds to known range */
-                    bound[i] = op->clamp.limit[i];
+                    dst->flags &= SWS_COMP_DIRTY;
+
+                /* Reset undefined bounds to known range */
+                AVRational64 *bound = op->op == SWS_OP_MIN ? &dst->max : &dst->min;
+                if (!bound->den)
+                    *bound = op->clamp.limit[i];
             }
             break;
         }
         case SWS_OP_DITHER:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, flags);
-                op->comps.min[i] = prev.min[i];
-                op->comps.max[i] = prev.max[i];
+                op->outputs[i].min = prev[i].min;
+                op->outputs[i].max = prev[i].max;
                 if (op->dither.y_offset[i] < 0)
                     continue;
                 /* Strip zero flag because of the nonzero dithering offset */
-                op->comps.flags[i] &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
-                op->comps.min[i] = ff_add_q64(op->comps.min[i], op->dither.min);
-                op->comps.max[i] = ff_add_q64(op->comps.max[i], op->dither.max);
+                op->outputs[i].flags &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
+                op->outputs[i].min = ff_add_q64(op->outputs[i].min, op->dither.min);
+                op->outputs[i].max = ff_add_q64(op->outputs[i].max, op->dither.max);
             }
             break;
         case SWS_OP_UNPACK:
@@ -434,8 +453,8 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 if (pattern) {
                     av_assert1(pattern < 32);
                     FORWARD(i, 0, flags & SWS_COMP_DIRTY);
-                    op->comps.min[i] = Q(0);
-                    op->comps.max[i] = Q((1ULL << pattern) - 1);
+                    op->outputs[i].min = Q(0);
+                    op->outputs[i].max = Q((1ULL << pattern) - 1);
                 } else
                     RESET(i);
             }
@@ -451,11 +470,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (SWS_COMP_TEST(op->clear.mask, i)) {
-                    op->comps.flags[i] = SWS_COMP_CONST;
+                    op->outputs[i].flags = SWS_COMP_CONST;
                     if (op->clear.value[i].num == 0)
-                        op->comps.flags[i] |= SWS_COMP_ZERO;
+                        op->outputs[i].flags |= SWS_COMP_ZERO;
                     if (op->clear.value[i].den == 1)
-                        op->comps.flags[i] |= SWS_COMP_EXACT;
+                        op->outputs[i].flags |= SWS_COMP_EXACT;
                 } else {
                     FORWARD(i, i, flags);
                 }
@@ -468,56 +487,56 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_CONVERT:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, flags);
-                if (!(prev.flags[i] & SWS_COMP_EXACT))
-                    op->comps.flags[i] &= SWS_COMP_DIRTY;
+                if (!(prev[i].flags & SWS_COMP_EXACT))
+                    op->outputs[i].flags &= SWS_COMP_DIRTY;
                 if (ff_sws_pixel_type_is_int(op->convert.to))
-                    op->comps.flags[i] |= SWS_COMP_EXACT;
+                    op->outputs[i].flags |= SWS_COMP_EXACT;
             }
             break;
         case SWS_OP_LINEAR:
             for (int i = 0; i < 4; i++) {
-                AVRational64 min = Q(0), max = Q(0);
+                SwsOpPad *dst = &op->outputs[i];
                 bool first = true;
+                dst->min = dst->max = Q(0);
                 for (int j = 0; j < 4; j++) {
+                    const SwsOpPad *src = &prev[j];
                     const AVRational64 k = op->lin.m[i][j];
-                    AVRational64 mink = ff_mul_q64(prev.min[j], k);
-                    AVRational64 maxk = ff_mul_q64(prev.max[j], k);
+                    AVRational64 mink = ff_mul_q64(src->min, k);
+                    AVRational64 maxk = ff_mul_q64(src->max, k);
                     if (k.num) {
                         FORWARD(i, j, flags);
                         if (k.den != 1) /* fractional coefficient */
-                            op->comps.flags[i] &= ~SWS_COMP_EXACT;
+                            dst->flags &= ~SWS_COMP_EXACT;
                         if (k.num < 0)
                             FFSWAP(AVRational64, mink, maxk);
-                        min = ff_add_q64(min, mink);
-                        max = ff_add_q64(max, maxk);
+                        dst->min = ff_add_q64(dst->min, mink);
+                        dst->max = ff_add_q64(dst->max, maxk);
                         if (!first || ff_cmp_q64(k, Q(1)))
-                            op->comps.flags[i] &= SWS_COMP_DIRTY;
+                            dst->flags &= SWS_COMP_DIRTY;
                         first = false;
                     }
                 }
                 if (op->lin.m[i][4].num) { /* nonzero offset */
-                    op->comps.flags[i] &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
+                    dst->flags &= ~SWS_COMP_ZERO & SWS_COMP_DIRTY;
                     if (op->lin.m[i][4].den != 1) /* fractional offset */
-                        op->comps.flags[i] &= ~SWS_COMP_EXACT;
-                    min = ff_add_q64(min, op->lin.m[i][4]);
-                    max = ff_add_q64(max, op->lin.m[i][4]);
+                        dst->flags &= ~SWS_COMP_EXACT;
+                    dst->min = ff_add_q64(dst->min, op->lin.m[i][4]);
+                    dst->max = ff_add_q64(dst->max, op->lin.m[i][4]);
                 }
-                op->comps.min[i] = min;
-                op->comps.max[i] = max;
             }
             break;
         case SWS_OP_SCALE:
             for (int i = 0; i < 4; i++) {
                 FORWARD(i, i, flags & SWS_COMP_DIRTY);
                 if (op->scale.factor.den != 1) /* fractional scale */
-                    op->comps.flags[i] &= ~SWS_COMP_EXACT;
+                    op->outputs[i].flags &= ~SWS_COMP_EXACT;
                 if (op->scale.factor.num < 0)
-                    FFSWAP(AVRational64, op->comps.min[i], op->comps.max[i]);
+                    FFSWAP(AVRational64, op->outputs[i].min, op->outputs[i].max);
             }
             break;
         case SWS_OP_FILTER_H:
         case SWS_OP_FILTER_V: {
-            apply_filter_weights(&op->comps, &prev, op->filter.kernel);
+            apply_filter_weights(op->outputs, prev, op->filter.kernel);
             break;
         }
         case SWS_OP_LUT_3D:
@@ -527,20 +546,20 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                 for (int j = 0; j < 3; j++)
                     FORWARD(i, j, flags & SWS_COMP_GARBAGE);
                 /* LUT output domain is always scaled to full 16-bit range */
-                op->comps.min[i] = Q(0);
-                op->comps.max[i] = Q(UINT16_MAX);
+                op->outputs[i].min = Q(0);
+                op->outputs[i].max = Q(UINT16_MAX);
             }
             /* Pass through alpha channel untouched */
             FORWARD(3, 3, flags);
-            op->comps.min[3] = prev.min[3];
-            op->comps.max[3] = prev.max[3];
+            op->outputs[3].min = prev[3].min;
+            op->outputs[3].max = prev[3].max;
             break;
         case SWS_OP_INVALID:
         case SWS_OP_TYPE_NB:
             av_unreachable("Invalid operation type!");
         }
 
-        prev = op->comps;
+        memcpy(prev, op->outputs, sizeof(prev));
     }
 
     /* Backwards pass, solves for output component dependencies */
@@ -551,7 +570,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         SwsCompMask need_in[4] = {0};
 
         for (int i = 0; i < 4; i++) {
-            op->comps.dep_out[i] = need_out[i];
+            op->outputs[i].dep_out = need_out[i];
             if (!need_out[i])
                 RESET(i);
         }
@@ -1018,29 +1037,28 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
         av_log(log, lev, "%s\n", bp->str);
 
         for (int i = 0; i < 4; i++) {
+            const SwsOpPad *pad = &op->outputs[i];
             if (!SWS_COMP_TEST(mask, i))
                 continue;
             av_bprint_clear(bp);
             av_bprintf(bp, "    %c: %3s,", "XYZW"[i], ff_sws_pixel_type_name(op_result_type(op)));
-            print_deps(bp, op->comps.dep_in[i]);
+            print_deps(bp, pad->dep_in);
             av_bprintf(bp, " ->");
-            print_deps(bp, op->comps.dep_out[i]);
-            av_bprintf(bp, " %7s", describe_comp_flags(op->comps.flags[i]));
+            print_deps(bp, pad->dep_out);
+            av_bprintf(bp, " %7s", describe_comp_flags(pad->flags));
 
-            const AVRational64 min = op->comps.min[i];
-            const AVRational64 max = op->comps.max[i];
-            if (min.den || max.den) {
-                if (op->comps.flags[i] & SWS_COMP_ZERO) {
+            if (pad->min.den || pad->max.den) {
+                if (pad->flags & SWS_COMP_ZERO) {
                     /* don't print any value */
-                } else if (op->comps.flags[i] & SWS_COMP_CONST) {
+                } else if (pad->flags & SWS_COMP_CONST) {
                     av_bprintf(bp, " = ");
-                    av_assert1(ff_cmp_q64(min, max) == 0);
-                    print_q(bp, min);
+                    av_assert1(ff_cmp_q64(pad->min, pad->max) == 0);
+                    print_q(bp, pad->min);
                 } else {
                     av_bprintf(bp, " in [");
-                    print_q(bp, min);
+                    print_q(bp, pad->min);
                     av_bprintf(bp, ", ");
-                    print_q(bp, max);
+                    print_q(bp, pad->max);
                     av_bprintf(bp, "]");
                 }
             }
