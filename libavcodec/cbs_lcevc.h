@@ -272,16 +272,15 @@ int ff_cbs_lcevc_list_add(LCEVCRawProcessBlockList *list, int position);
 void ff_cbs_lcevc_free_process_block_list(LCEVCRawProcessBlockList *list);
 
 /**
- * Add a process block to an access unit.
- *
- * An existing NAL unit of type IDR or NON_IDR are required.
+ * Add a process block to a NAL unit of type IDR or NON_IDR, at the given
+ * position of its block list or at the end if position is -1.
  *
  * If set, payload_ref must be a RefStruct reference backing payload_data.
  * This function creates a new reference to payload_ref in this case.
  * If payload_ref is NULL, the new message will not be reference counted.
  */
 int ff_cbs_lcevc_add_process_block(CodedBitstreamContext *ctx,
-                                   CodedBitstreamFragment *au,
+                                   CodedBitstreamUnit *unit,
                                    int position,
                                    uint32_t     payload_type,
                                    void        *payload_data,
@@ -290,12 +289,14 @@ int ff_cbs_lcevc_add_process_block(CodedBitstreamContext *ctx,
 /**
  * Iterate over blocks with the given payload type in an access unit.
  *
- * Set block to NULL in the first call. Returns 0 while more blocks
- * are available, AVERROR(ENOENT) when all blocks have been found.
+ * Set block to NULL in the first call. Returns the position of the block in
+ * the block list of its NAL unit, which is stored in block_unit if that is
+ * not NULL, or AVERROR(ENOENT) when all blocks have been found.
  */
 int ff_cbs_lcevc_find_process_block(CodedBitstreamContext *ctx,
                                     CodedBitstreamFragment *au,
                                     uint32_t payload_type,
+                                    CodedBitstreamUnit **block_unit,
                                     LCEVCRawProcessBlock **block);
 
 /**

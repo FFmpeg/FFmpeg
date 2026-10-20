@@ -529,7 +529,7 @@ int ff_lcevc_parse_frame(FFLCEVCContext *lcevc, const AVFrame *frame,
     }
 
     ret = ff_cbs_lcevc_find_process_block(lcevc->cbc, lcevc->frag,
-                                          LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG, &block);
+                                          LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG, NULL, &block);
     if (ret < 0) {
         ret = 0;
         goto end;
