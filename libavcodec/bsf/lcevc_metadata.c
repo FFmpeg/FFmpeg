@@ -51,11 +51,12 @@ static int lcevc_metadata_handle_vui(AVBSFContext *bsf,
     LCEVCRawProcessBlock *block = NULL;
     LCEVCRawAdditionalInfo *ai = &ctx->ai;
     LCEVCRawVUI *vui = &ai->vui;
+    CodedBitstreamUnit *unit;
     int position, err;
 
     position = ff_cbs_lcevc_find_process_block(ctx->common.output, au,
                                                LCEVC_PAYLOAD_TYPE_GLOBAL_CONFIG,
-                                               &block);
+                                               &unit, &block);
     if (position < 0)
         return 0;
 
@@ -100,7 +101,7 @@ static int lcevc_metadata_handle_vui(AVBSFContext *bsf,
         vui->chroma_sample_loc_type_bottom_field = ctx->chroma_sample_loc_type;
     }
 
-    err = ff_cbs_lcevc_add_process_block(ctx->common.output, au, position + 1,
+    err = ff_cbs_lcevc_add_process_block(ctx->common.output, unit, position + 1,
                                          LCEVC_PAYLOAD_TYPE_ADDITIONAL_INFO,
                                          ai, NULL);
     if (err < 0)
