@@ -463,12 +463,12 @@ static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
 {
     int nb_ops = 0;
     for (int j = 0; j < 4; j++) {
-        nb_ops += !!lin->m[j][0].num;
-        nb_ops += lin->m[j][0].num && lin->m[j][4].num;
-        for (int i = 1; i < 4; i++) {
-            nb_ops += !!lin->m[j][i].num;
-            nb_ops += lin->m[j][i].num &&
-                      (lin->m[j][0].num || lin->m[j][4].num);
+        bool acc = lin->m[j][4].num;
+        for (int i = 0; i < 4; i++) {
+            if (!lin->m[j][i].num)
+                continue;
+            nb_ops += 1 + acc; /* multiplication, and addition if needed */
+            acc = true;
         }
     }
     return nb_ops;
@@ -843,26 +843,19 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     spi->off = off;
     const int first_id = spi->id;
 
+    /* Same evaluation order as the C backend: offset first, then each column
+     * from left to right, skipping zero coefficients */
     int res[4];
     for (int j = 0; j < 4; j++) {
-        res[j] = const_zero(id, op_type);
-        if (op->lin.m[j][0].num)
-            res[j] = spi_OpFMul(spi, type_s, tmp[0], lin->m[j][0]);
-
-        if (op->lin.m[j][0].num && op->lin.m[j][4].num)
-            res[j] = spi_OpFAdd(spi, type_s, lin->off[j], res[j]);
-        else if (op->lin.m[j][4].num)
-            res[j] = lin->off[j];
-
-        for (int i = 1; i < 4; i++) {
+        bool acc = op->lin.m[j][4].num;
+        res[j] = acc ? lin->off[j] : const_zero(id, op_type);
+        for (int i = 0; i < 4; i++) {
             if (!op->lin.m[j][i].num)
                 continue;
 
             int v = spi_OpFMul(spi, type_s, tmp[i], lin->m[j][i]);
-            if (op->lin.m[j][0].num || op->lin.m[j][4].num)
-                res[j] = spi_OpFAdd(spi, type_s, res[j], v);
-            else
-                res[j] = v;
+            res[j] = acc ? spi_OpFAdd(spi, type_s, res[j], v) : v;
+            acc = true;
         }
     }
 
