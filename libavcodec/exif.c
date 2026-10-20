@@ -270,10 +270,14 @@ static inline void tput64(PutByteContext *pb, const int le, const uint64_t value
     le ? bytestream2_put_le64(pb, value) : bytestream2_put_be64(pb, value);
 }
 
-static int exif_read_values(void *logctx, GetByteContext *gb, int le, AVExifEntry *entry)
+static int exif_read_values(void *logctx, GetByteContext *gb, int le,
+                            size_t *bytes_left, AVExifEntry *entry)
 {
-    if (exif_sizes[entry->type] * entry->count > bytestream2_get_bytes_left(gb))
+    size_t payload_size = exif_sizes[entry->type] * entry->count;
+
+    if (payload_size > bytestream2_get_bytes_left(gb) || payload_size > *bytes_left)
         return AVERROR_INVALIDDATA;
+    *bytes_left -= payload_size;
 
     switch (entry->type) {
         case AV_TIFF_SHORT:
@@ -478,12 +482,12 @@ static int exif_get_makernote_offset(GetByteContext *gb)
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, int *entries_left,
+                               int depth, int *entries_left, size_t *bytes_left,
                                AVExifMetadata *ifd, int guess);
 
 static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
-                           int depth, int *entries_left, int guess,
-                           AVExifEntry *entry)
+                           int depth, int *entries_left, size_t *bytes_left,
+                           int guess, AVExifEntry *entry)
 {
     int ret = 0, makernote_offset = -1, tell, is_ifd, count;
     enum AVTiffDataType type;
@@ -536,7 +540,7 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
                 return AVERROR(ENOMEM);
             bytestream2_get_buffer(gb, entry->ifd_lead, entry->ifd_offset);
         }
-        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, entries_left,
+        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, entries_left, bytes_left,
                                   &entry->value.ifd, guess || entry->id == MAKERNOTE_TAG);
         if (ret < 0 && entry->id == MAKERNOTE_TAG) {
             /*
@@ -554,7 +558,7 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
         entry->type = type == AV_TIFF_IFD ? AV_TIFF_UNDEFINED : type;
         entry->count = count;
         bytestream2_seek(gb, count * exif_sizes[type] > 4 ? payload : tell + 8, SEEK_SET);
-        ret = exif_read_values(logctx, gb, le, entry);
+        ret = exif_read_values(logctx, gb, le, &bytes_left[guess], entry);
     }
 
 end:
@@ -564,7 +568,7 @@ end:
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, int *entries_left,
+                               int depth, int *entries_left, size_t *bytes_left,
                                AVExifMetadata *ifd, int guess)
 {
     uint32_t entries;
@@ -629,7 +633,8 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     memset(ifd->entries, 0, required_size);
 
     for (uint32_t i = 0; i < entries; i++) {
-        ret = exif_decode_tag(logctx, gb, le, depth, entries_left, guess, &ifd->entries[i]);
+        ret = exif_decode_tag(logctx, gb, le, depth, entries_left, bytes_left,
+                              guess, &ifd->entries[i]);
         if (ret < 0)
             goto end;
     }
@@ -946,7 +951,8 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
     int ifd_offsets[17] = { bytestream2_tell(&gbytes) };
     int nb_ifds = 1;
     int entries_left[2] = { size / BASE_TAG_SIZE, size / BASE_TAG_SIZE };
-    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, ifd, 0);
+    size_t bytes_left[2] = { size, size };
+    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, bytes_left, ifd, 0);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
         return ret;
@@ -966,7 +972,7 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
             }
         }
         ifd_offsets[nb_ifds++] = next;
-        ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, &extra_ifd, 1);
+        ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, entries_left, bytes_left, &extra_ifd, 1);
         if (ret < 0) {
             av_exif_free(&extra_ifd);
             break;
