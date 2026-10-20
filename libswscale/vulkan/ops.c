@@ -169,8 +169,8 @@ static void free_fn(void *priv)
     av_free(priv);
 }
 
-static int create_filter_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
-                             const SwsFilterWeights *wd, FFVkBuffer *buf)
+static int create_filter_buf(FFVulkanOpsCtx *s, const SwsFilterWeights *wd,
+                             FFVkBuffer *buf)
 {
     int err;
 
@@ -200,12 +200,12 @@ static int create_filter_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
     return 0;
 
 fail:
-    ff_vk_free_buf(&p->s->vkctx, buf);
+    ff_vk_free_buf(&s->vkctx, buf);
     return err;
 }
 
-static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
-                             const SwsDitherOp *dd, FFVkBuffer *buf)
+static int create_dither_buf(FFVulkanOpsCtx *s, const SwsDitherOp *dd,
+                             FFVkBuffer *buf)
 {
     int err;
 
@@ -235,7 +235,7 @@ static int create_dither_buf(FFVulkanOpsCtx *s, VulkanPriv *p,
     return 0;
 
 fail:
-    ff_vk_free_buf(&p->s->vkctx, buf);
+    ff_vk_free_buf(&s->vkctx, buf);
     return err;
 }
 
@@ -247,14 +247,14 @@ static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
         const SwsOp *op = &ops->ops[n];
         if (op->op == SWS_OP_DITHER) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_dither_buf(s, p, &op->dither,
+            err = create_dither_buf(s, &op->dither,
                                     &p->data_bufs[p->nb_data_bufs]);
             if (err < 0)
                 goto fail;
             p->nb_data_bufs++;
         } else if (op->op == SWS_OP_READ && op->rw.filter.op) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_filter_buf(s, p, op->rw.filter.kernel,
+            err = create_filter_buf(s, op->rw.filter.kernel,
                                     &p->data_bufs[p->nb_data_bufs]);
             if (err < 0)
                 goto fail;
