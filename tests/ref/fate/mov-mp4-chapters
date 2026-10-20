@@ -1,4 +1,4 @@
-d3560e9ac82b30c4f59f357b94124a71 *tests/data/fate/mov-mp4-chapters.mp4
+f0289770c1fb126b195755ba7ccc1f50 *tests/data/fate/mov-mp4-chapters.mp4
 111288 tests/data/fate/mov-mp4-chapters.mp4
 #extradata 0:     3469, 0xc6769ddc
 #tb 0: 1/44100
@@ -6,43 +6,44 @@ d3560e9ac82b30c4f59f357b94124a71 *tests/data/fate/mov-mp4-chapters.mp4
 #codec_id 0: vorbis
 #sample_rate 0: 44100
 #channel_layout_name 0: mono
-0,          0,          0,      256,       28, 0xefcf103e
-0,        256,        256,     1152,      198, 0xfbbe5eb5
-0,       1408,       1408,     2048,      198, 0xabd95c6c
-0,       3456,       3456,     1152,       41, 0x954b12a5
+0,       -256,       -256,      256,       28, 0xefcf103e, F=0x5
+0,          0,          0,     1152,      198, 0xfbbe5eb5
+0,       1152,       1152,     2048,      198, 0xabd95c6c
+0,       3200,       3200,     1152,       41, 0x954b12a5
+0,       4352,       4352,      256,       41, 0xbccd1463
 [CHAPTER]
 id=0
 time_base=1/44100
 start=0
 start_time=0.000000
-end=220765
-end_time=5.006009
+end=220500
+end_time=5.000000
 TAG:title=start
 [/CHAPTER]
 [CHAPTER]
 id=1
 time_base=1/44100
-start=220765
-start_time=5.006009
-end=463315
-end_time=10.506009
+start=220500
+start_time=5.000000
+end=463050
+end_time=10.500000
 TAG:title=Five Seconds
 [/CHAPTER]
 [CHAPTER]
 id=2
 time_base=1/44100
-start=463315
-start_time=10.506009
-end=661765
-end_time=15.006009
+start=463050
+start_time=10.500000
+end=661500
+end_time=15.000000
 TAG:title=Ten point 5 seconds
 [/CHAPTER]
 [CHAPTER]
 id=3
 time_base=1/44100
-start=661765
-start_time=15.006009
-end=875606
-end_time=19.855011
+start=661500
+start_time=15.000000
+end=875341
+end_time=19.849002
 TAG:title=15 sec - over soon
 [/CHAPTER]

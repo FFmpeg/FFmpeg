@@ -56,7 +56,7 @@ nb_streams=1
 nb_programs=0
 nb_stream_groups=0
 format_name=ogg
-start_time=-0.002902
-duration=30.002902
+start_time=0.000000
+duration=30.000000
 probe_score=100
 [/FORMAT]

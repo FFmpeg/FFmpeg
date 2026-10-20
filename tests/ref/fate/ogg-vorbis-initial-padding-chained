@@ -140,9 +140,9 @@ nb_streams=1
 nb_programs=0
 nb_stream_groups=0
 format_name=ogg
-start_time=-0.002902
-duration=0.032902
+start_time=0.000000
+duration=0.030000
 size=7151
-bit_rate=1738739
+bit_rate=1906933
 probe_score=100
 [/FORMAT]

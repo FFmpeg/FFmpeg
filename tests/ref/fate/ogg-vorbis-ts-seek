@@ -64,9 +64,9 @@ nb_streams=1
 nb_programs=0
 nb_stream_groups=0
 format_name=ogg
-start_time=-0.002902
-duration=3.036009
+start_time=0.000000
+duration=3.033107
 size=40295
-bit_rate=106178
+bit_rate=106280
 probe_score=100
 [/FORMAT]

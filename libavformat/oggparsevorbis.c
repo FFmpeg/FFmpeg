@@ -500,8 +500,14 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     /* Initial position shift to account for encoder delay, or page scan
      * to recover the page start timestamp after a seek. */
     if (bos) {
-        if (os->lastpts != AV_NOPTS_VALUE)
+        if (os->lastpts != AV_NOPTS_VALUE) {
+            if (s->streams[idx]->start_time == AV_NOPTS_VALUE) {
+                s->streams[idx]->start_time = os->lastpts;
+                if (s->streams[idx]->duration != AV_NOPTS_VALUE)
+                    s->streams[idx]->duration -= s->streams[idx]->start_time;
+            }
             os->lastpts -= priv->ts_offset;
+        }
         if (os->lastdts != AV_NOPTS_VALUE)
             os->lastdts -= priv->ts_offset;
     } else if (os->page_start && os->lastpts == AV_NOPTS_VALUE &&
