@@ -389,6 +389,22 @@ typedef struct SPIRVIDs {
     int field_i32;
 } SPIRVIDs;
 
+/* Number of arithmetic instructions emitted by insert_bitexact_linear() */
+static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
+{
+    int nb_ops = 0;
+    for (int j = 0; j < 4; j++) {
+        nb_ops += !!lin->m[j][0].num;
+        nb_ops += lin->m[j][0].num && lin->m[j][4].num;
+        for (int i = 1; i < 4; i++) {
+            nb_ops += !!lin->m[j][i].num;
+            nb_ops += lin->m[j][i].num &&
+                      (lin->m[j][0].num || lin->m[j][4].num);
+        }
+    }
+    return nb_ops;
+}
+
 /* Section 1: Function to define all shader header data, and decorations */
 static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
                                  const SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
@@ -470,17 +486,7 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
         if (op->op != SWS_OP_LINEAR)
             continue;
 
-        int nb_ops = 0;
-        for (int j = 0; j < 4; j++) {
-            nb_ops += !!op->lin.m[j][0].num;
-            nb_ops += op->lin.m[j][0].num && op->lin.m[j][4].num;
-            for (int i = 1; i < 4; i++) {
-                nb_ops += !!op->lin.m[j][i].num;
-                nb_ops += op->lin.m[j][i].num &&
-                          (op->lin.m[j][0].num || op->lin.m[j][4].num);
-            }
-        }
-
+        const int nb_ops = bitexact_linear_nb_ops(&op->lin);
         LinearIDs *lin = &id->op[n].lin;
         lin->deco_off = spi_reserve(spi, nb_ops*4*3);
         lin->nb_deco  = nb_ops;
@@ -769,6 +775,7 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     for (int i = 0; i < lin->nb_deco; i++)
         spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
     spi->off = off;
+    const int first_id = spi->id;
 
     int res[4];
     for (int j = 0; j < 4; j++) {
@@ -792,6 +799,9 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                 res[j] = v;
         }
     }
+
+    /* The decorations above assume one ID per arithmetic op */
+    av_assert0(spi->id - first_id == lin->nb_deco);
 
     return spi_OpCompositeConstruct(spi, type_v,
                                     res[0], res[1], res[2], res[3]);
