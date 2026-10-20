@@ -383,12 +383,9 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
     spi_OpCapability(spi, SpvCapabilityShader); /* Shader type */
 
     /* Declare required capabilities */
-    spi_OpCapability(spi, SpvCapabilityInt16);
-    spi_OpCapability(spi, SpvCapabilityInt8);
     spi_OpCapability(spi, SpvCapabilityImageQuery);
     spi_OpCapability(spi, SpvCapabilityStorageImageReadWithoutFormat);
     spi_OpCapability(spi, SpvCapabilityStorageImageWriteWithoutFormat);
-    spi_OpCapability(spi, SpvCapabilityStorageBuffer8BitAccess);
     /* Import the GLSL set of functions (used for min/max) */
     id->glfn = spi_OpExtInstImport(spi, "GLSL.std.450");
 
