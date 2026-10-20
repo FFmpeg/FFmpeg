@@ -276,6 +276,9 @@ fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-r
 fate-hevc-paired-fields: CMD = probeframes -show_entries frame=interlaced_frame,top_field_first $(TARGET_SAMPLES)/hevc/paired_fields.hevc
 FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-paired-fields
 
+fate-hevc-atc-sei-reset: CMD = probeframes -show_entries frame=color_primaries,color_transfer,color_space $(TARGET_SAMPLES)/hevc/atc-sei-reset.hevc
+FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-atc-sei-reset
+
 fate-hevc-monochrome-crop: CMD = probeframes -show_entries frame=width,height:stream=width,height $(TARGET_SAMPLES)/hevc/hevc-monochrome.hevc
 FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-monochrome-crop
 

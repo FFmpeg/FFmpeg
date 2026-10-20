@@ -4161,6 +4161,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
     ret = export_stream_params_from_sei(s);
     if (ret < 0)
         return ret;
+    s->sei.common.alternative_transfer.present = 0;
 
     ret = ff_hevc_set_new_ref(s, l, s->poc);
     if (ret < 0)
