@@ -151,6 +151,8 @@ static void vp9_frame_replace(VP9Frame *dst, const VP9Frame *src)
     av_refstruct_replace(&dst->header_ref, src->header_ref);
     dst->frame_header = src->frame_header;
 
+    av_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
     ff_progress_frame_replace(&dst->tf, &src->tf);
 
     av_refstruct_replace(&dst->extradata, src->extradata);
@@ -158,9 +160,6 @@ static void vp9_frame_replace(VP9Frame *dst, const VP9Frame *src)
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
     dst->uses_2pass = src->uses_2pass;
-
-    av_refstruct_replace(&dst->hwaccel_picture_private,
-                          src->hwaccel_picture_private);
 }
 
 static int update_size(AVCodecContext *avctx, int w, int h)
