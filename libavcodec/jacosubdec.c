@@ -27,6 +27,7 @@
 #include <time.h>
 #include "ass.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -164,11 +165,13 @@ static int jacosub_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
                                 int *got_sub_ptr, const AVPacket *avpkt)
 {
     int ret;
-    const char *ptr = avpkt->data;
+    const char *ptr = ff_decode_subtitle_text(avctx, avpkt);
     FFASSDecoderContext *s = avctx->priv_data;
 
     if (avpkt->size <= 0)
         goto end;
+    if (!ptr)
+        return AVERROR(ENOMEM);
 
     if (*ptr) {
         AVBPrint buffer;
