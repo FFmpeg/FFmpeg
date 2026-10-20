@@ -92,8 +92,8 @@ typedef struct VulkanPriv {
     int interlaced;
 } VulkanPriv;
 
-static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
-                    const SwsPass *pass)
+static void spirv_process(const SwsFrame *dst, const SwsFrame *src,
+                          int y, int h, const SwsPass *pass)
 {
     VulkanPriv *p = (VulkanPriv *) pass->priv;
     FFVkExecContext *ec = ff_vk_exec_get(&p->s->vkctx, &p->e);
@@ -1353,7 +1353,7 @@ static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
 
     *out = (SwsCompiledOp) {
         .opaque      = true,
-        .func_opaque = process,
+        .func_opaque = spirv_process,
         .priv        = p,
         .free        = free_fn,
     };
