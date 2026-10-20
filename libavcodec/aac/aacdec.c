@@ -150,6 +150,8 @@ static av_cold int che_configure(AACDecContext *ac,
             int ret = ac->proc.sbr_ctx_alloc_init(ac, &ac->che[type][id], type);
             if (ret < 0)
                 return ret;
+            ac->che[type][id]->ch[0].output = ac->che[type][id]->ch[0].ret_buf;
+            ac->che[type][id]->ch[1].output = ac->che[type][id]->ch[1].ret_buf;
         }
         if (type != TYPE_CCE) {
             if (*channels >= MAX_CHANNELS - (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))) {
