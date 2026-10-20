@@ -49,11 +49,11 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
     }
 
     FFVulkanOpsCtx *s = c->hw_priv;
-    if (s->vkctx.device_ref && s->vkctx.device_ref->data != dev_ref->data) {
+    if (s->vkctx.device_ref) {
+        if (s->vkctx.device_ref->data == dev_ref->data)
+            return 0;
         /* Reinitialize with new context */
         ff_vk_uninit(&s->vkctx);
-    } else if (s->vkctx.device_ref && s->vkctx.device_ref->data == dev_ref->data) {
-        return 0;
     }
 
     err = ff_vk_init(&s->vkctx, sws, dev_ref, NULL);
