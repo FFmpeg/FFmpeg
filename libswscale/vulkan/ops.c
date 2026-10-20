@@ -332,7 +332,6 @@ typedef struct SPIRVIDs {
 
     /* Constants */
     int u32_p;
-    int f32_p;
     int f32_0;
     int u32_cid[5];
 
@@ -500,7 +499,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
 
     /* Constants */
     id->u32_p = spi_OpUndef(spi, u32_type);
-    id->f32_p = spi_OpConstantFloat(spi, f32_type, 0);
     id->f32_0 = spi_OpConstantFloat(spi, f32_type, 0);
     for (int i = 0; i < 5; i++)
         id->u32_cid[i] = spi_OpConstantUInt(spi, u32_type, i);
@@ -1123,8 +1121,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     int data;
     if (ops->ops[0].type == SWS_PIXEL_F32)
         data = spi_OpCompositeConstruct(spi, id->f32vec4_type,
-                                        id->f32_p, id->f32_p,
-                                        id->f32_p, id->f32_p);
+                                        id->f32_0, id->f32_0,
+                                        id->f32_0, id->f32_0);
     else
         data = spi_OpCompositeConstruct(spi, id->u32vec4_type,
                                         id->u32_p, id->u32_p,
@@ -1146,7 +1144,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         int type_s = cur_type == SWS_PIXEL_F32 ?
                      id->f32_type : id->u32_type;
         int uid = cur_type == SWS_PIXEL_F32 ?
-                  id->f32_p : id->u32_p;
+                  id->f32_0 : id->u32_p;
 
         switch (op->op) {
         case SWS_OP_READ:
