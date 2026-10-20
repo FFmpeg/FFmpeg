@@ -241,4 +241,13 @@ int ff_decode_content_light_new_ext(const AVCodecContext *avctx,
                                     AVFrameSideData ***sd, int *nb_sd,
                                     struct AVContentLightMetadata **clm);
 
+/**
+ * Get the data of a subtitle packet followed by a 0 byte.
+ *
+ * @return avpkt->data if avpkt->size <= 0 or its first padding byte is 0,
+ *         otherwise a copy valid until the decode callback returns,
+ *         NULL on allocation failure
+ */
+const char *ff_decode_subtitle_text(AVCodecContext *avctx, const AVPacket *avpkt);
+
 #endif /* AVCODEC_DECODE_H */
