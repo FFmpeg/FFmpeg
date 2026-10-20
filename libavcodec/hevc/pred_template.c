@@ -291,6 +291,14 @@ do {                                  \
                 a = PIXEL_SPLAT_X4(left[-1]);
                 EXTEND_RIGHT_CIP(top, 0, size_max_x);
             }
+            // Samples past the picture edge repeat the substituted last
+            // sample, not the one read before the substitution.
+            if (cand_bottom_left && bottom_left_size < size)
+                EXTEND(left + size + bottom_left_size, left[size + bottom_left_size - 1],
+                       size - bottom_left_size);
+            if (cand_up_right && top_right_size < size)
+                EXTEND(top + size + top_right_size, top[size + top_right_size - 1],
+                       size - top_right_size);
         }
     }
     // Infer the unavailable samples
