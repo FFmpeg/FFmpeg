@@ -102,7 +102,36 @@ $(FATE_SWS_UNPADDED) $(FATE_SWS_FLIPPED): SWS_PROB = -p 0.01
 fate-sws-unpadded-memcpy fate-sws-flipped-memcpy: SWS_PROB =
 fate-sws-unpadded-memcpy fate-sws-flipped-memcpy: SWS_SCALER = -scaler none
 
-FATE_LIBSWSCALE += $(FATE_SWS_UNSCALED) $(FATE_SWS_UNSTABLE) $(FATE_SWS_UNPADDED) $(FATE_SWS_FLIPPED)
+# Count the unscaled conversions supported by each SIMD instruction set,
+# without running them.
+SWS_CPUFLAGS_SSE4      := sse4.1
+SWS_CPUFLAGS_AVX2      := $(SWS_CPUFLAGS_SSE4)+avx2+fma3
+SWS_CPUFLAGS_AVX512    := $(SWS_CPUFLAGS_AVX2)+avx512
+SWS_CPUFLAGS_AVX512ICL := $(SWS_CPUFLAGS_AVX512)+avx512icl
+SWS_CPUFLAGS_NEON      := neon
+
+FATE_SWS_COVERAGE-yes                        += fate-sws-coverage-memcpy
+ifeq ($(ARCH_X86_64),yes)
+FATE_SWS_COVERAGE-$(HAVE_SSE4_EXTERNAL)      += fate-sws-coverage-x86-sse4
+FATE_SWS_COVERAGE-$(HAVE_AVX2_EXTERNAL)      += fate-sws-coverage-x86-avx2
+FATE_SWS_COVERAGE-$(HAVE_AVX512_EXTERNAL)    += fate-sws-coverage-x86-avx512
+FATE_SWS_COVERAGE-$(HAVE_AVX512ICL_EXTERNAL) += fate-sws-coverage-x86-avx512icl
+endif
+ifeq ($(ARCH_AARCH64),yes)
+FATE_SWS_COVERAGE-$(HAVE_NEON)               += fate-sws-coverage-aarch64-neon
+endif
+
+fate-sws-coverage-x86-sse4:      SWS_COVERAGE = -backends +x86     -cpuflags $(SWS_CPUFLAGS_SSE4)
+fate-sws-coverage-x86-avx2:      SWS_COVERAGE = -backends +x86     -cpuflags $(SWS_CPUFLAGS_AVX2)
+fate-sws-coverage-x86-avx512:    SWS_COVERAGE = -backends +x86     -cpuflags $(SWS_CPUFLAGS_AVX512)
+fate-sws-coverage-x86-avx512icl: SWS_COVERAGE = -backends +x86     -cpuflags $(SWS_CPUFLAGS_AVX512ICL)
+fate-sws-coverage-aarch64-neon:  SWS_COVERAGE = -backends +aarch64 -cpuflags $(SWS_CPUFLAGS_NEON)
+
+$(FATE_SWS_COVERAGE-yes): libswscale/tests/swscale$(EXESUF)
+$(FATE_SWS_COVERAGE-yes): CMD = run libswscale/tests/swscale$(EXESUF) -v 16 -coverage 1 -scaler none -backends memcpy $(SWS_COVERAGE)
+fate-sws-coverage: $(FATE_SWS_COVERAGE-yes)
+
+FATE_LIBSWSCALE += $(FATE_SWS_UNSCALED) $(FATE_SWS_UNSTABLE) $(FATE_SWS_UNPADDED) $(FATE_SWS_FLIPPED) $(FATE_SWS_COVERAGE-yes)
 
 ifneq ($(HAVE_BIGENDIAN),yes)
 
