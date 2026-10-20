@@ -360,6 +360,9 @@ void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count);
 
 /**
  * Print out the contents of an operation list.
+ *
+ * Note: This requires having called `ff_sws_op_list_update_comps()` to
+ * refresh the output pads, or the output may be stale/missing.
  */
 void ff_sws_op_list_print(void *log_ctx, int log_level, int log_level_extra,
                           const SwsOpList *ops);
