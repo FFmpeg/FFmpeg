@@ -51,6 +51,7 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
     if (!(frame->flags & ~VVC_FRAME_FLAG_CORRUPT))
         frame->flags = 0;
     if (!frame->flags) {
+        av_refstruct_unref(&frame->hwaccel_picture_private);
         av_frame_unref(frame->frame);
 
         if (frame->needs_fg) {
@@ -69,7 +70,6 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
         av_refstruct_unref(&frame->rpl_tab);
 
         frame->collocated_ref = NULL;
-        av_refstruct_unref(&frame->hwaccel_picture_private);
     }
 }
 
