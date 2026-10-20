@@ -1179,6 +1179,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 return AVERROR(ENOTSUP);
             } else if (op->rw.filter.op) {
                 av_assert0(op->rw.mode != SWS_RW_PALETTE);
+                if (op->rw.filter.type != SWS_PIXEL_F32)
+                    return AVERROR(ENOTSUP);
                 data = read_filtered(spi, id, ops, op,
                                      &id->filt[nb_filter_used++],
                                      in_img, gid, gi2);
