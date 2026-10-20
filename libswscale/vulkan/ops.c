@@ -98,23 +98,33 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
     VulkanPriv *p = (VulkanPriv *) pass->priv;
     FFVkExecContext *ec = ff_vk_exec_get(&p->s->vkctx, &p->e);
     FFVulkanFunctions *vk = &p->s->vkctx.vkfn;
-    ff_vk_exec_start(&p->s->vkctx, ec);
+    int err = ff_vk_exec_start(&p->s->vkctx, ec);
+    if (err < 0)
+        goto error;
 
     AVFrame *src_f = (AVFrame *) src->avframe;
     AVFrame *dst_f = (AVFrame *) dst->avframe;
-    ff_vk_exec_add_dep_frame(&p->s->vkctx, ec, src_f,
-                             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
-    ff_vk_exec_add_dep_frame(&p->s->vkctx, ec, dst_f,
-                             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    err = ff_vk_exec_add_dep_frame(&p->s->vkctx, ec, src_f,
+                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                   VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    if (err < 0)
+        goto fail;
+    err = ff_vk_exec_add_dep_frame(&p->s->vkctx, ec, dst_f,
+                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                   VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT);
+    if (err < 0)
+        goto fail;
 
     VkImageView src_views[AV_NUM_DATA_POINTERS];
     VkImageView dst_views[AV_NUM_DATA_POINTERS];
-    ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, src_views, src_f,
-                                p->src_view_fmt);
-    ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, dst_views, dst_f,
-                                p->dst_view_fmt);
+    err = ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, src_views, src_f,
+                                      p->src_view_fmt);
+    if (err < 0)
+        goto fail;
+    err = ff_vk_create_imageviews_fmt(&p->s->vkctx, ec, dst_views, dst_f,
+                                      p->dst_view_fmt);
+    if (err < 0)
+        goto fail;
 
     ff_vk_shader_update_img_array(&p->s->vkctx, ec, &p->shd, src_f, src_views,
                                   0, 0, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE);
@@ -155,8 +165,18 @@ static void process(const SwsFrame *dst, const SwsFrame *src, int y, int h,
                     FFALIGN(dst->height, p->shd.lg_size[1])/p->shd.lg_size[1],
                     1);
 
-    ff_vk_exec_submit(&p->s->vkctx, ec);
+    err = ff_vk_exec_submit(&p->s->vkctx, ec);
+    if (err < 0)
+        goto error;
     ff_vk_exec_wait(&p->s->vkctx, ec);
+    return;
+
+fail:
+    ff_vk_exec_discard(&p->s->vkctx, ec);
+error:
+    /* SwsPassFunc has no way to return errors */
+    av_log(&p->s->vkctx, AV_LOG_ERROR, "Vulkan pass failed: %s\n",
+           av_err2str(err));
 }
 
 static void free_fn(void *priv)
