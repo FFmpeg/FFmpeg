@@ -768,6 +768,8 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     if (!sps)
         return 0;
 
+    av_refstruct_unref(&s->vps);
+
     ret = pic_arrays_init(l, sps);
     if (ret < 0)
         goto fail;
