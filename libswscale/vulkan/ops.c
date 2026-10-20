@@ -956,7 +956,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     if (err < 0)
         return err;
 
-    FFVulkanDescriptorSetBinding desc_set[MAX_DATA_BUFS] = {
+    FFVulkanDescriptorSetBinding img_desc[2] = {
         {
             .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .stages = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -968,7 +968,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             .elems = 4,
         },
     };
-    ff_vk_shader_add_descriptor_set(&s->vkctx, shd, desc_set, 2, 0);
+    ff_vk_shader_add_descriptor_set(&s->vkctx, shd, img_desc, 2, 0);
 
     /* Create dither buffers */
     err = create_bufs(s, p, ops);
@@ -985,6 +985,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
      * op order, so the bindings match the buffer order from create_bufs().*/
     id->nb_dither_bufs = 0;
     id->nb_filter_bufs = 0;
+    FFVulkanDescriptorSetBinding buf_desc[MAX_DATA_BUFS];
     int nb_data_bufs = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
@@ -1022,13 +1023,13 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         }
 
         id->iface[id->nb_iface++] = var_id;
-        desc_set[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
+        buf_desc[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
             .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
         };
     }
     if (nb_data_bufs)
-        ff_vk_shader_add_descriptor_set(&s->vkctx, shd, desc_set,
+        ff_vk_shader_add_descriptor_set(&s->vkctx, shd, buf_desc,
                                         nb_data_bufs, 1);
 
     if (id->interlaced) {
