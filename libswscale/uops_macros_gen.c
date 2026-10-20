@@ -241,10 +241,14 @@ fail:
     return ret;
 }
 
+enum {
+    COMMON_FLAGS = SWS_UOP_FLAG_EXPAND_BIT | SWS_UOP_FLAG_READ_PALETTE |
+                   SWS_UOP_FLAG_ADD,
+};
+
 static const SwsUOpFlags uop_flags[] = {
-    SWS_UOP_FLAG_EXPAND_BIT | SWS_UOP_FLAG_READ_PALETTE | SWS_UOP_FLAG_ADD,
-    SWS_UOP_FLAG_EXPAND_BIT | SWS_UOP_FLAG_READ_PALETTE | SWS_UOP_FLAG_ADD |
-    SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA, /* x86 backend */
+    COMMON_FLAGS,                                          /* C backend */
+    COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA, /* x86 backend */
 };
 
 static int register_uops(SwsContext *ctx, const SwsOpList *ops,
