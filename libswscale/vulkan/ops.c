@@ -252,15 +252,7 @@ static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
             if (err < 0)
                 goto fail;
             p->nb_data_bufs++;
-        } else if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
-            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_filter_buf(s, p, op->filter.kernel,
-                                    &p->data_bufs[p->nb_data_bufs]);
-            if (err < 0)
-                goto fail;
-            p->nb_data_bufs++;
-        } else if ((op->op == SWS_OP_READ ||
-                    op->op == SWS_OP_WRITE) && op->rw.filter.op) {
+        } else if (op->op == SWS_OP_READ && op->rw.filter.op) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
             err = create_filter_buf(s, p, op->rw.filter.kernel,
                                     &p->data_bufs[p->nb_data_bufs]);
@@ -848,12 +840,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     }
 
     /* Accumulators, initialized to zero */
-    int acc_s[4] = { id->f32_0, id->f32_0, id->f32_0, id->f32_0 };
-    int acc_v = id->f32_0;
-    if (op->rw.mode == SWS_RW_PACKED)
-        acc_v = spi_OpCompositeConstruct(spi, id->f32vec4_type,
-                                         id->f32_0, id->f32_0,
-                                         id->f32_0, id->f32_0);
+    int acc[4] = { id->f32_0, id->f32_0, id->f32_0, id->f32_0 };
 
     for (int t = 0; t < f->filter_size; t++) {
         /* float w = filter_w[axis][t]; */
@@ -875,35 +862,23 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
             spi_OpCompositeConstruct(spi, id->i32vec2_type, c, pos_y) :
             spi_OpCompositeConstruct(spi, id->i32vec2_type, pos_x, c);
 
-        if (op->rw.mode == SWS_RW_PACKED) {
+        for (int e = 0; e < op->rw.elems; e++) {
             int px = spi_OpImageRead(spi, read_vtype,
-                                     in_img[ops->plane_src[0]], coord,
+                                     in_img[ops->plane_src[e]], coord,
                                      SpvImageOperandsMaskNone);
-            if (!src_float)
-                px = spi_OpConvertUToF(spi, id->f32vec4_type, px);
-            px = spi_OpVectorTimesScalar(spi, id->f32vec4_type, px, w);
-            acc_v = spi_OpFAdd(spi, id->f32vec4_type, acc_v, px);
-        } else {
-            for (int e = 0; e < op->rw.elems; e++) {
-                int px = spi_OpImageRead(spi, read_vtype,
-                                         in_img[ops->plane_src[e]], coord,
-                                         SpvImageOperandsMaskNone);
-                if (src_float) {
-                    px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
-                } else {
-                    px = spi_OpCompositeExtract(spi, id->u32_type, px, 0);
-                    px = spi_OpConvertUToF(spi, id->f32_type, px);
-                }
-                px = spi_OpFMul(spi, id->f32_type, w, px);
-                acc_s[e] = spi_OpFAdd(spi, id->f32_type, acc_s[e], px);
+            if (src_float) {
+                px = spi_OpCompositeExtract(spi, id->f32_type, px, 0);
+            } else {
+                px = spi_OpCompositeExtract(spi, id->u32_type, px, 0);
+                px = spi_OpConvertUToF(spi, id->f32_type, px);
             }
+            px = spi_OpFMul(spi, id->f32_type, w, px);
+            acc[e] = spi_OpFAdd(spi, id->f32_type, acc[e], px);
         }
     }
 
-    if (op->rw.mode == SWS_RW_PACKED)
-        return acc_v;
     return spi_OpCompositeConstruct(spi, id->f32vec4_type,
-                                    acc_s[0], acc_s[1], acc_s[2], acc_s[3]);
+                                    acc[0], acc[1], acc[2], acc[3]);
 }
 
 /* Sub-packed formats are accessed as a single raw word per pixel, which is
@@ -1178,8 +1153,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             if (op->rw.frac) {
                 return AVERROR(ENOTSUP);
             } else if (op->rw.filter.op) {
-                av_assert0(op->rw.mode != SWS_RW_PALETTE);
-                if (op->rw.filter.type != SWS_PIXEL_F32)
+                if (op->rw.mode != SWS_RW_PLANAR ||
+                    op->rw.filter.type != SWS_PIXEL_F32)
                     return AVERROR(ENOTSUP);
                 data = read_filtered(spi, id, ops, op,
                                      &id->filt[nb_filter_used++],
