@@ -101,9 +101,9 @@ typedef struct FFHWAccel {
     /**
      * Size of per-frame hardware accelerator private data.
      *
-     * Private data is allocated with av_mallocz() before
-     * AVCodecContext.get_buffer() and deallocated after
-     * AVCodecContext.release_buffer().
+     * Private data is allocated with ff_hwaccel_frame_priv_alloc() and
+     * released before the frame, so free_frame_priv() can still use the
+     * frame's device context.
      */
     int frame_priv_data_size;
 

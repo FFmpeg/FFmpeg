@@ -2899,10 +2899,10 @@ av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 #if HAVE_THREADS
 static void vp8_replace_frame(VP8Frame *dst, const VP8Frame *src)
 {
-    ff_progress_frame_replace(&dst->tf, &src->tf);
-    av_refstruct_replace(&dst->seg_map, src->seg_map);
     av_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
+    ff_progress_frame_replace(&dst->tf, &src->tf);
+    av_refstruct_replace(&dst->seg_map, src->seg_map);
 }
 
 #define REBASE(pic) ((pic) ? (pic) - &s_src->frames[0] + &s->frames[0] : NULL)
