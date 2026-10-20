@@ -99,6 +99,7 @@ typedef struct SwsReadWriteOp {
      *   rgb4      = 1x u8 (frac 1)
      *   pal8      = 4x u8 (palette)
      */
+    SwsPixelType type;     /* pixel type to read */
     SwsReadWriteMode mode; /* how data is laid out in memory */
     uint8_t elems; /* number of elements (of type `op.type`) to read/write */
     uint8_t frac;  /* fractional pixel step factor (log2) */

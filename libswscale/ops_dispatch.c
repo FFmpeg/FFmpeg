@@ -475,7 +475,7 @@ static void op_list_get_plane_copy(const SwsOpList *ops, SwsPass *pass)
     const SwsOp *read  = ff_sws_op_list_input(ops);
     if (!write || write->rw.mode != SWS_RW_PLANAR ||
         !read  || read->rw.mode  != SWS_RW_PLANAR ||
-        read->type    != write->type ||
+        read->rw.type != write->rw.type ||
         read->rw.frac != write->rw.frac)
         return; /* only regular planes can be directly ref'd */
 
@@ -514,7 +514,7 @@ static int rw_pixel_bits(const SwsOp *op)
     case SWS_RW_PACKED: elems = op->rw.elems; break;
     }
 
-    const int size  = ff_sws_pixel_type_size(op->type);
+    const int size  = ff_sws_pixel_type_size(op->rw.type);
     const int bits  = 8 >> op->rw.frac;
     av_assert1(bits >= 1);
     return elems * size * bits;

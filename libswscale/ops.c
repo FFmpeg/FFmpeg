@@ -783,7 +783,7 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
     const SwsOp *read  = ff_sws_op_list_input(ops);
     const SwsOp *write = ff_sws_op_list_output(ops);
     if (!read || !write || ops->num_ops > 2 ||
-        read->type != write->type ||
+        read->rw.type != write->rw.type ||
         read->rw.mode != write->rw.mode ||
         read->rw.elems != write->rw.elems ||
         read->rw.frac != write->rw.frac ||
@@ -901,8 +901,9 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_READ:
     case SWS_OP_WRITE:
+        av_assert0(op->rw.type == op->type);
         av_bprintf(bp, "%-20s: %dx %s %s >> %d", name,
-                   op->rw.elems, ff_sws_pixel_type_name(op->type),
+                   op->rw.elems, ff_sws_pixel_type_name(op->rw.type),
                    rw_mode_names[op->rw.mode], op->rw.frac);
         if (!op->rw.filter.op)
             break;

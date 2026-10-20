@@ -711,7 +711,7 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
 
     /* Define image types for descriptors */
     id->out_img_type = spi_OpTypeImage(spi,
-                                       op_w->type == SWS_PIXEL_F32 ?
+                                       op_w->rw.type == SWS_PIXEL_F32 ?
                                        id->f32_type : id->u32_type,
                                        2, 0, 0, 0, 2, SpvImageFormatUnknown);
     id->out_img_array_id = spi_OpTypeArray(spi, id->out_img_type, spi_get_id(spi),
@@ -722,11 +722,11 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     if (op_r) {
         /* If the formats match, we have to reuse the types due to SPIR-V not
          * allowing redundant type defines */
-        int match = ((op_w->type == SWS_PIXEL_F32) ==
-                     (op_r->type == SWS_PIXEL_F32));
+        int match = ((op_w->rw.type == SWS_PIXEL_F32) ==
+                     (op_r->rw.type == SWS_PIXEL_F32));
         id->in_img_type = match ? id->out_img_type :
                           spi_OpTypeImage(spi,
-                                          op_r->type == SWS_PIXEL_F32 ?
+                                          op_r->rw.type == SWS_PIXEL_F32 ?
                                           id->f32_type : id->u32_type,
                                           2, 0, 0, 0, 2, SpvImageFormatUnknown);
         id->in_img_array_id = spi_OpTypeArray(spi, id->in_img_type, spi_get_id(spi),
@@ -834,7 +834,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     const int is_h = f->filter == SWS_OP_FILTER_H;
     const int src_interlaced = ops->src.interlaced;
 
-    const int src_float = op->type == SWS_PIXEL_F32;
+    const int src_float = op->rw.type == SWS_PIXEL_F32;
     const int read_vtype = src_float ? id->f32vec4_type : id->u32vec4_type;
 
     /* Buffer array index along the filtered axis: pos.x (H) or pos.y (V) */
@@ -905,7 +905,7 @@ static VkFormat packed_word_fmt(const SwsOp *op)
     if (!op || op->rw.mode != SWS_RW_PACKED || op->rw.elems != 1)
         return VK_FORMAT_UNDEFINED;
 
-    switch (op->type) {
+    switch (op->rw.type) {
     case SWS_PIXEL_U8:  return VK_FORMAT_R8_UINT;
     case SWS_PIXEL_U16: return VK_FORMAT_R16_UINT;
     case SWS_PIXEL_U32: return VK_FORMAT_R32_UINT;
@@ -920,7 +920,7 @@ static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
     const VkFormat word_fmt = packed_word_fmt(op);
     enum FFVkShaderRepFormat rep = FF_VK_REP_NATIVE;
     if (op)
-        rep = op->type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
+        rep = op->rw.type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
     if (!vk_fmts)
         return AVERROR(ENOTSUP);
 

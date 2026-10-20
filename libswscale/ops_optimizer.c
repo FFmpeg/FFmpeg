@@ -1225,6 +1225,7 @@ int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **out_ops2, int index)
     ret = ff_sws_op_list_append(ops1, &(SwsOp) {
         .op       = SWS_OP_WRITE,
         .type     = type,
+        .rw.type  = type,
         .rw.elems = nb_planes,
     });
     if (ret < 0)
@@ -1233,6 +1234,7 @@ int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **out_ops2, int index)
     ret = ff_sws_op_list_insert_at(ops2, 0, &(SwsOp) {
         .op        = SWS_OP_READ,
         .type      = type,
+        .rw.type   = type,
         .rw.elems  = nb_planes,
     });
     if (ret < 0)
