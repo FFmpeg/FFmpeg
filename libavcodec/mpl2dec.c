@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "libavutil/bprint.h"
 
 static int mpl2_event_to_ass(AVBPrint *buf, const char *p)
@@ -68,8 +69,11 @@ static int mpl2_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
 {
     int ret = 0;
     AVBPrint buf;
-    const char *ptr = avpkt->data;
+    const char *ptr = ff_decode_subtitle_text(avctx, avpkt);
     FFASSDecoderContext *s = avctx->priv_data;
+
+    if (avpkt->size > 0 && !ptr)
+        return AVERROR(ENOMEM);
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (ptr && avpkt->size > 0 && *ptr && !mpl2_event_to_ass(&buf, ptr))
