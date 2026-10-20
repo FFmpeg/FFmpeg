@@ -4725,6 +4725,15 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, FFVkBuffer *vkbuf,
 {
     int err;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    int bytewidth[AV_NUM_DATA_POINTERS];
+
+    /* Copy only the visible bytes of each row, the last row of a plane
+     * does not have to extend to the full linesize. */
+    for (int i = 0; i < planes; i++) {
+        bytewidth[i] = av_image_get_linesize(swf->format, swf->width, i);
+        if (bytewidth[i] < 0)
+            return bytewidth[i];
+    }
 
     if (upload) {
         for (int i = 0; i < planes; i++)
@@ -4732,7 +4741,7 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, FFVkBuffer *vkbuf,
                                 region[i].bufferRowLength,
                                 swf->data[i],
                                 swf->linesize[i],
-                                FFABS(swf->linesize[i]),
+                                bytewidth[i],
                                 region[i].imageExtent.height);
 
         err = ff_vk_flush_buffer(&p->vkctx, vkbuf, 0, VK_WHOLE_SIZE, 1);
@@ -4754,7 +4763,7 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, FFVkBuffer *vkbuf,
                                 swf->linesize[i],
                                 vkbuf->mapped_mem + region[i].bufferOffset,
                                 region[i].bufferRowLength,
-                                FFABS(swf->linesize[i]),
+                                bytewidth[i],
                                 region[i].imageExtent.height);
     }
 
