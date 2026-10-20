@@ -408,6 +408,25 @@ typedef struct SPIRVIDs {
     int field_i32;
 } SPIRVIDs;
 
+/* All integer pixel types are represented as 32-bit unsigned integers */
+static int type_scalar(const SPIRVIDs *id, SwsPixelType type)
+{
+    av_assert1(type != SWS_PIXEL_NONE);
+    return ff_sws_pixel_type_is_int(type) ? id->u32_type : id->f32_type;
+}
+
+static int type_vec4(const SPIRVIDs *id, SwsPixelType type)
+{
+    av_assert1(type != SWS_PIXEL_NONE);
+    return ff_sws_pixel_type_is_int(type) ? id->u32vec4_type : id->f32vec4_type;
+}
+
+static int const_zero(const SPIRVIDs *id, SwsPixelType type)
+{
+    av_assert1(type != SWS_PIXEL_NONE);
+    return ff_sws_pixel_type_is_int(type) ? id->u32_cid[0] : id->f32_0;
+}
+
 /* Number of arithmetic instructions emitted by insert_bitexact_linear() */
 static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
 {
@@ -709,9 +728,7 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     const SwsOp *op_r = ff_sws_op_list_input(ops);
 
     /* Define image types for descriptors */
-    id->out_img_type = spi_OpTypeImage(spi,
-                                       op_w->rw.type == SWS_PIXEL_F32 ?
-                                       id->f32_type : id->u32_type,
+    id->out_img_type = spi_OpTypeImage(spi, type_scalar(id, op_w->rw.type),
                                        2, 0, 0, 0, 2, SpvImageFormatUnknown);
     id->out_img_array_id = spi_OpTypeArray(spi, id->out_img_type, spi_get_id(spi),
                                            id->u32_cid[out_img_count]);
@@ -724,9 +741,7 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
         int match = ((op_w->rw.type == SWS_PIXEL_F32) ==
                      (op_r->rw.type == SWS_PIXEL_F32));
         id->in_img_type = match ? id->out_img_type :
-                          spi_OpTypeImage(spi,
-                                          op_r->rw.type == SWS_PIXEL_F32 ?
-                                          id->f32_type : id->u32_type,
+                          spi_OpTypeImage(spi, type_scalar(id, op_r->rw.type),
                                           2, 0, 0, 0, 2, SpvImageFormatUnknown);
         id->in_img_array_id = spi_OpTypeArray(spi, id->in_img_type, spi_get_id(spi),
                                               id->u32_cid[in_img_count]);
@@ -781,8 +796,8 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                   const LinearIDs *lin, int data)
 {
     const SwsPixelType op_type = ff_sws_op_input_type(op);
-    int type_s = op_type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
-    int type_v = op_type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
+    int type_s = type_scalar(id, op_type);
+    int type_v = type_vec4(id, op_type);
 
     int tmp[4];
     tmp[0] = spi_OpCompositeExtract(spi, type_s, data, 0);
@@ -799,7 +814,7 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
 
     int res[4];
     for (int j = 0; j < 4; j++) {
-        res[j] = op_type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
+        res[j] = const_zero(id, op_type);
         if (op->lin.m[j][0].num)
             res[j] = spi_OpFMul(spi, type_s, tmp[0], lin->m[j][0]);
 
@@ -835,7 +850,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     const int src_interlaced = ops->src.interlaced;
 
     const int src_float = op->rw.type == SWS_PIXEL_F32;
-    const int read_vtype = src_float ? id->f32vec4_type : id->u32vec4_type;
+    const int read_vtype = type_vec4(id, op->rw.type);
 
     /* Buffer array index along the filtered axis: pos.x (H) or pos.y (V) */
     int axis = spi_OpCompositeExtract(spi, id->u32_type, gid, is_h ? 0 : 1);
@@ -1161,12 +1176,9 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         SwsPixelType type_out = ff_sws_op_output_type(op);
         if (op->op == SWS_OP_WRITE)
             type_out = type_in;
-        int type_v = type_out == SWS_PIXEL_F32 ?
-                     id->f32vec4_type : id->u32vec4_type;
-        int type_s = type_out == SWS_PIXEL_F32 ?
-                     id->f32_type : id->u32_type;
-        int uid = type_out == SWS_PIXEL_F32 ?
-                  id->f32_0 : id->u32_cid[0];
+        int type_v = type_vec4(id, type_out);
+        int type_s = type_scalar(id, type_out);
+        int uid = const_zero(id, type_out);
 
         switch (op->op) {
         case SWS_OP_READ:
