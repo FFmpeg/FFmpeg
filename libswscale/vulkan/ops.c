@@ -279,14 +279,14 @@ fail:
 }
 
 struct DitherData {
-        int size;
-        int arr_1d_id;
-        int arr_2d_id;
-        int struct_id;
-        int struct_ptr_id;
-        int id;
-        int mask_id;
-        int binding;
+    int size;
+    int arr_1d_id;
+    int arr_2d_id;
+    int struct_id;
+    int struct_ptr_id;
+    int id;
+    int mask_id;
+    int binding;
 };
 
 struct FilterData {
@@ -400,7 +400,7 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
 
     /* Entrypoint */
     id->ep = spi_OpEntryPoint(spi, SpvExecutionModelGLCompute, "main",
-                                id->iface, id->nb_iface);
+                              id->iface, id->nb_iface);
     spi_OpExecutionMode(spi, id->ep, SpvExecutionModeLocalSize,
                         shd->lg_size, 3);
 
@@ -654,7 +654,7 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
                                    int in_img_count, int out_img_count)
 {
     id->dither_ptr_elem_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
-                                                 id->f32_type);
+                                               id->f32_type);
 
     struct DitherData *dither = id->dither;
     for (int i = 0; i < id->nb_dither_bufs; i++) {
@@ -714,12 +714,12 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
         int match = ((op_w->type == SWS_PIXEL_F32) ==
                      (op_r->type == SWS_PIXEL_F32));
         id->in_img_type = match ? id->out_img_type :
-                            spi_OpTypeImage(spi,
-                                            op_r->type == SWS_PIXEL_F32 ?
-                                            id->f32_type : id->u32_type,
-                                            2, 0, 0, 0, 2, SpvImageFormatUnknown);
+                          spi_OpTypeImage(spi,
+                                          op_r->type == SWS_PIXEL_F32 ?
+                                          id->f32_type : id->u32_type,
+                                          2, 0, 0, 0, 2, SpvImageFormatUnknown);
         id->in_img_array_id = spi_OpTypeArray(spi, id->in_img_type, spi_get_id(spi),
-                                          id->u32_cid[in_img_count]);
+                                              id->u32_cid[in_img_count]);
     }
 
     /* Pointer types for images */
@@ -733,10 +733,10 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     id->in_img_tptr = 0;
     id->in_img_sptr = 0;
     if (op_r) {
-        id->in_img_tptr= spi_OpTypePointer(spi, SpvStorageClassUniformConstant,
-                                           id->in_img_array_id);
-        id->in_img_sptr= spi_OpTypePointer(spi, SpvStorageClassUniformConstant,
-                                           id->in_img_type);
+        id->in_img_tptr = spi_OpTypePointer(spi, SpvStorageClassUniformConstant,
+                                            id->in_img_array_id);
+        id->in_img_sptr = spi_OpTypePointer(spi, SpvStorageClassUniformConstant,
+                                            id->in_img_type);
     }
 
     /* Define inputs */
@@ -1298,7 +1298,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         }
         case SWS_OP_LINEAR: {
             if (op->type != SWS_PIXEL_F32)
-                 return AVERROR(ENOTSUP);
+                return AVERROR(ENOTSUP);
             if (sws->flags & SWS_BITEXACT)
                 data = insert_bitexact_linear(op, spi, id, data, nb_linear_ops, nb_const_ids);
             else
