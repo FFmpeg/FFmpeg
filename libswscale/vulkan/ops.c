@@ -548,13 +548,14 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
         OpIDs *oid = &id->op[n];
+        SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
                 if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
                 AVRational64 cv = op->clear.value[i];
-                if (op->type == SWS_PIXEL_F32) {
+                if (op->clear.type[i] == SWS_PIXEL_F32) {
                     float q = (float)cv.num/cv.den;
                     oid->comp[i] = spi_OpConstantFloat(spi, f32_type, q);
                 } else {
@@ -587,7 +588,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         }
         case SWS_OP_SCALE: {
             int tmp;
-            if (op->type == SWS_PIXEL_F32) {
+            if (type_in == SWS_PIXEL_F32) {
                 float q = op->scale.factor.num/(float)op->scale.factor.den;
                 tmp = spi_OpConstantFloat(spi, f32_type, q);
                 tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
@@ -608,7 +609,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
                 AVRational64 cl = op->clamp.limit[i];
                 if (!op->clamp.limit[i].den) {
                     continue;
-                } else if (op->type == SWS_PIXEL_F32) {
+                } else if (type_in == SWS_PIXEL_F32) {
                     float q = (float)cl.num/((float)cl.den);
                     tmp = spi_OpConstantFloat(spi, f32_type, q);
                 } else {
@@ -781,8 +782,9 @@ static int insert_vmat_linear(SPICtx *spi, SPIRVIDs *id, const LinearIDs *lin,
 static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                   const LinearIDs *lin, int data)
 {
-    int type_s = op->type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
-    int type_v = op->type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
+    const SwsPixelType op_type = ff_sws_op_input_type(op);
+    int type_s = op_type == SWS_PIXEL_F32 ? id->f32_type : id->u32_type;
+    int type_v = op_type == SWS_PIXEL_F32 ? id->f32vec4_type : id->u32vec4_type;
 
     int tmp[4];
     tmp[0] = spi_OpCompositeExtract(spi, type_s, data, 0);
@@ -799,7 +801,7 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
 
     int res[4];
     for (int j = 0; j < 4; j++) {
-        res[j] = op->type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
+        res[j] = op_type == SWS_PIXEL_F32 ? id->f32_0 : id->u32_cid[0];
         if (op->lin.m[j][0].num)
             res[j] = spi_OpFMul(spi, type_s, tmp[0], lin->m[j][0]);
 
@@ -1144,7 +1146,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
     /* Initialize main data state */
     int data;
-    if (ops->ops[0].type == SWS_PIXEL_F32)
+    if (ff_sws_op_output_type(&ops->ops[0]) == SWS_PIXEL_F32)
         data = spi_OpCompositeConstruct(spi, id->f32vec4_type,
                                         id->f32_0, id->f32_0,
                                         id->f32_0, id->f32_0);
@@ -1157,13 +1159,15 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
         const OpIDs *oid = &id->op[n];
-        SwsPixelType cur_type = op->op == SWS_OP_CONVERT ?
-                                op->convert.to : op->type;
-        int type_v = cur_type == SWS_PIXEL_F32 ?
+        SwsPixelType type_in  = ff_sws_op_input_type(op);
+        SwsPixelType type_out = ff_sws_op_output_type(op);
+        if (op->op == SWS_OP_WRITE)
+            type_out = type_in;
+        int type_v = type_out == SWS_PIXEL_F32 ?
                      id->f32vec4_type : id->u32vec4_type;
-        int type_s = cur_type == SWS_PIXEL_F32 ?
+        int type_s = type_out == SWS_PIXEL_F32 ?
                      id->f32_type : id->u32_type;
-        int uid = cur_type == SWS_PIXEL_F32 ?
+        int uid = type_out == SWS_PIXEL_F32 ?
                   id->f32_0 : id->u32_p;
 
         switch (op->op) {
@@ -1224,9 +1228,9 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                        op->swizzle.in[3]);
             break;
         case SWS_OP_CONVERT:
-            if (op->type == SWS_PIXEL_F32 && type_s == id->u32_type)
+            if (type_in == SWS_PIXEL_F32 && type_s == id->u32_type)
                 data = spi_OpConvertFToU(spi, type_v, data);
-            else if (op->type != SWS_PIXEL_F32 && type_s == id->f32_type)
+            else if (type_in != SWS_PIXEL_F32 && type_s == id->f32_type)
                 data = spi_OpConvertUToF(spi, type_v, data);
             break;
         case SWS_OP_LSHIFT:
@@ -1236,14 +1240,14 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             data = spi_OpShiftRightLogical(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_SCALE:
-            if (op->type == SWS_PIXEL_F32)
+            if (type_in == SWS_PIXEL_F32)
                 data = spi_OpFMul(spi, type_v, data, oid->vec);
             else
                 data = spi_OpIMul(spi, type_v, data, oid->vec);
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX: {
-            int t = op->type == SWS_PIXEL_F32 ?
+            int t = type_in == SWS_PIXEL_F32 ?
                     op->op == SWS_OP_MIN ? GLSLstd450FMin : GLSLstd450FMax :
                     op->op == SWS_OP_MIN ? GLSLstd450UMin : GLSLstd450UMax;
             for (int i = 0; i < 4; i++) {
@@ -1279,7 +1283,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         }
         case SWS_OP_LINEAR: {
-            if (op->type != SWS_PIXEL_F32)
+            if (type_in != SWS_PIXEL_F32)
                 return AVERROR(ENOTSUP);
             if (sws->flags & SWS_BITEXACT)
                 data = insert_bitexact_linear(op, spi, id, &oid->lin, data);

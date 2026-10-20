@@ -209,7 +209,6 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
     case SWS_OP_WRITE:
         return;
     case SWS_OP_UNPACK: {
-        av_assert1(ff_sws_pixel_type_is_int(op->type));
         ff_sws_pack_op_decode(op, mask, shift);
         unsigned val = x[0].num;
         for (int i = 0; i < 4; i++)
@@ -217,7 +216,6 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         return;
     }
     case SWS_OP_PACK: {
-        av_assert1(ff_sws_pixel_type_is_int(op->type));
         ff_sws_pack_op_decode(op, mask, shift);
         unsigned val = 0;
         for (int i = 0; i < 4; i++)
@@ -226,7 +224,7 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         return;
     }
     case SWS_OP_SWAP_BYTES:
-        switch (op->type) {
+        switch (ff_sws_op_input_type(op)) {
         case SWS_PIXEL_U16:
             for (int i = 0; i < 4; i++) {
                 av_assert2(x[i].num >= 0 && x[i].num <= UINT16_MAX);
@@ -249,14 +247,12 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         }
         return;
     case SWS_OP_LSHIFT: {
-        av_assert1(ff_sws_pixel_type_is_int(op->type));
         AVRational64 mult = Q(1 << op->shift.amount);
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? ff_mul_q64(x[i], mult) : x[i];
         return;
     }
     case SWS_OP_RSHIFT: {
-        av_assert1(ff_sws_pixel_type_is_int(op->type));
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? Q((x[i].num / x[i].den) >> op->shift.amount) : x[i];
         return;
@@ -274,7 +270,6 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational64 x[4])
         }
         return;
     case SWS_OP_DITHER:
-        av_assert1(!ff_sws_pixel_type_is_int(op->type));
         for (int i = 0; i < 4; i++) {
             if (op->dither.y_offset[i] >= 0 && x[i].den)
                 x[i] = ff_add_q64(x[i], ff_make_q64(1, 2));
@@ -870,17 +865,6 @@ bool ff_sws_op_list_is_noop(const SwsOpList *ops)
     return true;
 }
 
-int ff_sws_op_list_max_size(const SwsOpList *ops)
-{
-    int max_size = 0;
-    for (int i = 0; i < ops->num_ops; i++) {
-        const int size = ff_sws_pixel_type_size(ops->ops[i].type);
-        max_size = FFMAX(max_size, size);
-    }
-
-    return max_size;
-}
-
 uint32_t ff_sws_linear_mask(const SwsLinearOp *c)
 {
     uint32_t mask = 0;
@@ -966,7 +950,6 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_READ:
     case SWS_OP_WRITE:
-        av_assert0(op->rw.type == op->type);
         av_bprintf(bp, "%-20s: %dx %s %s >> %d", name,
                    op->rw.elems, ff_sws_pixel_type_name(op->rw.type),
                    rw_mode_names[op->rw.mode], op->rw.frac);
@@ -999,7 +982,7 @@ void ff_sws_op_desc(AVBPrint *bp, const SwsOp *op)
         break;
     case SWS_OP_CONVERT:
         av_bprintf(bp, "%-20s: %s -> %s", name,
-                   ff_sws_pixel_type_name(op->type),
+                   ff_sws_pixel_type_name(ff_sws_op_input_type(op)),
                    ff_sws_pixel_type_name(op->convert.to));
         break;
     case SWS_OP_DITHER:

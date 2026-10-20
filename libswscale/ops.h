@@ -251,8 +251,7 @@ typedef struct SwsOp     SwsOp;
 typedef struct SwsOpList SwsOpList;
 
 struct SwsOp {
-    SwsOpType op;      /* operation to perform */
-    SwsPixelType type; /* pixel type to operate on */
+    SwsOpType op;
     union {
         SwsLinearOp     lin;
         SwsReadWriteOp  rw;
@@ -372,11 +371,6 @@ const SwsOp *ff_sws_op_list_output(const SwsOpList *ops);
  * eliminated entirely from an execution graph.
  */
 bool ff_sws_op_list_is_noop(const SwsOpList *ops);
-
-/**
- * Returns the size of the largest pixel type used in `ops`.
- */
-int ff_sws_op_list_max_size(const SwsOpList *ops);
 
 /**
  * These will take over ownership of `op` and set it to {0}, even on failure.
