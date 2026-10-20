@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 
@@ -60,9 +61,12 @@ static int realtext_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
                                  int *got_sub_ptr, const AVPacket *avpkt)
 {
     int ret = 0;
-    const char *ptr = avpkt->data;
+    const char *ptr = ff_decode_subtitle_text(avctx, avpkt);
     FFASSDecoderContext *s = avctx->priv_data;
     AVBPrint buf;
+
+    if (avpkt->size > 0 && !ptr)
+        return AVERROR(ENOMEM);
 
     av_bprint_init(&buf, 0, 4096);
     if (ptr && avpkt->size > 0 && !rt_event_to_ass(&buf, ptr))
