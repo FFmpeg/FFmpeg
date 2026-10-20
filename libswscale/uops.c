@@ -206,8 +206,12 @@ int ff_sws_dither_height(const SwsDitherUOp *dither)
     return (1 << dither->size_log2) + max_offset;
 }
 
-static SwsPixelType pixel_type_to_int(const SwsPixelType type)
+/* Conditionally promotes a pixel type to integer only if allowed by the flags */
+static SwsPixelType pixel_type_to_int(SwsUOpFlags flags, const SwsPixelType type)
 {
+    if (!(flags & SWS_UOP_FLAG_PUNNING))
+        return type;
+
     switch (ff_sws_pixel_type_size(type)) {
     case 1: return SWS_PIXEL_U8;
     case 2: return SWS_PIXEL_U16;
@@ -274,7 +278,7 @@ static int translate_rw_op(SwsContext *ctx, SwsUOpList *ops, SwsUOpFlags flags,
 
     /* Non-filtered reads don't care about the exact pixel contents */
     if (!op->rw.filter.op)
-        uop.type = pixel_type_to_int(op->rw.type);
+        uop.type = pixel_type_to_int(flags, op->rw.type);
 
     const bool is_read = op->op == SWS_OP_READ;
     if (op->rw.filter.op) {
@@ -327,11 +331,11 @@ static int count_idx(const int *arr, size_t size, int val)
     return num;
 }
 
-static int translate_swizzle(SwsUOpList *ops, const SwsOp *op)
+static int translate_swizzle(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *op)
 {
     SwsUOp uop = {
         .uop  = SWS_UOP_PERMUTE,
-        .type = pixel_type_to_int(ff_sws_op_input_type(op)),
+        .type = pixel_type_to_int(flags, ff_sws_op_input_type(op)),
         .mask = ff_sws_comp_mask_needed(op),
     };
     SwsMoveUOp *par = &uop.par.move;
@@ -524,7 +528,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
     case SWS_OP_WRITE:
         return translate_rw_op(ctx, uops, flags, op);
     case SWS_OP_SWIZZLE:
-        return translate_swizzle(uops, op);
+        return translate_swizzle(uops, flags, op);
     case SWS_OP_DITHER:
         return translate_dither_op(uops, flags, op);
     case SWS_OP_LINEAR:
@@ -573,7 +577,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
             const AVRational64 v = op->clear.value[i];
             const SwsPixelType type = op->clear.type[i];
             const SwsPixel px = ff_sws_pixel_from_q64(type, v);
-            uop.type = pixel_type_to_int(type);
+            uop.type = pixel_type_to_int(flags, type);
             uop.data.vec4[i] = px;
             if (v.num == 0)
                 uop.par.clear.zero |= SWS_COMP(i);
@@ -596,7 +600,7 @@ static int translate_op(SwsContext *ctx, SwsUOpList *uops, SwsUOpFlags flags,
         break;
     case SWS_OP_SWAP_BYTES:
         uop.uop = SWS_UOP_SWAP_BYTES;
-        uop.type = pixel_type_to_int(uop.type);
+        uop.type = pixel_type_to_int(flags, uop.type);
         break;
     case SWS_OP_LUT_3D:
         uop.uop = SWS_UOP_LUT_3D;

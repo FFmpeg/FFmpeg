@@ -225,7 +225,9 @@ static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
     if (!uops)
         return AVERROR(ENOMEM);
 
-    const SwsUOpFlags flags = (ctx->flags & SWS_BITEXACT) ? 0 : SWS_UOP_FLAG_FMA;
+    SwsUOpFlags flags = SWS_UOP_FLAG_PUNNING;
+    if (!(ctx->flags & SWS_BITEXACT))
+        flags |= SWS_UOP_FLAG_FMA;
     int ret = ff_sws_ops_translate(ctx, ops, flags, uops);
     if (ret < 0)
         goto error;
