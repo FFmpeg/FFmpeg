@@ -28,13 +28,14 @@
 
 #define Q(N) ((AVRational64) { N, 1 })
 
-static inline void ff_sws_pack_op_decode(const SwsOp *op, uint64_t mask[4], int shift[4])
+static inline void ff_sws_pack_decode(const uint8_t pattern[4],
+                                      uint64_t mask[4], int shift[4])
 {
     int size = 0;
     for (int i = 0; i < 4; i++)
-        size += op->pack.pattern[i];
+        size += pattern[i];
     for (int i = 0; i < 4; i++) {
-        const int bits = op->pack.pattern[i];
+        const int bits = pattern[i];
         mask[i] = (UINT64_C(1) << bits) - 1;
         shift[i] = (i ? shift[i - 1] : size) - bits;
     }

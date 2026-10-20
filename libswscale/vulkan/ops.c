@@ -568,7 +568,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         case SWS_OP_UNPACK: {
             uint64_t mask[4];
             int shift[4], tmp[4];
-            ff_sws_pack_op_decode(op, mask, shift);
+            ff_sws_pack_decode(op->pack.pattern, mask, shift);
             for (int i = 0; i < 4; i++)
                 tmp[i] = spi_OpConstantUInt(spi, u32_type, shift[i]);
             oid->pack.shift = spi_OpConstantComposite(spi, id->u32vec4_type,
