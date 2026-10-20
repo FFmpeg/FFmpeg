@@ -1317,7 +1317,8 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     return ff_vk_shader_link(&s->vkctx, shd, spvbuf, len, "main");
 }
 
-static int compile(SwsContext *sws, const SwsOpList *ops, SwsCompiledOp *out)
+static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
+                         SwsCompiledOp *out)
 {
     int err;
     SwsInternal *c = sws_internal(sws);
@@ -1360,12 +1361,6 @@ static int compile(SwsContext *sws, const SwsOpList *ops, SwsCompiledOp *out)
 fail:
     free_fn(p);
     return err;
-}
-
-static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
-                         SwsCompiledOp *out)
-{
-    return compile(sws, ops, out);
 }
 
 const SwsOpBackend backend_spirv = {
