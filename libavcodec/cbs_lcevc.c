@@ -608,30 +608,19 @@ static int cbs_lcevc_get_process_block_list(CodedBitstreamContext *ctx,
 }
 
 int ff_cbs_lcevc_add_process_block(CodedBitstreamContext *ctx,
-                                   CodedBitstreamFragment *au,
+                                   CodedBitstreamUnit *unit,
                                    int position,
                                    uint32_t     payload_type,
                                    void        *payload_data,
                                    void        *payload_ref)
 {
     const LCEVCProcessBlockTypeDescriptor *desc;
-    CodedBitstreamUnit *unit = NULL;
     LCEVCRawProcessBlockList *list;
     LCEVCRawProcessBlock *block;
     int err;
 
     desc = ff_cbs_lcevc_process_block_find_type(ctx, payload_type);
     if (!desc)
-        return AVERROR(EINVAL);
-
-    for (int i = 0; i < au->nb_units; i++) {
-        if (au->units[i].type == LCEVC_NON_IDR_NUT ||
-            au->units[i].type == LCEVC_IDR_NUT) {
-            unit = &au->units[i];
-            break;
-        }
-    }
-    if (!unit)
         return AVERROR(EINVAL);
 
     // Find the block list inside the codec-dependent unit.
@@ -662,6 +651,7 @@ int ff_cbs_lcevc_add_process_block(CodedBitstreamContext *ctx,
 int ff_cbs_lcevc_find_process_block(CodedBitstreamContext *ctx,
                                     CodedBitstreamFragment *au,
                                     uint32_t payload_type,
+                                    CodedBitstreamUnit **block_unit,
                                     LCEVCRawProcessBlock **iter)
 {
     int err, found;
@@ -684,6 +674,8 @@ int ff_cbs_lcevc_find_process_block(CodedBitstreamContext *ctx,
             if (block->payload_type == payload_type) {
                 if (!*iter || found) {
                     *iter = block;
+                    if (block_unit)
+                        *block_unit = unit;
                     return j;
                 }
                 if (block == *iter)
