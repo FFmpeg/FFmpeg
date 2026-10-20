@@ -74,7 +74,7 @@ static int compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
         return AVERROR(ENOMEM);
 
     /* Ensure these are always set during compilation */
-    ff_sws_op_list_update_comps(copy);
+    ff_sws_op_list_update(copy);
 
     ret = backend->compile(ctx, copy, &compiled);
     if (ret < 0) {

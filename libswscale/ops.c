@@ -673,8 +673,8 @@ static void update_input_pads(SwsOpList *ops, SwsOp *op, SwsCompMask need_out[4]
     memcpy(need_out, need_in, sizeof(need_in));
 }
 
-/* Infer + propagate known information about components */
-void ff_sws_op_list_update_comps(SwsOpList *ops)
+/* Infer + propagate output pad metadata */
+void ff_sws_op_list_update(SwsOpList *ops)
 {
     /* Forward pass, solves for output pad metadata */
     for (int n = 0; n < ops->num_ops; n++)

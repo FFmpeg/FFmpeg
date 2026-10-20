@@ -348,7 +348,7 @@ int ff_sws_op_list_optimize(SwsOpList *ops)
     int ret;
 
 retry:
-    ff_sws_op_list_update_comps(ops);
+    ff_sws_op_list_update(ops);
 
     /* Try to push filters towards the input; do this first to unblock
      * in-place optimizations like linear op fusion */

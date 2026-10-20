@@ -268,7 +268,7 @@ struct SwsOp {
 
     /**
      * Metadata about the operation's input/output components. Discarded
-     * and regenerated automatically by `ff_sws_op_list_update_comps()`.
+     * and regenerated automatically by `ff_sws_op_list_update()`.
      *
      * Note that backends may rely on the presence and accuracy of this
      * metadata for all operations, during ff_sws_ops_compile().
@@ -377,7 +377,7 @@ void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count);
 /**
  * Print out the contents of an operation list.
  *
- * Note: This requires having called `ff_sws_op_list_update_comps()` to
+ * Note: This requires having called `ff_sws_op_list_update()` to
  * refresh the output pads, or the output may be stale/missing.
  */
 void ff_sws_op_list_print(void *log_ctx, int log_level, int log_level_extra,
@@ -387,7 +387,7 @@ void ff_sws_op_list_print(void *log_ctx, int log_level, int log_level_extra,
  * Infer + propagate known information about components. Called automatically
  * when needed by the optimizer and compiler.
  */
-void ff_sws_op_list_update_comps(SwsOpList *ops);
+void ff_sws_op_list_update(SwsOpList *ops);
 
 /**
  * Fuse compatible and eliminate redundant operations, as well as replacing
