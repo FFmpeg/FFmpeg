@@ -29,7 +29,7 @@
 
 #include "spvasm.h"
 
-static void ff_sws_vk_uninit(AVRefStructOpaque opaque, void *obj)
+static void vk_ops_ctx_uninit(AVRefStructOpaque opaque, void *obj)
 {
     FFVulkanOpsCtx *s = obj;
 
@@ -43,7 +43,7 @@ int ff_sws_vk_init(SwsContext *sws, AVBufferRef *dev_ref)
 
     if (!c->hw_priv) {
         c->hw_priv = av_refstruct_alloc_ext(sizeof(FFVulkanOpsCtx), 0, NULL,
-                                            ff_sws_vk_uninit);
+                                            vk_ops_ctx_uninit);
         if (!c->hw_priv)
             return AVERROR(ENOMEM);
     }
