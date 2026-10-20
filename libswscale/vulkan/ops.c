@@ -308,7 +308,13 @@ struct FilterData {
 };
 
 typedef struct SPIRVIDs {
-    int in_vars[3 + MAX_DATA_BUFS + 1];
+    /* Entrypoint interface variables */
+    int iface[3 + MAX_DATA_BUFS + 1];
+    int nb_iface;
+
+    int gid_var;
+    int in_img_var;
+    int out_img_var;
 
     int glfn;
     int ep;
@@ -394,9 +400,7 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
 
     /* Entrypoint */
     id->ep = spi_OpEntryPoint(spi, SpvExecutionModelGLCompute, "main",
-                                id->in_vars,
-                                3 + id->nb_dither_bufs + id->nb_filter_bufs +
-                                (id->interlaced ? 1 : 0));
+                                id->iface, id->nb_iface);
     spi_OpExecutionMode(spi, id->ep, SpvExecutionModeLocalSize,
                         shd->lg_size, 3);
 
@@ -407,18 +411,18 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
     }
 
     /* gl_GlobalInvocationID descriptor decorations */
-    spi_OpDecorate(spi, id->in_vars[0], SpvDecorationBuiltIn,
+    spi_OpDecorate(spi, id->gid_var, SpvDecorationBuiltIn,
                    SpvBuiltInGlobalInvocationId);
 
     /* Input image descriptor decorations */
-    spi_OpDecorate(spi, id->in_vars[1], SpvDecorationNonWritable);
-    spi_OpDecorate(spi, id->in_vars[1], SpvDecorationDescriptorSet, 0);
-    spi_OpDecorate(spi, id->in_vars[1], SpvDecorationBinding, 0);
+    spi_OpDecorate(spi, id->in_img_var, SpvDecorationNonWritable);
+    spi_OpDecorate(spi, id->in_img_var, SpvDecorationDescriptorSet, 0);
+    spi_OpDecorate(spi, id->in_img_var, SpvDecorationBinding, 0);
 
     /* Output image descriptor decorations */
-    spi_OpDecorate(spi, id->in_vars[2], SpvDecorationNonReadable);
-    spi_OpDecorate(spi, id->in_vars[2], SpvDecorationDescriptorSet, 0);
-    spi_OpDecorate(spi, id->in_vars[2], SpvDecorationBinding, 1);
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationNonReadable);
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationDescriptorSet, 0);
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationBinding, 1);
 
     for (int i = 0; i < id->nb_dither_bufs; i++) {
         spi_OpDecorate(spi, id->dither[i].arr_1d_id, SpvDecorationArrayStride,
@@ -734,13 +738,13 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     }
 
     /* Define inputs */
-    spi_OpVariable(spi, id->in_vars[0], id->u32vec3_tptr,
+    spi_OpVariable(spi, id->gid_var, id->u32vec3_tptr,
                    SpvStorageClassInput, 0);
     if (op_r) {
-        spi_OpVariable(spi, id->in_vars[1], id->in_img_tptr,
+        spi_OpVariable(spi, id->in_img_var, id->in_img_tptr,
                        SpvStorageClassUniformConstant, 0);
     }
-    spi_OpVariable(spi, id->in_vars[2], id->out_img_tptr,
+    spi_OpVariable(spi, id->out_img_var, id->out_img_tptr,
                    SpvStorageClassUniformConstant, 0);
 
     if (id->interlaced) {
@@ -997,9 +1001,9 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         return err;
 
     /* Entrypoint inputs; gl_GlobalInvocationID, input and output images, dither */
-    id->in_vars[0] = spi_get_id(spi);
-    id->in_vars[1] = spi_get_id(spi);
-    id->in_vars[2] = spi_get_id(spi);
+    id->gid_var     = id->iface[id->nb_iface++] = spi_get_id(spi);
+    id->in_img_var  = id->iface[id->nb_iface++] = spi_get_id(spi);
+    id->out_img_var = id->iface[id->nb_iface++] = spi_get_id(spi);
 
     /* Create dither and filter buffer descriptor set. Both are collected in
      * op order, so the bindings match the buffer order from create_bufs().*/
@@ -1041,7 +1045,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             continue;
         }
 
-        id->in_vars[3 + nb_data_bufs] = var_id;
+        id->iface[id->nb_iface++] = var_id;
         desc_set[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
             .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -1053,9 +1057,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
     if (id->interlaced) {
         id->push_const_struct_id = spi_get_id(spi);
-        id->push_const_var_id = spi_get_id(spi);
-        id->in_vars[3 + id->nb_dither_bufs + id->nb_filter_bufs] =
-            id->push_const_var_id;
+        id->push_const_var_id = id->iface[id->nb_iface++] = spi_get_id(spi);
     }
 
     /* Define shader header sections */
@@ -1072,7 +1074,7 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     for (int i = 0; i < in_img_count; i++) {
         /* Deref array and then the pointer */
         int img = spi_OpAccessChain(spi, id->in_img_sptr,
-                                    id->in_vars[1], id->u32_cid[i]);
+                                    id->in_img_var, id->u32_cid[i]);
         in_img[i] = spi_OpLoad(spi, id->in_img_type, img,
                                SpvMemoryAccessMaskNone, 0);
     }
@@ -1081,13 +1083,13 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     int out_img[4] = { 0 };
     for (int i = 0; i < out_img_count; i++) {
         int img = spi_OpAccessChain(spi, id->out_img_sptr,
-                                    id->in_vars[2], id->u32_cid[i]);
+                                    id->out_img_var, id->u32_cid[i]);
         out_img[i] = spi_OpLoad(spi, id->out_img_type, img,
                                 SpvMemoryAccessMaskNone, 0);
     }
 
     /* Load gl_GlobalInvocationID */
-    int gid = spi_OpLoad(spi, id->u32vec3_type, id->in_vars[0],
+    int gid = spi_OpLoad(spi, id->u32vec3_type, id->gid_var,
                          SpvMemoryAccessMaskNone, 0);
 
     /* ivec2(gl_GlobalInvocationID.xy) */
