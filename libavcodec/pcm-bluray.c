@@ -167,7 +167,7 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             samples *= num_source_channels;
             if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
 #if HAVE_BIGENDIAN
-                bytestream2_get_buffer(&gb, (uint8_t*)dst16, buf_size);
+                bytestream2_get_buffer(&gb, (uint8_t*)dst16, samples * 2);
 #else
                 do {
                     *dst16++ = bytestream2_get_be16u(&gb);
