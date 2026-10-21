@@ -1073,15 +1073,10 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     spi_OpLabel(spi, merge_label);
 
     /* Initialize main data state */
-    int data;
-    if (ff_sws_op_output_type(&ops->ops[0]) == SWS_PIXEL_F32)
-        data = spi_OpCompositeConstruct(spi, id->f32vec4_type,
-                                        id->f32_0, id->f32_0,
-                                        id->f32_0, id->f32_0);
-    else
-        data = spi_OpCompositeConstruct(spi, id->u32vec4_type,
-                                        id->u32_cid[0], id->u32_cid[0],
-                                        id->u32_cid[0], id->u32_cid[0]);
+    const SwsPixelType type0 = ff_sws_op_output_type(&ops->ops[0]);
+    const int zero0 = const_zero(id, type0);
+    int data = spi_OpCompositeConstruct(spi, type_vec4(id, type0),
+                                        zero0, zero0, zero0, zero0);
 
     /* Operations */
     for (int n = 0; n < ops->num_ops; n++) {
