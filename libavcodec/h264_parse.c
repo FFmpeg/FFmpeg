@@ -424,7 +424,9 @@ static int decode_extradata_ps_mp4(const uint8_t *buf, int buf_size, H264ParamSe
     int ret;
 
     ret = decode_extradata_ps(buf, buf_size, ps, 1, logctx);
-    if (ret < 0 && !(err_recognition & AV_EF_EXPLODE)) {
+    if (ret < 0 && (err_recognition & AV_EF_EXPLODE))
+        return ret;
+    if (ret < 0) {
         GetByteContext gbc;
         PutByteContext pbc;
         uint8_t *escaped_buf;
