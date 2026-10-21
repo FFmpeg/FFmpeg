@@ -27,6 +27,8 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/error.h"
+#include "libavutil/mem.h"
 
 #if HAVE_SPIRV_HEADERS_SPIRV_H
 #include <spirv-headers/spirv.h>
@@ -49,85 +51,176 @@
  * so the pointer exists but is never dereferenced. */
 #define SPI_ARGS(...) ((int[]){0, __VA_ARGS__}) + 1, COUNT_ARGS(__VA_ARGS__)
 
+/* Sections of a SPIR-V module, in their required order */
+typedef enum SPISection {
+    SPI_SECTION_HEADER,      /* capabilities, imports, memory model, entry points */
+    SPI_SECTION_DEBUG,       /* debug names */
+    SPI_SECTION_DECORATIONS,
+    SPI_SECTION_GLOBALS,     /* types, constants and global variables */
+    SPI_SECTION_CODE,        /* function definitions */
+    SPI_NB_SECTIONS,
+} SPISection;
+
+typedef struct SPISectionBuf {
+    uint8_t *data;
+    unsigned int size; /* allocated size */
+    int off;           /* number of bytes written */
+    int err;           /* set if any write failed */
+} SPISectionBuf;
+
 typedef struct SPICtx {
-    uint8_t *dst;
-    int dst_size;
-    int off;
-    int overwrite;
+    /* Instructions are written to the section corresponding to their opcode */
+    SPISectionBuf sec[SPI_NB_SECTIONS];
 
     int bool_type_id;
     int id;
 } SPICtx;
 
-static inline void spi_write_u32(SPICtx *spi, uint32_t v)
+/* Returns a pointer to `len` new bytes at the end of the section */
+static inline uint8_t *spi_append(SPISectionBuf *sec, int len)
 {
-    if ((spi->off + 4) > spi->dst_size) {
-        spi->overwrite += 4;
-    } else {
-        AV_WL32(&spi->dst[spi->off], v);
-        spi->off += 4;
+    uint8_t *data = av_fast_realloc(sec->data, &sec->size, sec->off + len);
+    if (!data) {
+        sec->err = AVERROR(ENOMEM);
+        return NULL;
     }
+
+    sec->data = data;
+    sec->off += len;
+    return &data[sec->off - len];
 }
 
-static void spi_put_str(SPICtx *spi, const char *str)
+static inline void spi_write_u32(SPISectionBuf *sec, uint32_t v)
 {
-    if ((spi->off + strlen(str) + 4) > spi->dst_size) {
-        spi->overwrite += strlen(str) + 4;
+    uint8_t *ptr = spi_append(sec, 4);
+    if (ptr)
+        AV_WL32(ptr, v);
+}
+
+static void spi_put_str(SPISectionBuf *sec, const char *str)
+{
+    const int len = strlen(str) + 1;
+    const int padded = FFALIGN(len, 4);
+    uint8_t *ptr = spi_append(sec, padded);
+    if (!ptr)
         return;
+
+    memcpy(ptr, str, len);
+    memset(ptr + len, 0, padded - len);
+}
+
+static inline SPISection spi_opcode_section(SpvOp op)
+{
+    switch (op) {
+    case SpvOpCapability:
+    case SpvOpExtension:
+    case SpvOpExtInstImport:
+    case SpvOpMemoryModel:
+    case SpvOpEntryPoint:
+    case SpvOpExecutionMode:
+        return SPI_SECTION_HEADER;
+    case SpvOpName:
+    case SpvOpMemberName:
+        return SPI_SECTION_DEBUG;
+    case SpvOpDecorate:
+    case SpvOpMemberDecorate:
+        return SPI_SECTION_DECORATIONS;
+    case SpvOpUndef:
+        return SPI_SECTION_GLOBALS;
+    default:
+        break;
     }
 
-    for (int i = 0; i < strlen(str) + 1; i++)
-        spi->dst[spi->off++] = str[i];
-    int padding = (4 - (spi->off & 3)) & 3;
-    for (int i = 0; i < padding; i++)
-        spi->dst[spi->off++] = 0;
+    if ((op >= SpvOpTypeVoid     && op <= SpvOpTypeForwardPointer) ||
+        (op >= SpvOpConstantTrue && op <= SpvOpConstantNull))
+        return SPI_SECTION_GLOBALS;
+
+    return SPI_SECTION_CODE;
 }
 
-static inline void spi_init(SPICtx *spi, uint8_t *spv_buf, int buf_len)
+/* Starts a new instruction in the given section, returns the section */
+static inline SPISectionBuf *spi_begin_section(SPICtx *spi, SPISection s,
+                                               int nb_words, SpvOp op)
 {
-    spi->id = 1;
-    spi->off = 0;
-    spi->overwrite = 0;
-    spi->dst = spv_buf;
-    spi->dst_size = buf_len;
-    spi_write_u32(spi, SpvMagicNumber);
-    spi_write_u32(spi, (1 << 16) | (6 << 8)); /* version */
-    spi_write_u32(spi, 0); /* generator */
-    spi_write_u32(spi, 0); /* last bound ID + 1, rewritten */
-    spi_write_u32(spi, 0); /* schema */
+    SPISectionBuf *sec = &spi->sec[s];
+    spi_write_u32(sec, (nb_words << 16) | op);
+    return sec;
 }
 
-static inline int spi_end(SPICtx *spi)
+/* Starts a new instruction in the section corresponding to its opcode */
+static inline SPISectionBuf *spi_begin(SPICtx *spi, int nb_words, SpvOp op)
 {
-    if (spi->overwrite)
-        return -spi->overwrite;
-    AV_WL32(spi->dst + 3*4, spi->id);
-    return spi->off;
+    return spi_begin_section(spi, spi_opcode_section(op), nb_words, op);
 }
 
-static inline int spi_reserve(SPICtx *spi, int len)
+static inline void spi_init(SPICtx *spi)
 {
-    int off = spi->off;
-    if ((off + len) > spi->dst_size) {
-        spi->overwrite += len;
+    *spi = (SPICtx) { .id = 1 };
+}
+
+static inline void spi_uninit(SPICtx *spi)
+{
+    for (int i = 0; i < SPI_NB_SECTIONS; i++)
+        av_freep(&spi->sec[i].data);
+}
+
+/**
+ * Allocates a buffer containing the module, and returns it in `out`. The caller
+ * takes ownership of the buffer. Returns the module size, or an error code.
+ */
+static inline int spi_end(const SPICtx *spi, uint8_t **out)
+{
+    const uint32_t header[] = {
+        SpvMagicNumber,
+        (1 << 16) | (6 << 8), /* version */
+        0,                    /* generator */
+        spi->id,              /* last bound ID + 1 */
+        0,                    /* schema */
+    };
+
+    int len = sizeof(header);
+    for (int i = 0; i < SPI_NB_SECTIONS; i++) {
+        if (spi->sec[i].err)
+            return spi->sec[i].err;
+        len += spi->sec[i].off;
+    }
+
+    uint8_t *ptr = *out = av_malloc(len);
+    if (!ptr)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(header); i++, ptr += 4)
+        AV_WL32(ptr, header[i]);
+    for (int i = 0; i < SPI_NB_SECTIONS; i++) {
+        if (spi->sec[i].off)
+            memcpy(ptr, spi->sec[i].data, spi->sec[i].off);
+        ptr += spi->sec[i].off;
+    }
+
+    return len;
+}
+
+/* Reserves space in the given section, returns its offset */
+static inline int spi_reserve(SPICtx *spi, SPISection s, int len)
+{
+    SPISectionBuf *sec = &spi->sec[s];
+    if (!spi_append(sec, len))
         return 0;
-    }
-    spi->off += len;
-    return off;
+    return sec->off - len;
 }
 
 static inline void spi_OpCapability(SPICtx *spi, SpvCapability capability)
 {
-    spi_write_u32(spi, (2 << 16) | 17);
-    spi_write_u32(spi, capability);
+    SPISectionBuf *sec = spi_begin(spi, 2, 17);
+    spi_write_u32(sec, capability);
 }
 
 static inline void spi_OpMemoryModel(SPICtx *spi, SpvAddressingModel addressing_model,
                                      SpvMemoryModel memory_model)
 {
-    spi_write_u32(spi, (3 << 16) | 14);
-    spi_write_u32(spi, addressing_model);
-    spi_write_u32(spi, memory_model);
+    SPISectionBuf *sec = spi_begin(spi, 3, 14);
+    spi_write_u32(sec, addressing_model);
+    spi_write_u32(sec, memory_model);
 }
 
 static int spi_get_id(SPICtx *spi)
@@ -143,8 +236,8 @@ static int spi_strl(const char *str)
 /* Template: Single source */
 static inline void spi_op_1src(SPICtx *spi, int code, int src1_id)
 {
-    spi_write_u32(spi, (2 << 16) | code);
-    spi_write_u32(spi, src1_id);
+    SPISectionBuf *sec = spi_begin(spi, 2, code);
+    spi_write_u32(sec, src1_id);
 }
 #define OP_1SRC(name, code)                               \
 static inline void spi_ ## name(SPICtx *spi, int src1_id) \
@@ -156,9 +249,9 @@ static inline void spi_ ## name(SPICtx *spi, int src1_id) \
 static inline int spi_op_untypedres_1src(SPICtx *spi, int code, int id,
                                          int src1_id)
 {
-    spi_write_u32(spi, (3 << 16) | code);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
+    SPISectionBuf *sec = spi_begin(spi, 3, code);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
     return id;
 }
 #define OP_UNTYPEDRES1SRC(name, code)                                   \
@@ -171,10 +264,10 @@ static inline int spi_ ## name(SPICtx *spi, int src1_id)                \
 static inline int spi_op_res_1src(SPICtx *spi, int code, int id, int type_id,
                                   int src1_id)
 {
-    spi_write_u32(spi, (4 << 16) | code);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
+    SPISectionBuf *sec = spi_begin(spi, 4, code);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
     return id;
 }
 #define OP_RES1SRC(name, code)                                            \
@@ -186,9 +279,9 @@ static inline int spi_ ## name(SPICtx *spi, int type_id, int src1_id)     \
 /* Template: Two sources */
 static inline void spi_op_2src(SPICtx *spi, int code, int src1_id, int src2_id)
 {
-    spi_write_u32(spi, (3 << 16) | code);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
+    SPISectionBuf *sec = spi_begin(spi, 3, code);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
 }
 #define OP_2SRC(name, code)                                            \
 static inline void spi_ ## name(SPICtx *spi, int src1_id, int src2_id) \
@@ -200,10 +293,10 @@ static inline void spi_ ## name(SPICtx *spi, int src1_id, int src2_id) \
 static inline int spi_op_untypedres_2src(SPICtx *spi, int code, int id,
                                          int src1_id, int src2_id)
 {
-    spi_write_u32(spi, (4 << 16) | code);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
+    SPISectionBuf *sec = spi_begin(spi, 4, code);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
     return id;
 }
 #define OP_UNTYPEDRES2SRC(name, code)                                 \
@@ -217,11 +310,11 @@ static inline int spi_ ## name(SPICtx *spi, int src1_id, int src2_id) \
 static inline int spi_op_res_2src(SPICtx *spi, int code, int id, int type_id,
                                   int src1_id, int src2_id)
 {
-    spi_write_u32(spi, (5 << 16) | code);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
+    SPISectionBuf *sec = spi_begin(spi, 5, code);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
     return id;
 }
 #define OP_RES2SRC(name, code)                                                     \
@@ -235,12 +328,12 @@ static inline int spi_ ## name(SPICtx *spi, int type_id, int src1_id, int src2_i
 static inline int spi_op_res_1src_list(SPICtx *spi, int code, int id, int type_id,
                                        int src1_id, const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((4 + nb_args) << 16) | code);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
+    SPISectionBuf *sec = spi_begin(spi, 4 + nb_args, code);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
     return id;
 }
 
@@ -248,10 +341,10 @@ static inline int spi_op_res_1src_list(SPICtx *spi, int code, int id, int type_i
 static inline void spi_op_untypedres_list(SPICtx *spi, int code,
                                           int id, const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((2 + nb_args) << 16) | code);
-    spi_write_u32(spi, id);
+    SPISectionBuf *sec = spi_begin(spi, 2 + nb_args, code);
+    spi_write_u32(sec, id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
 }
 
 /* Template: Two sources, list */
@@ -259,11 +352,11 @@ static inline void spi_op_2src_list(SPICtx *spi, int code,
                                     int src1_id, int src2_id,
                                     const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((3 + nb_args) << 16) | code);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
+    SPISectionBuf *sec = spi_begin(spi, 3 + nb_args, code);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
 }
 
 /* Template: Two sources, typed result, list */
@@ -271,13 +364,13 @@ static inline int spi_op_res_2src_list(SPICtx *spi, int code, int id, int type_i
                                        int src1_id, int src2_id,
                                        const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((5 + nb_args) << 16) | code);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
+    SPISectionBuf *sec = spi_begin(spi, 5 + nb_args, code);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
     return id;
 }
 
@@ -286,12 +379,12 @@ static inline void spi_op_3src_list(SPICtx *spi, int code, int src1_id,
                                     int src2_id, int src3_id,
                                     const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((4 + nb_args) << 16) | code);
-    spi_write_u32(spi, src1_id);
-    spi_write_u32(spi, src2_id);
-    spi_write_u32(spi, src3_id);
+    SPISectionBuf *sec = spi_begin(spi, 4 + nb_args, code);
+    spi_write_u32(sec, src1_id);
+    spi_write_u32(sec, src2_id);
+    spi_write_u32(sec, src3_id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
 }
 
 OP_RES1SRC(OpImageQuerySize, 104)
@@ -373,65 +466,65 @@ OP_1SRC(OpReturnValue, 254)
 static inline int spi_OpEntryPoint(SPICtx *spi, SpvExecutionModel execution_model,
                                    const char *name, const int *args, int nb_args)
 {
-    spi_write_u32(spi, (((3 + nb_args) + spi_strl(name)) << 16) | 15);
-    spi_write_u32(spi, execution_model);
-    spi_write_u32(spi, spi->id);
-    spi_put_str(spi, name);
+    SPISectionBuf *sec = spi_begin(spi, (3 + nb_args) + spi_strl(name), 15);
+    spi_write_u32(sec, execution_model);
+    spi_write_u32(sec, spi->id);
+    spi_put_str(sec, name);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
     return spi_get_id(spi);
 }
 
 static inline void spi_OpName(SPICtx *spi, int target_id, const char *name)
 {
-    spi_write_u32(spi, ((2 + spi_strl(name)) << 16) | 5);
-    spi_write_u32(spi, target_id);
-    spi_put_str(spi, name);
+    SPISectionBuf *sec = spi_begin(spi, 2 + spi_strl(name), 5);
+    spi_write_u32(sec, target_id);
+    spi_put_str(sec, name);
 }
 
 static inline void spi_OpExtension(SPICtx *spi, const char *name)
 {
-    spi_write_u32(spi, ((1 + spi_strl(name)) << 16) | 10);
-    spi_put_str(spi, name);
+    SPISectionBuf *sec = spi_begin(spi, 1 + spi_strl(name), 10);
+    spi_put_str(sec, name);
 }
 
 static inline int spi_OpExtInstImport(SPICtx *spi, const char *name)
 {
-    spi_write_u32(spi, ((2 + spi_strl(name)) << 16) | 11);
-    spi_write_u32(spi, spi->id);
-    spi_put_str(spi, name);
+    SPISectionBuf *sec = spi_begin(spi, 2 + spi_strl(name), 11);
+    spi_write_u32(sec, spi->id);
+    spi_put_str(sec, name);
     return spi_get_id(spi);
 }
 
 static inline void spi_OpExecutionMode(SPICtx *spi, int entry_point_id,
                                        SpvExecutionMode mode, int *s, int nb_s)
 {
-    spi_write_u32(spi, ((3 + nb_s) << 16) | 16);
-    spi_write_u32(spi, entry_point_id);
-    spi_write_u32(spi, mode);
+    SPISectionBuf *sec = spi_begin(spi, 3 + nb_s, 16);
+    spi_write_u32(sec, entry_point_id);
+    spi_write_u32(sec, mode);
     for (int i = 0; i < nb_s; i++)
-        spi_write_u32(spi, s[i]);
+        spi_write_u32(sec, s[i]);
 }
 
 static inline int spi_OpUndef(SPICtx *spi, int type_id)
 {
-    spi_write_u32(spi, (3 << 16) | 1);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, spi->id);
+    SPISectionBuf *sec = spi_begin(spi, 3, 1);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, spi->id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpTypeVoid(SPICtx *spi)
 {
-    spi_write_u32(spi, (2 << 16) | 19);
-    spi_write_u32(spi, spi->id);
+    SPISectionBuf *sec = spi_begin(spi, 2, 19);
+    spi_write_u32(sec, spi->id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpTypeBool(SPICtx *spi)
 {
-    spi_write_u32(spi, (2 << 16) | 20);
-    spi_write_u32(spi, spi->id);
+    SPISectionBuf *sec = spi_begin(spi, 2, 20);
+    spi_write_u32(sec, spi->id);
     spi->bool_type_id = spi->id;
     return spi_get_id(spi);
 }
@@ -444,10 +537,10 @@ OP_UNTYPEDRES2SRC(OpTypeMatrix, 24)
 static inline int spi_OpTypeFloatEnc(SPICtx *spi, int width,
                                      SpvFPEncoding floating_point_encoding)
 {
-    spi_write_u32(spi, (4 << 16) | 22);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, width);
-    spi_write_u32(spi, floating_point_encoding);
+    SPISectionBuf *sec = spi_begin(spi, 4, 22);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, width);
+    spi_write_u32(sec, floating_point_encoding);
     return spi_get_id(spi);
 }
 
@@ -455,15 +548,15 @@ static inline int spi_OpTypeImage(SPICtx *spi, int sampled_type_id, SpvDim dim,
                                   int depth, int arrayed, int ms, int sampled,
                                   SpvImageFormat image_format)
 {
-    spi_write_u32(spi, (9 << 16) | 25);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, sampled_type_id);
-    spi_write_u32(spi, dim - 1);
-    spi_write_u32(spi, depth);
-    spi_write_u32(spi, arrayed);
-    spi_write_u32(spi, ms);
-    spi_write_u32(spi, sampled);
-    spi_write_u32(spi, image_format);
+    SPISectionBuf *sec = spi_begin(spi, 9, 25);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, sampled_type_id);
+    spi_write_u32(sec, dim - 1);
+    spi_write_u32(sec, depth);
+    spi_write_u32(sec, arrayed);
+    spi_write_u32(sec, ms);
+    spi_write_u32(sec, sampled);
+    spi_write_u32(sec, image_format);
     /* TODO: if implementing kernel mode, write an access qualifier here */
     return spi_get_id(spi);
 }
@@ -471,39 +564,39 @@ static inline int spi_OpTypeImage(SPICtx *spi, int sampled_type_id, SpvDim dim,
 static inline int spi_OpTypeArray(SPICtx *spi, int element_type_id, int id,
                                   int length_id)
 {
-    spi_write_u32(spi, (4 << 16) | 28);
-    spi_write_u32(spi, id);
-    spi_write_u32(spi, element_type_id);
-    spi_write_u32(spi, length_id);
+    SPISectionBuf *sec = spi_begin(spi, 4, 28);
+    spi_write_u32(sec, id);
+    spi_write_u32(sec, element_type_id);
+    spi_write_u32(sec, length_id);
     return id;
 }
 
 static inline int spi_OpTypeRuntimeArray(SPICtx *spi, int element_type_id)
 {
-    spi_write_u32(spi, (3 << 16) | 29);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, element_type_id);
+    SPISectionBuf *sec = spi_begin(spi, 3, 29);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, element_type_id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpTypePointer(SPICtx *spi, SpvStorageClass storage_class,
                                     int type_id)
 {
-    spi_write_u32(spi, (4 << 16) | 32);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, storage_class);
-    spi_write_u32(spi, type_id);
+    SPISectionBuf *sec = spi_begin(spi, 4, 32);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, storage_class);
+    spi_write_u32(sec, type_id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpTypeFunction(SPICtx *spi, int return_type_id,
                                      const int *args, int nb_args)
 {
-    spi_write_u32(spi, ((3 + nb_args) << 16) | 33);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, return_type_id);
+    SPISectionBuf *sec = spi_begin(spi, 3 + nb_args, 33);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, return_type_id);
     for (int i = 0; i < nb_args; i++)
-        spi_write_u32(spi, args[i]);
+        spi_write_u32(sec, args[i]);
     return spi_get_id(spi);
 }
 
@@ -511,74 +604,76 @@ static inline void spi_OpFunction(SPICtx *spi, int fn_id, int result_type_id,
                                   SpvFunctionControlMask function_control,
                                   int function_type_id)
 {
-    spi_write_u32(spi, (5 << 16) | 54);
-    spi_write_u32(spi, result_type_id);
-    spi_write_u32(spi, fn_id);
-    spi_write_u32(spi, function_control);
-    spi_write_u32(spi, function_type_id);
+    SPISectionBuf *sec = spi_begin(spi, 5, 54);
+    spi_write_u32(sec, result_type_id);
+    spi_write_u32(sec, fn_id);
+    spi_write_u32(sec, function_control);
+    spi_write_u32(sec, function_type_id);
 }
 
 static inline int spi_OpLabel(SPICtx *spi, int label_id)
 {
-    spi_write_u32(spi, (2 << 16) | 248);
-    spi_write_u32(spi, label_id);
+    SPISectionBuf *sec = spi_begin(spi, 2, 248);
+    spi_write_u32(sec, label_id);
     return label_id;
 }
 
 static inline void spi_OpReturn(SPICtx *spi)
 {
-    spi_write_u32(spi, (1 << 16) | 253);
+    spi_begin(spi, 1, 253);
 }
 
 static inline void spi_OpFunctionEnd(SPICtx *spi)
 {
-    spi_write_u32(spi, (1 << 16) | 56);
+    spi_begin(spi, 1, 56);
 }
 
 static inline int spi_OpVariable(SPICtx *spi, int var_id, int ptr_type_id,
                                  SpvStorageClass storage_class, int initializer_id)
 {
-    spi_write_u32(spi, ((4 + !!initializer_id) << 16) | 59);
-    spi_write_u32(spi, ptr_type_id);
-    spi_write_u32(spi, var_id);
-    spi_write_u32(spi, storage_class);
+    SPISectionBuf *sec = spi_begin_section(spi, storage_class == SpvStorageClassFunction ?
+                                           SPI_SECTION_CODE : SPI_SECTION_GLOBALS,
+                                           4 + !!initializer_id, SpvOpVariable);
+    spi_write_u32(sec, ptr_type_id);
+    spi_write_u32(sec, var_id);
+    spi_write_u32(sec, storage_class);
     if (initializer_id)
-        spi_write_u32(spi, initializer_id);
+        spi_write_u32(sec, initializer_id);
     return var_id;
 }
 
 static inline int spi_OpConstantTrue(SPICtx *spi)
 {
-    spi_write_u32(spi, (3 << 16) | 41);
-    spi_write_u32(spi, spi->bool_type_id);
-    spi_write_u32(spi, spi->id);
+    SPISectionBuf *sec = spi_begin(spi, 3, 41);
+    spi_write_u32(sec, spi->bool_type_id);
+    spi_write_u32(sec, spi->id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpConstantFalse(SPICtx *spi)
 {
-    spi_write_u32(spi, (3 << 16) | 42);
-    spi_write_u32(spi, spi->bool_type_id);
-    spi_write_u32(spi, spi->id);
+    SPISectionBuf *sec = spi_begin(spi, 3, 42);
+    spi_write_u32(sec, spi->bool_type_id);
+    spi_write_u32(sec, spi->id);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpConstantUInt(SPICtx *spi, int type_id, uint32_t val)
 {
-    spi_write_u32(spi, (4 << 16) | 43);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, val);
+    SPISectionBuf *sec = spi_begin(spi, 4, 43);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, val);
     return spi_get_id(spi);
 }
 
 static inline int spi_OpConstantUInt64(SPICtx *spi, int type_id, uint64_t val)
 {
-    spi_write_u32(spi, (5 << 16) | 43);
-    spi_write_u32(spi, type_id);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, val & UINT32_MAX);
-    spi_write_u32(spi, val >> 32);
+    SPISectionBuf *sec = spi_begin(spi, 5, 43);
+    spi_write_u32(sec, type_id);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, val & UINT32_MAX);
+    spi_write_u32(sec, val >> 32);
     return spi_get_id(spi);
 }
 
@@ -610,13 +705,13 @@ static inline int spi_OpLoad(SPICtx *spi, int result_type_id, int ptr_id,
                              SpvMemoryAccessMask memory_access, int align)
 {
     int is_aligned = !!(memory_access & SpvMemoryAccessAlignedMask);
-    spi_write_u32(spi, ((5 + is_aligned) << 16) | 61);
-    spi_write_u32(spi, result_type_id);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, ptr_id);
-    spi_write_u32(spi, memory_access);
+    SPISectionBuf *sec = spi_begin(spi, 5 + is_aligned, 61);
+    spi_write_u32(sec, result_type_id);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, ptr_id);
+    spi_write_u32(sec, memory_access);
     if (is_aligned)
-        spi_write_u32(spi, align);
+        spi_write_u32(sec, align);
     return spi_get_id(spi);
 }
 
@@ -624,58 +719,58 @@ static inline void spi_OpStore(SPICtx *spi, int ptr_id, int obj_id,
                                SpvMemoryAccessMask memory_access, int align)
 {
     int is_aligned = !!(memory_access & SpvMemoryAccessAlignedMask);
-    spi_write_u32(spi, ((4 + is_aligned) << 16) | 62);
-    spi_write_u32(spi, ptr_id);
-    spi_write_u32(spi, obj_id);
-    spi_write_u32(spi, memory_access);
+    SPISectionBuf *sec = spi_begin(spi, 4 + is_aligned, 62);
+    spi_write_u32(sec, ptr_id);
+    spi_write_u32(sec, obj_id);
+    spi_write_u32(sec, memory_access);
     if (is_aligned)
-        spi_write_u32(spi, align);
+        spi_write_u32(sec, align);
 }
 
 static inline void spi_OpSelectionMerge(SPICtx *spi, int merge_block,
                                         SpvSelectionControlMask selection_control)
 {
-    spi_write_u32(spi, (3 << 16) | 247);
-    spi_write_u32(spi, merge_block);
-    spi_write_u32(spi, selection_control);
+    SPISectionBuf *sec = spi_begin(spi, 3, 247);
+    spi_write_u32(sec, merge_block);
+    spi_write_u32(sec, selection_control);
 }
 
 static inline void spi_OpBranchConditional(SPICtx *spi, int cond_id,
                                            int true_label, int false_label,
                                            uint32_t branch_weights)
 {
-    spi_write_u32(spi, ((4 + 2*(!!branch_weights)) << 16) | 250);
-    spi_write_u32(spi, cond_id);
-    spi_write_u32(spi, true_label);
-    spi_write_u32(spi, false_label);
+    SPISectionBuf *sec = spi_begin(spi, 4 + 2*(!!branch_weights), 250);
+    spi_write_u32(sec, cond_id);
+    spi_write_u32(sec, true_label);
+    spi_write_u32(sec, false_label);
     if (branch_weights) {
-        spi_write_u32(spi, branch_weights >> 16);
-        spi_write_u32(spi, branch_weights & UINT16_MAX);
+        spi_write_u32(sec, branch_weights >> 16);
+        spi_write_u32(sec, branch_weights & UINT16_MAX);
     }
 }
 
 static inline int spi_OpImageRead(SPICtx *spi, int result_type_id, int img_id,
                                   int pos_id, SpvImageOperandsMask image_operands)
 {
-    spi_write_u32(spi, (5 + (!!image_operands) << 16) | 98);
-    spi_write_u32(spi, result_type_id);
-    spi_write_u32(spi, spi->id);
-    spi_write_u32(spi, img_id);
-    spi_write_u32(spi, pos_id);
+    SPISectionBuf *sec = spi_begin(spi, 5 + (!!image_operands), 98);
+    spi_write_u32(sec, result_type_id);
+    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, img_id);
+    spi_write_u32(sec, pos_id);
     if (image_operands)
-        spi_write_u32(spi, image_operands);
+        spi_write_u32(sec, image_operands);
     return spi_get_id(spi);
 }
 
 static inline void spi_OpImageWrite(SPICtx *spi, int img_id, int pos_id,
                                     int src_id, SpvImageOperandsMask image_operands)
 {
-    spi_write_u32(spi, (4 + (!!image_operands) << 16) | 99);
-    spi_write_u32(spi, img_id);
-    spi_write_u32(spi, pos_id);
-    spi_write_u32(spi, src_id);
+    SPISectionBuf *sec = spi_begin(spi, 4 + (!!image_operands), 99);
+    spi_write_u32(sec, img_id);
+    spi_write_u32(sec, pos_id);
+    spi_write_u32(sec, src_id);
     if (image_operands)
-        spi_write_u32(spi, image_operands);
+        spi_write_u32(sec, image_operands);
 }
 
 #endif /* SWSCALE_VULKAN_SPVASM_H */

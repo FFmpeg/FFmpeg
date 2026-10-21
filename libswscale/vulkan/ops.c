@@ -557,7 +557,7 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
 
         const int nb_ops = bitexact_linear_nb_ops(&op->lin);
         LinearIDs *lin = &id->op[n].lin;
-        lin->deco_off = spi_reserve(spi, nb_ops*4*3);
+        lin->deco_off = spi_reserve(spi, SPI_SECTION_DECORATIONS, nb_ops*4*3);
         lin->nb_deco  = nb_ops;
     }
 }
@@ -836,11 +836,12 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     tmp[2] = spi_OpCompositeExtract(spi, type_s, data, 2);
     tmp[3] = spi_OpCompositeExtract(spi, type_s, data, 3);
 
-    int off = spi_reserve(spi, 0); /* Current offset */
-    spi->off = lin->deco_off;
+    SPISectionBuf *deco = &spi->sec[SPI_SECTION_DECORATIONS];
+    const int off = deco->off;
+    deco->off = lin->deco_off;
     for (int i = 0; i < lin->nb_deco; i++)
         spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
-    spi->off = off;
+    deco->off = off;
     const int first_id = spi->id;
 
     /* Same evaluation order as the C backend: offset first, then each column
@@ -1342,19 +1343,26 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                          const SwsOpList *ops, FFVulkanShader *shd)
 {
-    uint8_t spvbuf[1024*16];
-    SPICtx spi_context = { 0 }, *spi = &spi_context;
-    spi_init(spi, spvbuf, sizeof(spvbuf));
+    uint8_t *spvbuf = NULL;
+    SPICtx spi_context, *spi = &spi_context;
+    spi_init(spi);
 
     int err = emit_shader(sws, p, s, ops, shd, spi);
     if (err < 0)
-        return err;
+        goto fail;
 
-    int len = spi_end(spi);
-    if (len < 0)
-        return AVERROR_INVALIDDATA;
+    int len = spi_end(spi, &spvbuf);
+    if (len < 0) {
+        err = len;
+        goto fail;
+    }
 
-    return ff_vk_shader_link(&s->vkctx, shd, spvbuf, len, "main");
+    err = ff_vk_shader_link(&s->vkctx, shd, spvbuf, len, "main");
+
+fail:
+    av_free(spvbuf);
+    spi_uninit(spi);
+    return err;
 }
 
 static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
