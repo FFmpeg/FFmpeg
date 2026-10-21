@@ -138,7 +138,7 @@ static int decode_mvc2(AVCodecContext *avctx, GetByteContext *gb,
                        int linesize, int vflip)
 {
     uint8_t *dst;
-    uint32_t color[128], v[8];
+    uint32_t color[128] = {0}, v[8];
     int w, h, nb_colors, i, x, y, p0, p1, mask;
 
     if (bytestream2_get_bytes_left(gb) < 6)
