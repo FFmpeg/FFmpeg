@@ -382,6 +382,12 @@ static void define_pack_consts(SPICtx *spi, const SPIRVIDs *id, const SwsOp *op,
 }
 
 /* Arithmetic on operands of the given pixel type */
+static int emit_add(SPICtx *spi, SwsPixelType type, int res_type, int a, int b)
+{
+    return ff_sws_pixel_type_is_int(type) ? spi_OpIAdd(spi, res_type, a, b)
+                                          : spi_OpFAdd(spi, res_type, a, b);
+}
+
 static int emit_mul(SPICtx *spi, SwsPixelType type, int res_type, int a, int b)
 {
     return ff_sws_pixel_type_is_int(type) ? spi_OpIMul(spi, res_type, a, b)
@@ -601,10 +607,10 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                 continue;
 
             int k = const_pixel(spi, id, op_type, op->lin.m[j][i]);
-            int v = spi_OpFMul(spi, type_s, tmp[i], k);
+            int v = emit_mul(spi, op_type, type_s, tmp[i], k);
             spi_OpDecorate(spi, v, SpvDecorationNoContraction);
             if (acc) {
-                v = spi_OpFAdd(spi, type_s, res[j], v);
+                v = emit_add(spi, op_type, type_s, res[j], v);
                 spi_OpDecorate(spi, v, SpvDecorationNoContraction);
             }
             res[j] = v;
@@ -612,8 +618,16 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
         }
     }
 
-    return spi_OpCompositeConstruct(spi, type_v,
-                                    res[0], res[1], res[2], res[3]);
+    int result = spi_OpCompositeConstruct(spi, type_v,
+                                          res[0], res[1], res[2], res[3]);
+
+    /* Integer results are defined modulo the bit depth of the pixel type */
+    if (op_type == SWS_PIXEL_U8 || op_type == SWS_PIXEL_U16) {
+        const unsigned mask = op_type == SWS_PIXEL_U8 ? UINT8_MAX : UINT16_MAX;
+        result = spi_OpBitwiseAnd(spi, type_v, result,
+                                  const_splat(spi, id, op_type, Q(mask)));
+    }
+    return result;
 }
 
 /* Registers the last created buffer in descriptor set 1, returns its binding */
@@ -920,9 +934,9 @@ static int emit_dither(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
 
 static int emit_linear(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
 {
-    if (ff_sws_op_input_type(op) != SWS_PIXEL_F32)
-        return AVERROR(ENOTSUP);
-    if (id->bitexact)
+    /* Matrix operations are only defined for floats */
+    const SwsPixelType type = ff_sws_op_input_type(op);
+    if (id->bitexact || ff_sws_pixel_type_is_int(type))
         *data = insert_bitexact_linear(op, spi, id, *data);
     else
         *data = insert_vmat_linear(op, spi, id, *data);
