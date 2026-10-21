@@ -977,13 +977,10 @@ static int rw_op_img_count(const SwsOp *op, const uint8_t *planes)
     return count;
 }
 
-static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
-                         const SwsOpList *ops, FFVulkanShader *shd)
+static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
+                       const SwsOpList *ops, FFVulkanShader *shd, SPICtx *spi)
 {
-    uint8_t spvbuf[1024*16];
-    SPICtx spi_context = { 0 }, *spi = &spi_context;
     SPIRVIDs spid_data = { 0 }, *id = &spid_data;
-    spi_init(spi, spvbuf, sizeof(spvbuf));
 
     if (ops->num_ops > MAX_OPS)
         return AVERROR(ENOTSUP);
@@ -1339,6 +1336,19 @@ static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     /* Return and finalize */
     spi_OpReturn(spi);
     spi_OpFunctionEnd(spi);
+    return 0;
+}
+
+static int add_ops_spirv(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
+                         const SwsOpList *ops, FFVulkanShader *shd)
+{
+    uint8_t spvbuf[1024*16];
+    SPICtx spi_context = { 0 }, *spi = &spi_context;
+    spi_init(spi, spvbuf, sizeof(spvbuf));
+
+    int err = emit_shader(sws, p, s, ops, shd, spi);
+    if (err < 0)
+        return err;
 
     int len = spi_end(spi);
     if (len < 0)
