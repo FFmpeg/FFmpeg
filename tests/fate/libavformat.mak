@@ -76,6 +76,10 @@ FATE_LIBAVFORMAT-$(CONFIG_IMF_DEMUXER) += fate-imf
 fate-imf: libavformat/tests/imf$(EXESUF)
 fate-imf: CMD = run libavformat/tests/imf$(EXESUF)
 
+FATE_LIBAVFORMAT-$(CONFIG_MPEGTS_DEMUXER) += fate-mpegts-probe-pid
+fate-mpegts-probe-pid: libavformat/tests/mpegts_probe$(EXESUF)
+fate-mpegts-probe-pid: CMD = run libavformat/tests/mpegts_probe$(EXESUF)
+
 FATE_LIBAVFORMAT += fate-seek_utils
 fate-seek_utils: libavformat/tests/seek_utils$(EXESUF)
 fate-seek_utils: CMD = run libavformat/tests/seek_utils$(EXESUF)

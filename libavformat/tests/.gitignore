@@ -3,6 +3,7 @@
 /id3v2enc
 /fifo_muxer
 /imf
+/mpegts_probe
 /mkdir
 /noproxy
 /rename

@@ -1,0 +1,13 @@
+payload: 100
+null, afc 0: 100
+payload, then null with afc 0: 100
+payload, then null with afc 0, 192: 100
+payload, then null with afc 0, 204: 100
+null, then payload with afc 0: 0
+payload and null with afc 0, mixed: 100
+payload, a few null with afc 0: 100
+null, then PID 0x1FF with afc 0: 0
+null, then PID 0x1F00 with afc 0: 0
+null with afc 0, after 0x00: 100
+payload with afc 0, after 0xFF: 0
+payload, after 0xFF: 100
