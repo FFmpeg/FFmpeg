@@ -430,6 +430,15 @@ static int const_zero(const SPIRVIDs *id, SwsPixelType type)
     return ff_sws_pixel_type_is_int(type) ? id->u32_cid[0] : id->f32_0;
 }
 
+static int const_pixel(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
+                       AVRational64 val)
+{
+    if (!ff_sws_pixel_type_is_int(type))
+        return spi_OpConstantFloat(spi, id->f32_type, (float) val.num / val.den);
+    av_assert0(val.den == 1);
+    return spi_OpConstantUInt(spi, id->u32_type, val.num);
+}
+
 /* Arithmetic on operands of the given pixel type */
 static int emit_mul(SPICtx *spi, SwsPixelType type, int res_type, int a, int b)
 {
@@ -541,20 +550,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         OpIDs *oid = &id->op[n];
         SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
-        case SWS_OP_CLEAR:
-            for (int i = 0; i < 4; i++) {
-                if (!SWS_COMP_TEST(op->clear.mask, i))
-                    continue;
-                AVRational64 cv = op->clear.value[i];
-                if (op->clear.type[i] == SWS_PIXEL_F32) {
-                    float q = (float)cv.num/cv.den;
-                    oid->comp[i] = spi_OpConstantFloat(spi, f32_type, q);
-                } else {
-                    av_assert0(cv.den == 1);
-                    oid->comp[i] = spi_OpConstantUInt(spi, u32_type, cv.num);
-                }
-            }
-            break;
         case SWS_OP_PACK:
         case SWS_OP_UNPACK: {
             uint64_t mask[4];
@@ -1194,7 +1189,9 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             for (int i = 0; i < 4; i++) {
                 if (!SWS_COMP_TEST(op->clear.mask, i))
                     continue;
-                data = spi_OpCompositeInsert(spi, type_v, oid->comp[i], data, i);
+                int val = const_pixel(spi, id, op->clear.type[i],
+                                      op->clear.value[i]);
+                data = spi_OpCompositeInsert(spi, type_v, val, data, i);
             }
             break;
         case SWS_OP_SWIZZLE:
