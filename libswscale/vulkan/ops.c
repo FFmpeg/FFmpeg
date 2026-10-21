@@ -322,6 +322,7 @@ typedef struct SPIRVIDs {
     VulkanPriv *priv;
     FFVulkanDescriptorSetBinding buf_desc[MAX_DATA_BUFS]; /* set 1 */
     const SwsOpList *ops;
+    int bitexact;
 
     /* Per-invocation state of the main function */
     int in_img[4], out_img[4];  /* image handles, indexed by plane */
@@ -777,6 +778,86 @@ static int rw_op_img_count(const SwsOp *op, const uint8_t *planes)
     return count;
 }
 
+static int emit_read(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    const SwsOpList *ops = id->ops;
+    const SwsPixelType type = ff_sws_op_output_type(op);
+    const int type_v = type_vec4(id, type);
+    const int type_s = type_scalar(id, type);
+    const int zero = const_zero(id, type);
+
+    if (op->rw.frac) {
+        return AVERROR(ENOTSUP);
+    } else if (op->rw.filter.op) {
+        if (op->rw.mode != SWS_RW_PLANAR ||
+            op->rw.filter.type != SWS_PIXEL_F32)
+            return AVERROR(ENOTSUP);
+        return emit_read_filtered(spi, id, op, data);
+    } else if (op->rw.mode == SWS_RW_PACKED) {
+        *data = spi_OpImageRead(spi, type_v, id->in_img[ops->plane_src[0]],
+                                id->src_gid, SpvImageOperandsMaskNone);
+    } else if (op->rw.mode == SWS_RW_PLANAR) {
+        int tmp[4] = { zero, zero, zero, zero };
+        for (int i = 0; i < op->rw.elems; i++) {
+            tmp[i] = spi_OpImageRead(spi, type_v,
+                                     id->in_img[ops->plane_src[i]], id->src_gid,
+                                     SpvImageOperandsMaskNone);
+            tmp[i] = spi_OpCompositeExtract(spi, type_s, tmp[i], 0);
+        }
+        *data = spi_OpCompositeConstruct(spi, type_v,
+                                         tmp[0], tmp[1], tmp[2], tmp[3]);
+    } else {
+        return AVERROR(ENOTSUP);
+    }
+
+    return 0;
+}
+
+static int emit_write(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    const SwsOpList *ops = id->ops;
+    const SwsPixelType type = ff_sws_op_input_type(op);
+    const int type_v = type_vec4(id, type);
+    const int type_s = type_scalar(id, type);
+
+    if (op->rw.frac || op->rw.filter.op) {
+        return AVERROR(ENOTSUP);
+    } else if (op->rw.mode == SWS_RW_PACKED) {
+        spi_OpImageWrite(spi, id->out_img[ops->plane_dst[0]], id->dst_gid, *data,
+                         SpvImageOperandsMaskNone);
+    } else {
+        for (int i = 0; i < op->rw.elems; i++) {
+            int tmp = spi_OpCompositeExtract(spi, type_s, *data, i);
+            tmp = spi_OpCompositeConstruct(spi, type_v, tmp, tmp, tmp, tmp);
+            spi_OpImageWrite(spi, id->out_img[ops->plane_dst[i]], id->dst_gid, tmp,
+                             SpvImageOperandsMaskNone);
+        }
+    }
+
+    return 0;
+}
+
+static int emit_clamp(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    const SwsPixelType type = ff_sws_op_input_type(op);
+    const int type_v = type_vec4(id, type);
+    const int type_s = type_scalar(id, type);
+
+    for (int i = 0; i < 4; i++) {
+        if (!op->clamp.limit[i].den)
+            continue;
+        int lim = const_pixel(spi, id, type, op->clamp.limit[i]);
+        int tmp = spi_OpCompositeExtract(spi, type_s, *data, i);
+        if (op->op == SWS_OP_MIN)
+            tmp = emit_min(spi, id, type, type_s, tmp, lim);
+        else
+            tmp = emit_max(spi, id, type, type_s, tmp, lim);
+        *data = spi_OpCompositeInsert(spi, type_v, tmp, *data, i);
+    }
+
+    return 0;
+}
+
 static int emit_dither(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
 {
     if (ff_sws_op_input_type(op) != SWS_PIXEL_F32)
@@ -837,12 +918,42 @@ static int emit_dither(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
     return 0;
 }
 
+static int emit_linear(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    if (ff_sws_op_input_type(op) != SWS_PIXEL_F32)
+        return AVERROR(ENOTSUP);
+    if (id->bitexact)
+        *data = insert_bitexact_linear(op, spi, id, *data);
+    else
+        *data = insert_vmat_linear(op, spi, id, *data);
+    return 0;
+}
+
+static int emit_pack(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    const int type_v = id->u32vec4_type;
+    const int type_s = id->u32_type;
+
+    int shift, mask;
+    define_pack_consts(spi, id, op, &shift, &mask);
+    *data = spi_OpBitwiseAnd(spi, type_v, *data, mask);
+    *data = spi_OpShiftLeftLogical(spi, type_v, *data, shift);
+    int val = spi_OpCompositeExtract(spi, type_s, *data, 0);
+    for (int i = 1; i < 4; i++) {
+        int tmp = spi_OpCompositeExtract(spi, type_s, *data, i);
+        val = spi_OpBitwiseOr(spi, type_s, val, tmp);
+    }
+    *data = spi_OpCompositeConstruct(spi, type_v, val, val, val, val);
+    return 0;
+}
+
 static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                        const SwsOpList *ops, FFVulkanShader *shd, SPICtx *spi)
 {
     SPIRVIDs spid_data = { 0 }, *id = &spid_data;
     id->priv = p;
     id->ops = ops;
+    id->bitexact = !!(sws->flags & SWS_BITEXACT);
 
     if (ops->num_ops > MAX_OPS)
         return AVERROR(ENOTSUP);
@@ -984,51 +1095,13 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         if (op->op == SWS_OP_WRITE)
             type_out = type_in;
         int type_v = type_vec4(id, type_out);
-        int type_s = type_scalar(id, type_out);
-        int uid = const_zero(id, type_out);
 
         switch (op->op) {
         case SWS_OP_READ:
-            if (op->rw.frac) {
-                return AVERROR(ENOTSUP);
-            } else if (op->rw.filter.op) {
-                if (op->rw.mode != SWS_RW_PLANAR ||
-                    op->rw.filter.type != SWS_PIXEL_F32)
-                    return AVERROR(ENOTSUP);
-                err = emit_read_filtered(spi, id, op, &data);
-                if (err < 0)
-                    return err;
-            } else if (op->rw.mode == SWS_RW_PACKED) {
-                data = spi_OpImageRead(spi, type_v, id->in_img[ops->plane_src[0]],
-                                       id->src_gid, SpvImageOperandsMaskNone);
-            } else if (op->rw.mode == SWS_RW_PLANAR) {
-                int tmp[4] = { uid, uid, uid, uid };
-                for (int i = 0; i < op->rw.elems; i++) {
-                    tmp[i] = spi_OpImageRead(spi, type_v,
-                                             id->in_img[ops->plane_src[i]], id->src_gid,
-                                             SpvImageOperandsMaskNone);
-                    tmp[i] = spi_OpCompositeExtract(spi, type_s, tmp[i], 0);
-                }
-                data = spi_OpCompositeConstruct(spi, type_v,
-                                                tmp[0], tmp[1], tmp[2], tmp[3]);
-            } else {
-                return AVERROR(ENOTSUP);
-            }
+            err = emit_read(spi, id, op, &data);
             break;
         case SWS_OP_WRITE:
-            if (op->rw.frac || op->rw.filter.op) {
-                return AVERROR(ENOTSUP);
-            } else if (op->rw.mode == SWS_RW_PACKED) {
-                spi_OpImageWrite(spi, id->out_img[ops->plane_dst[0]], id->dst_gid, data,
-                                 SpvImageOperandsMaskNone);
-            } else {
-                for (int i = 0; i < op->rw.elems; i++) {
-                    int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                    tmp = spi_OpCompositeConstruct(spi, type_v, tmp, tmp, tmp, tmp);
-                    spi_OpImageWrite(spi, id->out_img[ops->plane_dst[i]], id->dst_gid, tmp,
-                                     SpvImageOperandsMaskNone);
-                }
-            }
+            err = emit_write(spi, id, op, &data);
             break;
         case SWS_OP_CLEAR:
             for (int i = 0; i < 4; i++) {
@@ -1065,32 +1138,14 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX:
-            for (int i = 0; i < 4; i++) {
-                if (!op->clamp.limit[i].den)
-                    continue;
-                int lim = const_pixel(spi, id, type_in, op->clamp.limit[i]);
-                int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                if (op->op == SWS_OP_MIN)
-                    tmp = emit_min(spi, id, type_in, type_s, tmp, lim);
-                else
-                    tmp = emit_max(spi, id, type_in, type_s, tmp, lim);
-                data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
-            }
+            err = emit_clamp(spi, id, op, &data);
             break;
         case SWS_OP_DITHER:
             err = emit_dither(spi, id, op, &data);
-            if (err < 0)
-                return err;
             break;
-        case SWS_OP_LINEAR: {
-            if (type_in != SWS_PIXEL_F32)
-                return AVERROR(ENOTSUP);
-            if (sws->flags & SWS_BITEXACT)
-                data = insert_bitexact_linear(op, spi, id, data);
-            else
-                data = insert_vmat_linear(op, spi, id, data);
+        case SWS_OP_LINEAR:
+            err = emit_linear(spi, id, op, &data);
             break;
-        }
         case SWS_OP_UNPACK: {
             int shift, mask;
             define_pack_consts(spi, id, op, &shift, &mask);
@@ -1099,22 +1154,15 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             data = spi_OpBitwiseAnd(spi, type_v, data, mask);
             break;
         }
-        case SWS_OP_PACK: {
-            int shift, mask;
-            define_pack_consts(spi, id, op, &shift, &mask);
-            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
-            data = spi_OpShiftLeftLogical(spi, type_v, data, shift);
-            int val = spi_OpCompositeExtract(spi, type_s, data, 0);
-            for (int i = 1; i < 4; i++) {
-                int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                val = spi_OpBitwiseOr(spi, type_s, val, tmp);
-            }
-            data = spi_OpCompositeConstruct(spi, type_v, val, val, val, val);
+        case SWS_OP_PACK:
+            err = emit_pack(spi, id, op, &data);
             break;
-        }
         default:
             return AVERROR(ENOTSUP);
         }
+
+        if (err < 0)
+            return err;
     }
 
     /* Return and finalize */
