@@ -710,6 +710,17 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                                     res[0], res[1], res[2], res[3]);
 }
 
+/* Registers the last created buffer in descriptor set 1, returns its binding */
+static int add_buf_binding(SPIRVIDs *id)
+{
+    VulkanPriv *p = id->priv;
+    id->buf_desc[p->nb_data_bufs] = (FFVulkanDescriptorSetBinding) {
+        .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+    };
+    return p->nb_data_bufs++;
+}
+
 static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
                          const SwsOp *op, const struct FilterData *f)
 {
@@ -826,18 +837,13 @@ static int emit_dither(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
         return AVERROR(ENOTSUP);
 
     VulkanPriv *p = id->priv;
-    const int binding = p->nb_data_bufs;
-    if (binding >= MAX_DATA_BUFS)
+    if (p->nb_data_bufs >= MAX_DATA_BUFS)
         return AVERROR(ENOTSUP);
 
-    int err = create_dither_buf(p->s, &op->dither, &p->data_bufs[binding]);
+    int err = create_dither_buf(p->s, &op->dither, &p->data_bufs[p->nb_data_bufs]);
     if (err < 0)
         return err;
-    p->nb_data_bufs++;
-    id->buf_desc[binding] = (FFVulkanDescriptorSetBinding) {
-        .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .stages = VK_SHADER_STAGE_COMPUTE_BIT,
-    };
+    const int binding = add_buf_binding(id);
 
     /* Uniform buffer in descriptor set 1: struct { float m[size][size]; } */
     const int size = 1 << op->dither.size_log2;
