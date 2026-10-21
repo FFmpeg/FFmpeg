@@ -480,11 +480,18 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s)
                 last = zero;
             }
             for (j = 0; j < stride; j++) {
-                ret = ls_decode_line(state, s, last + j, cur + j,
-                               Rc[j], width, stride, j, 8);
+                if (s->bits <= 8) {
+                    ret = ls_decode_line(state, s, last + j, cur + j,
+                                         Rc[j], width, stride, j, 8);
+                    Rc[j] = last[j];
+                } else {
+                    /* only single component scans can have more than 8 bits */
+                    ret = ls_decode_line(state, s, last, cur,
+                                         Rc[j], width, stride, j, 16);
+                    Rc[j] = *((uint16_t *)last);
+                }
                 if (ret < 0)
                     break;
-                Rc[j] = last[j];
             }
             if (ret < 0)
                 break;
