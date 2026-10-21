@@ -332,7 +332,6 @@ typedef struct OpIDs {
     union {
         int vec;                          /* LSHIFT, RSHIFT, SCALE */
         int comp[4];                      /* CLEAR, MIN, MAX, DITHER */
-        struct { int shift, mask; } pack; /* PACK, UNPACK */
         LinearIDs lin;                    /* LINEAR */
     };
     int buf; /* index into dither[] or filt[] */
@@ -437,6 +436,23 @@ static int const_pixel(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
         return spi_OpConstantFloat(spi, id->f32_type, (float) val.num / val.den);
     av_assert0(val.den == 1);
     return spi_OpConstantUInt(spi, id->u32_type, val.num);
+}
+
+/* Shift and mask vectors for (un)packing each component */
+static void define_pack_consts(SPICtx *spi, const SPIRVIDs *id, const SwsOp *op,
+                               int *shift_id, int *mask_id)
+{
+    uint64_t mask[4];
+    int shift[4], tmp[4];
+    ff_sws_pack_decode(op->pack.pattern, mask, shift);
+    for (int i = 0; i < 4; i++)
+        tmp[i] = spi_OpConstantUInt(spi, id->u32_type, shift[i]);
+    *shift_id = spi_OpConstantComposite(spi, id->u32vec4_type,
+                                        tmp[0], tmp[1], tmp[2], tmp[3]);
+    for (int i = 0; i < 4; i++)
+        tmp[i] = spi_OpConstantUInt(spi, id->u32_type, mask[i]);
+    *mask_id = spi_OpConstantComposite(spi, id->u32vec4_type,
+                                       tmp[0], tmp[1], tmp[2], tmp[3]);
 }
 
 /* Arithmetic on operands of the given pixel type */
@@ -550,21 +566,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         OpIDs *oid = &id->op[n];
         SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
-        case SWS_OP_PACK:
-        case SWS_OP_UNPACK: {
-            uint64_t mask[4];
-            int shift[4], tmp[4];
-            ff_sws_pack_decode(op->pack.pattern, mask, shift);
-            for (int i = 0; i < 4; i++)
-                tmp[i] = spi_OpConstantUInt(spi, u32_type, shift[i]);
-            oid->pack.shift = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                                      tmp[0], tmp[1], tmp[2], tmp[3]);
-            for (int i = 0; i < 4; i++)
-                tmp[i] = spi_OpConstantUInt(spi, u32_type, mask[i]);
-            oid->pack.mask = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                                     tmp[0], tmp[1], tmp[2], tmp[3]);
-            break;
-        }
         case SWS_OP_LSHIFT:
         case SWS_OP_RSHIFT: {
             int tmp = spi_OpConstantUInt(spi, u32_type, op->shift.amount);
@@ -1260,14 +1261,19 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 data = insert_vmat_linear(spi, id, &oid->lin, data);
             break;
         }
-        case SWS_OP_UNPACK:
+        case SWS_OP_UNPACK: {
+            int shift, mask;
+            define_pack_consts(spi, id, op, &shift, &mask);
             data = spi_OpVectorShuffle(spi, type_v, data, data, 0, 0, 0, 0);
-            data = spi_OpShiftRightLogical(spi, type_v, data, oid->pack.shift);
-            data = spi_OpBitwiseAnd(spi, type_v, data, oid->pack.mask);
+            data = spi_OpShiftRightLogical(spi, type_v, data, shift);
+            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
             break;
+        }
         case SWS_OP_PACK: {
-            data = spi_OpBitwiseAnd(spi, type_v, data, oid->pack.mask);
-            data = spi_OpShiftLeftLogical(spi, type_v, data, oid->pack.shift);
+            int shift, mask;
+            define_pack_consts(spi, id, op, &shift, &mask);
+            data = spi_OpBitwiseAnd(spi, type_v, data, mask);
+            data = spi_OpShiftLeftLogical(spi, type_v, data, shift);
             int val = spi_OpCompositeExtract(spi, type_s, data, 0);
             for (int i = 1; i < 4; i++) {
                 int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
