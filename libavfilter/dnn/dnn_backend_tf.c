@@ -141,15 +141,20 @@ static TFInferRequest *tf_create_inference_request(void)
 static int tf_start_inference(void *args)
 {
     TFRequestItem *request = args;
-    TFInferRequest *infer_request = request->infer_request;
-    LastLevelTaskItem *lltask = request->lltask;
-    TaskItem *task = lltask->task;
-    TFModel *tf_model = task->model;
+    TFInferRequest *infer_request;
+    LastLevelTaskItem *lltask;
+    TaskItem *task;
+    TFModel *tf_model;
 
     if (!request) {
-        av_log(tf_model->ctx, AV_LOG_ERROR, "TFRequestItem is NULL\n");
+        av_log(NULL, AV_LOG_ERROR, "TFRequestItem is NULL\n");
         return AVERROR(EINVAL);
     }
+
+    infer_request = request->infer_request;
+    lltask = request->lltask;
+    task = lltask->task;
+    tf_model = task->model;
 
     TF_SessionRun(tf_model->session, NULL,
                   infer_request->tf_input, &infer_request->input_tensor, 1,
