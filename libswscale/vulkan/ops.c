@@ -480,8 +480,8 @@ static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
 }
 
 /* Section 1: Function to define all shader header data, and decorations */
-static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
-                                 const SwsOpList *ops, SPICtx *spi, SPIRVIDs *id)
+static void define_shader_header(SwsContext *sws, const SwsOpList *ops,
+                                 SPICtx *spi, SPIRVIDs *id)
 {
     spi_OpCapability(spi, SpvCapabilityShader); /* Shader type */
 
@@ -494,34 +494,6 @@ static void define_shader_header(SwsContext *sws, FFVulkanShader *shd,
 
     /* Next section starts here */
     spi_OpMemoryModel(spi, SpvAddressingModelLogical, SpvMemoryModelGLSL450);
-
-    /* Entrypoint */
-    id->ep = spi_OpEntryPoint(spi, SpvExecutionModelGLCompute, "main",
-                              id->iface, id->nb_iface);
-    spi_OpExecutionMode(spi, id->ep, SpvExecutionModeLocalSize,
-                        shd->lg_size, 3);
-
-    if (id->interlaced) {
-        spi_OpDecorate(spi, id->push_const_struct_id, SpvDecorationBlock);
-        spi_OpMemberDecorate(spi, id->push_const_struct_id, 0,
-                             SpvDecorationOffset, 0);
-    }
-
-    /* gl_GlobalInvocationID descriptor decorations */
-    spi_OpDecorate(spi, id->gid_var, SpvDecorationBuiltIn,
-                   SpvBuiltInGlobalInvocationId);
-
-    /* Input image descriptor decorations */
-    if (id->in_img_var) {
-        spi_OpDecorate(spi, id->in_img_var, SpvDecorationNonWritable);
-        spi_OpDecorate(spi, id->in_img_var, SpvDecorationDescriptorSet, 0);
-        spi_OpDecorate(spi, id->in_img_var, SpvDecorationBinding, 0);
-    }
-
-    /* Output image descriptor decorations */
-    spi_OpDecorate(spi, id->out_img_var, SpvDecorationNonReadable);
-    spi_OpDecorate(spi, id->out_img_var, SpvDecorationDescriptorSet, 0);
-    spi_OpDecorate(spi, id->out_img_var, SpvDecorationBinding, 1);
 
     for (int i = 0; i < id->nb_dither_bufs; i++) {
         spi_OpDecorate(spi, id->dither[i].arr_1d_id, SpvDecorationArrayStride,
@@ -801,24 +773,52 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     }
 
     /* Define inputs */
-    spi_OpVariable(spi, id->gid_var, id->u32vec3_tptr,
-                   SpvStorageClassInput, 0);
+    id->gid_var = spi_OpVariable(spi, spi_get_id(spi), id->u32vec3_tptr,
+                                 SpvStorageClassInput, 0);
+    id->iface[id->nb_iface++] = id->gid_var;
+    spi_OpDecorate(spi, id->gid_var, SpvDecorationBuiltIn,
+                   SpvBuiltInGlobalInvocationId);
+
     if (op_r) {
-        spi_OpVariable(spi, id->in_img_var, id->in_img_tptr,
-                       SpvStorageClassUniformConstant, 0);
+        id->in_img_var = spi_OpVariable(spi, spi_get_id(spi), id->in_img_tptr,
+                                        SpvStorageClassUniformConstant, 0);
+        id->iface[id->nb_iface++] = id->in_img_var;
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationNonWritable);
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationDescriptorSet, 0);
+        spi_OpDecorate(spi, id->in_img_var, SpvDecorationBinding, 0);
     }
-    spi_OpVariable(spi, id->out_img_var, id->out_img_tptr,
-                   SpvStorageClassUniformConstant, 0);
+
+    id->out_img_var = spi_OpVariable(spi, spi_get_id(spi), id->out_img_tptr,
+                                     SpvStorageClassUniformConstant, 0);
+    id->iface[id->nb_iface++] = id->out_img_var;
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationNonReadable);
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationDescriptorSet, 0);
+    spi_OpDecorate(spi, id->out_img_var, SpvDecorationBinding, 1);
 
     if (id->interlaced) {
+        id->push_const_struct_id = spi_get_id(spi);
         spi_OpTypeStruct(spi, id->push_const_struct_id, id->u32_type);
+        spi_OpDecorate(spi, id->push_const_struct_id, SpvDecorationBlock);
+        spi_OpMemberDecorate(spi, id->push_const_struct_id, 0,
+                             SpvDecorationOffset, 0);
         id->push_const_ptr_id = spi_OpTypePointer(spi, SpvStorageClassPushConstant,
                                                   id->push_const_struct_id);
         id->push_const_elem_ptr_id = spi_OpTypePointer(spi, SpvStorageClassPushConstant,
                                                        id->u32_type);
-        spi_OpVariable(spi, id->push_const_var_id, id->push_const_ptr_id,
-                       SpvStorageClassPushConstant, 0);
+        id->push_const_var_id = spi_OpVariable(spi, spi_get_id(spi),
+                                               id->push_const_ptr_id,
+                                               SpvStorageClassPushConstant, 0);
+        id->iface[id->nb_iface++] = id->push_const_var_id;
     }
+}
+
+/* Must be called after all interface variables have been defined */
+static void define_entry_point(FFVulkanShader *shd, SPICtx *spi, SPIRVIDs *id)
+{
+    spi_OpEntryPoint(spi, SpvExecutionModelGLCompute, id->ep, "main",
+                     id->iface, id->nb_iface);
+    spi_OpExecutionMode(spi, id->ep, SpvExecutionModeLocalSize,
+                        shd->lg_size, 3);
 }
 
 static int insert_vmat_linear(SPICtx *spi, SPIRVIDs *id, const LinearIDs *lin,
@@ -1033,12 +1033,6 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     if (err < 0)
         return err;
 
-    /* Entrypoint inputs; gl_GlobalInvocationID, input and output images, dither */
-    id->gid_var     = id->iface[id->nb_iface++] = spi_get_id(spi);
-    if (op_r)
-        id->in_img_var = id->iface[id->nb_iface++] = spi_get_id(spi);
-    id->out_img_var = id->iface[id->nb_iface++] = spi_get_id(spi);
-
     /* Create dither and filter buffer descriptor set. Both are collected in
      * op order, so the bindings match the buffer order from create_bufs().*/
     id->nb_dither_bufs = 0;
@@ -1092,17 +1086,13 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         ff_vk_shader_add_descriptor_set(&s->vkctx, shd, buf_desc,
                                         nb_data_bufs, 1);
 
-    if (id->interlaced) {
-        id->push_const_struct_id = spi_get_id(spi);
-        id->push_const_var_id = id->iface[id->nb_iface++] = spi_get_id(spi);
-    }
-
     /* Define shader header sections */
-    define_shader_header(sws, shd, ops, spi, id);
+    define_shader_header(sws, ops, spi, id);
     define_shader_consts(sws, ops, spi, id);
     define_shader_bindings(ops, spi, id, in_img_count, out_img_count);
 
     /* Main function starts here */
+    id->ep = spi_get_id(spi);
     spi_OpFunction(spi, id->ep, id->void_type, 0, id->void_fn_type);
     spi_OpLabel(spi, spi_get_id(spi));
 
@@ -1337,6 +1327,8 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     /* Return and finalize */
     spi_OpReturn(spi);
     spi_OpFunctionEnd(spi);
+
+    define_entry_point(shd, spi, id);
     return 0;
 }
 

@@ -463,16 +463,16 @@ OP_1SRC(OpReturnValue, 254)
     spi_op_res_2src_list(spi, 82, spi_get_id(spi), res_type, src1, src2, \
                          SPI_ARGS(__VA_ARGS__))
 
-static inline int spi_OpEntryPoint(SPICtx *spi, SpvExecutionModel execution_model,
-                                   const char *name, const int *args, int nb_args)
+static inline void spi_OpEntryPoint(SPICtx *spi, SpvExecutionModel execution_model,
+                                    int entry_point_id, const char *name,
+                                    const int *args, int nb_args)
 {
     SPISectionBuf *sec = spi_begin(spi, (3 + nb_args) + spi_strl(name), 15);
     spi_write_u32(sec, execution_model);
-    spi_write_u32(sec, spi->id);
+    spi_write_u32(sec, entry_point_id);
     spi_put_str(sec, name);
     for (int i = 0; i < nb_args; i++)
         spi_write_u32(sec, args[i]);
-    return spi_get_id(spi);
 }
 
 static inline void spi_OpName(SPICtx *spi, int target_id, const char *name)
