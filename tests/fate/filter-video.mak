@@ -480,6 +480,9 @@ fate-filter-chromashift-wrap:  CMD = framecrc -lavfi testsrc2=r=5:d=1,chromashif
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FPS DECIMATE) += fate-filter-decimate
 fate-filter-decimate: CMD = framecrc -lavfi testsrc2=r=24:d=10,fps=60,decimate=5,decimate=4,decimate=3 -pix_fmt yuv420p
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FORMAT VIGNETTE) += fate-filter-vignette-backward-yuv444p fate-filter-vignette-backward-rgb24
+fate-filter-vignette-backward-%: CMD = framecrc -lavfi testsrc2=s=64x64:r=1:d=1,format=$(@:fate-filter-vignette-backward-%=%),vignette=a=0:x0=0:y0=0:mode=backward -pix_fmt $(@:fate-filter-vignette-backward-%=%)
+
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FPS MPDECIMATE) += fate-filter-mpdecimate
 fate-filter-mpdecimate: CMD = framecrc -lavfi testsrc2=r=2:d=10,fps=3,mpdecimate -pix_fmt yuv420p
 
