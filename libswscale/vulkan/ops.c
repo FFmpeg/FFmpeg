@@ -330,7 +330,6 @@ typedef struct LinearIDs {
 /* Constants and buffers used by a single op */
 typedef struct OpIDs {
     union {
-        int vec;                          /* LSHIFT, RSHIFT, SCALE */
         int comp[4];                      /* CLEAR, MIN, MAX, DITHER */
         LinearIDs lin;                    /* LINEAR */
     };
@@ -573,22 +572,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         OpIDs *oid = &id->op[n];
         SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
-        case SWS_OP_SCALE: {
-            int tmp;
-            if (type_in == SWS_PIXEL_F32) {
-                float q = op->scale.factor.num/(float)op->scale.factor.den;
-                tmp = spi_OpConstantFloat(spi, f32_type, q);
-                tmp = spi_OpConstantComposite(spi, id->f32vec4_type,
-                                              tmp, tmp, tmp, tmp);
-            } else {
-                av_assert0(op->scale.factor.den == 1);
-                tmp = spi_OpConstantUInt(spi, u32_type, op->scale.factor.num);
-                tmp = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                              tmp, tmp, tmp, tmp);
-            }
-            oid->vec = tmp;
-            break;
-        }
         case SWS_OP_MIN:
         case SWS_OP_MAX:
             for (int i = 0; i < 4; i++) {
@@ -1216,7 +1199,8 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                                        Q(op->shift.amount)));
             break;
         case SWS_OP_SCALE:
-            data = emit_mul(spi, type_in, type_v, data, oid->vec);
+            data = emit_mul(spi, type_in, type_v, data,
+                            const_splat(spi, id, type_in, op->scale.factor));
             break;
         case SWS_OP_MIN:
         case SWS_OP_MAX:
