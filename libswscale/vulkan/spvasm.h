@@ -200,15 +200,6 @@ static inline int spi_end(const SPICtx *spi, uint8_t **out)
     return len;
 }
 
-/* Reserves space in the given section, returns its offset */
-static inline int spi_reserve(SPICtx *spi, SPISection s, int len)
-{
-    SPISectionBuf *sec = &spi->sec[s];
-    if (!spi_append(sec, len))
-        return 0;
-    return sec->off - len;
-}
-
 static inline void spi_OpCapability(SPICtx *spi, SpvCapability capability)
 {
     SPISectionBuf *sec = spi_begin(spi, 2, 17);

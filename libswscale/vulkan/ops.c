@@ -325,8 +325,6 @@ typedef struct LinearIDs {
     int mat;      /* full matrix, only valid without SWS_BITEXACT */
     int off[4];   /* offset coefficients */
     int off_vec;
-    int deco_off; /* space reserved for NoContraction decorations */
-    int nb_deco;
 } LinearIDs;
 
 /* Constants and buffers used by a single op */
@@ -463,25 +461,8 @@ static int emit_convert(SPICtx *spi, SwsPixelType from, SwsPixelType to,
                                         : spi_OpConvertUToF(spi, res_type, a);
 }
 
-/* Number of arithmetic instructions emitted by insert_bitexact_linear() */
-static int bitexact_linear_nb_ops(const SwsLinearOp *lin)
-{
-    int nb_ops = 0;
-    for (int j = 0; j < 4; j++) {
-        bool acc = lin->m[j][4].num;
-        for (int i = 0; i < 4; i++) {
-            if (!lin->m[j][i].num)
-                continue;
-            nb_ops += 1 + acc; /* multiplication, and addition if needed */
-            acc = true;
-        }
-    }
-    return nb_ops;
-}
-
 /* Section 1: Function to define all shader header data, and decorations */
-static void define_shader_header(SwsContext *sws, const SwsOpList *ops,
-                                 SPICtx *spi, SPIRVIDs *id)
+static void define_shader_header(SPICtx *spi, SPIRVIDs *id)
 {
     spi_OpCapability(spi, SpvCapabilityShader); /* Shader type */
 
@@ -521,21 +502,6 @@ static void define_shader_header(SwsContext *sws, const SwsOpList *ops,
                              f->num_weights*sizeof(float));
         spi_OpDecorate(spi, f->id, SpvDecorationDescriptorSet, 1);
         spi_OpDecorate(spi, f->id, SpvDecorationBinding, f->binding);
-    }
-
-    if (!(sws->flags & SWS_BITEXACT))
-        return;
-
-    /* All linear arithmetic ops must be decorated with NoContraction */
-    for (int n = 0; n < ops->num_ops; n++) {
-        const SwsOp *op = &ops->ops[n];
-        if (op->op != SWS_OP_LINEAR)
-            continue;
-
-        const int nb_ops = bitexact_linear_nb_ops(&op->lin);
-        LinearIDs *lin = &id->op[n].lin;
-        lin->deco_off = spi_reserve(spi, SPI_SECTION_DECORATIONS, nb_ops*4*3);
-        lin->nb_deco  = nb_ops;
     }
 }
 
@@ -841,14 +807,6 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     tmp[2] = spi_OpCompositeExtract(spi, type_s, data, 2);
     tmp[3] = spi_OpCompositeExtract(spi, type_s, data, 3);
 
-    SPISectionBuf *deco = &spi->sec[SPI_SECTION_DECORATIONS];
-    const int off = deco->off;
-    deco->off = lin->deco_off;
-    for (int i = 0; i < lin->nb_deco; i++)
-        spi_OpDecorate(spi, spi->id + i, SpvDecorationNoContraction);
-    deco->off = off;
-    const int first_id = spi->id;
-
     /* Same evaluation order as the C backend: offset first, then each column
      * from left to right, skipping zero coefficients */
     int res[4];
@@ -860,13 +818,15 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                 continue;
 
             int v = spi_OpFMul(spi, type_s, tmp[i], lin->m[j][i]);
-            res[j] = acc ? spi_OpFAdd(spi, type_s, res[j], v) : v;
+            spi_OpDecorate(spi, v, SpvDecorationNoContraction);
+            if (acc) {
+                v = spi_OpFAdd(spi, type_s, res[j], v);
+                spi_OpDecorate(spi, v, SpvDecorationNoContraction);
+            }
+            res[j] = v;
             acc = true;
         }
     }
-
-    /* The decorations above assume one ID per arithmetic op */
-    av_assert0(spi->id - first_id == lin->nb_deco);
 
     return spi_OpCompositeConstruct(spi, type_v,
                                     res[0], res[1], res[2], res[3]);
@@ -1087,7 +1047,7 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                                         nb_data_bufs, 1);
 
     /* Define shader header sections */
-    define_shader_header(sws, ops, spi, id);
+    define_shader_header(spi, id);
     define_shader_consts(sws, ops, spi, id);
     define_shader_bindings(ops, spi, id, in_img_count, out_img_count);
 
