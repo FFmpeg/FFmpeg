@@ -76,7 +76,6 @@ AVBufferRef *ff_sws_vk_device_ref(SwsContext *sws)
     return s ? s->vkctx.device_ref : NULL;
 }
 
-#define MAX_OPS 32
 #define MAX_DITHER_BUFS 4
 #define MAX_FILT_BUFS 4
 #define MAX_DATA_BUFS (MAX_DITHER_BUFS + MAX_FILT_BUFS*4)
@@ -954,9 +953,6 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     id->priv = p;
     id->ops = ops;
     id->bitexact = !!(sws->flags & SWS_BITEXACT);
-
-    if (ops->num_ops > MAX_OPS)
-        return AVERROR(ENOTSUP);
 
     id->interlaced = ops->src.interlaced || ops->dst.interlaced;
     p->interlaced = id->interlaced;
