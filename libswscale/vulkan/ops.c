@@ -320,18 +320,8 @@ struct FilterData {
     int tap_const_base;
 };
 
-typedef struct LinearIDs {
-    int m[4][4];  /* matrix coefficients */
-    int mat;      /* full matrix, only valid without SWS_BITEXACT */
-    int off[4];   /* offset coefficients */
-    int off_vec;
-} LinearIDs;
-
-/* Constants and buffers used by a single op */
+/* Buffers used by a single op */
 typedef struct OpIDs {
-    union {
-        LinearIDs lin;                    /* LINEAR */
-    };
     int buf; /* index into dither[] or filt[] */
 } OpIDs;
 
@@ -536,8 +526,7 @@ static void define_shader_header(SPICtx *spi, SPIRVIDs *id)
 }
 
 /* Section 2: Define all types and constants */
-static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
-                                 SPICtx *spi, SPIRVIDs *id)
+static void define_shader_consts(SPICtx *spi, SPIRVIDs *id)
 {
     /* Define scalar types */
     id->void_type    = spi_OpTypeVoid(spi);
@@ -564,44 +553,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
     id->f32_0 = spi_OpConstantFloat(spi, f32_type, 0);
     for (int i = 0; i < 5; i++)
         id->u32_cid[i] = spi_OpConstantUInt(spi, u32_type, i);
-
-    /* Operation constants */
-    for (int n = 0; n < ops->num_ops; n++) {
-        const SwsOp *op = &ops->ops[n];
-        OpIDs *oid = &id->op[n];
-        switch (op->op) {
-        case SWS_OP_LINEAR: {
-            LinearIDs *lin = &oid->lin;
-            int vec[4], tmp[4];
-            float val;
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
-                    int k = sws->flags & SWS_BITEXACT ? i : j;
-                    int l = sws->flags & SWS_BITEXACT ? j : i;
-                    val = op->lin.m[k][l].num/(float)op->lin.m[k][l].den;
-                    tmp[j] = lin->m[k][l] = spi_OpConstantFloat(spi, f32_type, val);
-                }
-                vec[i] = spi_OpConstantComposite(spi, id->f32vec4_type,
-                                                 tmp[0], tmp[1], tmp[2], tmp[3]);
-            }
-
-            lin->mat = spi_OpConstantComposite(spi, id->f32mat4_type,
-                                               vec[0], vec[1], vec[2], vec[3]);
-
-            for (int i = 0; i < 4; i++) {
-                val = op->lin.m[i][4].num/(float)op->lin.m[i][4].den;
-                lin->off[i] = spi_OpConstantFloat(spi, f32_type, val);
-            }
-
-            lin->off_vec = spi_OpConstantComposite(spi, id->f32vec4_type,
-                                                   lin->off[0], lin->off[1],
-                                                   lin->off[2], lin->off[3]);
-            break;
-        }
-        default:
-            break;
-        }
-    }
 }
 
 /* Section 3: Define bindings */
@@ -739,15 +690,30 @@ static void define_entry_point(FFVulkanShader *shd, SPICtx *spi, SPIRVIDs *id)
                         shd->lg_size, 3);
 }
 
-static int insert_vmat_linear(SPICtx *spi, SPIRVIDs *id, const LinearIDs *lin,
+static int insert_vmat_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
                               int data)
 {
-    data = spi_OpMatrixTimesVector(spi, id->f32vec4_type, lin->mat, data);
-    return spi_OpFAdd(spi, id->f32vec4_type, lin->off_vec, data);
+    int col[4], tmp[4];
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++)
+            tmp[i] = const_pixel(spi, id, SWS_PIXEL_F32, op->lin.m[i][j]);
+        col[j] = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                         tmp[0], tmp[1], tmp[2], tmp[3]);
+    }
+    int mat = spi_OpConstantComposite(spi, id->f32mat4_type,
+                                      col[0], col[1], col[2], col[3]);
+
+    for (int i = 0; i < 4; i++)
+        tmp[i] = const_pixel(spi, id, SWS_PIXEL_F32, op->lin.m[i][4]);
+    int off = spi_OpConstantComposite(spi, id->f32vec4_type,
+                                      tmp[0], tmp[1], tmp[2], tmp[3]);
+
+    data = spi_OpMatrixTimesVector(spi, id->f32vec4_type, mat, data);
+    return spi_OpFAdd(spi, id->f32vec4_type, off, data);
 }
 
 static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
-                                  const LinearIDs *lin, int data)
+                                  int data)
 {
     const SwsPixelType op_type = ff_sws_op_input_type(op);
     int type_s = type_scalar(id, op_type);
@@ -764,12 +730,14 @@ static int insert_bitexact_linear(const SwsOp *op, SPICtx *spi, SPIRVIDs *id,
     int res[4];
     for (int j = 0; j < 4; j++) {
         bool acc = op->lin.m[j][4].num;
-        res[j] = acc ? lin->off[j] : const_zero(id, op_type);
+        res[j] = acc ? const_pixel(spi, id, op_type, op->lin.m[j][4])
+                     : const_zero(id, op_type);
         for (int i = 0; i < 4; i++) {
             if (!op->lin.m[j][i].num)
                 continue;
 
-            int v = spi_OpFMul(spi, type_s, tmp[i], lin->m[j][i]);
+            int k = const_pixel(spi, id, op_type, op->lin.m[j][i]);
+            int v = spi_OpFMul(spi, type_s, tmp[i], k);
             spi_OpDecorate(spi, v, SpvDecorationNoContraction);
             if (acc) {
                 v = spi_OpFAdd(spi, type_s, res[j], v);
@@ -1000,7 +968,7 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 
     /* Define shader header sections */
     define_shader_header(spi, id);
-    define_shader_consts(sws, ops, spi, id);
+    define_shader_consts(spi, id);
     define_shader_bindings(ops, spi, id, in_img_count, out_img_count);
 
     /* Main function starts here */
@@ -1220,9 +1188,9 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             if (type_in != SWS_PIXEL_F32)
                 return AVERROR(ENOTSUP);
             if (sws->flags & SWS_BITEXACT)
-                data = insert_bitexact_linear(op, spi, id, &oid->lin, data);
+                data = insert_bitexact_linear(op, spi, id, data);
             else
-                data = insert_vmat_linear(spi, id, &oid->lin, data);
+                data = insert_vmat_linear(op, spi, id, data);
             break;
         }
         case SWS_OP_UNPACK: {
