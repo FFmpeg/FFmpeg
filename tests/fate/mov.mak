@@ -249,6 +249,12 @@ FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-multiple-items
 fate-mov-avif-demux-still-image-multiple-items: CMD = framecrc -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
 
+# avif demuxing - still image with multiple items forming two grids (color + alpha), which themselves are handled as an Alpha derived image
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
+                           += fate-mov-avif-demux-still-image-alpha-grid
+fate-mov-avif-demux-still-image-alpha-grid: CMD = stream_demux mov $(TARGET_SAMPLES)/avif/gain_map_alpha_grid.avif "-c:v av1" "-c:v copy -map 0:g:0 -map 0:g:1" \
+  "-of compact -show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_side_data:stream_group_stream=index,id:stream_group_stream_disposition:stream_group_stream_side_data_list"
+
 # heic demuxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-1-item
