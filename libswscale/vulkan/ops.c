@@ -754,7 +754,8 @@ static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
     const VkFormat word_fmt = packed_word_fmt(op);
     enum FFVkShaderRepFormat rep = FF_VK_REP_NATIVE;
     if (op)
-        rep = op->rw.type == SWS_PIXEL_F32 ? FF_VK_REP_FLOAT : FF_VK_REP_UINT;
+        rep = ff_sws_pixel_type_is_int(op->rw.type) ? FF_VK_REP_UINT
+                                                    : FF_VK_REP_FLOAT;
     if (!vk_fmts)
         return AVERROR(ENOTSUP);
 
