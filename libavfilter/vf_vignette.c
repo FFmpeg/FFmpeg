@@ -175,8 +175,14 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
 
     if (s->backward) {
         for (y = 0; y < inlink->h; y++) {
-            for (x = 0; x < inlink->w; x++)
-                dst[x] = 1. / get_natural_factor(s, x, y);
+            for (x = 0; x < inlink->w; x++) {
+                const double f = get_natural_factor(s, x, y);
+                /* f is 0 beyond dmax and can be tiny for an angle close to
+                 * PI/2: bound the gain to keep the scaled samples in the
+                 * range of int, 256 already saturates any non-zero 8-bit
+                 * sample */
+                dst[x] = f > 1. / 256 ? 1. / f : 256;
+            }
             dst += dst_linesize;
         }
     } else {
