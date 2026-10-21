@@ -570,25 +570,7 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
         OpIDs *oid = &id->op[n];
-        SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
-        case SWS_OP_MIN:
-        case SWS_OP_MAX:
-            for (int i = 0; i < 4; i++) {
-                int tmp;
-                AVRational64 cl = op->clamp.limit[i];
-                if (!op->clamp.limit[i].den) {
-                    continue;
-                } else if (type_in == SWS_PIXEL_F32) {
-                    float q = (float)cl.num/((float)cl.den);
-                    tmp = spi_OpConstantFloat(spi, f32_type, q);
-                } else {
-                    av_assert0(cl.den == 1);
-                    tmp = spi_OpConstantUInt(spi, u32_type, cl.num);
-                }
-                oid->comp[i] = tmp;
-            }
-            break;
         case SWS_OP_DITHER:
             for (int i = 0; i < 4; i++) {
                 if (op->dither.y_offset[i] < 0)
@@ -1207,11 +1189,12 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             for (int i = 0; i < 4; i++) {
                 if (!op->clamp.limit[i].den)
                     continue;
+                int lim = const_pixel(spi, id, type_in, op->clamp.limit[i]);
                 int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
                 if (op->op == SWS_OP_MIN)
-                    tmp = emit_min(spi, id, type_in, type_s, tmp, oid->comp[i]);
+                    tmp = emit_min(spi, id, type_in, type_s, tmp, lim);
                 else
-                    tmp = emit_max(spi, id, type_in, type_s, tmp, oid->comp[i]);
+                    tmp = emit_max(spi, id, type_in, type_s, tmp, lim);
                 data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
             }
             break;
