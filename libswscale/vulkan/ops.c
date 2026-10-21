@@ -1185,6 +1185,19 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             data = emit_mul(spi, uop->type, type_v, data,
                             const_splat(spi, id, uop->type, uop->data.scalar));
             break;
+        case SWS_UOP_ADD: {
+            const int zero = const_zero(id, uop->type);
+            int arg[4] = { zero, zero, zero, zero };
+            for (int i = 0; i < 4; i++) {
+                if (!SWS_COMP_TEST(uop->mask, i))
+                    continue;
+                arg[i] = const_pixel(spi, id, uop->type, uop->data.vec4[i]);
+            }
+
+            int arg_v = spi_OpConstantComposite(spi, type_v, arg[0], arg[1], arg[2], arg[3]);
+            data = emit_add(spi, uop->type, type_v, data, arg_v);
+            break;
+        }
         case SWS_UOP_MIN:
         case SWS_UOP_MAX:
             err = emit_clamp(spi, id, uop, &data);
@@ -1278,7 +1291,7 @@ static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
         goto fail;
     }
 
-    err = ff_sws_ops_translate(sws, ops, 0, uops);
+    err = ff_sws_ops_translate(sws, ops, SWS_UOP_FLAG_ADD, uops);
     if (err < 0)
         goto fail;
 
