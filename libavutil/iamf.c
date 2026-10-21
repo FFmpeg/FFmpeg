@@ -300,7 +300,7 @@ static const AVClass *audio_element_child_iterate(void **opaque)
     uintptr_t i = (uintptr_t)*opaque;
     const AVClass *ret = NULL;
 
-    if (i)
+    if (!i)
         ret = &layer_class;
 
     if (ret)
@@ -387,7 +387,7 @@ static const AVClass *submix_element_child_iterate(void **opaque)
     uintptr_t i = (uintptr_t)*opaque;
     const AVClass *ret = NULL;
 
-    if (i)
+    if (!i)
         ret = &param_definition_class;
 
     if (ret)
@@ -498,7 +498,7 @@ static const AVClass *mix_presentation_child_iterate(void **opaque)
     uintptr_t i = (uintptr_t)*opaque;
     const AVClass *ret = NULL;
 
-    if (i)
+    if (!i)
         ret = &submix_class;
 
     if (ret)
