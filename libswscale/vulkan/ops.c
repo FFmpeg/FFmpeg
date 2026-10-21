@@ -438,6 +438,13 @@ static int const_pixel(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
     return spi_OpConstantUInt(spi, id->u32_type, val.num);
 }
 
+static int const_splat(SPICtx *spi, const SPIRVIDs *id, SwsPixelType type,
+                       AVRational64 val)
+{
+    const int c = const_pixel(spi, id, type, val);
+    return spi_OpConstantComposite(spi, type_vec4(id, type), c, c, c, c);
+}
+
 /* Shift and mask vectors for (un)packing each component */
 static void define_pack_consts(SPICtx *spi, const SPIRVIDs *id, const SwsOp *op,
                                int *shift_id, int *mask_id)
@@ -566,13 +573,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         OpIDs *oid = &id->op[n];
         SwsPixelType type_in = ff_sws_op_input_type(op);
         switch (op->op) {
-        case SWS_OP_LSHIFT:
-        case SWS_OP_RSHIFT: {
-            int tmp = spi_OpConstantUInt(spi, u32_type, op->shift.amount);
-            oid->vec = spi_OpConstantComposite(spi, id->u32vec4_type,
-                                               tmp, tmp, tmp, tmp);
-            break;
-        }
         case SWS_OP_SCALE: {
             int tmp;
             if (type_in == SWS_PIXEL_F32) {
@@ -1206,10 +1206,14 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
             data = emit_convert(spi, type_in, type_out, type_v, data);
             break;
         case SWS_OP_LSHIFT:
-            data = spi_OpShiftLeftLogical(spi, type_v, data, oid->vec);
+            data = spi_OpShiftLeftLogical(spi, type_v, data,
+                                          const_splat(spi, id, SWS_PIXEL_U32,
+                                                      Q(op->shift.amount)));
             break;
         case SWS_OP_RSHIFT:
-            data = spi_OpShiftRightLogical(spi, type_v, data, oid->vec);
+            data = spi_OpShiftRightLogical(spi, type_v, data,
+                                           const_splat(spi, id, SWS_PIXEL_U32,
+                                                       Q(op->shift.amount)));
             break;
         case SWS_OP_SCALE:
             data = emit_mul(spi, type_in, type_v, data, oid->vec);
