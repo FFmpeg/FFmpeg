@@ -330,7 +330,6 @@ typedef struct LinearIDs {
 /* Constants and buffers used by a single op */
 typedef struct OpIDs {
     union {
-        int comp[4];                      /* CLEAR, MIN, MAX, DITHER */
         LinearIDs lin;                    /* LINEAR */
     };
     int buf; /* index into dither[] or filt[] */
@@ -571,14 +570,6 @@ static void define_shader_consts(SwsContext *sws, const SwsOpList *ops,
         const SwsOp *op = &ops->ops[n];
         OpIDs *oid = &id->op[n];
         switch (op->op) {
-        case SWS_OP_DITHER:
-            for (int i = 0; i < 4; i++) {
-                if (op->dither.y_offset[i] < 0)
-                    continue;
-                oid->comp[i] = spi_OpConstantUInt(spi, u32_type,
-                                                  op->dither.y_offset[i]);
-            }
-            break;
         case SWS_OP_LINEAR: {
             LinearIDs *lin = &oid->lin;
             int vec[4], tmp[4];
@@ -1209,7 +1200,9 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 if (op->dither.y_offset[i] < 0)
                     continue;
 
-                int y_id = spi_OpIAdd(spi, id->u32_type, y_pos, oid->comp[i]);
+                int y_off = spi_OpConstantUInt(spi, id->u32_type,
+                                               op->dither.y_offset[i]);
+                int y_id = spi_OpIAdd(spi, id->u32_type, y_pos, y_off);
                 y_id = spi_OpBitwiseAnd(spi, id->u32_type, y_id, d->mask_id);
 
                 int ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, d->id,
