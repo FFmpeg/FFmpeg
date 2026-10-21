@@ -931,8 +931,9 @@ static int emit_linear(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
 
 static int emit_pack(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
 {
-    const int type_v = id->u32vec4_type;
-    const int type_s = id->u32_type;
+    const SwsPixelType type = ff_sws_op_input_type(op);
+    const int type_v = type_vec4(id, type);
+    const int type_s = type_scalar(id, type);
 
     int shift, mask;
     define_pack_consts(spi, id, op, &shift, &mask);
