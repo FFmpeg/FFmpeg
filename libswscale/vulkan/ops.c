@@ -479,8 +479,8 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
     if (op_r) {
         /* If the formats match, we have to reuse the types due to SPIR-V not
          * allowing redundant type defines */
-        int match = ((op_w->rw.type == SWS_PIXEL_F32) ==
-                     (op_r->rw.type == SWS_PIXEL_F32));
+        int match = type_scalar(id, op_w->rw.type) ==
+                    type_scalar(id, op_r->rw.type);
         id->in_img_type = match ? id->out_img_type :
                           spi_OpTypeImage(spi, type_scalar(id, op_r->rw.type),
                                           2, 0, 0, 0, 2, SpvImageFormatUnknown);
