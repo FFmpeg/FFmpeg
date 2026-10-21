@@ -266,14 +266,7 @@ static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
     p->nb_data_bufs = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        if (op->op == SWS_OP_DITHER) {
-            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_dither_buf(s, &op->dither,
-                                    &p->data_bufs[p->nb_data_bufs]);
-            if (err < 0)
-                goto fail;
-            p->nb_data_bufs++;
-        } else if (op->op == SWS_OP_READ && op->rw.filter.op) {
+        if (op->op == SWS_OP_READ && op->rw.filter.op) {
             av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
             err = create_filter_buf(s, op->rw.filter.kernel,
                                     &p->data_bufs[p->nb_data_bufs]);
@@ -290,17 +283,6 @@ fail:
         ff_vk_free_buf(&p->s->vkctx, &p->data_bufs[i]);
     return err;
 }
-
-struct DitherData {
-    int size;
-    int arr_1d_id;
-    int arr_2d_id;
-    int struct_id;
-    int struct_ptr_id;
-    int id;
-    int mask_id;
-    int binding;
-};
 
 struct FilterData {
     SwsOpType filter;
@@ -322,7 +304,7 @@ struct FilterData {
 
 /* Buffers used by a single op */
 typedef struct OpIDs {
-    int buf; /* index into dither[] or filt[] */
+    int buf; /* index into filt[] */
 } OpIDs;
 
 typedef struct SPIRVIDs {
@@ -362,9 +344,7 @@ typedef struct SPIRVIDs {
 
     OpIDs op[MAX_OPS];
 
-    struct DitherData dither[MAX_DITHER_BUFS];
     int dither_ptr_elem_id;
-    int nb_dither_bufs;
 
     struct FilterData filt[MAX_FILT_BUFS];
     int filt_o_ptr_id;
@@ -391,6 +371,9 @@ typedef struct SPIRVIDs {
     int push_const_elem_ptr_id;
     int push_const_var_id;
     int field_i32;
+
+    VulkanPriv *priv;
+    FFVulkanDescriptorSetBinding buf_desc[MAX_DATA_BUFS]; /* set 1 */
 
     /* Per-invocation state of the main function */
     int in_img[4], out_img[4];  /* image handles, indexed by plane */
@@ -496,18 +479,6 @@ static void define_shader_header(SPICtx *spi, SPIRVIDs *id)
     /* Next section starts here */
     spi_OpMemoryModel(spi, SpvAddressingModelLogical, SpvMemoryModelGLSL450);
 
-    for (int i = 0; i < id->nb_dither_bufs; i++) {
-        spi_OpDecorate(spi, id->dither[i].arr_1d_id, SpvDecorationArrayStride,
-                       sizeof(float));
-        spi_OpDecorate(spi, id->dither[i].arr_2d_id, SpvDecorationArrayStride,
-                       id->dither[i].size*sizeof(float));
-        spi_OpDecorate(spi, id->dither[i].struct_id, SpvDecorationBlock);
-        spi_OpMemberDecorate(spi, id->dither[i].struct_id, 0, SpvDecorationOffset, 0);
-        spi_OpDecorate(spi, id->dither[i].id, SpvDecorationDescriptorSet, 1);
-        spi_OpDecorate(spi, id->dither[i].id, SpvDecorationBinding,
-                       id->dither[i].binding);
-    }
-
     for (int i = 0; i < id->nb_filter_bufs; i++) {
         struct FilterData *f = &id->filt[i];
         spi_OpDecorate(spi, f->arr_w_in_id, SpvDecorationArrayStride,
@@ -561,19 +532,6 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
 {
     id->dither_ptr_elem_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
                                                id->f32_type);
-
-    struct DitherData *dither = id->dither;
-    for (int i = 0; i < id->nb_dither_bufs; i++) {
-        int size_id = spi_OpConstantUInt(spi, id->u32_type, dither[i].size);
-        dither[i].mask_id = spi_OpConstantUInt(spi, id->u32_type, dither[i].size - 1);
-        spi_OpTypeArray(spi, id->f32_type, dither[i].arr_1d_id, size_id);
-        spi_OpTypeArray(spi, dither[i].arr_1d_id, dither[i].arr_2d_id, size_id);
-        spi_OpTypeStruct(spi, dither[i].struct_id, dither[i].arr_2d_id);
-        dither[i].struct_ptr_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
-                                                    dither[i].struct_id);
-        dither[i].id = spi_OpVariable(spi, dither[i].id, dither[i].struct_ptr_id,
-                                      SpvStorageClassUniform, 0);
-    }
 
     /* Filter buffers: struct { float w[dst_size][filter_size]; int o[dst_size]; } */
     id->filt_o_ptr_id = 0;
@@ -862,10 +820,76 @@ static int rw_op_img_count(const SwsOp *op, const uint8_t *planes)
     return count;
 }
 
+static int emit_dither(SPICtx *spi, SPIRVIDs *id, const SwsOp *op, int *data)
+{
+    if (ff_sws_op_input_type(op) != SWS_PIXEL_F32)
+        return AVERROR(ENOTSUP);
+
+    VulkanPriv *p = id->priv;
+    const int binding = p->nb_data_bufs;
+    if (binding >= MAX_DATA_BUFS)
+        return AVERROR(ENOTSUP);
+
+    int err = create_dither_buf(p->s, &op->dither, &p->data_bufs[binding]);
+    if (err < 0)
+        return err;
+    p->nb_data_bufs++;
+    id->buf_desc[binding] = (FFVulkanDescriptorSetBinding) {
+        .type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .stages = VK_SHADER_STAGE_COMPUTE_BIT,
+    };
+
+    /* Uniform buffer in descriptor set 1: struct { float m[size][size]; } */
+    const int size = 1 << op->dither.size_log2;
+    const int size_id = spi_OpConstantUInt(spi, id->u32_type, size);
+    const int mask_id = spi_OpConstantUInt(spi, id->u32_type, size - 1);
+
+    int arr_1d = spi_OpTypeArray(spi, id->f32_type, spi_get_id(spi), size_id);
+    spi_OpDecorate(spi, arr_1d, SpvDecorationArrayStride, sizeof(float));
+    int arr_2d = spi_OpTypeArray(spi, arr_1d, spi_get_id(spi), size_id);
+    spi_OpDecorate(spi, arr_2d, SpvDecorationArrayStride, size*sizeof(float));
+
+    int struct_id = spi_get_id(spi);
+    spi_OpTypeStruct(spi, struct_id, arr_2d);
+    spi_OpDecorate(spi, struct_id, SpvDecorationBlock);
+    spi_OpMemberDecorate(spi, struct_id, 0, SpvDecorationOffset, 0);
+
+    int ptr = spi_OpTypePointer(spi, SpvStorageClassUniform, struct_id);
+    int buf = spi_OpVariable(spi, spi_get_id(spi), ptr, SpvStorageClassUniform, 0);
+    spi_OpDecorate(spi, buf, SpvDecorationDescriptorSet, 1);
+    spi_OpDecorate(spi, buf, SpvDecorationBinding, binding);
+    id->iface[id->nb_iface++] = buf;
+
+    int x_id = spi_OpCompositeExtract(spi, id->u32_type, id->gid, 0);
+    int y_pos = spi_OpCompositeExtract(spi, id->u32_type, id->gid, 1);
+    x_id = spi_OpBitwiseAnd(spi, id->u32_type, x_id, mask_id);
+    for (int i = 0; i < 4; i++) {
+        if (op->dither.y_offset[i] < 0)
+            continue;
+
+        int y_off = spi_OpConstantUInt(spi, id->u32_type,
+                                       op->dither.y_offset[i]);
+        int y_id = spi_OpIAdd(spi, id->u32_type, y_pos, y_off);
+        y_id = spi_OpBitwiseAnd(spi, id->u32_type, y_id, mask_id);
+
+        int val_ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, buf,
+                                        id->u32_cid[0], y_id, x_id);
+        int val = spi_OpLoad(spi, id->f32_type, val_ptr,
+                             SpvMemoryAccessMaskNone, 0);
+
+        int tmp = spi_OpCompositeExtract(spi, id->f32_type, *data, i);
+        tmp = spi_OpFAdd(spi, id->f32_type, tmp, val);
+        *data = spi_OpCompositeInsert(spi, id->f32vec4_type, tmp, *data, i);
+    }
+
+    return 0;
+}
+
 static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                        const SwsOpList *ops, FFVulkanShader *shd, SPICtx *spi)
 {
     SPIRVIDs spid_data = { 0 }, *id = &spid_data;
+    id->priv = p;
 
     if (ops->num_ops > MAX_OPS)
         return AVERROR(ENOTSUP);
@@ -908,34 +932,19 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     };
     ff_vk_shader_add_descriptor_set(&s->vkctx, shd, img_desc, 2, 0);
 
-    /* Create dither buffers */
+    /* Create filter buffers */
     err = create_bufs(s, p, ops);
     if (err < 0)
         return err;
 
-    /* Create dither and filter buffer descriptor set. Both are collected in
-     * op order, so the bindings match the buffer order from create_bufs().*/
-    id->nb_dither_bufs = 0;
+    /* Collect the filter buffer bindings, in the same order as create_bufs() */
     id->nb_filter_bufs = 0;
-    FFVulkanDescriptorSetBinding buf_desc[MAX_DATA_BUFS];
     int nb_data_bufs = 0;
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
         int var_id = 0;
 
-        if (op->op == SWS_OP_DITHER) {
-            if (id->nb_dither_bufs >= MAX_DITHER_BUFS)
-                return AVERROR(ENOTSUP);
-            id->op[n].buf = id->nb_dither_bufs;
-            struct DitherData *d = &id->dither[id->nb_dither_bufs++];
-            d->size      = 1 << op->dither.size_log2;
-            d->arr_1d_id = spi_get_id(spi);
-            d->arr_2d_id = spi_get_id(spi);
-            d->struct_id = spi_get_id(spi);
-            d->id        = spi_get_id(spi);
-            d->binding   = nb_data_bufs;
-            var_id       = d->id;
-        } else if (op->op == SWS_OP_READ && op->rw.filter.op) {
+        if (op->op == SWS_OP_READ && op->rw.filter.op) {
             if (id->nb_filter_bufs >= MAX_FILT_BUFS)
                 return AVERROR(ENOTSUP);
             const SwsFilterWeights *wd = op->rw.filter.kernel;
@@ -957,14 +966,11 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         }
 
         id->iface[id->nb_iface++] = var_id;
-        buf_desc[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
+        id->buf_desc[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
             .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
         };
     }
-    if (nb_data_bufs)
-        ff_vk_shader_add_descriptor_set(&s->vkctx, shd, buf_desc,
-                                        nb_data_bufs, 1);
 
     /* Define shader header sections */
     define_shader_header(spi, id);
@@ -1157,33 +1163,11 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
             }
             break;
-        case SWS_OP_DITHER: {
-            if (type_in != SWS_PIXEL_F32)
-                return AVERROR(ENOTSUP);
-            const struct DitherData *d = &id->dither[oid->buf];
-            int x_id = spi_OpCompositeExtract(spi, id->u32_type, id->gid, 0);
-            int y_pos = spi_OpCompositeExtract(spi, id->u32_type, id->gid, 1);
-            x_id = spi_OpBitwiseAnd(spi, id->u32_type, x_id, d->mask_id);
-            for (int i = 0; i < 4; i++) {
-                if (op->dither.y_offset[i] < 0)
-                    continue;
-
-                int y_off = spi_OpConstantUInt(spi, id->u32_type,
-                                               op->dither.y_offset[i]);
-                int y_id = spi_OpIAdd(spi, id->u32_type, y_pos, y_off);
-                y_id = spi_OpBitwiseAnd(spi, id->u32_type, y_id, d->mask_id);
-
-                int ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, d->id,
-                                            id->u32_cid[0], y_id, x_id);
-                int val = spi_OpLoad(spi, id->f32_type, ptr,
-                                     SpvMemoryAccessMaskNone, 0);
-
-                int tmp = spi_OpCompositeExtract(spi, type_s, data, i);
-                tmp = spi_OpFAdd(spi, type_s, tmp, val);
-                data = spi_OpCompositeInsert(spi, type_v, tmp, data, i);
-            }
+        case SWS_OP_DITHER:
+            err = emit_dither(spi, id, op, &data);
+            if (err < 0)
+                return err;
             break;
-        }
         case SWS_OP_LINEAR: {
             if (type_in != SWS_PIXEL_F32)
                 return AVERROR(ENOTSUP);
@@ -1222,6 +1206,10 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     /* Return and finalize */
     spi_OpReturn(spi);
     spi_OpFunctionEnd(spi);
+
+    if (p->nb_data_bufs)
+        ff_vk_shader_add_descriptor_set(&s->vkctx, shd, id->buf_desc,
+                                        p->nb_data_bufs, 1);
 
     define_entry_point(shd, spi, id);
     return 0;
