@@ -394,6 +394,21 @@ FATE_JPEGLS-$(call DEMDEC, IMAGE2, JPEGLS) += $(FATE_JPEGLS)
 FATE_IMAGE_FRAMECRC += $(FATE_JPEGLS-yes)
 fate-jpegls: $(FATE_JPEGLS-yes)
 
+# Exercise tolerance of a nonconforming single-component scan with ILV=1:
+# decode its ILV=0 payload using the correct sample width.
+# Encode a 16-bit gray image and set the ILV byte of the SOS header (offset 23)
+# to 1; the output must match the source.
+JPEGLS_ILV1_GEN = $(FFMPEG) -nostdin -v error -f lavfi -i testsrc2=s=64x64,format=gray16le \
+    -frames:v 1 -c:v jpegls -flags +bitexact -fflags +bitexact -f image2 -y
+JPEGLS_ILV1_DEC = $(FFMPEG) -nostdin -v error -flags +bitexact -fflags +bitexact \
+    -pix_fmt gray16le -vf scale -f framecrc - -i
+FATE_JPEGLS_ILV1-$(call ENCDEC, JPEGLS, IMAGE2, LAVFI_INDEV TESTSRC2_FILTER FORMAT_FILTER \
+                    WRAPPED_AVFRAME_DECODER RAWVIDEO_ENCODER SCALE_FILTER \
+                    FRAMECRC_MUXER PIPE_PROTOCOL) += fate-jpegls-ilv1-16bit
+fate-jpegls-ilv1-16bit: CMD = run_with_patched_temp "$(JPEGLS_ILV1_GEN)" "$(JPEGLS_ILV1_DEC)" jls 23 "\\0001"
+FATE_FFMPEG += $(FATE_JPEGLS_ILV1-yes)
+fate-jpegls: $(FATE_JPEGLS_ILV1-yes)
+
 FATE_IMAGE_FRAMECRC-$(call DEMDEC, IMAGE2, QDRAW) += fate-pict
 fate-pict: CMD = framecrc -i $(TARGET_SAMPLES)/quickdraw/TRU256.PCT -pix_fmt rgb24
 
