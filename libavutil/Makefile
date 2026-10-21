@@ -292,6 +292,7 @@ TESTPROGS = adler32                                                     \
             hdr_dynamic_vivid_metadata                                  \
             hmac                                                        \
             hwdevice                                                    \
+            iamf                                                        \
             integer                                                     \
             imgutils                                                    \
             lfg                                                         \

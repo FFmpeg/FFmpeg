@@ -1,0 +1,30 @@
+Testing av_opt_child_class_iterate()
+AVIAMFAudioElement
+  AVIAMFLayer
+AVIAMFMixPresentation
+  AVIAMFSubmix
+    AVIAMFSubmixElement
+      AVIAMFParamDefinition
+        AVIAMFMixGain
+        AVIAMFDemixingInfo
+        AVIAMFReconGain
+    AVIAMFSubmixLayout
+    AVIAMFParamDefinition
+      AVIAMFMixGain
+      AVIAMFDemixingInfo
+      AVIAMFReconGain
+AVIAMFParamDefinition
+  AVIAMFMixGain
+  AVIAMFDemixingInfo
+  AVIAMFReconGain
+
+Testing av_opt_find2() with AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ
+AVIAMFAudioElement: default_w found
+AVIAMFAudioElement: ch_layout found
+AVIAMFMixPresentation: annotations found
+AVIAMFMixPresentation: default_mix_gain found
+AVIAMFMixPresentation: headphones_rendering_mode found
+AVIAMFMixPresentation: sound_system found
+AVIAMFMixPresentation: parameter_rate found
+AVIAMFParamDefinition: parameter_rate found
+AVIAMFParamDefinition: subblock_duration found

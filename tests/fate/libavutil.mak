@@ -139,6 +139,10 @@ FATE_LIBAVUTIL += fate-hmac
 fate-hmac: libavutil/tests/hmac$(EXESUF)
 fate-hmac: CMD = run libavutil/tests/hmac$(EXESUF)
 
+FATE_LIBAVUTIL += fate-iamf-class
+fate-iamf-class: libavutil/tests/iamf$(EXESUF)
+fate-iamf-class: CMD = run libavutil/tests/iamf$(EXESUF)
+
 FATE_LIBAVUTIL += fate-imgutils
 fate-imgutils: libavutil/tests/imgutils$(EXESUF)
 fate-imgutils: CMD = run libavutil/tests/imgutils$(EXESUF)
