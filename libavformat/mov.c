@@ -5520,7 +5520,8 @@ static int mov_update_iamf_streams(MOVContext *c, const AVStream *st)
         const AVStreamGroup *stg = NULL;
 
         for (int j = 0; j < c->fc->nb_stream_groups; j++)
-            if (c->fc->stream_groups[j]->id == iamf->audio_elements[i]->audio_element_id)
+            if (c->fc->stream_groups[j]->type == AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT &&
+                c->fc->stream_groups[j]->id   == iamf->audio_elements[i]->audio_element_id)
                 stg = c->fc->stream_groups[j];
         av_assert0(stg);
 
