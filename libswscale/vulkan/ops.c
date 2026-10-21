@@ -260,53 +260,6 @@ fail:
     return err;
 }
 
-static int create_bufs(FFVulkanOpsCtx *s, VulkanPriv *p, const SwsOpList *ops)
-{
-    int err;
-    p->nb_data_bufs = 0;
-    for (int n = 0; n < ops->num_ops; n++) {
-        const SwsOp *op = &ops->ops[n];
-        if (op->op == SWS_OP_READ && op->rw.filter.op) {
-            av_assert0(p->nb_data_bufs + 1 <= FF_ARRAY_ELEMS(p->data_bufs));
-            err = create_filter_buf(s, op->rw.filter.kernel,
-                                    &p->data_bufs[p->nb_data_bufs]);
-            if (err < 0)
-                goto fail;
-            p->nb_data_bufs++;
-        }
-    }
-
-    return 0;
-
-fail:
-    for (int i = 0; i < p->nb_data_bufs; i++)
-        ff_vk_free_buf(&p->s->vkctx, &p->data_bufs[i]);
-    return err;
-}
-
-struct FilterData {
-    SwsOpType filter;
-    int filter_size;
-    int dst_size;
-    int num_weights;
-
-    int arr_w_in_id;
-    int arr_w_out_id;
-    int arr_o_id;
-    int struct_id;
-    int struct_ptr_id;
-
-    int id; /* buffer ID */
-    int binding; /* descriptor idx in desc set 1 */
-
-    int tap_const_base;
-};
-
-/* Buffers used by a single op */
-typedef struct OpIDs {
-    int buf; /* index into filt[] */
-} OpIDs;
-
 typedef struct SPIRVIDs {
     /* Entrypoint interface variables */
     int iface[3 + MAX_DATA_BUFS + 1];
@@ -342,13 +295,7 @@ typedef struct SPIRVIDs {
     int f32_0;
     int u32_cid[5];
 
-    OpIDs op[MAX_OPS];
-
     int dither_ptr_elem_id;
-
-    struct FilterData filt[MAX_FILT_BUFS];
-    int filt_o_ptr_id;
-    int nb_filter_bufs;
 
     int out_img_type;
     int out_img_array_id;
@@ -374,6 +321,7 @@ typedef struct SPIRVIDs {
 
     VulkanPriv *priv;
     FFVulkanDescriptorSetBinding buf_desc[MAX_DATA_BUFS]; /* set 1 */
+    const SwsOpList *ops;
 
     /* Per-invocation state of the main function */
     int in_img[4], out_img[4];  /* image handles, indexed by plane */
@@ -478,22 +426,6 @@ static void define_shader_header(SPICtx *spi, SPIRVIDs *id)
 
     /* Next section starts here */
     spi_OpMemoryModel(spi, SpvAddressingModelLogical, SpvMemoryModelGLSL450);
-
-    for (int i = 0; i < id->nb_filter_bufs; i++) {
-        struct FilterData *f = &id->filt[i];
-        spi_OpDecorate(spi, f->arr_w_in_id, SpvDecorationArrayStride,
-                       sizeof(float));
-        spi_OpDecorate(spi, f->arr_w_out_id, SpvDecorationArrayStride,
-                       f->filter_size*sizeof(float));
-        spi_OpDecorate(spi, f->arr_o_id, SpvDecorationArrayStride,
-                       sizeof(int32_t));
-        spi_OpDecorate(spi, f->struct_id, SpvDecorationBlock);
-        spi_OpMemberDecorate(spi, f->struct_id, 0, SpvDecorationOffset, 0);
-        spi_OpMemberDecorate(spi, f->struct_id, 1, SpvDecorationOffset,
-                             f->num_weights*sizeof(float));
-        spi_OpDecorate(spi, f->id, SpvDecorationDescriptorSet, 1);
-        spi_OpDecorate(spi, f->id, SpvDecorationBinding, f->binding);
-    }
 }
 
 /* Section 2: Define all types and constants */
@@ -532,32 +464,6 @@ static void define_shader_bindings(const SwsOpList *ops, SPICtx *spi, SPIRVIDs *
 {
     id->dither_ptr_elem_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
                                                id->f32_type);
-
-    /* Filter buffers: struct { float w[dst_size][filter_size]; int o[dst_size]; } */
-    id->filt_o_ptr_id = 0;
-    if (id->nb_filter_bufs)
-        id->filt_o_ptr_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
-                                              id->i32_type);
-
-    for (int i = 0; i < id->nb_filter_bufs; i++) {
-        struct FilterData *f = &id->filt[i];
-        int fs_id = spi_OpConstantUInt(spi, id->u32_type, f->filter_size);
-        int ds_id = spi_OpConstantUInt(spi, id->u32_type, f->dst_size);
-
-        spi_OpTypeArray(spi, id->f32_type, f->arr_w_in_id, fs_id);
-        spi_OpTypeArray(spi, f->arr_w_in_id, f->arr_w_out_id, ds_id);
-        spi_OpTypeArray(spi, id->i32_type, f->arr_o_id, ds_id);
-        spi_OpTypeStruct(spi, f->struct_id, f->arr_w_out_id, f->arr_o_id);
-        f->struct_ptr_id = spi_OpTypePointer(spi, SpvStorageClassUniform,
-                                             f->struct_id);
-        f->id = spi_OpVariable(spi, f->id, f->struct_ptr_id,
-                               SpvStorageClassUniform, 0);
-
-        /* Signed tap-index constants 0..filter_size-1 (consecutive <id>s) */
-        f->tap_const_base = spi_OpConstantInt(spi, id->i32_type, 0);
-        for (int t = 1; t < f->filter_size; t++)
-            spi_OpConstantInt(spi, id->i32_type, t);
-    }
 
     const SwsOp *op_w = ff_sws_op_list_output(ops);
     const SwsOp *op_r = ff_sws_op_list_input(ops);
@@ -721,10 +627,49 @@ static int add_buf_binding(SPIRVIDs *id)
     return p->nb_data_bufs++;
 }
 
-static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
-                         const SwsOp *op, const struct FilterData *f)
+static int emit_read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOp *op,
+                              int *data)
 {
-    const int is_h = f->filter == SWS_OP_FILTER_H;
+    const SwsOpList *ops = id->ops;
+    const SwsFilterWeights *wd = op->rw.filter.kernel;
+    VulkanPriv *p = id->priv;
+    if (p->nb_data_bufs >= MAX_DATA_BUFS)
+        return AVERROR(ENOTSUP);
+
+    int err = create_filter_buf(p->s, wd, &p->data_bufs[p->nb_data_bufs]);
+    if (err < 0)
+        return err;
+    const int binding = add_buf_binding(id);
+
+    /* Uniform buffer in descriptor set 1:
+     * struct { float w[dst_size][filter_size]; int o[dst_size]; } */
+    const int fs_id = spi_OpConstantUInt(spi, id->u32_type, wd->filter_size);
+    const int ds_id = spi_OpConstantUInt(spi, id->u32_type, wd->dst_size);
+
+    int arr_w_in = spi_OpTypeArray(spi, id->f32_type, spi_get_id(spi), fs_id);
+    spi_OpDecorate(spi, arr_w_in, SpvDecorationArrayStride, sizeof(float));
+    int arr_w_out = spi_OpTypeArray(spi, arr_w_in, spi_get_id(spi), ds_id);
+    spi_OpDecorate(spi, arr_w_out, SpvDecorationArrayStride,
+                   wd->filter_size*sizeof(float));
+    int arr_o = spi_OpTypeArray(spi, id->i32_type, spi_get_id(spi), ds_id);
+    spi_OpDecorate(spi, arr_o, SpvDecorationArrayStride, sizeof(int32_t));
+
+    int struct_id = spi_get_id(spi);
+    spi_OpTypeStruct(spi, struct_id, arr_w_out, arr_o);
+    spi_OpDecorate(spi, struct_id, SpvDecorationBlock);
+    spi_OpMemberDecorate(spi, struct_id, 0, SpvDecorationOffset, 0);
+    spi_OpMemberDecorate(spi, struct_id, 1, SpvDecorationOffset,
+                         wd->num_weights*sizeof(float));
+
+    int ptr = spi_OpTypePointer(spi, SpvStorageClassUniform, struct_id);
+    int buf = spi_OpVariable(spi, spi_get_id(spi), ptr, SpvStorageClassUniform, 0);
+    spi_OpDecorate(spi, buf, SpvDecorationDescriptorSet, 1);
+    spi_OpDecorate(spi, buf, SpvDecorationBinding, binding);
+    id->iface[id->nb_iface++] = buf;
+
+    const int o_ptr_type = spi_OpTypePointer(spi, SpvStorageClassUniform,
+                                             id->i32_type);
+    const int is_h = op->rw.filter.op == SWS_OP_FILTER_H;
     const int src_interlaced = ops->src.interlaced;
 
     const int read_vtype = type_vec4(id, op->rw.type);
@@ -733,8 +678,7 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     int axis = spi_OpCompositeExtract(spi, id->u32_type, id->gid, is_h ? 0 : 1);
 
     /* int o = filter_o[axis]; */
-    int o_ptr = spi_OpAccessChain(spi, id->filt_o_ptr_id, f->id,
-                                  id->u32_cid[1], axis);
+    int o_ptr = spi_OpAccessChain(spi, o_ptr_type, buf, id->u32_cid[1], axis);
     int o = spi_OpLoad(spi, id->i32_type, o_ptr, SpvMemoryAccessMaskNone, 0);
 
     /* Signed pixel position, for the non-filtered coordinate axis */
@@ -751,16 +695,17 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
     /* Accumulators, initialized to zero */
     int acc[4] = { id->f32_0, id->f32_0, id->f32_0, id->f32_0 };
 
-    for (int t = 0; t < f->filter_size; t++) {
+    for (int t = 0; t < wd->filter_size; t++) {
+        const int tap = spi_OpConstantInt(spi, id->i32_type, t);
+
         /* float w = filter_w[axis][t]; */
-        int w_ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, f->id,
-                                      id->u32_cid[0], axis,
-                                      f->tap_const_base + t);
+        int w_ptr = spi_OpAccessChain(spi, id->dither_ptr_elem_id, buf,
+                                      id->u32_cid[0], axis, tap);
         int w = spi_OpLoad(spi, id->f32_type, w_ptr,
                            SpvMemoryAccessMaskNone, 0);
 
         /* Source coordinate, filtered axis offset by the tap index */
-        int c = t ? spi_OpIAdd(spi, id->i32_type, o, f->tap_const_base + t) : o;
+        int c = t ? spi_OpIAdd(spi, id->i32_type, o, tap) : o;
         /* For interlaced vertical filtering, the per-tap source row is
          * field-local; map it to the actual image row. */
         if (src_interlaced && !is_h) {
@@ -782,8 +727,9 @@ static int read_filtered(SPICtx *spi, SPIRVIDs *id, const SwsOpList *ops,
         }
     }
 
-    return spi_OpCompositeConstruct(spi, id->f32vec4_type,
-                                    acc[0], acc[1], acc[2], acc[3]);
+    *data = spi_OpCompositeConstruct(spi, id->f32vec4_type,
+                                     acc[0], acc[1], acc[2], acc[3]);
+    return 0;
 }
 
 /* Sub-packed formats are accessed as a single raw word per pixel, which is
@@ -896,6 +842,7 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
 {
     SPIRVIDs spid_data = { 0 }, *id = &spid_data;
     id->priv = p;
+    id->ops = ops;
 
     if (ops->num_ops > MAX_OPS)
         return AVERROR(ENOTSUP);
@@ -937,46 +884,6 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
         },
     };
     ff_vk_shader_add_descriptor_set(&s->vkctx, shd, img_desc, 2, 0);
-
-    /* Create filter buffers */
-    err = create_bufs(s, p, ops);
-    if (err < 0)
-        return err;
-
-    /* Collect the filter buffer bindings, in the same order as create_bufs() */
-    id->nb_filter_bufs = 0;
-    int nb_data_bufs = 0;
-    for (int n = 0; n < ops->num_ops; n++) {
-        const SwsOp *op = &ops->ops[n];
-        int var_id = 0;
-
-        if (op->op == SWS_OP_READ && op->rw.filter.op) {
-            if (id->nb_filter_bufs >= MAX_FILT_BUFS)
-                return AVERROR(ENOTSUP);
-            const SwsFilterWeights *wd = op->rw.filter.kernel;
-            id->op[n].buf = id->nb_filter_bufs;
-            struct FilterData *f = &id->filt[id->nb_filter_bufs++];
-            f->filter       = op->rw.filter.op;
-            f->filter_size  = wd->filter_size;
-            f->dst_size     = wd->dst_size;
-            f->num_weights  = wd->num_weights;
-            f->arr_w_in_id  = spi_get_id(spi);
-            f->arr_w_out_id = spi_get_id(spi);
-            f->arr_o_id     = spi_get_id(spi);
-            f->struct_id    = spi_get_id(spi);
-            f->id           = spi_get_id(spi);
-            f->binding      = nb_data_bufs;
-            var_id          = f->id;
-        } else {
-            continue;
-        }
-
-        id->iface[id->nb_iface++] = var_id;
-        id->buf_desc[nb_data_bufs++] = (FFVulkanDescriptorSetBinding) {
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-        };
-    }
 
     /* Define shader header sections */
     define_shader_header(spi, id);
@@ -1072,7 +979,6 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
     /* Operations */
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
-        const OpIDs *oid = &id->op[n];
         SwsPixelType type_in  = ff_sws_op_input_type(op);
         SwsPixelType type_out = ff_sws_op_output_type(op);
         if (op->op == SWS_OP_WRITE)
@@ -1089,7 +995,9 @@ static int emit_shader(SwsContext *sws, VulkanPriv *p, FFVulkanOpsCtx *s,
                 if (op->rw.mode != SWS_RW_PLANAR ||
                     op->rw.filter.type != SWS_PIXEL_F32)
                     return AVERROR(ENOTSUP);
-                data = read_filtered(spi, id, ops, op, &id->filt[oid->buf]);
+                err = emit_read_filtered(spi, id, op, &data);
+                if (err < 0)
+                    return err;
             } else if (op->rw.mode == SWS_RW_PACKED) {
                 data = spi_OpImageRead(spi, type_v, id->in_img[ops->plane_src[0]],
                                        id->src_gid, SpvImageOperandsMaskNone);
