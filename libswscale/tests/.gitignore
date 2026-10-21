@@ -1,6 +1,7 @@
 /colorspace
 /floatimg_cmp
 /pixdesc_query
+/rational64
 /swscale
 /sws_ops
 /sws_ops_aarch64
