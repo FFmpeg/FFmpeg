@@ -380,10 +380,10 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                 u1 = bytestream2_get_byte(&dgb);
                 v1 = bytestream2_get_byte(&dgb);
                 loc = bytestream2_get_le32(&dgb);
-                u0 = (u0 << 4) | (u0 & 0xF);
-                v0 = (v0 << 4) | (v0 & 0xF);
-                u1 = (u1 << 4) | (u1 & 0xF);
-                v1 = (v1 << 4) | (v1 & 0xF);
+                u0 = (u0 << 4) | (u0 >> 4);
+                v0 = (v0 << 4) | (v0 >> 4);
+                u1 = (u1 << 4) | (u1 >> 4);
+                v1 = (v1 << 4) | (v1 >> 4);
 
                 for (int i = 0; i < 16; i += 4) {
                     for (int j = 0; j < 16; j += 4) {
@@ -408,10 +408,10 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                             u1 = bytestream2_get_byte(&dgb);
                             v1 = bytestream2_get_byte(&dgb);
                             loc = bytestream2_get_le32(&dgb);
-                            u0 = (u0 << 4) | (u0 & 0xF);
-                            v0 = (v0 << 4) | (v0 & 0xF);
-                            u1 = (u1 << 4) | (u1 & 0xF);
-                            v1 = (v1 << 4) | (v1 & 0xF);
+                            u0 = (u0 << 4) | (u0 >> 4);
+                            v0 = (v0 << 4) | (v0 >> 4);
+                            u1 = (u1 << 4) | (u1 >> 4);
+                            v1 = (v1 << 4) | (v1 >> 4);
 
                             for (int ii = 0; ii < 8; ii += 2) {
                                 for (int jj = 0; jj < 8; jj += 2) {
@@ -435,10 +435,10 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p,
                                     u1 = bytestream2_get_byte(&dgb);
                                     v1 = bytestream2_get_byte(&dgb);
                                     loc = bytestream2_get_le32(&dgb);
-                                    u0 = (u0 << 4) | (u0 & 0xF);
-                                    v0 = (v0 << 4) | (v0 & 0xF);
-                                    u1 = (u1 << 4) | (u1 & 0xF);
-                                    v1 = (v1 << 4) | (v1 & 0xF);
+                                    u0 = (u0 << 4) | (u0 >> 4);
+                                    v0 = (v0 << 4) | (v0 >> 4);
+                                    u1 = (u1 << 4) | (u1 >> 4);
+                                    v1 = (v1 << 4) | (v1 >> 4);
 
                                     for (int iii = 0; iii < 4; iii++) {
                                         for (int jjj = 0; jjj < 4; jjj++) {
