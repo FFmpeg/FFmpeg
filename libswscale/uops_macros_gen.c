@@ -102,18 +102,19 @@ static int generate_entry_struct(void *opaque, void *key)
                    par->pack.pattern[2], par->pack.pattern[3]);
         break;
     case SWS_UOP_CLEAR:
-        av_bprintf(bp, ", .par.clear.one = 0x%x, .par.clear.zero = 0x%x",
+        av_bprintf(bp, ", .par.clear.one = 0x%05x, .par.clear.zero = 0x%05x",
                    par->clear.one, par->clear.zero);
         break;
     case SWS_UOP_LINEAR:
     case SWS_UOP_LINEAR_FMA:
-        av_bprintf(bp, ", .par.lin.one = 0x%x, .par.lin.zero = 0x%x",
+        av_bprintf(bp, ", .par.lin.one = 0x%05x, .par.lin.zero = 0x%05x",
                    par->lin.one, par->lin.zero);
         if (uop->uop == SWS_UOP_LINEAR_FMA)
-            av_bprintf(bp, ", .par.lin.exact = 0x%x", par->lin.exact);
+            av_bprintf(bp, ", .par.lin.exact = 0x%05x", par->lin.exact);
         break;
     case SWS_UOP_DITHER:
-        av_bprintf(bp, ", .par.dither = { .y_offset = {%u, %u, %u, %u}, .size_log2 = %u }",
+        av_bprintf(bp, ", .par.dither.y_offset = {%u, %u, %u, %u}"
+                       ", .par.dither.size_log2 = %u",
                    par->dither.y_offset[0], par->dither.y_offset[1],
                    par->dither.y_offset[2], par->dither.y_offset[3],
                    par->dither.size_log2);
