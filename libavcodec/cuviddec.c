@@ -913,7 +913,8 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                 return ret;
         }
 
-        if (!cuvid_is_buffer_full(avctx)) {
+        // Consume queued output before parsing can reuse its decode surfaces.
+        if (!av_fifo_can_read(ctx->frame_queue) && !cuvid_is_buffer_full(avctx)) {
             AVPacket *const pkt = ctx->pkt;
             ret = ff_decode_get_packet(avctx, pkt);
             if (ret < 0 && ret != AVERROR_EOF)
