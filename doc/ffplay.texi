@@ -88,6 +88,9 @@ show video
 show audio waves
 @item 2, rdft
 show audio frequency band using RDFT ((Inverse) Real Discrete Fourier Transform)
+@item 3, phase
+like rdft, with stereo content whose left channel leads in phase shown in
+blue and whose right channel leads shown in yellow
 @end table
 
 Default value is "video", if video is not present or cannot be played

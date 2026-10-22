@@ -278,7 +278,7 @@ typedef struct VideoState {
     int frame_drops_late;
 
     enum ShowMode {
-        SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
+        SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_PHASE, SHOW_MODE_NB
     } show_mode;
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
@@ -1326,6 +1326,7 @@ static void video_audio_display(VideoState *s)
              * directly access it but it is more than fast enough. */
             if (!SDL_LockTexture(s->vis_texture, &rect, (void **)&pixels, &pitch)) {
                 double w = 1 / sqrt(nb_freq);
+                int show_phase = s->show_mode == SHOW_MODE_PHASE && nb_display_channels == 2;
                 pitch >>= 2;
                 pixels += pitch * s->height;
                 for (y = 0; y < s->height; y++) {
@@ -1334,8 +1335,18 @@ static void video_audio_display(VideoState *s)
                                                         : a;
                     a = FFMIN(a, 255);
                     b = FFMIN(b, 255);
+                    int blue = (a+b) >> 1;
+                    if (show_phase) {
+                        /* phase(left) - phase(right) in units of pi */
+                        double phase = atan2(data[0][y].im * data[1][y].re - data[0][y].re * data[1][y].im,
+                                             data[0][y].re * data[1][y].re + data[0][y].im * data[1][y].im) / M_PI;
+                        int phase_shift = lrint(phase * FFMIN(a, b));
+                        a    = FFMIN(a    - phase_shift / 2, 255);
+                        b    = FFMIN(b    - phase_shift / 2, 255);
+                        blue = FFMIN(blue + phase_shift,     255);
+                    }
                     pixels -= pitch;
-                    *pixels = (a << 16) + (b << 8) + ((a+b) >> 1);
+                    *pixels = (a << 16) + (b << 8) + blue;
                 }
                 SDL_UnlockTexture(s->vis_texture);
             }
@@ -4356,7 +4367,8 @@ static int opt_show_mode(void *optctx, const char *opt, const char *arg)
 {
     show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
                 !strcmp(arg, "waves") ? SHOW_MODE_WAVES :
-                !strcmp(arg, "rdft" ) ? SHOW_MODE_RDFT  : SHOW_MODE_NONE;
+                !strcmp(arg, "rdft" ) ? SHOW_MODE_RDFT  :
+                !strcmp(arg, "phase") ? SHOW_MODE_PHASE : SHOW_MODE_NONE;
 
     if (show_mode == SHOW_MODE_NONE) {
         double num;
@@ -4452,7 +4464,7 @@ static const OptionDef options[] = {
     { "vf",                 OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_add_vfilter }, "set video filters", "filter_graph" },
     { "af",                 OPT_TYPE_STRING,          0, { &afilters }, "set audio filters", "filter_graph" },
     { "rdftspeed",          OPT_TYPE_INT, OPT_AUDIO | OPT_EXPERT, { &rdftspeed }, "rdft speed", "msecs" },
-    { "showmode",           OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
+    { "showmode",           OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT, 3 = phase)", "mode" },
     { "i",                  OPT_TYPE_BOOL,            0, { &dummy}, "read specified file", "input_file"},
     { "codec",              OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = opt_codec}, "force decoder", "decoder_name" },
     { "acodec",             OPT_TYPE_STRING, OPT_EXPERT, {    &audio_codec_name }, "force audio decoder",    "decoder_name" },
