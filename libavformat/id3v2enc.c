@@ -60,6 +60,18 @@ static void id3v2_encode_string(AVIOContext *pb, const uint8_t *str,
     put(pb, str);
 }
 
+/* ID3v2.3 frame size is not synchsafe; 2.4 is. */
+static void id3v2_put_frame_header(ID3v2EncContext *id3, AVIOContext *pb,
+                                   uint32_t tag, int len, int flags)
+{
+    avio_wb32(pb, tag);
+    if (id3->version == 3)
+        avio_wb32(pb, len);
+    else
+        id3v2_put_size(pb, len);
+    avio_wb16(pb, flags);
+}
+
 static int id3v2_put_frame(ID3v2EncContext *id3, AVIOContext *avioc, AVIOContext *dyn_buf,
                            const uint32_t tag, const uint8_t flags)
 {
@@ -67,13 +79,7 @@ static int id3v2_put_frame(ID3v2EncContext *id3, AVIOContext *avioc, AVIOContext
     uint8_t *pb;
     len = avio_get_dyn_buf(dyn_buf, &pb);
 
-    avio_wb32(avioc, tag);
-    /* ID3v2.3 frame size is not sync-safe */
-    if (id3->version == 3)
-        avio_wb32(avioc, len);
-    else
-        id3v2_put_size(avioc, len);
-    avio_wb16(avioc, flags);
+    id3v2_put_frame_header(id3, avioc, tag, len, flags);
     avio_write(avioc, pb, len);
 
     id3->len += len + ID3v2_HEADER_SIZE;
@@ -463,9 +469,9 @@ static int write_chapter(AVFormatContext *s, AVIOContext *pb,
     len = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     id3->len += 16 + ID3v2_HEADER_SIZE;
 
-    avio_wb32(pb, MKBETAG('C', 'H', 'A', 'P'));
-    avio_wb32(pb, len);
-    avio_wb16(pb, 0);
+    /* Nested frames already updated id3->len, so this header is written
+     * directly instead of through id3v2_put_frame(). */
+    id3v2_put_frame_header(id3, pb, MKBETAG('C', 'H', 'A', 'P'), len, 0);
     avio_write(pb, dyn_buf, len);
 
 fail:
