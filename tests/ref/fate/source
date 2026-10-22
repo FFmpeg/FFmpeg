@@ -22,6 +22,7 @@ libswscale/log2_tab.c
 libswscale/riscv/cpu_common.c
 libswscale/uops_macros.h
 libswscale/x86/uops_macros.asm
+libswscale/x86/uops_macros.h
 tools/uncoded_frame.c
 tools/yuvcmp.c
 Headers without standard inclusion guards:

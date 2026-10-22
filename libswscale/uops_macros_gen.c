@@ -228,12 +228,15 @@ typedef struct Backend {
 
 static const Backend backends[] = {
     {
-        /* Currently also covers all uops used by the x86 backend */
         .name  = "c",
         .guard = "SWSCALE_UOPS_MACROS_H",
+        .flags = { COMMON_FLAGS },
+    }, {
+        .name  = "x86",
+        .guard = "SWSCALE_X86_UOPS_MACROS_H",
         .flags = {
-            COMMON_FLAGS,
-            COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA,
+            COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB,
+            COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA, /* FMA3 */
         },
     },
 };
@@ -490,7 +493,7 @@ static int usage(void)
 {
     fprintf(stderr, "Usage: uops_macros_gen [-backend BACKEND] [-nasm FILE]\n"
                     "Writes C macros to stdout, and optionally NASM macros to FILE\n"
-                    "BACKEND is one of: c (default)\n");
+                    "BACKEND is one of: c (default), x86\n");
     return 1;
 }
 

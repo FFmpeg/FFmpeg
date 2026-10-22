@@ -108,8 +108,6 @@
     DECL_OP %1, u8_permute_xyz_yx_xw                    , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0x7, 2, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0
     DECL_OP %1, u8_permute_xyz_xyz_yzw                  , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0x7, 3, 0, 1, 2, 0, 0, 0, 1, 2, 3, 0, 0, 0
     DECL_OP %1, u8_permute_xyz_xtyz_wyzt                , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0x7, 4, 0, -1, 1, 2, 0, 0, 3, 1, 2, -1, 0, 0
-    DECL_OP %1, u8_permute_xyw_x_z                      , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0xb, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0
-    DECL_OP %1, u8_permute_xzw_x_y                      , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0xd, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0
     DECL_OP %1, u8_permute_yzw_y_x                      , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0xe, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     DECL_OP %1, u8_permute_yzw_z_x                      , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0xe, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     DECL_OP %1, u8_permute_yzw_w_x                      , SWS_PIXEL_U8 , SWS_UOP_PERMUTE         , 0xe, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

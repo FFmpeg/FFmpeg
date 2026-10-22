@@ -26,7 +26,7 @@
 
 #include "../ops_chain.h"
 #include "../uops.h"
-#include "../uops_macros.h"
+#include "uops_macros.h"
 
 static int setup_rw_packed(const SwsImplParams *params, SwsImplResult *out)
 {
