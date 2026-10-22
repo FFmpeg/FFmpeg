@@ -3497,8 +3497,6 @@ static int mpegts_probe(const AVProbeData *p)
 
     if        (check_count > CHECK_COUNT && sumscore > 6) {
         return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
-    } else if (check_count >= CHECK_COUNT && sumscore >= CHECK_COUNT) {
-        return AVPROBE_SCORE_MAX   + sumscore - CHECK_COUNT;
     } else if (check_count >= CHECK_COUNT && sumscore > 6) {
         return AVPROBE_SCORE_MAX/2 + sumscore - CHECK_COUNT;
     } else if (check_count >= CHECK_COUNT && maxscore > 6) {
