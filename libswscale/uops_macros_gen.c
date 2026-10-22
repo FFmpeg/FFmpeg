@@ -263,26 +263,29 @@ static int free_uop_key(void *opaque, void *key)
     return 0;
 }
 
+static void free_uops(struct AVTreeNode **root)
+{
+    av_tree_enumerate(*root, NULL, NULL, free_uop_key);
+    av_tree_destroy(*root);
+    *root = NULL;
+}
+
 /**
- * Generate a set of boilerplate C preprocessor macros for describing and
- * programmatically iterating over all possible SwsUOps.
+ * Collect all unique SwsUOps into a newly allocated tree.
  *
  * This function can be quite slow as it iterates over every possible
  * combination of pixel formats and flags.
  *
- * Returns 0 or a negative error code. On success, an allocated string is
- * returned via `out_str`, and must be av_free()'d by the caller.
+ * Returns 0 or a negative error code. On success, the tree is returned via
+ * `root`, and must be freed with free_uops() by the caller.
  */
-static int sws_uops_macros_gen(char **out_str)
+static int collect_uops(struct AVTreeNode **root)
 {
     struct EnumPriv s = {0};
     SwsLut3D *lut3d = NULL;
     int ret = ff_mutex_init(&s.lock, NULL);
     if (ret)
         return AVERROR(ENOSYS);
-
-    AVBPrint bprint, *const bp = &bprint;
-    av_bprint_init(bp, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     /* Allocate dummy graph and context for ff_sws_compile_pass() */
     SwsGraph *graph = ff_sws_graph_alloc();
@@ -324,6 +327,30 @@ static int sws_uops_macros_gen(char **out_str)
             goto fail;
     }
 
+    *root = s.root;
+    s.root = NULL;
+
+fail:
+    av_refstruct_unref(&lut3d);
+    free_uops(&s.root);
+    ff_mutex_destroy(&s.lock);
+    ff_sws_graph_free(&graph);
+    sws_free_context(&ctx);
+    return ret;
+}
+
+/**
+ * Generate a set of boilerplate C preprocessor macros for describing and
+ * programmatically iterating over all SwsUOps in the tree at `root`.
+ *
+ * Returns 0 or a negative error code. On success, an allocated string is
+ * returned via `out_str`, and must be av_free()'d by the caller.
+ */
+static int print_macros(struct AVTreeNode *root, char **out_str)
+{
+    AVBPrint bprint, *const bp = &bprint;
+    av_bprint_init(bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     #define BPRINT_STR(str) av_bprint_append_data(bp, str, strlen(str))
     BPRINT_STR(
 "/**\n"
@@ -354,26 +381,16 @@ static int sws_uops_macros_gen(char **out_str)
             const char *macro  = uop_names[key.uop].full + sizeof("SWS_UOP_") - 1;
             const char *prefix = pixel_types[key.type].prefix;
             av_bprintf(bp, "#define SWS_FOR_%s%s(MACRO, ...)", prefix, macro);
-            av_tree_enumerate(s.root, &key, enum_type, generate_entry_args);
+            av_tree_enumerate(root, &key, enum_type, generate_entry_args);
             av_bprintf(bp, "\n");
             av_bprintf(bp, "#define SWS_FOR_STRUCT_%s%s(MACRO, ...)", prefix, macro);
-            av_tree_enumerate(s.root, &key, enum_type, generate_entry_struct);
+            av_tree_enumerate(root, &key, enum_type, generate_entry_struct);
             av_bprintf(bp, "\n");
         }
     }
 
     BPRINT_STR("\n#endif /* SWSCALE_UOPS_MACROS_H */");
-    ret = av_bprint_finalize(bp, out_str);
-
-fail:
-    av_refstruct_unref(&lut3d);
-    av_bprint_finalize(bp, NULL);
-    av_tree_enumerate(s.root, NULL, NULL, free_uop_key);
-    av_tree_destroy(s.root);
-    ff_mutex_destroy(&s.lock);
-    ff_sws_graph_free(&graph);
-    sws_free_context(&ctx);
-    return ret;
+    return av_bprint_finalize(bp, out_str);
 }
 
 int main(int argc, char **argv)
@@ -382,10 +399,16 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
+    struct AVTreeNode *root = NULL;
+    int ret = collect_uops(&root);
+    if (ret < 0)
+        return ret;
+
     char *macros = NULL;
-    int ret = sws_uops_macros_gen(&macros);
+    ret = print_macros(root, &macros);
     if (ret >= 0)
         puts(macros);
     av_free(macros);
+    free_uops(&root);
     return ret;
 }
