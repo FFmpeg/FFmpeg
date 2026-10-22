@@ -198,6 +198,7 @@ typedef struct NvencContext
 
     NV_ENC_SEI_PAYLOAD *sei_data;
     int sei_data_size;
+    int sei_size_warned; ///< a SEI was dropped by nvenc_hevc_sei_size_check()
 
     struct {
         void *ptr;
