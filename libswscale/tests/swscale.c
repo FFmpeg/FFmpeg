@@ -235,6 +235,25 @@ static void unref_buffers(AVFrame *frame)
     memset(frame->linesize, 0, sizeof(frame->linesize));
 }
 
+/* A negative alignment allocates a vertically flipped (negative stride) frame */
+static int get_buffer(AVFrame *frame, int align)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    int ret = av_frame_get_buffer(frame, FFABS(align));
+    if (ret < 0 || align >= 0)
+        return ret;
+
+    for (int p = 0; p < av_pix_fmt_count_planes(frame->format); p++) {
+        const int is_chroma = p == 1 || p == 2;
+        const int h = is_chroma ? AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h)
+                                : frame->height;
+        frame->data[p] += (h - 1) * frame->linesize[p];
+        frame->linesize[p] = -frame->linesize[p];
+    }
+
+    return 0;
+}
+
 static int checked_sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src)
 {
     int ret = sws_scale_frame(c, dst, src);
@@ -267,7 +286,7 @@ static int scale_new(AVFrame *dst, const AVFrame *src,
     for (int i = 0; ret >= 0 && i < opts->iters; i++) {
         unref_buffers(dst);
         if (opts->align_dst) {
-            ret = av_frame_get_buffer(dst, opts->align_dst);
+            ret = get_buffer(dst, opts->align_dst);
             if (ret < 0)
                 return ret;
         }
@@ -306,7 +325,7 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src,
     dst->width  = sws_legacy->dst_w;
     dst->height = sws_legacy->dst_h;
     dst->format = sws_legacy->dst_format;
-    ret = av_frame_get_buffer(dst, opts->align_dst);
+    ret = get_buffer(dst, opts->align_dst);
     if (ret < 0)
         goto error;
 
@@ -596,7 +615,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         if (ret < 0)
             goto error;
         if (opts->align_src) {
-            ret = av_frame_get_buffer(src, opts->align_src);
+            ret = get_buffer(src, opts->align_src);
             if (ret < 0) {
                 av_frame_free(&src);
                 goto error;
@@ -968,8 +987,10 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "       Test with a specified scaler algorithm for chroma planes\n"
                     "   -align_src <alignment>\n"
                     "       If nonzero, allocate source buffers with a custom stride alignment\n"
+                    "       If negative, the buffers are also vertically flipped (negative stride)\n"
                     "   -align_dst <alignment>\n"
                     "       If nonzero, allocate destination buffers with a custom stride alignment\n"
+                    "       If negative, the buffers are also vertically flipped (negative stride)\n"
                     "   -api <new or legacy>\n"
                     "       Use selected swscale API for the main conversion (default: new)\n"
                     "   -hw <device>\n"
@@ -1062,13 +1083,15 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             }
         } else if (!strcmp(argv[i], "-align_src")) {
             opts->align_src = atoi(argv[i + 1]);
-            if (opts->align_src < 0 || (opts->align_src & (opts->align_src - 1))) {
+            const unsigned align = FFABSU(opts->align_src);
+            if (align > INT_MAX || (align & (align - 1))) {
                 fprintf(stderr, "invalid alignment %s\n", argv[i + 1]);
                 return -1;
             }
         } else if (!strcmp(argv[i], "-align_dst")) {
             opts->align_dst = atoi(argv[i + 1]);
-            if (opts->align_dst < 0 || (opts->align_dst & (opts->align_dst - 1))) {
+            const unsigned align = FFABSU(opts->align_dst);
+            if (align > INT_MAX || (align & (align - 1))) {
                 fprintf(stderr, "invalid alignment %s\n", argv[i + 1]);
                 return -1;
             }
