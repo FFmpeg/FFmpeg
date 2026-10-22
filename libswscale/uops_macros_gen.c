@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -56,6 +57,70 @@ static const struct {
     [SWS_PIXEL_F32]  = { "SWS_PIXEL_F32",  "F32_" },
 };
 
+/* Print uop params either as C struct designators, or as plain values */
+static void print_params(AVBPrint *bp, const SwsUOp *uop, bool designated)
+{
+#define FMT(FIELD, VALUE, ...)     av_bprintf(bp, designated ? ", ." FIELD " = " VALUE      : ", " VALUE, __VA_ARGS__)
+#define FMT_SUB(FIELD, VALUE, ...) av_bprintf(bp, designated ? ", ." FIELD " = {" VALUE "}" : ", " VALUE, __VA_ARGS__)
+
+    const SwsUOpParams *par = &uop->par;
+    switch (uop->uop) {
+    case SWS_UOP_READ_PLANAR_FH:
+    case SWS_UOP_READ_PLANAR_FV:
+    case SWS_UOP_READ_PLANAR_FV_FMA:
+        FMT("par.filter.type", "%s", pixel_types[par->filter.type].full);
+        break;
+    case SWS_UOP_RW_SHUFFLE:
+        FMT("par.shuffle.clear_value", "0x%x", par->shuffle.clear_value);
+        FMT("par.shuffle.read_size",   "%u",   par->shuffle.read_size);
+        FMT("par.shuffle.write_size",  "%u",   par->shuffle.write_size);
+        break;
+    case SWS_UOP_LSHIFT:
+    case SWS_UOP_RSHIFT:
+        FMT("par.shift.amount", "%u", par->shift.amount);
+        break;
+    case SWS_UOP_PERMUTE:
+    case SWS_UOP_COPY:
+        FMT("par.move.num_moves", "%d", par->move.num_moves);
+        FMT_SUB("par.move.dst", "%d, %d, %d, %d, %d, %d",
+                par->move.dst[0], par->move.dst[1], par->move.dst[2],
+                par->move.dst[3], par->move.dst[4], par->move.dst[5]);
+        FMT_SUB("par.move.src", "%d, %d, %d, %d, %d, %d",
+                par->move.src[0], par->move.src[1], par->move.src[2],
+                par->move.src[3], par->move.src[4], par->move.src[5]);
+        break;
+    case SWS_UOP_PACK:
+    case SWS_UOP_UNPACK:
+        FMT_SUB("par.pack.pattern", "%d, %d, %d, %d",
+                par->pack.pattern[0], par->pack.pattern[1],
+                par->pack.pattern[2], par->pack.pattern[3]);
+        break;
+    case SWS_UOP_CLEAR:
+        FMT("par.clear.one",  "0x%05x", par->clear.one);
+        FMT("par.clear.zero", "0x%05x", par->clear.zero);
+        break;
+    case SWS_UOP_LINEAR:
+    case SWS_UOP_LINEAR_FMA:
+        FMT("par.lin.one",  "0x%05x", par->lin.one);
+        FMT("par.lin.zero", "0x%05x", par->lin.zero);
+        if (uop->uop == SWS_UOP_LINEAR_FMA)
+            FMT("par.lin.exact", "0x%05x", par->lin.exact);
+        break;
+    case SWS_UOP_DITHER:
+        FMT_SUB("par.dither.y_offset", "%u, %u, %u, %u",
+                par->dither.y_offset[0], par->dither.y_offset[1],
+                par->dither.y_offset[2], par->dither.y_offset[3]);
+        FMT("par.dither.size_log2", "%u", par->dither.size_log2);
+        break;
+    case SWS_UOP_LUT_3D:
+        FMT("par.lut3d.dynamic", "%d", par->lut3d.dynamic);
+        break;
+    }
+
+#undef FMT
+#undef FMT_SUB
+}
+
 static int generate_entry_struct(void *opaque, void *key)
 {
     const SwsUOp *ref = opaque;
@@ -66,64 +131,7 @@ static int generate_entry_struct(void *opaque, void *key)
     av_bprintf(bp, " \\\n    MACRO(__VA_ARGS__, %-40s", name);
     av_bprintf(bp, ", .type = %-13s, .uop = %-24s, .mask = 0x%x",
                pixel_types[uop->type].full, uop_names[uop->uop].full, uop->mask);
-
-    const SwsUOpParams *par = &uop->par;
-    switch (uop->uop) {
-    case SWS_UOP_READ_PLANAR_FH:
-    case SWS_UOP_READ_PLANAR_FV:
-    case SWS_UOP_READ_PLANAR_FV_FMA:
-        av_bprintf(bp, ", .par.filter.type = %s", pixel_types[par->filter.type].full);
-        break;
-    case SWS_UOP_RW_SHUFFLE:
-        av_bprintf(bp, ", .par.shuffle.clear_value = 0x%x"
-                       ", .par.shuffle.read_size = %u"
-                       ", .par.shuffle.write_size = %u",
-                   par->shuffle.clear_value,
-                   par->shuffle.read_size, par->shuffle.write_size);
-        break;
-    case SWS_UOP_LSHIFT:
-    case SWS_UOP_RSHIFT:
-        av_bprintf(bp, ", .par.shift.amount = %u", par->shift.amount);
-        break;
-    case SWS_UOP_PERMUTE:
-    case SWS_UOP_COPY:
-        av_bprintf(bp, ", .par.move.num_moves = %d", par->move.num_moves);
-        av_bprintf(bp, ", .par.move.dst = {%d, %d, %d, %d, %d, %d}",
-                   par->move.dst[0], par->move.dst[1], par->move.dst[2],
-                   par->move.dst[3], par->move.dst[4], par->move.dst[5]);
-        av_bprintf(bp, ", .par.move.src = {%d, %d, %d, %d, %d, %d}",
-                   par->move.src[0], par->move.src[1], par->move.src[2],
-                   par->move.src[3], par->move.src[4], par->move.src[5]);
-        break;
-    case SWS_UOP_PACK:
-    case SWS_UOP_UNPACK:
-        av_bprintf(bp, ", .par.pack.pattern = {%d, %d, %d, %d}",
-                   par->pack.pattern[0], par->pack.pattern[1],
-                   par->pack.pattern[2], par->pack.pattern[3]);
-        break;
-    case SWS_UOP_CLEAR:
-        av_bprintf(bp, ", .par.clear.one = 0x%05x, .par.clear.zero = 0x%05x",
-                   par->clear.one, par->clear.zero);
-        break;
-    case SWS_UOP_LINEAR:
-    case SWS_UOP_LINEAR_FMA:
-        av_bprintf(bp, ", .par.lin.one = 0x%05x, .par.lin.zero = 0x%05x",
-                   par->lin.one, par->lin.zero);
-        if (uop->uop == SWS_UOP_LINEAR_FMA)
-            av_bprintf(bp, ", .par.lin.exact = 0x%05x", par->lin.exact);
-        break;
-    case SWS_UOP_DITHER:
-        av_bprintf(bp, ", .par.dither.y_offset = {%u, %u, %u, %u}"
-                       ", .par.dither.size_log2 = %u",
-                   par->dither.y_offset[0], par->dither.y_offset[1],
-                   par->dither.y_offset[2], par->dither.y_offset[3],
-                   par->dither.size_log2);
-        break;
-    case SWS_UOP_LUT_3D:
-        av_bprintf(bp, ", .par.lut3d.dynamic = %d", par->lut3d.dynamic);
-        break;
-    }
-
+    print_params(bp, uop, true);
     av_bprintf(bp, ")");
     return 0;
 }
@@ -137,58 +145,7 @@ static int generate_entry_args(void *opaque, void *key)
     ff_sws_uop_name(uop, name);
     av_bprintf(bp, " \\\n    MACRO(__VA_ARGS__, %-40s, %-13s, %-24s, 0x%x",
                name, pixel_types[uop->type].full, uop_names[uop->uop].full, uop->mask);
-
-    const SwsUOpParams *par = &uop->par;
-    switch (uop->uop) {
-    case SWS_UOP_READ_PLANAR_FH:
-    case SWS_UOP_READ_PLANAR_FV:
-    case SWS_UOP_READ_PLANAR_FV_FMA:
-        av_bprintf(bp, ", %s", pixel_types[par->filter.type].full);
-        break;
-    case SWS_UOP_RW_SHUFFLE:
-        av_bprintf(bp, ", 0x%x, %u, %u", par->shuffle.clear_value,
-                   par->shuffle.read_size, par->shuffle.write_size);
-        break;
-    case SWS_UOP_LSHIFT:
-    case SWS_UOP_RSHIFT:
-        av_bprintf(bp, ", %u", par->shift.amount);
-        break;
-    case SWS_UOP_PERMUTE:
-    case SWS_UOP_COPY:
-        av_bprintf(bp, ", %d", par->move.num_moves);
-        av_bprintf(bp, ", %d, %d, %d, %d, %d, %d",
-                   par->move.dst[0], par->move.dst[1], par->move.dst[2],
-                   par->move.dst[3], par->move.dst[4], par->move.dst[5]);
-        av_bprintf(bp, ", %d, %d, %d, %d, %d, %d",
-                   par->move.src[0], par->move.src[1], par->move.src[2],
-                   par->move.src[3], par->move.src[4], par->move.src[5]);
-        break;
-    case SWS_UOP_PACK:
-    case SWS_UOP_UNPACK:
-        av_bprintf(bp, ", %d, %d, %d, %d",
-                   par->pack.pattern[0], par->pack.pattern[1],
-                   par->pack.pattern[2], par->pack.pattern[3]);
-        break;
-    case SWS_UOP_CLEAR:
-        av_bprintf(bp, ", 0x%05x, 0x%05x", par->clear.one, par->clear.zero);
-        break;
-    case SWS_UOP_LINEAR:
-    case SWS_UOP_LINEAR_FMA:
-        av_bprintf(bp, ", 0x%05x, 0x%05x", par->lin.one, par->lin.zero);
-        if (uop->uop == SWS_UOP_LINEAR_FMA)
-            av_bprintf(bp, ", 0x%05x", par->lin.exact);
-        break;
-    case SWS_UOP_DITHER:
-        av_bprintf(bp, ", %u, %u, %u, %u, %u",
-                   par->dither.y_offset[0], par->dither.y_offset[1],
-                   par->dither.y_offset[2], par->dither.y_offset[3],
-                   par->dither.size_log2);
-        break;
-    case SWS_UOP_LUT_3D:
-        av_bprintf(bp, ", %d", par->lut3d.dynamic);
-        break;
-    }
-
+    print_params(bp, uop, false);
     av_bprintf(bp, ")");
     return 0;
 }
