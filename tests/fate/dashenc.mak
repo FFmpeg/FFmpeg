@@ -43,5 +43,18 @@ fate-dash-big-init: tests/data/dash_big_init.mpd
 fate-dash-big-init: CLEANFILES = tests/data/dash_big_init.mpd tests/data/dash_big_init.m3u8 tests/data/dash_big_init.mp4 tests/data/dash_big_init_*.m4s
 fate-dash-big-init: CMD = framecrc -i $(TARGET_PATH)/tests/data/dash_big_init.mpd -map 0:a:99 -c copy
 
+tests/data/dash_seek.mpd: TAG = GEN
+tests/data/dash_seek.mpd: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -loglevel error \
+	-f lavfi -i "sine=sample_rate=16000:duration=3" \
+	-c:a mp2fixed -b:a 8k -bitexact -f dash -seg_duration 1 \
+	-init_seg_name dash_seek_init.mp4 -media_seg_name 'dash_seek_$$Number$$.m4s' $(TARGET_PATH)/$@
+
+FATE_DASHENC_LAVFI-$(call ALLYES, SINE_FILTER ARESAMPLE_FILTER LAVFI_INDEV PCM_S16LE_DECODER MP2FIXED_ENCODER DASH_MUXER MP4_MUXER DASH_DEMUXER MOV_DEMUXER MP3_DECODER FILE_PROTOCOL FRAMECRC_MUXER PIPE_PROTOCOL) += fate-dash-seek-zero fate-dash-seek-reference
+fate-dash-seek-zero fate-dash-seek-reference: tests/data/dash_seek.mpd
+fate-dash-seek-zero: CMD = framecrc -ss 0 -i $(TARGET_PATH)/tests/data/dash_seek.mpd -c copy
+fate-dash-seek-reference: CMD = framecrc -i $(TARGET_PATH)/tests/data/dash_seek.mpd -c copy
+fate-dash-seek-reference: REF = $(SRC_PATH)/tests/ref/fate/dash-seek-zero
+
 FATE_FFMPEG += $(FATE_DASHENC_LAVFI-yes)
 fate-dashenc: $(FATE_DASHENC_LAVFI-yes)

@@ -2517,6 +2517,7 @@ set_seq_num:
     pls->cur_timestamp = 0;
     pls->cur_seg_offset = 0;
     pls->init_sec_buf_read_offset = 0;
+    pls->is_restart_needed = 0;
     ret = dry_run ? 0 : reopen_demux_for_component(s, pls);
 
     return ret;
