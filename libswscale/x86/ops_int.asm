@@ -454,8 +454,8 @@ op read_bits1
         vpbroadcastd mx,  [in0q]
 IF V2,  vpbroadcastd mx2, [in0q + 4]
 %else
-        movd mx, [in0q]
-IF V2,  movd mx2, [in0q + 2]
+        pinsrw mx, [in0q], 0
+IF V2,  pinsrw mx2, [in0q + 2], 0
 %endif
         mova m8, [bits_shuf]
         VBROADCASTI128 m9,  [bits_mask]
