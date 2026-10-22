@@ -166,6 +166,7 @@ static int generate_entry_nasm(void *opaque, void *key)
 }
 
 struct EnumPriv {
+    const struct Backend *backend;
     struct AVTreeNode *root;
     AVMutex lock;
 };
@@ -219,16 +220,39 @@ enum {
                    SWS_UOP_FLAG_ADD,
 };
 
-static const SwsUOpFlags uop_flags[] = {
-    COMMON_FLAGS,                                          /* C backend */
-    COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA, /* x86 backend */
+typedef struct Backend {
+    const char *name;
+    SwsUOpFlags flags[2]; /* all flag combinations used by the backend */
+} Backend;
+
+static const Backend backends[] = {
+    {
+        /* Currently also covers all uops used by the x86 backend */
+        .name  = "c",
+        .flags = {
+            COMMON_FLAGS,
+            COMMON_FLAGS | SWS_UOP_FLAG_PSHUFB | SWS_UOP_FLAG_FMA,
+        },
+    },
 };
+
+static const Backend *find_backend(const char *name)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(backends); i++) {
+        if (!strcmp(backends[i].name, name))
+            return &backends[i];
+    }
+    return NULL;
+}
 
 static int register_uops(SwsContext *ctx, const SwsOpList *ops,
                          SwsCompiledOp *out)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(uop_flags); i++) {
-        int ret = register_flags(ctx, ops, uop_flags[i]);
+    const struct EnumPriv *s = ctx->opaque;
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->backend->flags); i++) {
+        if (!s->backend->flags[i])
+            break;
+        int ret = register_flags(ctx, ops, s->backend->flags[i]);
         if (ret < 0)
             return ret;
     }
@@ -286,7 +310,7 @@ static void free_uops(struct AVTreeNode **root)
 }
 
 /**
- * Collect all unique SwsUOps into a newly allocated tree.
+ * Collect all unique SwsUOps used by `backend` into a newly allocated tree.
  *
  * This function can be quite slow as it iterates over every possible
  * combination of pixel formats and flags.
@@ -294,9 +318,9 @@ static void free_uops(struct AVTreeNode **root)
  * Returns 0 or a negative error code. On success, the tree is returned via
  * `root`, and must be freed with free_uops() by the caller.
  */
-static int collect_uops(struct AVTreeNode **root)
+static int collect_uops(struct AVTreeNode **root, const Backend *backend)
 {
-    struct EnumPriv s = {0};
+    struct EnumPriv s = { .backend = backend };
     SwsLut3D *lut3d = NULL;
     int ret = ff_mutex_init(&s.lock, NULL);
     if (ret)
@@ -462,8 +486,9 @@ static int write_file(const char *path, const char *str)
 
 static int usage(void)
 {
-    fprintf(stderr, "Usage: uops_macros_gen [-nasm FILE]\n"
-                    "Writes C macros to stdout, and optionally NASM macros to FILE\n");
+    fprintf(stderr, "Usage: uops_macros_gen [-backend BACKEND] [-nasm FILE]\n"
+                    "Writes C macros to stdout, and optionally NASM macros to FILE\n"
+                    "BACKEND is one of: c (default)\n");
     return 1;
 }
 
@@ -473,18 +498,24 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
+    const Backend *backend = &backends[0];
     const char *nasm_path = NULL;
     for (int i = 1; i < argc; i += 2) {
         if (i + 1 >= argc)
             return usage();
-        if (!strcmp(argv[i], "-nasm"))
+        if (!strcmp(argv[i], "-backend")) {
+            backend = find_backend(argv[i + 1]);
+            if (!backend)
+                return usage();
+        } else if (!strcmp(argv[i], "-nasm")) {
             nasm_path = argv[i + 1];
-        else
+        } else {
             return usage();
+        }
     }
 
     struct AVTreeNode *root = NULL;
-    int ret = collect_uops(&root);
+    int ret = collect_uops(&root, backend);
     if (ret < 0)
         return ret;
 
