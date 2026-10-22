@@ -245,6 +245,12 @@ fate-vsynth3-magicyuv:                ENCOPTS = -pix_fmt yuv444p -pred median \
 fate-vsynth_lena-magicyuv:            ENCOPTS = -slices 3 -pix_fmt gray -pred left
 fate-vsynth%-magicyuv:                DECOPTS = -sws_flags neighbor+bitexact
 
+# Exercise both row and slice boundaries, RST7 wraparound, and the final row.
+FATE_MJPEG_RST-$(call ENCMUX, MJPEG, FRAMECRC, TESTSRC2_FILTER FORMAT_FILTER PIPE_PROTOCOL) += fate-mjpeg-slice-rst
+fate-mjpeg-slice-rst: CMD = framecrc -lavfi testsrc2=size=16x160:rate=1:duration=2,format=yuvj420p \
+                                  -c:v mjpeg -dct int -huffman default -threads 1 -slices 2
+FATE_FFMPEG += $(FATE_MJPEG_RST-yes)
+
 FATE_VCODEC_SCALE-$(call ENCDEC, MJPEG, AVI) += mjpeg mjpeg-422 mjpeg-444 mjpeg-trell mjpeg-huffman mjpeg-trell-huffman mjpeg-dcprec
 fate-vsynth%-mjpeg:                   ENCOPTS = -qscale 9 -pix_fmt yuvj420p -huffman default -threads 5 -thread_type slice
 fate-vsynth%-mjpeg-422:               ENCOPTS = -qscale 9 -pix_fmt yuvj422p
@@ -544,4 +550,4 @@ fate-vsynth1: $(FATE_VSYNTH1)
 fate-vsynth2: $(FATE_VSYNTH2)
 fate-vsynth_lena: $(FATE_VSYNTH_LENA)
 fate-vsynth3: $(FATE_VSYNTH3)
-fate-vcodec:  fate-vsynth1 fate-vsynth_lena fate-vsynth2 fate-vsynth3
+fate-vcodec:  fate-vsynth1 fate-vsynth_lena fate-vsynth2 fate-vsynth3 $(FATE_MJPEG_RST-yes)
