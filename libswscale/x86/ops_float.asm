@@ -677,21 +677,21 @@ IF W,   addps mw2, m11
 ; Instantiate above macros to generate all uop kernels
 
 %macro decl_filter_ops 1 ; type
-    decl_suffix _4x4,   DECL_%1_READ_PLANAR_FH (READ_PLANAR_FH_4X4)
+    decl_suffix _4x4,   DECL_%1_READ_PLANAR_FH READ_PLANAR_FH_4X4
 
-    DECL_%1_READ_PLANAR_FH      (READ_PLANAR_FH)
-    DECL_%1_READ_PLANAR_FV      (READ_PLANAR_FV)
-    DECL_%1_READ_PLANAR_FV_FMA  (READ_PLANAR_FV_FMA)
+    DECL_%1_READ_PLANAR_FH      READ_PLANAR_FH
+    DECL_%1_READ_PLANAR_FV      READ_PLANAR_FV
+    DECL_%1_READ_PLANAR_FV_FMA  READ_PLANAR_FV_FMA
 %endmacro
 
 %macro decl_float_ops 1 ; type
-    DECL_%1_SCALE           (SCALE)
-    DECL_%1_ADD             (ADD)
-    DECL_%1_MIN             (MIN)
-    DECL_%1_MAX             (MAX)
-    DECL_%1_LINEAR          (LINEAR)
-    DECL_%1_LINEAR_FMA      (LINEAR_FMA)
-    DECL_%1_DITHER          (DITHER)
+    DECL_%1_SCALE           SCALE
+    DECL_%1_ADD             ADD
+    DECL_%1_MIN             MIN
+    DECL_%1_MAX             MAX
+    DECL_%1_LINEAR          LINEAR
+    DECL_%1_LINEAR_FMA      LINEAR_FMA
+    DECL_%1_DITHER          DITHER
 %endmacro
 
 INIT_YMM avx2

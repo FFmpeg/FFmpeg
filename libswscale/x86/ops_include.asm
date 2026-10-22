@@ -19,7 +19,7 @@
 ;******************************************************************************
 
 %include "libavutil/x86/x86util.asm"
-%include "libswscale/x86/uops_macros.gen.asm"
+%include "libswscale/x86/uops_macros.asm"
 
 ; High-level explanation of how the x86 backend works:
 ;
@@ -153,7 +153,7 @@ endstruc
 ; Common macros for declaring operations
 
 ; Declare an operation kernel, calling a provided macro to generate the body.
-; Note: This is automatically called by the DECL_*() macros
+; Note: This is automatically called by the DECL_* macros
 %macro DECL_OP 5-6+ ; macro, name, type, uop, mask
     ; Declare named variables for common macro parameters
     %ifdef NAME_SUFFIX

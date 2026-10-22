@@ -102,16 +102,27 @@ FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
 fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)
 fate-sws-ops-list: CMD = run libswscale/tests/sws_ops$(EXESUF) | do_md5sum | cut -d" " -f1
 
+FATE_SWS_UOPS_MACROS = fate-sws-uops-macros-c                          \
+                       fate-sws-uops-macros-x86-nasm                   \
+
 ifeq ($(HAVE_INT128),yes)
 # Disable by default without int128 because it is too slow (several minutes)
-FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-uops-macros
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += $(FATE_SWS_UOPS_MACROS)
 endif
 
 # Disable on bigendian because it would result in a different iteration order
 # (and thus output) due to sorting by memcmp() on the parameters struct.
-fate-sws-uops-macros: libswscale/uops_macros_gen$(EXESUF)
-fate-sws-uops-macros: REF = $(SRC_PATH)/libswscale/uops_macros.h
-fate-sws-uops-macros: CMD = run libswscale/uops_macros_gen$(EXESUF)
+fate-sws-uops-macros-c: libswscale/uops_macros_gen$(EXESUF)
+fate-sws-uops-macros-c: REF = $(SRC_PATH)/libswscale/uops_macros.h
+fate-sws-uops-macros-c: CMD = run libswscale/uops_macros_gen$(EXESUF) \
+                                  -nasm $(TARGET_PATH)/tests/data/fate/sws-uops-macros.asm
+
+# Generated together with fate-sws-uops-macros-c, since enumeration is slow
+fate-sws-uops-macros-x86-nasm: fate-sws-uops-macros-c
+fate-sws-uops-macros-x86-nasm: REF = $(SRC_PATH)/libswscale/x86/uops_macros.asm
+fate-sws-uops-macros-x86-nasm: CMD = cat tests/data/fate/sws-uops-macros.asm
+
+fate-sws-uops-macros: $(FATE_SWS_UOPS_MACROS)
 
 endif
 

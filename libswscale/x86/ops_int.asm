@@ -884,57 +884,57 @@ IF2 V2, linear_pass 2
 ; Instantiate above macros to generate all uop kernels
 
 %macro decl_ops 1 ; type
-    DECL_%1_READ_PACKED     (READ_PACKED)
-    DECL_%1_READ_NIBBLE     (READ_NIBBLE)
-    DECL_%1_READ_BIT        (READ_BIT)
-    DECL_%1_READ_PALETTE    (READ_PALETTE)
-    DECL_%1_WRITE_PACKED    (WRITE_PACKED)
-    DECL_%1_WRITE_NIBBLE    (WRITE_NIBBLE)
-    DECL_%1_WRITE_BIT       (WRITE_BIT)
-    DECL_%1_PERMUTE         (MOVE)
-    DECL_%1_COPY            (MOVE)
-    DECL_%1_SWAP_BYTES      (SWAP_BYTES)
-    DECL_%1_EXPAND_BIT      (EXPAND_BIT)
-    DECL_%1_SCALE           (SCALE)
-    DECL_%1_ADD             (ADD)
-    DECL_%1_MIN             (MIN)
-    DECL_%1_MAX             (MAX)
-    DECL_%1_UNPACK          (UNPACK)
-    DECL_%1_PACK            (PACK)
-    DECL_%1_LSHIFT          (LSHIFT)
-    DECL_%1_RSHIFT          (RSHIFT)
-    DECL_%1_LINEAR_FMA      (LINEAR_FMA)
-    DECL_%1_DITHER          (DITHER)
-    DECL_%1_LINEAR          (LINEAR)
+    DECL_%1_READ_PACKED     READ_PACKED
+    DECL_%1_READ_NIBBLE     READ_NIBBLE
+    DECL_%1_READ_BIT        READ_BIT
+    DECL_%1_READ_PALETTE    READ_PALETTE
+    DECL_%1_WRITE_PACKED    WRITE_PACKED
+    DECL_%1_WRITE_NIBBLE    WRITE_NIBBLE
+    DECL_%1_WRITE_BIT       WRITE_BIT
+    DECL_%1_PERMUTE         MOVE
+    DECL_%1_COPY            MOVE
+    DECL_%1_SWAP_BYTES      SWAP_BYTES
+    DECL_%1_EXPAND_BIT      EXPAND_BIT
+    DECL_%1_SCALE           SCALE
+    DECL_%1_ADD             ADD
+    DECL_%1_MIN             MIN
+    DECL_%1_MAX             MAX
+    DECL_%1_UNPACK          UNPACK
+    DECL_%1_PACK            PACK
+    DECL_%1_LSHIFT          LSHIFT
+    DECL_%1_RSHIFT          RSHIFT
+    DECL_%1_LINEAR_FMA      LINEAR_FMA
+    DECL_%1_DITHER          DITHER
+    DECL_%1_LINEAR          LINEAR
 %endmacro
 
 %macro decl_type_invariant 0
-    DECL_U8_READ_PLANAR     (READ_PLANAR)
-    DECL_U8_WRITE_PLANAR    (WRITE_PLANAR)
-    DECL_U8_CLEAR           (CLEAR)
+    DECL_U8_READ_PLANAR     READ_PLANAR
+    DECL_U8_WRITE_PLANAR    WRITE_PLANAR
+    DECL_U8_CLEAR           CLEAR
 %endmacro
 
 %macro decl_cast_u16 0
-    DECL_U8_TO_U16          (CAST_TO)
-    DECL_U16_TO_U8          (CAST_TO)
-    DECL_U8_EXPAND_PAIR     (EXPAND_BYTE)
+    DECL_U8_TO_U16          CAST_TO
+    DECL_U16_TO_U8          CAST_TO
+    DECL_U8_EXPAND_PAIR     EXPAND_BYTE
 %endmacro
 
 %macro decl_cast_u32 0
-    DECL_U8_TO_U32          (CAST_TO)
-    DECL_U32_TO_U8          (CAST_TO)
-    DECL_U16_TO_U32         (CAST_TO)
-    DECL_U32_TO_U16         (CAST_TO)
-    DECL_U8_EXPAND_QUAD     (EXPAND_BYTE)
+    DECL_U8_TO_U32          CAST_TO
+    DECL_U32_TO_U8          CAST_TO
+    DECL_U16_TO_U32         CAST_TO
+    DECL_U32_TO_U16         CAST_TO
+    DECL_U8_EXPAND_QUAD     EXPAND_BYTE
 %endmacro
 
 %macro decl_cast_f32 0
-    DECL_U8_TO_F32          (CAST_TO)
-    DECL_F32_TO_U8          (CAST_TO)
-    DECL_U16_TO_F32         (CAST_TO)
-    DECL_F32_TO_U16         (CAST_TO)
-    DECL_U32_TO_F32         (CAST_TO)
-    DECL_F32_TO_U32         (CAST_TO)
+    DECL_U8_TO_F32          CAST_TO
+    DECL_F32_TO_U8          CAST_TO
+    DECL_U16_TO_F32         CAST_TO
+    DECL_F32_TO_U16         CAST_TO
+    DECL_U32_TO_F32         CAST_TO
+    DECL_F32_TO_U32         CAST_TO
 %endmacro
 
 INIT_XMM sse4
