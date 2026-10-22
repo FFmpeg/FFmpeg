@@ -1321,8 +1321,6 @@ static void video_audio_display(VideoState *s)
                         i -= SAMPLE_ARRAY_SIZE;
                 }
                 s->rdft_fn(s->rdft, data[ch], data_in[ch], sizeof(float));
-                data[ch][0].im = data[ch][nb_freq].re;
-                data[ch][nb_freq].re = 0;
             }
             /* Least efficient way to do this, we should of course
              * directly access it but it is more than fast enough. */
