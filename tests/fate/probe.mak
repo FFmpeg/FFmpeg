@@ -35,6 +35,9 @@ fate-probe-format-tiff-not-mpegts: REF = tiff_pipe
 FATE_PROBE_FORMAT-$(call ALLYES, IMAGE_JPEG_PIPE_DEMUXER CAVSVIDEO_DEMUXER) += fate-probe-format-jpeg-not-cavsvideo
 fate-probe-format-jpeg-not-cavsvideo: REF = jpeg_pipe
 
+FATE_PROBE_FORMAT-$(call ALLYES, WAV_DEMUXER MPEGTS_DEMUXER) += fate-probe-format-wav-not-mpegts
+fate-probe-format-wav-not-mpegts: REF = wav
+
 FATE_PROBE_FORMAT = $(FATE_PROBE_FORMAT-yes)
 
 FATE_SAMPLES_FFPROBE += $(FATE_PROBE_FORMAT)
