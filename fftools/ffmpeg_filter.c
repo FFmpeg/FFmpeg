@@ -2393,7 +2393,8 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
     if (sd) {
         memcpy(ifp->displaymatrix, sd->data, sizeof(ifp->displaymatrix));
-        if (ifp->opts.flags & IFILTER_FLAG_AUTOROTATE)
+        if ((ifp->opts.flags & IFILTER_FLAG_AUTOROTATE) &&
+            !(av_pix_fmt_desc_get(ifp->format)->flags & AV_PIX_FMT_FLAG_HWACCEL))
             av_frame_side_data_remove(&ifp->side_data, &ifp->nb_side_data, AV_FRAME_DATA_DISPLAYMATRIX);
     }
     ifp->displaymatrix_present = !!sd;
