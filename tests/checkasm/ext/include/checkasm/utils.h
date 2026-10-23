@@ -670,6 +670,10 @@ CHECKASM_API int checkasm_check_impl_float_ulp(const char *file, int line,
  * - name_buf_h: Total buffer height in lines (with padding)
  * - name: Pointer to start of usable region
  *
+ * @note This macro can be prefixed with additional attributes, e.g. `static`,
+ * to affect the storage class of the actual array. The other variables are
+ * always local, so this must still be used inside a function.
+ *
  * @code
  * BUF_RECT(uint8_t, src, 64, 32);
  * BUF_RECT(uint8_t, dst, 64, 32);
@@ -678,12 +682,14 @@ CHECKASM_API int checkasm_check_impl_float_ulp(const char *file, int line,
  * CLEAR_BUF_RECT(dst);
  * // ...
  * checkasm_call_new(dst, dst_stride, src, src_stride, 64, 32);
+ *
+ * static BUF_RECT(uint8_t, big, 4096, 2160); // not allocated on the stack
  * @endcode
  */
 #define BUF_RECT(type, name, w, h)                                                       \
+    CHECKASM_ALIGN(type name##_buf[((h) + 32) * (CHECKASM_ROUND(w, 64) + 64) + 64]);     \
     DECL_CHECK_FUNC(*checkasm_check_impl_##name##_type, type)                            \
         = checkasm_check_impl_##type;                                                    \
-    CHECKASM_ALIGN(type name##_buf[((h) + 32) * (CHECKASM_ROUND(w, 64) + 64) + 64]);     \
     const int name##_buf_w = CHECKASM_ROUND(w, 64) + 64;                                 \
     const int name##_buf_h = (h) + 32;                                                   \
     ptrdiff_t name##_stride = sizeof(type) * name##_buf_w;                               \

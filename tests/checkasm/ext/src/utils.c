@@ -468,6 +468,27 @@ DEF_CHECKASM_INIT_MASK(16, uint16_t)
 static int use_printf_color[2];
 static char statusline[256];
 static int statusline_visible;
+static int get_terminal_width(void);
+
+static void statusline_clear(void)
+{
+    if (!statusline_visible)
+        return;
+    fprintf(stderr, "\r\033[K"); /* clear line */
+    statusline_visible = 0;
+}
+
+static void statusline_show(void)
+{
+    if (!statusline[0])
+        return;
+    const int term_w = get_terminal_width();
+    int len = (int) strlen(statusline);
+    if (term_w && len > term_w)
+        len = term_w;
+    fprintf(stderr, "%.*s", len, statusline);
+    statusline_visible = 1;
+}
 
 /* Print colored text to stderr if the terminal supports it */
 int checkasm_vfprintf(FILE *const f, const int color, const char *const fmt, va_list arg)
@@ -477,10 +498,8 @@ int checkasm_vfprintf(FILE *const f, const int color, const char *const fmt, va_
     if (!use_color || !fmt_len)
         return vfprintf(f, fmt, arg);
 
-    if (f == stderr && statusline_visible) {
-        fprintf(f, "\r\033[K"); /* clear line */
-        statusline_visible = 0;
-    }
+    if (f == stderr)
+        statusline_clear();
 
     if (color >= 0)
         fprintf(f, "\x1b[0;%dm", color);
@@ -490,10 +509,8 @@ int checkasm_vfprintf(FILE *const f, const int color, const char *const fmt, va_
     if (color >= 0)
         fprintf(f, "\x1b[0m");
 
-    if (f == stderr && statusline[0] && fmt[fmt_len - 1] == '\n') {
-        fprintf(f, "%s", statusline);
-        statusline_visible = 1;
-    }
+    if (f == stderr && fmt[fmt_len - 1] == '\n')
+        statusline_show();
 
     return ret;
 }
@@ -508,15 +525,9 @@ void checkasm_statusline(const char *status)
 
     snprintf(statusline, sizeof(statusline), "%s", status);
 
-    if (statusline_visible) {
-        fprintf(stderr, "\r\033[K");
-        statusline_visible = 0;
-    }
-
-    if (statusline[0]) {
-        fprintf(stderr, "%s", statusline);
-        statusline_visible = 1;
-    }
+    /* refresh statusline */
+    statusline_clear();
+    statusline_show();
 }
 
 static COLD int should_use_color(FILE *const f)
@@ -564,7 +575,7 @@ static int get_terminal_width(void)
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != -1)
         return w.ws_col;
 #endif
-    return 80;
+    return 0;
 }
 
 void checkasm_json(CheckasmJson *json, const char *key, const char *const fmt, ...)
@@ -799,7 +810,8 @@ static int check_err(const char *const file, const int line, const char *const n
 #define DEF_CHECKASM_CHECK_BODY(compare, type, fmt, fmtw)                                \
     do {                                                                                 \
         const int overhead   = 5 + 3 + 3;                                                \
-        const int term_width = get_terminal_width() - overhead;                          \
+        const int term_w_raw = get_terminal_width();                                     \
+        const int term_width = (term_w_raw ? term_w_raw : 80) - overhead;                \
         const int aligned_w  = (w + align_w - 1) & ~(align_w - 1);                       \
         stride1 /= sizeof(type);                                                         \
         stride2 /= sizeof(type);                                                         \

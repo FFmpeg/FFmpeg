@@ -27,14 +27,15 @@
 
 #include "checkasm_config.h"
 
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE
+#endif
+
+#include "internal.h"
+
 #if ARCH_RISCV
 
-  #ifndef _GNU_SOURCE
-    #define _GNU_SOURCE
-  #endif
-
   #include "cpu.h"
-  #include "internal.h"
 
   #include <inttypes.h>
   #include <limits.h>

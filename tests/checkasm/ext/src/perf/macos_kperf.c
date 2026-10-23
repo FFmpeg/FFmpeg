@@ -28,13 +28,12 @@
 
 #include "checkasm_config.h"
 
+#include "internal.h"
 #include "perf_internal.h"
 
 #if HAVE_MACOS_KPERF
 
   #include <dlfcn.h>
-
-  #include "internal.h"
 
   #define CFGWORD_EL0A64EN_MASK       (0x20000)
   #define CPMU_CORE_CYCLE             0x02
