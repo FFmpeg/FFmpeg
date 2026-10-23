@@ -2,26 +2,26 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
-2026-10-xx - xxxxxxxxxx - lavu 61.16.100 - hwcontext.h
+2026-10-21 - b8249f73a7c - lavu 61.16.100 - hwcontext.h
   Add av_hwframe_get_transfer_buffer().
 
-2026-10-xx - xxxxxxxxxx - lavu 61.15.100 - encryption_info.h
+2026-10-19 - d1434518fbd - lavu 61.15.100 - encryption_info.h
   Add av_encryption_init_info_append_side_data().
 
-2026-10-18 - xxxxxxxxxx - lavc 63.21.100 - codec_id.h
+2026-10-18 - 0ec6a0872d2 - lavc 63.21.100 - codec_id.h
   Add AV_CODEC_ID_IMM6.
 
-2026-10-xx - xxxxxxxxxx - lavf 63.11.100 - avio.h
+2026-10-18 - dfaa3ba5f3b - lavf 63.11.100 - avio.h
   Add avio_open_dir2().
 
-2026-10-xx - xxxxxxxxxx - lavu 61.14.100 - gain_map.h
+2026-10-12 - 2ac7367f2ff - lavu 61.14.100 - gain_map.h
   Add av_gain_map_params_from_iso21496() and av_gain_map_params_to_iso21496().
   Add AV_GAIN_MAP_MAX_PAYLOAD_SIZE.
 
-2026-10-12 - xxxxxxxxxx - lavc 63.19.100 - packet.h
+2026-10-12 - 546cf7181da - lavc 63.19.100 - packet.h
   Add AV_PKT_DATA_GAIN_MAP_PARAMS.
 
-2026-10-12 - xxxxxxxxxx - lavf 63.10.100 - avformat.h
+2026-10-12 - 184d925444d - lavf 63.10.100 - avformat.h
   Add AVStreamGroupEntry
   Add AV_STREAM_GROUP_ENTRY_STREAM and AV_STREAM_GROUP_ENTRY_STREAM_GROUP
   Add AVStreamGroup.entries, AVStreamGroup.nb_entries
@@ -30,53 +30,53 @@ API changes, most recent first:
   Deprecate AVStreamGroup.streams, AVStreamGroup.nb_streams
   Deprecate AVStreamGroupTileGrid.coded_side_data, AVStreamGroupTileGrid.nb_coded_side_data
 
-2026-10-xx - xxxxxxxxxx - lavu 61.13.100 - raw_color_params.h
+2026-10-08 - e7420679a3d - lavu 61.13.100 - raw_color_params.h
   Add AV_RAW_COLOR_PARAMS_RW2 and AVRW2RawColorParams.
 
-2026-10-xx - xxxxxxxxxx - lavc 63.18.100 - codec_id.h
+2026-10-08 - a796d86a303 - lavc 63.18.100 - codec_id.h
   Add AV_CODEC_ID_RW2.
 
-2026-10-07 - xxxxxxxxxx - lavu 61.12.100 - opt.h
+2026-10-07 - 7304d104624 - lavu 61.12.100 - opt.h
   Add AV_OPT_SERIALIZE_OPT_FLAGS_EXCLUDE.
 
-2026-10-03 - xxxxxxxxxx - lavu 61.11.100 - pixfmt.h
+2026-10-03 - 2983c23762a - lavu 61.11.100 - pixfmt.h
   Add AV_PIX_FMT_XYZP12LE, AV_PIX_FMT_XYZP12BE, and AV_PIX_FMT_XYZP12.
 
-2026-09-xx - xxxxxxxxxx - lavfi 12.5.100 - avfilter.h buffersrc.h buffersink.h
+2026-09-xx - 30e7a93bee1 - lavfi 12.5.100 - avfilter.h buffersrc.h buffersink.h
   Add AVFilterLink.chroma_location, AVBufferSrcParameters.chroma_location and
   av_buffersink_get_chroma_location().
 
-2026-09-xx - xxxxxxxxxx - lavc 63.16.100 - avcodec.h
+2026-09-xx - c200628eace - lavc 63.16.100 - avcodec.h
   Add AV_CODEC_CONFIG_CHROMA_LOCATION.
 
-2026-08-xx - xxxxxxxxxx - lavf 63.8.100 - avformat.h
+2026-08-xx - b2f001ae9ae - lavf 63.8.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_GAIN_MAP.
 
-2026-09-30 - xxxxxxxxxx - lavu 61.10.100 - frame.h gain_map.h
+2026-09-30 - b917a0fe1e3 - lavu 61.10.100 - frame.h gain_map.h
   Add AV_FRAME_DATA_GAIN_MAP_PARAMS.
   Add AV_ISO21496_VERSION, AV_ISO21496_IDENTIFIER.
   Add AVGainMapParams.
   Add av_gain_map_params_validate(), av_gain_map_channels_identical().
   Add av_gain_map_params_alloc(), av_gain_map_params_create_side_data().
 
-2026-09-27 - xxxxxxxxxx - lavc 63.15.100 - defs.h
+2026-09-27 - c6ea3979efa - lavc 63.15.100 - defs.h
   Add AV_PROFILE_MPEGH_3DA_MAIN, AV_PROFILE_MPEGH_3DA_HIGH
   AV_PROFILE_MPEGH_3DA_LC, AV_PROFILE_MPEGH_3DA_BL.
 
-2026-09-27 - xxxxxxxxxx - lavu 61.9.100 - channel_layout.h
+2026-09-27 - c6ea3979efa - lavu 61.9.100 - channel_layout.h
   Add AV_CH_LAYOUT_5POINT1POINT6 and AV_CHANNEL_LAYOUT_5POINT1POINT6.
   Add AV_CH_LAYOUT_7POINT1POINT6 and AV_CHANNEL_LAYOUT_7POINT1POINT6.
 
-2026-09-xx - xxxxxxxxxx - lavu 61.8.100 - file.h
+2026-09-23 - dea75789c38 - lavu 61.8.100 - file.h
   Add av_file_map_shared() and av_file_unmap_shared().
 
-2026-09-12 - xxxxxxxxxx - lavc 63.13.100 - codec_id.h, defs.h
+2026-09-12 - 6e9100c6489 - lavc 63.13.100 - codec_id.h, defs.h
   Add AV_CODEC_ID_ASTC and the AV_PROFILE_ASTC_* profile values.
 
-2026-09-09 - xxxxxxxxxx - lavc 63.12.100 - avcodec.h
+2026-09-09 - c2bb5aa8d85 - lavc 63.12.100 - avcodec.h
   Add FF_DCT_RVV to enable the RISC-V Vector FDCT implementation.
 
-2026-09-xx - xxxxxxxxxx - lavu 61.7.100 - samplefmt.h
+2026-09-06 - 655dc1af76b - lavu 61.7.100 - samplefmt.h
   Add AV_SAMPLE_FMT_DSD.
 
 2026-09-08 - 053585bc91b - lavc 63.11.101 - mediacodec.h
@@ -84,13 +84,13 @@ API changes, most recent first:
   now return AVERROR(ENOENT) when trying to render a buffer that was already
   released or invalidated by a codec flush.
 
-2026-09-01 - xxxxxxxxxx - lavc 63.10.100 - avcodec.h
+2026-09-01 - 359bd3b8afe - lavc 63.10.100 - avcodec.h
   Add AVCodecContext.skip_pred.
 
-2026-08-28 - xxxxxxxxxx - lavc 63.9.100 - avcodec.h
+2026-08-28 - 74f1a4a1602 - lavc 63.9.100 - avcodec.h
   Add FF_BUG_H264_DP_NNZ.
 
-2026-08-23 - xxxxxxxxxx - lavu 61.6.100 - channel_layout.h
+2026-08-23 - 0e45eebe49a - lavu 61.6.100 - channel_layout.h
   Add AV_CH_LAYOUT_5POINT1POINT4 and AV_CHANNEL_LAYOUT_5POINT1POINT4.
   Add AV_CH_LAYOUT_7POINT1POINT4 and AV_CHANNEL_LAYOUT_7POINT1POINT4.
   Add AV_CH_LAYOUT_9POINT1POINT4 and AV_CHANNEL_LAYOUT_9POINT1POINT4.
@@ -99,40 +99,40 @@ API changes, most recent first:
   AV_CH_LAYOUT_9POINT1POINT4_BACK, AV_CHANNEL_LAYOUT_9POINT1POINT4_BACK.
   Deprecate AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK.
 
-2026-08-13 - xxxxxxxxxx - lavc 63.8.101 - avcodec.h codec.h
+2026-08-13 - 763c3356f11 - lavc 63.8.101 - avcodec.h codec.h
   Add avcodec_encode_reconfigure.
   Add AV_CODEC_CAP_ENCODER_RECONF.
 
-2026-08-xx - xxxxxxxxxx - lavf 63.6.100 - avformat.h
+2026-08-12 - e5ecfe89708 - lavf 63.6.100 - avformat.h
   Add AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS. The deprecated export of id3v2 COMM
   descriptors as bare metadata tag names is now opt-in through this flag,
   only the <tag>-<description>-<lang> tag is exported by default.
 
-2026-07-04 - xxxxxxxxxx - lavc 63.7.100 - codec_id.h
+2026-07-04 - 047eb184511 - lavc 63.7.100 - codec_id.h
   Add AV_CODEC_ID_PCM_DVDA.
 
-2026-07-xx - xxxxxxxxxx - lavf 63.5.101 - version_major.h
+2026-07-18 - b0c702aec28 - lavf 63.5.101 - version_major.h
   Deprecate using descriptor for metadata tag name in id3v2 COMM tags.
   COMM tags are exported under the new <tag>-<description>-<lang> name,
   initially along with the deprecated named tag.
 
-2026-07-14 - xxxxxxxxxx - lavu 61.5.100 - hwcontext_cuda.h
+2026-07-14 - ef3dcf4ea61 - lavu 61.5.100 - hwcontext_cuda.h
   Add AVCUDAFramesContext and AVCUDAArrayFrameDescriptor.
 
 2026-07-14 - xxxxxxxxxx - lavu 61.5.100 - pixfmt.h
   Add AV_PIX_FMT_CUARRAY.
 
-2026-07-11 - xxxxxxxxxxx - lavu 61.4.100 - frame.h
+2026-07-11 - 7e68fdd4dab - lavu 61.4.100 - frame.h
   Add AV_FRAME_DATA_DOWNMIX_MATRIX.
 
-2026-07-11 - xxxxxxxxxxx - lavu 61.3.100 - downmix_info.h
+2026-07-11 - 56e39bd20b4 - lavu 61.3.100 - downmix_info.h
   Add AVDownmixMatrix, AVDownmixCoeff.
   Add av_downmix_matrix_coeff(), av_downmix_matrix_alloc().
 
-2026-07-09 - xxxxxxxxxxx - lavc 63.6.100 - codec_id.h
+2026-07-09 - 7c4e41b54cd - lavc 63.6.100 - codec_id.h
   Add AV_CODEC_ID_ITUT_T35.
 
-2026-07-06 - xxxxxxxxxxx - lavc 63.4.100 - bsf.h
+2026-07-06 - 32a256f619a - lavc 63.4.100 - bsf.h
   Added graph based experimental bitstream filter API.
   Add AVBitStreamFilterContext, AVBitStreamFilterGraph.
   Add AVBitStreamFilterLink, AVBitStreamFilterPad.
