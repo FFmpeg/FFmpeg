@@ -421,10 +421,11 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
         if (par->codec_id == AV_CODEC_ID_NONE) {
             AVProbeData pd = { 0 };
-            const FFInputFormat *ifmt;
+            const AVInputFormat *fmt;
+            void *opaque = NULL;
             uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
             int ret;
-            int score = 0;
+            int score_max = 0;
 
             ret = avio_read(f[0], header, PROBE_BUF_MIN);
             if (ret < 0) {
@@ -437,9 +438,20 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             pd.buf_size = ret;
             pd.filename = filename.str;
 
-            ifmt = ffifmt(av_probe_input_format3(&pd, 1, &score));
-            if (ifmt && ifmt->read_packet == ff_img_read_packet && ifmt->raw_codec_id)
-                par->codec_id = ifmt->raw_codec_id;
+            /* Only consider image demuxers, so that other formats claiming
+             * the same file don't shadow them */
+            while ((fmt = av_demuxer_iterate(&opaque))) {
+                const FFInputFormat *ifmt = ffifmt(fmt);
+                if (ifmt->read_packet != ff_img_read_packet || !ifmt->raw_codec_id)
+                    continue;
+                int score = ifmt->read_probe(&pd);
+                if (score > score_max) {
+                    score_max = score;
+                    par->codec_id = ifmt->raw_codec_id;
+                } else if (score == score_max) {
+                    par->codec_id = AV_CODEC_ID_NONE;
+                }
+            }
         }
 
         if (par->codec_id == AV_CODEC_ID_RAWVIDEO && !par->width)
