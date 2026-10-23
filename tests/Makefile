@@ -23,7 +23,7 @@ FFMPEG=ffmpeg$(PROGSSUF)$(EXESUF)
 $(AREF): CMP=
 
 APITESTSDIR := tests/api
-FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/maps tests/data/streamgroups tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 $(APITESTSDIR)
+FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/maps tests/data/streamgroups tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 tests/data/samples $(APITESTSDIR)
 OUTDIRS += $(FATE_OUTDIRS)
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
@@ -64,6 +64,10 @@ tests/data/maps/%: $(SRC_PATH)/tests/maps/% | tests/data/maps
 tests/data/streamgroups/%: TAG = COPY
 tests/data/streamgroups/%: $(SRC_PATH)/tests/streamgroups/% | tests/data/streamgroups
 	$(M)cp $< $@
+
+tests/data/samples/%: TAG = COPY
+tests/data/samples/%: $(TARGET_SAMPLES)/% | tests/data/samples
+	$(M)cp $< tests/data/samples/$(subst /,_,$*)
 
 tests/data/fate/%.amr: TAG = GEN
 tests/data/fate/%.amr: tests/amrgen$(HOSTEXESUF) | tests/data/fate

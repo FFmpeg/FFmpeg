@@ -63,7 +63,8 @@ fate-preroll-aac-mov-seek-staggered: CMD = seek_staggered $(TARGET_SAMPLES)/gapl
 
 # A seek through the concat demuxer, which seeks in the file it reads.
 FATE_PREROLL_SEEK-$(call ALLYES, CONCAT_DEMUXER MOV_DEMUXER AAC_DECODER FILE_PROTOCOL) += fate-preroll-aac-concat-seek
-fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3
+fate-preroll-aac-concat-seek: tests/data/samples/gapless/102400samples_qt-lc-aac.m4a
+fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat ../samples/gapless_102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3
 
 # A seek close to the start of a stream whose start time is unknown.
 FATE_PREROLL_SEEK-$(call DEMDEC, AAC, AAC) += fate-preroll-aac-adts-seek-start
