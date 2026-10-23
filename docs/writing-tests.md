@@ -75,6 +75,9 @@ CHECKASM_ALIGN(uint8_t buf[1024]);
 // For 2D buffers with automatic padding and stride calculation
 // - Defines `dst` as a pointer to a 64x32 area, and `dst_stride` (in bytes)
 BUF_RECT(uint8_t, dst, 64, 32);
+
+// Large buffers can be made static to avoid overflowing the stack
+static BUF_RECT(uint16_t, frame, 3840, 2160);
 @endcode
 
 **Important:** Apply CHECKASM_ALIGN() to each buffer individually:

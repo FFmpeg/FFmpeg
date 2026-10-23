@@ -38,7 +38,11 @@ void selftest_test_copy(copy_func fun, const char *name, const int min_width)
 {
 #define WIDTH 256
     BUF_RECT(uint8_t, c_dst, WIDTH, 1);
-    BUF_RECT(uint8_t, a_dst, WIDTH, 1);
+    static BUF_RECT(uint8_t, a_dst, WIDTH, 1);
+
+    /* Only compiles if a_dst_buf has static storage duration */
+    static const uint8_t *const a_dst_static = a_dst_buf;
+    (void) a_dst_static;
 
     CHECKASM_ALIGN(uint8_t src[WIDTH]);
     INITIALIZE_BUF(src);

@@ -28,11 +28,13 @@
 
 #include "checkasm_config.h"
 
-#if HAVE_LINUX_PERF
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE
+#endif
 
-  #ifndef _GNU_SOURCE
-    #define _GNU_SOURCE
-  #endif
+#include "internal.h"
+
+#if HAVE_LINUX_PERF
 
   #include <linux/perf_event.h>
   #include <sys/ioctl.h>
@@ -42,8 +44,6 @@
   #if HAVE_PTHREAD_SETAFFINITY_NP
     #include <pthread.h>
   #endif
-
-  #include "internal.h"
 
 static int perf_sysfd = -1;
 
