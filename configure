@@ -2659,6 +2659,7 @@ HAVE_LIST="
     ioctl_posix
     iokit
     libdrm_getfb2
+    libvmaf_picture_convert
     libvmaf_picture_wrap
     makeinfo_html
     opencl_d3d11
@@ -7373,6 +7374,7 @@ enabled libv4l2           && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_i
 enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvmaf           && require_pkg_config libvmaf "libvmaf >= 2.0.0" libvmaf.h vmaf_init &&
                              { check_pkg_config libvmaf_cuda "libvmaf >= 2.0.0" libvmaf_cuda.h vmaf_cuda_state_init;
+                               check_pkg_config libvmaf_picture_convert "libvmaf >= 2.0.0" libvmaf.h vmaf_picture_convert;
                                check_pkg_config libvmaf_picture_wrap "libvmaf >= 2.0.0" libvmaf.h vmaf_picture_wrap; }
 enabled libvo_amrwbenc    && { check_pkg_config libvo_amrwbenc vo-amrwbenc vo-amrwbenc/enc_if.h E_IF_init ||
                                require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc; }
