@@ -409,7 +409,7 @@ static int print_macros(struct AVTreeNode *root, const Backend *backend,
 "/**\n"
 " * Boilerplate helper macros, for template-based backends. These will be\n"
 " * instantiated like this, with parameters in struct order:\n"
-" *   MACRO(__VA_ARGS__, NAME, UOP, TYPE, MASK, [PARAMS,])\n"
+" *   MACRO(__VA_ARGS__, NAME, TYPE, UOP, MASK, [PARAMS,])\n"
 " * The _STRUCT variants pass all arguments in C struct syntax, while the\n"
 " * plain variants give them as separate C values (e.g. for use in calls)\n"
 " */\n"

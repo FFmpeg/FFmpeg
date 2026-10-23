@@ -9,7 +9,7 @@
 /**
  * Boilerplate helper macros, for template-based backends. These will be
  * instantiated like this, with parameters in struct order:
- *   MACRO(__VA_ARGS__, NAME, UOP, TYPE, MASK, [PARAMS,])
+ *   MACRO(__VA_ARGS__, NAME, TYPE, UOP, MASK, [PARAMS,])
  * The _STRUCT variants pass all arguments in C struct syntax, while the
  * plain variants give them as separate C values (e.g. for use in calls)
  */
