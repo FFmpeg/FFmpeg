@@ -1363,20 +1363,20 @@ done:
 
     RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
 
-    outfmts = s->colorspace > 0 ? ff_make_formats_list_singleton(s->colorspace)
-                                : ff_all_color_spaces();
+    outfmts = s->colorspace >= 0 ? ff_make_formats_list_singleton(s->colorspace)
+                                 : ff_all_color_spaces();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->color_spaces));
 
-    outfmts = s->color_range > 0 ? ff_make_formats_list_singleton(s->color_range)
-                                 : ff_all_color_ranges();
+    outfmts = s->color_range >= 0 ? ff_make_formats_list_singleton(s->color_range)
+                                  : ff_all_color_ranges();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->color_ranges));
 
-    outfmts = s->alpha_mode > 0 ? ff_make_formats_list_singleton(s->alpha_mode)
+    outfmts = s->alpha_mode >= 0 ? ff_make_formats_list_singleton(s->alpha_mode)
                                  : ff_all_alpha_modes();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->alpha_modes));
 
-    outfmts = s->chroma_location > 0 ? ff_make_formats_list_singleton(s->chroma_location)
-                                     : ff_all_chroma_locations();
+    outfmts = s->chroma_location >= 0 ? ff_make_formats_list_singleton(s->chroma_location)
+                                      : ff_all_chroma_locations();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->chroma_locations));
     return 0;
 
