@@ -1389,7 +1389,9 @@ static int render_capture_to_frame(AVFilterContext *avctx, AVFrame *frame, const
 
     ComPtr<ID3D11CommandList> cmd_list;
     CHECK_HR_RET(def_ctx->FinishCommandList(FALSE, &cmd_list));
+    ctx->device_hwctx->lock(ctx->device_hwctx->lock_ctx);
     dev_ctx->ExecuteCommandList(cmd_list.Get(), FALSE);
+    ctx->device_hwctx->unlock(ctx->device_hwctx->lock_ctx);
 
     return 0;
 }
