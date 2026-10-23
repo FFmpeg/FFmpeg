@@ -150,7 +150,6 @@ struct GfxCaptureContextCpp {
     volatile int wgc_thread_init_res { INT_MAX };
     std::recursive_mutex wgc_thread_uninit_mutex;
     volatile int wgc_thread_res { 0 };
-    std::shared_ptr<void> wgc_thread_cb_data;
 
     HWND capture_hwnd { nullptr };
     HMONITOR capture_hmonitor { nullptr };
@@ -722,10 +721,7 @@ static int run_on_wgc_thread(AVFilterContext *avctx, F &&cb)
         bool cancel;
         int ret;
     };
-    auto cbdata = ctx->wgc_thread_cb_data ?
-                  std::static_pointer_cast<CBData>(ctx->wgc_thread_cb_data) :
-                  std::make_shared<CBData>();
-    ctx->wgc_thread_cb_data = cbdata;
+    auto cbdata = std::make_shared<CBData>();
 
     cbdata->done = cbdata->cancel = false;
     cbdata->ret = AVERROR_BUG;
