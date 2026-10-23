@@ -131,7 +131,7 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, size_t aligned_wi
     av_free(dst1);
 }
 
-static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
+static void check_add_left_pred_16(LLVidDSPContext *c, int width,
                                    size_t align, unsigned acc)
 {
     int res0, res1;
@@ -149,11 +149,15 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
     if (!dst0 || !dst1)
         fail();
 
-    res0 = call_ref(dst0, src0, mask, width, acc);
-    res1 = call_new(dst1, src1, mask, width, acc);
-    if ((res0 & 0xFFFF) != (res1 & 0xFFFF) || memcmp(dst0, dst1, width * sizeof(*dst0)))
-        fail();
-    bench_new(dst1, src1, mask, width, acc);
+    for (int bits = 8; bits <= 16; bits++) {
+        unsigned mask = (1U << bits) - 1;
+
+        res0 = call_ref(dst0, src0, mask, width, acc & mask);
+        res1 = call_new(dst1, src1, mask, width, acc & mask);
+        if ((res0 & 0xFFFF) != (res1 & 0xFFFF) || memcmp(dst0, dst1, width * sizeof(*dst0)))
+            fail();
+    }
+    bench_new(dst1, src1, 0xFF, width, acc & 0xFF);
 
     av_free(src0);
     av_free(src1);
@@ -215,7 +219,7 @@ void checkasm_check_llviddsp(void)
     report("add_left_pred_rnd_acc");
 
     if (check_func(c.add_left_pred_int16, "add_left_pred_int16"))
-        check_add_left_pred_16(&c, 255, width, align, accRnd);
+        check_add_left_pred_16(&c, width, align, rnd());
     report("add_left_pred_int16");
 
     if (check_func(c.add_gradient_pred, "add_gradient_pred"))
