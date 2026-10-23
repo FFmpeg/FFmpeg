@@ -47,19 +47,19 @@ libavcodec/jv.* @pross
 libavcodec/.*jxl.* @lynne @Traneptora
 libavcodec/.*lcms2.* @haasn
 libavcodec/lead.* @pross
-libavcodec/mediacodec* @quink
-libavcodec/mjpeg* @michaelni
+libavcodec/mediacodec.* @quink
+libavcodec/mjpeg.* @michaelni
 libavcodec/mmvideo.* @pross
 libavcodec/msp2.* @pross
 libavcodec/mvc.* @pross
-libavcodec/oh* @quink
+libavcodec/oh.* @quink
 libavcodec/.*opus.* @lynne
 libavcodec/pictor.* @pross
 libavcodec/.*png.* @Traneptora
 libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
-libavcodec/rkmpp* @quink
+libavcodec/rkmpp.* @quink
 libavcodec/rv60.* @pross
 libavcodec/sgirle.* @pross
 libavcodec/.*siren.* @lynne
@@ -99,7 +99,7 @@ libavcodec/x86/vpx.* @rbultje
 # =======
 libavfilter/af_loudnorm.* @kylophone
 libavfilter/af_whisper.* @vpalmisano
-libavfilter/.*_amf* @OvchinnikovDmitrii @ArazIusubov
+libavfilter/.*_amf.* @OvchinnikovDmitrii @ArazIusubov
 libavfilter/.*_d3d12.* @younengxiao
 libavfilter/avfiltergraph.* @haasn
 libavfilter/colorspace.* @rbultje
@@ -147,7 +147,7 @@ libavformat/frm.* @pross
 libavformat/hls.* @kasper93
 libavformat/hxvs.* @quink
 libavformat/iamf.* @jamrial
-libavformat/id3v2* @toots
+libavformat/id3v2.* @toots
 libavformat/icecast.c @ePirat
 libavformat/ico.* @pross
 libavformat/iff.* @pross
@@ -174,7 +174,7 @@ libavformat/wtv.* @pross
 
 # avutil
 # ======
-libavutil/.*_amf* @OvchinnikovDmitrii @ArazIusubov
+libavutil/.*_amf.* @OvchinnikovDmitrii @ArazIusubov
 libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw @tong1wu @younengxiao
 libavutil/csp.* @rbultje @haasn
