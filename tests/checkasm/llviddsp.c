@@ -193,7 +193,7 @@ void checkasm_check_llviddsp(void)
     int accRnd = rnd() & 0xFF;
 
     size_t align = av_cpu_max_align();
-    int width  = 1 + rnd() % 16*128;
+    int width  = 1 + rnd() % (16 * 128);
     size_t aligned_width = FFALIGN(width, align);
 
     ff_llviddsp_init(&c);
