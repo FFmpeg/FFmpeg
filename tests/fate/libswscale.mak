@@ -77,7 +77,21 @@ $(FATE_SWS_UNSTABLE): CMD = run libswscale/tests/swscale$(EXESUF) -v 16 $(SWS_HW
 $(FATE_SWS_UNSTABLE): REF = /dev/null
 fate-sws-unstable: $(FATE_SWS_UNSTABLE)
 
-FATE_LIBSWSCALE += $(FATE_SWS_UNSCALED) $(FATE_SWS_UNSTABLE)
+# Also test unpadded and vertically flipped (negative stride) buffers
+SWS_CPU_BACKENDS := $(filter-out spirv,$(SWS_UNSTABLE_BACKENDS-yes))
+FATE_SWS_UNPADDED := $(SWS_CPU_BACKENDS:%=fate-sws-unpadded-%)
+$(FATE_SWS_UNPADDED): libswscale/tests/swscale$(EXESUF)
+$(FATE_SWS_UNPADDED): CMD = run libswscale/tests/swscale$(EXESUF) -v 16 -backends $(@:fate-sws-unpadded-%=%) -align_src 1 -align_dst 1 -p 0.01
+$(FATE_SWS_UNPADDED): REF = /dev/null
+fate-sws-unpadded: $(FATE_SWS_UNPADDED)
+
+FATE_SWS_FLIPPED := $(SWS_CPU_BACKENDS:%=fate-sws-flipped-%)
+$(FATE_SWS_FLIPPED): libswscale/tests/swscale$(EXESUF)
+$(FATE_SWS_FLIPPED): CMD = run libswscale/tests/swscale$(EXESUF) -v 16 -backends $(@:fate-sws-flipped-%=%) -align_src -1 -align_dst -1 -p 0.01
+$(FATE_SWS_FLIPPED): REF = /dev/null
+fate-sws-flipped: $(FATE_SWS_FLIPPED)
+
+FATE_LIBSWSCALE += $(FATE_SWS_UNSCALED) $(FATE_SWS_UNSTABLE) $(FATE_SWS_UNPADDED) $(FATE_SWS_FLIPPED)
 endif
 
 ifneq ($(HAVE_BIGENDIAN),yes)
