@@ -469,3 +469,7 @@ FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) += fate-ffmpeg-heif
 # binding the internal filtegraph with a caller defined filtergraph
 fate-ffmpeg-heif-merge-filtergraph: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C007.heic -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:g:0]scale=w=1280:h=720[out]" -map "[out]"
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-filtergraph
+
+# alpha merging
+fate-ffmpeg-heif-merge-alpha: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/heif/alpha.heic
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-alpha
