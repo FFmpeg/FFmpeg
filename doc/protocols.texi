@@ -1858,6 +1858,11 @@ blocks, where N is the number of concurrent processes using the same cache
 file. Note also that the underlying file system may reserve more space than
 written, if the underlying allocation granularity is larger than the block
 size.
+
+@item offset
+Initial byte offset to start reading from. This option is not passed on to the
+underlying protocol; it instead gets a regular seek on the first cache miss.
+Defaults to 0.
 @end table
 
 URL Syntax is
