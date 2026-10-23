@@ -250,7 +250,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
         i += i;
     }
 
-    av_assert2(k <= 16);
+    av_assert2(k <= 19);
 
     code = v ^ ((2 * state->drift + state->count) >> 31);
 
@@ -1052,6 +1052,18 @@ static av_cold int encode_init_internal(AVCodecContext *avctx)
     if (s->version > 1) {
         if ((ret = ff_ffv1_encode_determine_slices(avctx)) < 0)
             return ret;
+
+        /* The Golomb-Rice escape code is 12 + bits long and put_bits()
+         * writes at most 31 bits, so bits must stay below 20. The RCT
+         * planes of remapped 32bit floats need log2 of the summed remap
+         * counts of two planes, which a slice of at most 1<<18 pixels
+         * keeps within 19 bits. */
+        if (s->ac == AC_GOLOMB_RICE && s->bits_per_raw_sample == 32 &&
+            ((avctx->width  + s->num_h_slices - 1) / s->num_h_slices) *
+            (int64_t)((avctx->height + s->num_v_slices - 1) / s->num_v_slices) > 1 << 18) {
+            av_log(avctx, AV_LOG_ERROR, "Slices larger than 262144 pixels are not supported with 32bit floats and the Golomb-Rice coder\n");
+            return AVERROR(EINVAL);
+        }
 
         if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
             return ret;
