@@ -1,0 +1,8 @@
+33045e83befdf2085c63bfaea7c60006 *tests/data/fate/ffv1-float32-slices.nut
+9585 tests/data/fate/ffv1-float32-slices.nut
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 704x576
+#sar 0: 1/1
+0,          0,          0,        1,  4866048, 0x1b0e9bf0
