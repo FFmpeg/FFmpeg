@@ -739,6 +739,7 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len,
     len -= 16;
     while (len > 10) {
         unsigned tlen;
+        int64_t start, consumed;
 
         if (avio_read(pb, tag, 4) < 4)
             break;
@@ -757,10 +758,13 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len,
                    tag, tlen);
             break;
         }
+        start = avio_tell(pb);
         if (tag[0] == 'T')
             read_ttag(s, pb, tlen, &chap->meta, tag);
-        else
-            avio_skip(pb, tlen);
+        consumed = avio_tell(pb) - start;
+        if (consumed < 0 || consumed > tlen ||
+            avio_skip(pb, tlen - consumed) < 0)
+            break;
         len -= tlen;
     }
 
