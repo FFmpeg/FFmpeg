@@ -1,0 +1,8 @@
+eb334f7a8c79e6eb915ac7440a88ddc9 *tests/data/fate/ffv1-golomb-float32-1bit.nut
+1455 tests/data/fate/ffv1-golomb-float32-1bit.nut
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 64x48
+#sar 0: 1/1
+0,          0,          0,        1,    36864, 0x1ad349e2

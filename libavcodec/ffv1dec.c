@@ -56,10 +56,12 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
         k++;
         i += i;
     }
-    if (k > bits) {
+    /* get_ur_golomb() reads at most 32 bits, 12 of which the escape limit
+     * reserves for the prefix */
+    if (k > 20) {
         ff_dlog(NULL, "k-overflow bias:%d error:%d drift:%d count:%d k:%d",
                 state->bias, state->error_sum, state->drift, state->count, k);
-        k = bits;
+        k = 20;
     }
 
     v = get_sr_golomb(gb, k, 12, bits);
