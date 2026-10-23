@@ -18,6 +18,8 @@
 
 #include <math.h>
 
+#include "config_components.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
@@ -38,6 +40,12 @@
 #include <libplacebo/utils/libav.h>
 #include <libplacebo/utils/frame_queue.h>
 #include <libplacebo/vulkan.h>
+
+#if PL_API_VER >= 386
+#include <libplacebo/compositor.h>
+#else
+typedef const struct pl_scene_t *pl_scene;
+#endif
 
 enum {
     TONE_MAP_AUTO,
@@ -160,6 +168,10 @@ typedef struct LibplaceboContext {
     LibplaceboInput *inputs;
     int nb_inputs;
     int nb_active;
+
+    /* scene graph (libplacebo_scene only) */
+    char *scene_json;
+    pl_scene scene;
 
     /* settings */
     char *out_format_string;
@@ -1936,3 +1948,295 @@ const FFFilter ff_vf_libplacebo = {
     FILTER_QUERY_FUNC2(libplacebo_query_format),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE | FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
 };
+
+#if CONFIG_LIBPLACEBO_SCENE_FILTER
+
+static int scene_setup_gpu(AVFilterContext *avctx)
+{
+    LibplaceboContext *s = avctx->priv;
+    pl_compositor comp = s->scene->comp;
+    if (comp->inputs[0]->renderer)
+        return 0; /* already initialized */
+
+    if (!pl_compositor_init(comp, s->gpu))
+        return AVERROR_EXTERNAL;
+
+    return 0;
+}
+
+static int scene_config_input(AVFilterLink *inlink)
+{
+    int err;
+    AVFilterContext *avctx = inlink->dst;
+    LibplaceboContext *s   = avctx->priv;
+
+    if (s->inherit_device)
+        RET(inherit_device(inlink));
+    RET(init_vulkan(avctx, choose_default_device(avctx)));
+    RET(scene_setup_gpu(avctx));
+    return config_input_vulkan(inlink);
+
+fail:
+    return err;
+}
+
+static int scene_init(AVFilterContext *avctx)
+{
+    int err;
+    LibplaceboContext *s = avctx->priv;
+    pl_compositor comp;
+
+    if (!s->scene_json || !s->w_expr || !s->h_expr || !s->fps_string) {
+        av_log(avctx, AV_LOG_ERROR, "The 'scene', 'w', 'h' and 'fps' options "
+               "are required\n");
+        return AVERROR(EINVAL);
+    }
+
+    RET(av_parse_video_rate(&s->fps, s->fps_string));
+    RET(init_common(avctx));
+
+    s->scene = pl_scene_create_json(s->log, s->scene_json, strlen(s->scene_json));
+    if (!s->scene) {
+        av_log(avctx, AV_LOG_ERROR, "Failed parsing scene description\n");
+        return AVERROR(EINVAL);
+    }
+
+    comp = s->scene->comp;
+    s->nb_inputs = comp->num_inputs;
+    if (!s->nb_inputs) {
+        av_log(avctx, AV_LOG_ERROR, "Scene contains no inputs\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* Output color properties not set on the filter default to the scene's */
+    if (s->colorspace < 0 && comp->repr.sys)
+        s->colorspace = pl_system_to_av(comp->repr.sys);
+    if (s->color_range < 0 && comp->repr.levels)
+        s->color_range = pl_levels_to_av(comp->repr.levels);
+    if (s->alpha_mode < 0 && comp->repr.alpha)
+        s->alpha_mode = pl_alpha_to_av(comp->repr.alpha);
+    if (s->chroma_location < 0 && comp->chroma_location)
+        s->chroma_location = pl_chroma_to_av(comp->chroma_location);
+    if (s->color_primaries < 0 && comp->color.primaries)
+        s->color_primaries = pl_primaries_to_av(comp->color.primaries);
+    if (s->color_trc < 0 && comp->color.transfer)
+        s->color_trc = pl_transfer_to_av(comp->color.transfer);
+
+    RET(append_inputs(avctx, s->nb_inputs, &scene_config_input));
+
+    if (!s->inherit_device) {
+        RET(init_vulkan(avctx, choose_default_device(avctx)));
+        RET(scene_setup_gpu(avctx));
+    } /* else deferred to scene_config_input() */
+
+    return 0;
+
+fail:
+    return err;
+}
+
+static void scene_uninit(AVFilterContext *avctx)
+{
+    LibplaceboContext *s = avctx->priv;
+    pl_scene_destroy(&s->scene);
+    libplacebo_uninit(avctx);
+}
+
+static int scene_eval_dim(AVFilterContext *avctx, const char *expr, int *out)
+{
+    double res;
+    int err = av_expr_parse_and_eval(&res, expr, NULL, NULL, NULL, NULL,
+                                     NULL, NULL, NULL, 0, avctx);
+    if (err < 0 || res < 1 || res > INT_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid output dimension: %s\n", expr);
+        return err < 0 ? err : AVERROR(EINVAL);
+    }
+
+    *out = lrint(res);
+    return 0;
+}
+
+static int scene_config_output(AVFilterLink *outlink)
+{
+    int err;
+    AVFilterContext *avctx = outlink->src;
+    LibplaceboContext *s   = avctx->priv;
+    FilterLink          *l = ff_filter_link(outlink);
+
+    RET(scene_eval_dim(avctx, s->w_expr, &outlink->w));
+    RET(scene_eval_dim(avctx, s->h_expr, &outlink->h));
+    outlink->sample_aspect_ratio = s->out_sar.num ? s->out_sar : (AVRational){ 1, 1 };
+    outlink->time_base = av_inv_q(s->fps);
+    l->frame_rate = s->fps;
+
+    RET(config_output_vulkan(outlink));
+    return 0;
+
+fail:
+    return err;
+}
+
+static int scene_handle_input(AVFilterContext *ctx, int idx)
+{
+    int ret, status;
+    LibplaceboContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[idx];
+    pl_input input = s->scene->comp->inputs[idx];
+    const bool deinterlace = input->params && input->params->deinterlace_params;
+    AVFrame *in;
+    int64_t pts;
+
+    while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0)
+        push_frame(s, input->queue, inlink, in, deinterlace);
+
+    if (ret < 0)
+        return ret;
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        pl_queue_set_status(input->queue, status == AVERROR_EOF ? PL_QUEUE_EOF : PL_QUEUE_ERR);
+        input->user_data = (void *) (intptr_t) status;
+    }
+
+    return 0;
+}
+
+static int scene_output_frame(AVFilterContext *ctx, int64_t pts,
+                              const struct pl_queue_params *qparams,
+                              const struct pl_compositor_status *st)
+{
+    int err = 0;
+    bool ok;
+    LibplaceboContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    const AVFrame *ref = st->base ? pl_get_mapped_avframe(st->base) : NULL;
+    struct pl_frame target;
+    AVFrame *out;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out)
+        return AVERROR(ENOMEM);
+
+    RET(set_output_props(s, outlink, out, ref, true)); /* always progressive */
+    out->pts = pts;
+    out->duration = 1;
+
+    RET(map_output(s, out, &target));
+    ok = pl_compositor_render(s->scene->comp, &target, qparams, NULL);
+    RET(unmap_output(s, &target, out));
+    if (!ok) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
+    return ff_filter_frame(outlink, out);
+
+fail:
+    av_frame_free(&out);
+    return err;
+}
+
+static int scene_activate(AVFilterContext *ctx)
+{
+    int ret, retry = 0;
+    LibplaceboContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl      = ff_filter_link(outlink);
+    pl_compositor comp    = s->scene->comp;
+
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+    pl_log_level_update(s->log, get_log_level());
+
+    for (int i = 0; i < s->nb_inputs; i++) {
+        if ((ret = scene_handle_input(ctx, i)) < 0)
+            return ret;
+    }
+
+    if (!ff_outlink_frame_wanted(outlink))
+        return FFERROR_NOT_READY;
+
+    const int64_t out_pts = outl->frame_count_out;
+    const struct pl_queue_params qparams = *pl_queue_params(
+        .pts            = TS2T(out_pts, outlink->time_base),
+        .vsync_duration = av_q2d(outlink->time_base),
+    );
+
+    pl_scene_update(s->scene, qparams.pts);
+
+    struct pl_compositor_status st;
+    st = pl_compositor_update(comp, &qparams, pl_canvas_size(
+        .width              = outlink->w,
+        .height             = outlink->h,
+        .pixel_aspect_ratio = av_q2d(outlink->sample_aspect_ratio),
+    ));
+
+    for (int i = 0; i < s->nb_inputs; i++) {
+        AVFilterLink *inlink = ctx->inputs[i];
+        switch (st.input_status[i].status) {
+        case PL_QUEUE_MORE:
+            if (!ff_outlink_get_status(inlink)) {
+                ff_inlink_request_frame(inlink);
+                retry = 1;
+            }
+            break;
+        case PL_QUEUE_EOF:
+            /* Also closes inputs that reached their stop_pts early */
+            ff_inlink_set_status(inlink, AVERROR_EOF);
+            break;
+        case PL_QUEUE_ERR: {
+            /* Forward the error of the failed input */
+            const int status = (intptr_t) comp->inputs[i]->user_data;
+            if (!status || status == AVERROR_EOF)
+                return AVERROR_EXTERNAL;
+            ff_outlink_set_status(outlink, status, out_pts);
+            return 0;
+        }
+        default:
+            break;
+        }
+    }
+
+    if (retry)
+        return 0;
+
+    if (st.status == PL_QUEUE_EOF) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, out_pts);
+        return 0;
+    }
+
+    return scene_output_frame(ctx, out_pts, &qparams, &st);
+}
+
+static const AVOption libplacebo_scene_options[] = {
+    { "scene", "JSON scene graph description", OFFSET(scene_json), AV_OPT_TYPE_STRING, .flags = STATIC },
+    { "w", "Output video frame width", OFFSET(w_expr), AV_OPT_TYPE_STRING, .flags = STATIC },
+    { "h", "Output video frame height", OFFSET(h_expr), AV_OPT_TYPE_STRING, .flags = STATIC },
+    { "fps", "Output video frame rate", OFFSET(fps_string), AV_OPT_TYPE_STRING, .flags = STATIC },
+    OPTS_COMMON
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(libplacebo_scene);
+
+static const AVFilterPad libplacebo_scene_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = &scene_config_output,
+    },
+};
+
+const FFFilter ff_vf_libplacebo_scene = {
+    .p.name         = "libplacebo_scene",
+    .p.description  = NULL_IF_CONFIG_SMALL("Composite inputs according to a libplacebo scene graph"),
+    .p.priv_class   = &libplacebo_scene_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .priv_size      = sizeof(LibplaceboContext),
+    .init           = &scene_init,
+    .uninit         = &scene_uninit,
+    .activate       = &scene_activate,
+    .process_command = &ff_filter_process_command,
+    FILTER_OUTPUTS(libplacebo_scene_outputs),
+    FILTER_QUERY_FUNC2(libplacebo_query_format),
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE | FF_FILTER_FLAG_DYNAMIC_FRAME_PARAMS,
+};
+
+#endif /* CONFIG_LIBPLACEBO_SCENE_FILTER */

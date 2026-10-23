@@ -17098,6 +17098,7 @@ ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Ca
 Low Complexity Enhancement Video Codec filter based on liblcevc_dec
 (@url{https://github.com/v-novaltd/LCEVCdec}).
 
+@anchor{libplacebo}
 @section libplacebo
 
 Flexible GPU-accelerated processing filter based on libplacebo
@@ -17858,6 +17859,60 @@ Interop with VAAPI hwdec to avoid round-tripping through RAM:
 ffmpeg -init_hw_device vulkan -hwaccel vaapi -hwaccel_output_format vaapi ... -vf libplacebo
 @end example
 @end itemize
+
+@section libplacebo_scene
+Composite one or more inputs onto a canvas of fixed size and frame rate,
+according to a JSON scene graph. See https://libplacebo.org/json/ for more
+information.
+
+@subsection Options
+@table @option
+@item scene
+JSON scene graph description. Required. Use @code{/scene=file.json} to load it
+from a file.
+
+@item w
+@item h
+Output frame width and height. Required. Constant expressions are accepted.
+
+@item fps
+Output frame rate. Required.
+
+@item sar
+Output sample aspect ratio. The default of @code{0} means 1:1.
+
+@item format
+@item colorspace
+@item range
+@item color_primaries
+@item color_trc
+@item chroma_location
+@item alpha_mode
+@item inherit_device
+@item shader_cache
+@item apply_filmgrain
+@item apply_dolbyvision
+Same as for the @ref{libplacebo} filter.
+@end table
+
+The output color properties default to the scene's @code{color}, @code{repr}
+and @code{chroma_location}. They only control the output frame tags; rendering
+always follows the scene, including any animated changes.
+
+@subsection Example
+Show a second input in the bottom right quarter between 1 and 3 seconds:
+@example
+ffmpeg -i main.mkv -i overlay.mkv -filter_complex \
+  "[0][1]libplacebo_scene=w=1920:h=1080:fps=25:/scene=scene.json" out.mkv
+@end example
+with @file{scene.json} containing:
+@example
+@{ "inputs": [
+    @{ @},
+    @{ "start_pts": 1, "stop_pts": 3,
+      "dst_rect": @{ "x0": 0.5, "y0": 0.5 @} @}
+] @}
+@end example
 
 @anchor{libvmaf}
 @section libvmaf
