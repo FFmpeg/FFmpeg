@@ -127,6 +127,7 @@ typedef struct VVCFrameContext {
 
     struct AVFrame *frame;
     struct AVFrame *output_frame;
+    int output_error;
 
     VVCFrameParamSets ps;
     VVCSEI sei;
