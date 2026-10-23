@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+version 9.1:
 - ASTC image encoding and decoding via libastcenc, with .astc and KTX 1.0 muxers and demuxers
 - extensively improved AAC encoder
 - APV Vulkan encoder
