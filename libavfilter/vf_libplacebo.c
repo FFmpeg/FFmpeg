@@ -1267,14 +1267,17 @@ static int libplacebo_activate(AVFilterContext *ctx)
                 drain_input_pts(&s->inputs[i], out_pts);
             return output_frame(ctx, out_pts);
         } else if (s->nb_active == 0) {
-            /* Forward most recent status */
+            /* Forward most recent status, but don't let a later EOF mask errors */
             int status = s->inputs[0].status;
             int64_t status_pts = s->inputs[0].status_pts;
             for (int i = 1; i < s->nb_inputs; i++) {
                 const LibplaceboInput *in = &s->inputs[i];
                 if (in->status_pts > status_pts) {
-                    status = s->inputs[i].status;
-                    status_pts = s->inputs[i].status_pts;
+                    status_pts = in->status_pts;
+                    if (in->status != AVERROR_EOF || status == AVERROR_EOF)
+                        status = in->status;
+                } else if (status == AVERROR_EOF) {
+                    status = in->status;
                 }
             }
             ff_outlink_set_status(outlink, status, status_pts);
