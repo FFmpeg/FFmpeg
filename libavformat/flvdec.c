@@ -719,13 +719,14 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         if (depth == 1) {
             if (amf_type == AMF_DATA_TYPE_NUMBER ||
                 amf_type == AMF_DATA_TYPE_BOOL) {
-                if (!strcmp(key, "duration"))
+                if (!strcmp(key, "duration") &&
+                    num_val >= 0 && num_val < INT64_MAX / AV_TIME_BASE)
                     s->duration = num_val * AV_TIME_BASE;
                 else if (!strcmp(key, "videodatarate") &&
-                         0 <= (int)(num_val * 1024.0))
+                         0 <= num_val && num_val < INT_MAX / 1024.0)
                     flv->video_bit_rate = num_val * 1024.0;
                 else if (!strcmp(key, "audiodatarate") &&
-                         0 <= (int)(num_val * 1024.0))
+                         0 <= num_val && num_val < INT_MAX / 1024.0)
                     flv->audio_bit_rate = num_val * 1024.0;
                 else if (!strcmp(key, "framerate")) {
                     flv->framerate = av_d2q(num_val, 1000);
