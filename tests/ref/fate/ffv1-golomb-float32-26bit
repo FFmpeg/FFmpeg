@@ -1,0 +1,15 @@
+451a0326abe6e7a074184d3410eef4ce *tests/data/fate/ffv1-golomb-float32-26bit.nut
+163524 tests/data/fate/ffv1-golomb-float32-26bit.nut
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 352x288
+#sar 0: 1/1
+0,          0,          0,        1,  1216512, 0x65029b72
+0,          1,          1,        1,  1216512, 0xc7369b72
+0,          2,          2,        1,  1216512, 0x08bc9b72
+0,          3,          3,        1,  1216512, 0x05e29b72
+0,          4,          4,        1,  1216512, 0x027a9b72
+0,          5,          5,        1,  1216512, 0x4f1a9b72
+0,          6,          6,        1,  1216512, 0xe6829b72
+0,          7,          7,        1,  1216512, 0xc9809b72
