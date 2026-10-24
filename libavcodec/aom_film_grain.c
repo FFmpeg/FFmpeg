@@ -247,7 +247,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
                 bits_scaling = get_bits(gb, 2) + 5;
                 for (i = 0; i < aom->num_y_points; i++) {
                     y_value += get_bits(gb, bits_inc);
-                    if (y_value > UINT8_MAX)
+                    if (y_value > UINT8_MAX || i && y_value == aom->y_points[i - 1][0])
                         goto error;
                     aom->y_points[i][0] = y_value;
                     aom->y_points[i][1] = get_bits(gb, bits_scaling);
@@ -298,7 +298,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
                         uv_offset = get_bits(gb, 8);
                         for (i = 0; i < aom->num_uv_points[uv]; i++) {
                             uv_value += get_bits(gb, bits_inc);
-                            if (uv_value > UINT8_MAX)
+                            if (uv_value > UINT8_MAX || i && uv_value == aom->uv_points[uv][i - 1][0])
                                 goto error;
                             aom->uv_points[uv][i][0] = uv_value;
                             aom->uv_points[uv][i][1] = get_bits(gb, bits_scaling) + uv_offset;
