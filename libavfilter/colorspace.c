@@ -86,13 +86,15 @@ void ff_fill_rgb2xyz_table(const AVPrimaryCoefficients *coeffs,
     double xb = av_q2d(coeffs->b.x), yb = av_q2d(coeffs->b.y);
     double xw = av_q2d(wp->x), yw = av_q2d(wp->y);
 
-    rgb2xyz[0][0] = xr / yr;
-    rgb2xyz[0][1] = xg / yg;
-    rgb2xyz[0][2] = xb / yb;
-    rgb2xyz[1][0] = rgb2xyz[1][1] = rgb2xyz[1][2] = 1.0;
-    rgb2xyz[2][0] = (1.0 - xr - yr) / yr;
-    rgb2xyz[2][1] = (1.0 - xg - yg) / yg;
-    rgb2xyz[2][2] = (1.0 - xb - yb) / yb;
+    rgb2xyz[0][0] = xr;
+    rgb2xyz[0][1] = xg;
+    rgb2xyz[0][2] = xb;
+    rgb2xyz[1][0] = yr;
+    rgb2xyz[1][1] = yg;
+    rgb2xyz[1][2] = yb;
+    rgb2xyz[2][0] = 1.0 - xr - yr;
+    rgb2xyz[2][1] = 1.0 - xg - yg;
+    rgb2xyz[2][2] = 1.0 - xb - yb;
     ff_matrix_invert_3x3(rgb2xyz, i);
     zw = 1.0 - xw - yw;
     sr = i[0][0] * xw + i[0][1] * yw + i[0][2] * zw;
