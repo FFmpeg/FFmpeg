@@ -750,11 +750,11 @@ static av_cold void init_xyz_tables(void)
     }
 }
 
-static void fill_xyz_matrix(int16_t mat[3][3], const SwsMatrix3x3 *m)
+static void fill_xyz_matrix(int16_t mat[3][3], const SwsMatrix3x3 *m, double scale)
 {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            const double v = m->m[i][j] * 4096.0;
+            const double v = m->m[i][j] * scale * 4096.0;
             av_assert1(fabs(v) <= INT16_MAX);
             mat[i][j] = lrint(v);
         }
@@ -763,6 +763,9 @@ static void fill_xyz_matrix(int16_t mat[3][3], const SwsMatrix3x3 *m)
 
 av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
 {
+    /* X'Y'Z' puts its 48 cd/m2 white at code 3960 and the top code at
+     * 52.37 cd/m2 (ST 428-1), the codes above the white clip in RGB */
+    const double peak = av_csp_trc_func_inv_from_id(AVCOL_TRC_SMPTE428)(1.0);
     const AVColorPrimariesDesc *bt709 = av_csp_primaries_desc_from_id(AVCOL_PRI_BT709);
     const SwsMatrix3x3 xyz2rgb = ff_sws_xyz2rgb(bt709);
     const SwsMatrix3x3 rgb2xyz = ff_sws_rgb2xyz(bt709);
@@ -770,8 +773,8 @@ av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
     if (c->xyz2rgb.gamma.in)
         return 0;
 
-    fill_xyz_matrix(c->xyz2rgb.mat, &xyz2rgb);
-    fill_xyz_matrix(c->rgb2xyz.mat, &rgb2xyz);
+    fill_xyz_matrix(c->xyz2rgb.mat, &xyz2rgb, peak);
+    fill_xyz_matrix(c->rgb2xyz.mat, &rgb2xyz, 1.0 / peak);
 
 #if CONFIG_SMALL
     c->xyz2rgb.gamma.in = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
