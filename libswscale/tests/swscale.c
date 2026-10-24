@@ -93,20 +93,24 @@ const SwsFlags flags[] = {
     SWS_BICUBIC | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP,
 };
 
-static FFSFC64 prng_state;
-
 /* reused between tests for efficiency */
 static SwsContext *sws_ref_src;
 static SwsContext *sws_src_dst;
 static SwsContext *sws_dst_out;
 
-static AVBufferRef *hw_device_ctx = NULL;
-static AVHWFramesConstraints *hw_device_constr = NULL;
+static struct {
+    FFSFC64 prng_state;
 
-static double speedup_logavg;
-static double speedup_min = 1e10;
-static double speedup_max = 0;
-static int speedup_count;
+    AVBufferRef *hw_device_ctx;
+    AVHWFramesConstraints *hw_device_constr;
+
+    double speedup_logavg;
+    double speedup_min;
+    double speedup_max;
+    int speedup_count;
+} state = {
+    .speedup_min = 1e10,
+};
 
 static const char *speedup_color(double ratio)
 {
@@ -121,11 +125,11 @@ static const char *speedup_color(double ratio)
 
 static void exit_handler(int sig)
 {
-    if (speedup_count) {
-        double ratio = exp(speedup_logavg / speedup_count);
+    if (state.speedup_count) {
+        double ratio = exp(state.speedup_logavg / state.speedup_count);
         fprintf(stderr, "Overall speedup=%.3fx %s%s\033[0m, min=%.3fx max=%.3fx\n", ratio,
                 speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower",
-                speedup_min, speedup_max);
+                state.speedup_min, state.speedup_max);
     }
 
     exit(sig);
@@ -369,7 +373,7 @@ static int scale_hw(AVFrame *dst, const AVFrame *src,
     sws_hw->threads    = opts->threads;
     sws_hw->backends   = opts->backends;
 
-    in_ref = av_hwframe_ctx_alloc(hw_device_ctx);
+    in_ref = av_hwframe_ctx_alloc(state.hw_device_ctx);
     if (!in_ref) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -388,7 +392,7 @@ static int scale_hw(AVFrame *dst, const AVFrame *src,
         goto error;
     }
 
-    out_ref = av_hwframe_ctx_alloc(hw_device_ctx);
+    out_ref = av_hwframe_ctx_alloc(state.hw_device_ctx);
     if (!out_ref) {
         ret = AVERROR(ENOMEM);
         goto error;
@@ -516,10 +520,10 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                 double ratio = ((double) ref_r->time / ref_r->iters)
                              / ((double) r->time / opts->iters);
                 if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
-                    speedup_min = FFMIN(speedup_min, ratio);
-                    speedup_max = FFMAX(speedup_max, ratio);
-                    speedup_logavg += log(ratio);
-                    speedup_count++;
+                    state.speedup_min = FFMIN(state.speedup_min, ratio);
+                    state.speedup_max = FFMAX(state.speedup_max, ratio);
+                    state.speedup_logavg += log(ratio);
+                    state.speedup_count++;
                 }
 
                 printf(" (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
@@ -635,7 +639,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         goto error;
 
     ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, mode, opts, &r.time)
-        : hw_device_ctx              ? scale_hw(dst, src, mode, opts, &r.time)
+        : state.hw_device_ctx        ? scale_hw(dst, src, mode, opts, &r.time)
         :                              scale_new(dst, src, mode, opts, &r.time);
     if (ret < 0)
         goto error;
@@ -705,8 +709,8 @@ static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
         fmt == AV_PIX_FMT_P412 || fmt == AV_PIX_FMT_P416)
         return 0;
     for (int i = 0;
-         hw_device_constr->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
-        if (hw_device_constr->valid_sw_formats[i] == fmt)
+         state.hw_device_constr->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
+        if (state.hw_device_constr->valid_sw_formats[i] == fmt)
             return 1;
     }
     return 0;
@@ -715,7 +719,7 @@ static inline int fmt_is_supported_by_hw(enum AVPixelFormat fmt)
 static inline int fmt_disabled(const struct options *opts, enum AVPixelFormat fmt)
 {
     const int scaler_sub = opts->scaler_sub ? opts->scaler_sub : opts->scaler;
-    return (hw_device_constr && !fmt_is_supported_by_hw(fmt)) ||
+    return (state.hw_device_constr && !fmt_is_supported_by_hw(fmt)) ||
            (scaler_sub < 0 && fmt_is_subsampled(fmt));
 }
 
@@ -778,7 +782,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                         if (opts->scaler > SWS_SCALE_AUTO && opts->w == dst_w && opts->h == dst_h)
                             continue;
 
-                        if (ff_sfc64_get(&prng_state) <= UINT64_MAX * opts->prob) {
+                        if (ff_sfc64_get(&state.prng_state) <= UINT64_MAX * opts->prob) {
                             ret = run_test(src_fmt, dst_fmt, dst_w, dst_h,
                                            &mode, opts, ref, &src, NULL);
                             if (ret < 0)
@@ -1104,7 +1108,7 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
             opts->api = ret;
         } else if (!strcmp(argv[i], "-hw")) {
             const int hw_default = !strcmp(argv[i + 1], "default");
-            ret = av_hwdevice_ctx_create(&hw_device_ctx,
+            ret = av_hwdevice_ctx_create(&state.hw_device_ctx,
                                          AV_HWDEVICE_TYPE_VULKAN,
                                          hw_default ? NULL : argv[i + 1], NULL, 0);
             if (ret < 0) {
@@ -1117,9 +1121,9 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 }
                 goto end;
             }
-            hw_device_constr = av_hwdevice_get_hwframe_constraints(hw_device_ctx,
-                                                                   NULL);
-            if (!hw_device_constr) {
+            state.hw_device_constr =
+                av_hwdevice_get_hwframe_constraints(state.hw_device_ctx, NULL);
+            if (!state.hw_device_constr) {
                 fprintf(stderr, "Failed to retrieve Vulkan device constraints '%s'\n",
                         argv[i + 1]);
                 ret = AVERROR(ENOMEM);
@@ -1183,7 +1187,7 @@ int main(int argc, char **argv)
     if (ret < 0)
         goto error;
 
-    ff_sfc64_init(&prng_state, 0, 0, 0, 12);
+    ff_sfc64_init(&state.prng_state, 0, 0, 0, 12);
     signal(SIGINT, exit_handler);
 
     sws_ref_src = sws_alloc_context();
@@ -1219,8 +1223,8 @@ error:
     sws_free_context(&sws_ref_src);
     sws_free_context(&sws_src_dst);
     sws_free_context(&sws_dst_out);
-    av_buffer_unref(&hw_device_ctx);
-    av_hwframe_constraints_free(&hw_device_constr);
+    av_buffer_unref(&state.hw_device_ctx);
+    av_hwframe_constraints_free(&state.hw_device_constr);
     av_frame_free(&ref);
     if (fp)
         fclose(fp);
