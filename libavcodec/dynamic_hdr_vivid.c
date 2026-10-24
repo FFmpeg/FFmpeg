@@ -98,16 +98,18 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
                     if (tm_params->three_Spline_enable_flag) {
                         AVHDRVivid3SplineParams *three_spline;
 
-                        if (get_bits_left(gb) < 1 + tm_params->three_Spline_num * (2 + 12 + 28 + 1))
+                        if (get_bits_left(gb) < 1)
                             return AVERROR_INVALIDDATA;
                         tm_params->three_Spline_num = get_bits(gb, 1) + 1;
                         if (tm_params->three_Spline_num > FF_ARRAY_ELEMS(tm_params->three_spline))
                             return AVERROR_INVALIDDATA;
                         for (int j = 0; j < tm_params->three_Spline_num; j++) {
                             three_spline = &tm_params->three_spline[j];
+                            if (get_bits_left(gb) < 2 + 12 + 10 + 10 + 8)
+                                return AVERROR_INVALIDDATA;
                             three_spline->th_mode = get_bits(gb, 2);
                             if (three_spline->th_mode == 0 || three_spline->th_mode == 2) {
-                                if (get_bits_left(gb) < 8)
+                                if (get_bits_left(gb) < 8 + 12 + 10 + 10 + 8)
                                     return AVERROR_INVALIDDATA;
                                 three_spline->th_enable_mb = (AVRational){get_bits(gb, 8),  255};
                             }
@@ -120,12 +122,15 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
                 }
             }
 
+            if (get_bits_left(gb) < 1)
+                return AVERROR_INVALIDDATA;
             params->color_saturation_mapping_flag = get_bits(gb, 1);
             if (params->color_saturation_mapping_flag) {
-                if (get_bits_left(gb) < 3 + params->color_saturation_num * 8)
+                if (get_bits_left(gb) < 3)
                     return AVERROR_INVALIDDATA;
-
                 params->color_saturation_num = get_bits(gb, 3);
+                if (get_bits_left(gb) < params->color_saturation_num * 8)
+                    return AVERROR_INVALIDDATA;
                 for (int i = 0; i < params->color_saturation_num; i++) {
                     params->color_saturation_gain[i] = (AVRational){get_bits(gb, 8), color_saturation_gain_den};
                 }
