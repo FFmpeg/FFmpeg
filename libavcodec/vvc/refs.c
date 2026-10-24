@@ -597,6 +597,8 @@ int ff_vvc_slice_rpl(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
                 return ret;
             }
         }
+        if (rsh->num_ref_idx_active[lx] > rpl->nb_refs)
+            return AVERROR_INVALIDDATA;
         if (ph->r->ph_temporal_mvp_enabled_flag &&
             (!rsh->sh_collocated_from_l0_flag) == lx &&
             rsh->sh_collocated_ref_idx < rpl->nb_refs) {
