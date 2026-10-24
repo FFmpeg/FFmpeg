@@ -513,6 +513,7 @@ static int apv_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         switch (pbu->type) {
         case APV_PBU_PRIMARY_FRAME:
             err = apv_decode(avctx, frame, pbu->content);
+            frame->pkt_dts = apv->pkt->dts;
             i++;
             goto end;
         case APV_PBU_METADATA:
