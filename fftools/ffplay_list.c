@@ -328,6 +328,7 @@ static void bprint_ring(AVBPrint *script, int cx, int cy, int r)
 #define HOVER_COLOR 0xCD444444
 #define POPUP_COLOR 0xDF000000
 
+#if CONFIG_LIBASS
 static void bprint_styles(AVBPrint *script, const ListLayout *l)
 {
     av_bprintf(script,
@@ -349,6 +350,7 @@ static void bprint_styles(AVBPrint *script, const ListLayout *l)
                l->font * 4 / 5, l->font / 16 + 1, l->font * 4 / 5, l->font / 16 + 1, l->font, l->font, l->font / 16 + 1,
                l->font, l->font, l->font / 16 + 1, l->font * 4 / 5, l->font / 16 + 1);
 }
+#endif
 
 static void bprint_header_strip(const ListView *lv, AVBPrint *script, const ListLayout *l)
 {
