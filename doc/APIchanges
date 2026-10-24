@@ -2,26 +2,26 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
-2026-10-xx - xxxxxxxxxx - lavf 63.14.102 - avformat.h
+2026-10-xx - d19f86ff4c4 - lavf 63.14.102 - avformat.h
   After avformat_seek_file(), the first packet of an audio stream carries
   AV_PKT_DATA_SKIP_SAMPLES for the larger of the rest of the priming and the
   seek pre-roll, or only the priming on the first packet of the stream.
 
-2026-10-xx - xxxxxxxxxx - lavf 63.14.101 - avformat.h
+2026-10-xx - 843e83ed2d2 - lavf 63.14.101 - avformat.h
   avformat_seek_file() moves the target back by the largest
   AVCodecParameters.seek_preroll of the audio streams, within the requested
   range. This also applies to av_seek_frame() with a demuxer that only
   implements read_seek2.
 
-2026-10-xx - xxxxxxxxxx - lavc 63.23.102 - avcodec.h
+2026-10-xx - ad74ac4cee9 - lavc 63.23.102 - avcodec.h
   AVCodecContext.seek_preroll may be raised by a decoder to the pre-roll it
   needs, as the AAC decoder does.
 
-2026-10-xx - xxxxxxxxxx - lavc 63.23.101 - codec_par.h
+2026-10-xx - 23c1a2dcb40 - lavc 63.23.101 - codec_par.h
   avcodec_parameters_to_context() no longer sets AVCodecContext.delay from
   AVCodecParameters.initial_padding.
 
-2026-10-23 - xxxxxxxxxxx - lavf 63.14.100 - avformat.h
+2026-10-23 - e5605b4bb4d - lavf 63.14.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_ALPHA.
 
 2026-10-21 - b8249f73a7c - lavu 61.16.100 - hwcontext.h
