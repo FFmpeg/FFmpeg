@@ -878,6 +878,9 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for (i = 0; i < sei->numPayloads; i++)
         av_free(sei->payloads[i].payload);
     av_freep(&x265pic.quantOffsets);
+#if X265_BUILD >= 167
+    av_freep(&x265pic.rpu.payload);
+#endif
 
     if (ret < 0)
         return AVERROR_EXTERNAL;
