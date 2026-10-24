@@ -87,6 +87,7 @@ struct runner {
     SwsContext *sws_ref_src;
     SwsContext *sws_src_dst;
     SwsContext *sws_dst_out;
+    AVFrame *src;
 };
 
 const SwsFlags flags[] = {
@@ -598,10 +599,9 @@ static int run_test(struct runner *runner,
                     enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
                     const struct mode *mode, const struct options *opts,
-                    const AVFrame *ref, AVFrame **psrc,
-                    const struct test_results *ref_r)
+                    const AVFrame *ref, const struct test_results *ref_r)
 {
-    AVFrame *src = *psrc;
+    AVFrame *src = runner->src;
     AVFrame *dst = NULL, *out = NULL;
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int ret;
@@ -620,7 +620,7 @@ static int run_test(struct runner *runner,
     struct test_results r = { 0 };
 
     if (!src || src->format != src_fmt) {
-        av_frame_free(psrc);
+        av_frame_free(&runner->src);
         ret = init_frame(&src, ref, ref->width, ref->height, src_fmt);
         if (ret < 0)
             goto error;
@@ -637,7 +637,7 @@ static int run_test(struct runner *runner,
             av_frame_free(&src);
             goto error;
         }
-        *psrc = src;
+        runner->src = src;
     }
 
     ret = init_frame(&dst, ref, dst_w, dst_h, dst_fmt);
@@ -757,8 +757,6 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                        src_fmt_max = AV_PIX_FMT_NB - 1,
                        dst_fmt_max = AV_PIX_FMT_NB - 1;
 
-    AVFrame *src = NULL;
-
     int ret = 0;
 
     if (opts->src_fmt != AV_PIX_FMT_NONE)
@@ -791,7 +789,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
 
                         if (ff_sfc64_get(&state.prng_state) <= UINT64_MAX * opts->prob) {
                             ret = run_test(&state.runner, src_fmt, dst_fmt, dst_w, dst_h,
-                                           &mode, opts, ref, &src, NULL);
+                                           &mode, opts, ref, NULL);
                             if (ret < 0)
                                 goto error;
                         }
@@ -815,7 +813,6 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
     ret = 0;
 
 error:
-    av_frame_free(&src);
     return ret;
 }
 
@@ -823,8 +820,6 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
 {
     char buf[256];
     int ret = 0;
-
-    AVFrame *src = NULL;
 
     for (int line = 1; fgets(buf, sizeof(buf), fp); line++) {
         char src_fmt_str[21], dst_fmt_str[21];
@@ -880,7 +875,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(&state.runner, src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &src, &r);
+        ret = run_test(&state.runner, src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &r);
         if (ret < 0)
             goto error;
     }
@@ -888,7 +883,6 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
     ret = 0;
 
 error:
-    av_frame_free(&src);
     return ret;
 }
 
@@ -911,6 +905,7 @@ static void runner_free(struct runner *runner)
     sws_free_context(&runner->sws_ref_src);
     sws_free_context(&runner->sws_src_dst);
     sws_free_context(&runner->sws_dst_out);
+    av_frame_free(&runner->src);
 }
 
 static int init_ref(AVFrame *ref, const struct options *opts)
