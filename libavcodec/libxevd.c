@@ -380,6 +380,8 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             }
 
             bs_read_pos += nalu_size;
+            if (stat.fnum < 0)
+                av_freep(&bitb.pdata[1]);
 
             if (stat.nalu_type == XEVD_NUT_SPS) { // EVC stream parameters changed
                 if ((ret = export_stream_params(xectx, avctx)) != 0) {
