@@ -180,8 +180,9 @@ typedef void (*av_csp_eotf_function)(double Lw, double Lb, double c[3]);
 /**
  * Returns the ITU EOTF corresponding to a given TRC. This converts from the
  * signal level [0,1] to the raw output display luminance in nits (cd/m^2).
- * This is done per channel in RGB space, except for AVCOL_TRC_SMPTE428, which
- * assumes CIE XYZ in- and output.
+ * This is done per channel in RGB space. For X'Y'Z' with AVCOL_TRC_SMPTE428,
+ * pass Lb = 0 and apply the black level after the conversion to RGB for correct
+ * white point scaling.
  *
  * @return A pointer to the function implementing the given TRC, or NULL if no
  *         such function is defined.

@@ -537,6 +537,7 @@ static void oetf_##name##_inv(double E[3])                          \
 WRAP_SDR_OETF(gamma22)
 WRAP_SDR_OETF(gamma28)
 WRAP_SDR_OETF(iec61966_2_1)
+WRAP_SDR_OETF(smpte_st428_1)
 
 #define WRAP_SDR_EOTF(name)                                         \
 static void eotf_##name(double Lw, double Lb, double E[3])          \
@@ -554,6 +555,7 @@ static void eotf_##name##_inv(double Lw, double Lb, double L[3])    \
 WRAP_SDR_EOTF(gamma22)
 WRAP_SDR_EOTF(gamma28)
 WRAP_SDR_EOTF(iec61966_2_1)
+WRAP_SDR_EOTF(smpte_st428_1)
 
 static void eotf_bt1886(const double Lw, const double Lb, double E[3])
 {
@@ -587,34 +589,6 @@ static void eotf_smpte_st2084_inv(const double Lw, const double Lb, double L[3])
 {
     for (int i = 0; i < 3; i++)
         L[i] = trc_smpte_st2084(L[i]);
-}
-
-/* This implementation assumes an SMPTE RP 431-2 reference projector (DCI) */
-#define DCI_L 48.00
-#define DCI_P 52.37
-#define DCI_X (42.94 / DCI_L)
-#define DCI_Z (45.82 / DCI_L)
-
-static void eotf_smpte_st428_1(const double Lw_Y, const double Lb_Y, double E[3])
-{
-    const double Lw[3] = { DCI_X * Lw_Y, Lw_Y, DCI_Z * Lw_Y };
-    const double Lb[3] = { DCI_X * Lb_Y, Lb_Y, DCI_Z * Lb_Y };
-
-    for (int i = 0; i < 3; i++) {
-        E[i] = (0.0 > E[i]) ? 0.0 : pow(E[i], 2.6) * DCI_P / DCI_L;
-        E[i] = E[i] * (Lw[i] - Lb[i]) + Lb[i];
-    }
-}
-
-static void eotf_smpte_st428_1_inv(const double Lw_Y, const double Lb_Y, double L[3])
-{
-    const double Lw[3] = { DCI_X * Lw_Y, Lw_Y, DCI_Z * Lw_Y };
-    const double Lb[3] = { DCI_X * Lb_Y, Lb_Y, DCI_Z * Lb_Y };
-
-    for (int i = 0; i < 3; i++) {
-        L[i] = (L[i] - Lb[i]) / (Lw[i] - Lb[i]);
-        L[i] = (0.0 > L[i]) ? 0.0 : pow(L[i] * DCI_L / DCI_P, 1.0 / 2.6);
-    }
 }
 
 static void eotf_arib_std_b67(const double Lw, const double Lb, double E[3])
