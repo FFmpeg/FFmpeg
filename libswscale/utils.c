@@ -749,7 +749,7 @@ static av_cold void init_xyz_tables(void)
     }
 }
 
-av_cold int ff_sws_fill_xyztables(SwsInternal *c)
+av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
 {
     static const int16_t xyz2rgb_matrix[3][3] = {
         {13270, -6295, -2041},
@@ -853,7 +853,7 @@ static int handle_formats(SwsContext *sws)
     c->srcXYZ    |= handle_xyz(&sws->src_format);
     c->dstXYZ    |= handle_xyz(&sws->dst_format);
     if (c->srcXYZ || c->dstXYZ)
-        return ff_sws_fill_xyztables(c);
+        return ff_sws_fill_st428_tables(c);
     else
         return 0;
 }

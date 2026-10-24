@@ -65,7 +65,7 @@ static void check_xyz12Torgb48le(void)
     memset(&c, 0, sizeof(c));
     c.opts.src_format = src_pix_fmt;
     ff_sws_init_xyzdsp(&c);
-    ff_sws_fill_xyztables(&c);
+    ff_sws_fill_st428_tables(&c);
 
     randomize_buffers(src, 3 * MAX_LINE_SIZE * NUM_LINES);
 
