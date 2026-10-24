@@ -112,6 +112,7 @@ typedef struct ProresContext {
     int quant_sel;
 
     int frame_size_upper_bound;
+    int slice_size_upper_bound;
 
     int profile;
     const struct prores_profile *profile_info;

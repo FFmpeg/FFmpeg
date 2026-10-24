@@ -762,11 +762,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int frame_size, picture_size, slice_size;
     int pkt_size, ret;
     int max_slice_size = (ctx->frame_size_upper_bound - 200) / (ctx->pictures_per_frame * ctx->slices_per_picture + 1);
-    int slice_size_upper_bound = ctx->mbs_per_slice * (ctx->chroma_factor == CFACTOR_Y444 ? 768 : 512) * 8;
+    int slice_size_upper_bound = ctx->slice_size_upper_bound;
     uint8_t frame_flags;
-
-    if (ctx->alpha_bits)
-        slice_size_upper_bound += ctx->mbs_per_slice * 256 * (1 + ctx->alpha_bits + 1) + 7 >> 3;
 
     ctx->pic = pic;
     pkt_size = ctx->frame_size_upper_bound + slice_size_upper_bound;
