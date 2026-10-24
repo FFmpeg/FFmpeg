@@ -820,6 +820,11 @@ static int profile_unsupported(VkResult ret)
            ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR;
 }
 
+static const char *profile_name(enum AVCodecID codec_id, int profile)
+{
+    return av_x_if_null(avcodec_profile_name(codec_id, profile), "unknown");
+}
+
 static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_ref,
                                      enum AVPixelFormat *pix_fmt, VkFormat *vk_fmt,
                                      FFVulkanDecodeProfileData *prof,
@@ -898,8 +903,8 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
         av_log(avctx, AV_LOG_VERBOSE, "%s profile %s not supported, attempting "
                "again with profile %s\n",
                avcodec_get_name(avctx->codec_id),
-               avcodec_profile_name(avctx->codec_id, cur_profile),
-               avcodec_profile_name(avctx->codec_id, base_profile));
+               profile_name(avctx->codec_id, cur_profile),
+               profile_name(avctx->codec_id, base_profile));
         cur_profile = base_profile;
         ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc, caps,
                                    dec_caps, cur_profile);
@@ -909,7 +914,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
         av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
                "%s profile \"%s\" not supported!\n",
                avcodec_get_name(avctx->codec_id),
-               avcodec_profile_name(avctx->codec_id, cur_profile));
+               profile_name(avctx->codec_id, cur_profile));
         return AVERROR(EINVAL);
     } else if (ret == VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR) {
         if (avctx->codec_id == AV_CODEC_ID_H264)
@@ -942,7 +947,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
 
     av_log(avctx, AV_LOG_VERBOSE, "Decoder capabilities for %s profile \"%s\":\n",
            avcodec_get_name(avctx->codec_id),
-           avcodec_profile_name(avctx->codec_id, cur_profile));
+           profile_name(avctx->codec_id, cur_profile));
     av_log(avctx, AV_LOG_VERBOSE, "    Maximum level: %i (stream %i)\n",
            max_level, avctx->level);
     av_log(avctx, AV_LOG_VERBOSE, "    Width: from %i to %i\n",
