@@ -128,6 +128,11 @@ int main(int argc, char *argv[])
                     printf("  FAIL\n");
                     return 1;
                 }
+
+                memcpy(L_xyz, tests[i].E_xyz, sizeof(L_xyz));
+                eotf(Lw, 0.0, L_xyz);
+                printf("  ratios X/Y=%.9f Z/Y=%.9f\n",
+                       L_xyz[0] / L_xyz[1], L_xyz[2] / L_xyz[1]);
             }
         } else {
             /* Normal, display-relative RGB curve */
