@@ -893,8 +893,9 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                                caps,
                                dec_caps,
                                cur_profile);
-    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR &&
-        avctx->flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH &&
+    if ((ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
+         ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR) &&
+        avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH &&
         avctx->profile != base_profile) {
         av_log(avctx, AV_LOG_VERBOSE, "%s profile %s not supported, attempting "
                "again with profile %s\n",
