@@ -70,6 +70,7 @@ const FFCodec ff_vnull_encoder = {
     CODEC_LONG_NAME("null video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_VNULL,
+    .p.capabilities = AV_CODEC_CAP_PARAM_CHANGE,
     FF_CODEC_ENCODE_CB(null_encode),
 };
 #endif
