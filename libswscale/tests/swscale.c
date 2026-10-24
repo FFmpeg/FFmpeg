@@ -123,6 +123,8 @@ static struct {
     int speedup_count;
 
     struct runner *runners;
+    AVFrame *ref;
+    FILE *fp;
 } state = {
     .speedup_lock = AV_MUTEX_INITIALIZER,
     .speedup_min  = 1e10,
@@ -765,8 +767,9 @@ static inline int test_formats(const struct options *opts,
            ff_sws_test_pixfmt_backend(backend, dst, 1);
 }
 
-static int run_self_tests(const AVFrame *ref, const struct options *opts)
+static int run_self_tests(const struct options *opts)
 {
+    const AVFrame *ref = state.ref;
     const int dst_w_values[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
     const int dst_h_values[] = { opts->h, opts->h - opts->h / 3, opts->h + opts->h / 3 };
 
@@ -835,8 +838,10 @@ error:
     return ret;
 }
 
-static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *opts)
+static int run_file_tests(const struct options *opts)
 {
+    const AVFrame *ref = state.ref;
+    FILE *fp = state.fp;
     char buf[256];
     int ret = 0;
 
@@ -1219,10 +1224,7 @@ int main(int argc, char **argv)
         .scaler_sub = SWS_SCALE_AUTO,
     };
 
-    AVFrame *ref = NULL;
-    FILE *fp = NULL;
-
-    int ret = parse_options(argc, argv, &opts, &fp);
+    int ret = parse_options(argc, argv, &opts, &state.fp);
     if (ret == AVERROR(ENOTSUP)) {
         ret = 0;
         goto error;
@@ -1245,21 +1247,20 @@ int main(int argc, char **argv)
             goto error;
     }
 
-    ref = av_frame_alloc();
-    if (!ref) {
+    state.ref = av_frame_alloc();
+    if (!state.ref) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
-    ref->width  = opts.w;
-    ref->height = opts.h;
-    ref->format = AV_PIX_FMT_YUVA444P;
+    state.ref->width  = opts.w;
+    state.ref->height = opts.h;
+    state.ref->format = AV_PIX_FMT_YUVA444P;
 
-    ret = init_ref(ref, &opts);
+    ret = init_ref(state.ref, &opts);
     if (ret < 0)
         goto error;
 
-    ret = fp ? run_file_tests(ref, fp, &opts)
-             : run_self_tests(ref, &opts);
+    ret = state.fp ? run_file_tests(&opts) : run_self_tests(&opts);
 
     /* fall through */
 error:
@@ -1268,8 +1269,8 @@ error:
     av_freep(&state.runners);
     av_buffer_unref(&state.hw_device_ctx);
     av_hwframe_constraints_free(&state.hw_device_constr);
-    av_frame_free(&ref);
-    if (fp)
-        fclose(fp);
+    av_frame_free(&state.ref);
+    if (state.fp)
+        fclose(state.fp);
     exit_handler(ret);
 }
