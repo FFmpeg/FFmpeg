@@ -34,6 +34,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 #include "libavutil/sfc64.h"
+#include "libavutil/thread.h"
 #include "libavutil/frame.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -108,6 +109,7 @@ static struct {
     AVBufferRef *hw_device_ctx;
     AVHWFramesConstraints *hw_device_constr;
 
+    AVMutex speedup_lock;
     double speedup_logavg;
     double speedup_min;
     double speedup_max;
@@ -115,7 +117,8 @@ static struct {
 
     struct runner runner;
 } state = {
-    .speedup_min = 1e10,
+    .speedup_lock = AV_MUTEX_INITIALIZER,
+    .speedup_min  = 1e10,
 };
 
 static const char *speedup_color(double ratio)
@@ -527,10 +530,12 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                 double ratio = ((double) ref_r->time / ref_r->iters)
                              / ((double) r->time / opts->iters);
                 if (FFMIN(r->time, ref_r->time) > 100 /* don't pollute stats with low precision */) {
+                    ff_mutex_lock(&state.speedup_lock);
                     state.speedup_min = FFMIN(state.speedup_min, ratio);
                     state.speedup_max = FFMAX(state.speedup_max, ratio);
                     state.speedup_logavg += log(ratio);
                     state.speedup_count++;
+                    ff_mutex_unlock(&state.speedup_lock);
                 }
 
                 av_bprintf(bp, " (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
