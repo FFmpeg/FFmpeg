@@ -63,6 +63,7 @@ struct options {
     int dst_w;
     int dst_h;
     int threads;
+    int runners;
     int iters;
     int bench;
     int flags;
@@ -121,7 +122,7 @@ static struct {
     double speedup_max;
     int speedup_count;
 
-    struct runner runner;
+    struct runner *runners;
 } state = {
     .speedup_lock = AV_MUTEX_INITIALIZER,
     .speedup_min  = 1e10,
@@ -806,7 +807,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                             continue;
 
                         if (ff_sfc64_get(&state.prng_state) <= UINT64_MAX * opts->prob) {
-                            ret = run_test(&state.runner, src_fmt, dst_fmt, dst_w, dst_h,
+                            ret = run_test(&state.runners[0], src_fmt, dst_fmt, dst_w, dst_h,
                                            &mode, opts, ref, NULL);
                             if (ret < 0)
                                 goto error;
@@ -893,7 +894,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(&state.runner, src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &r);
+        ret = run_test(&state.runners[0], src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &r);
         if (ret < 0)
             goto error;
     }
@@ -1209,6 +1210,7 @@ int main(int argc, char **argv)
         .dst_w      = -1,
         .dst_h      = -1,
         .threads    = 1,
+        .runners    = 1,
         .iters      = 1,
         .prob       = 1.0,
         .flags      = -1,
@@ -1231,9 +1233,17 @@ int main(int argc, char **argv)
     ff_sfc64_init(&state.prng_state, 0, 0, 0, 12);
     signal(SIGINT, exit_handler);
 
-    ret = runner_init(&state.runner);
-    if (ret < 0)
+    state.runners = av_calloc(opts.runners, sizeof(*state.runners));
+    if (!state.runners) {
+        ret = AVERROR(ENOMEM);
         goto error;
+    }
+
+    for (int i = 0; i < opts.runners; i++) {
+        ret = runner_init(&state.runners[i]);
+        if (ret < 0)
+            goto error;
+    }
 
     ref = av_frame_alloc();
     if (!ref) {
@@ -1253,7 +1263,9 @@ int main(int argc, char **argv)
 
     /* fall through */
 error:
-    runner_free(&state.runner);
+    for (int i = 0; state.runners && i < opts.runners; i++)
+        runner_free(&state.runners[i]);
+    av_freep(&state.runners);
     av_buffer_unref(&state.hw_device_ctx);
     av_hwframe_constraints_free(&state.hw_device_constr);
     av_frame_free(&ref);
