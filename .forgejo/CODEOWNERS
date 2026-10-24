@@ -232,7 +232,7 @@ doc/.* @GyanD
 # Frameworks
 # ==========
 .*d3d12va.* @jianhuaw @tong1wu @younengxiao
-.*vulkan.* @lynne @haasn
+.*vulkan.* @lynne
 
 # tests
 # =====
