@@ -911,7 +911,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (s->predictor==MEDIAN) {
                 int lefttop;
                 y = 1;
-                if (s->interlaced) {
+                if (s->interlaced && h > 1) {
                     left = sub_left_prediction(s, s->temp[0], p->data[plane] + p->linesize[plane], w , left);
 
                     encode_plane_bitstream(s, w, plane);
