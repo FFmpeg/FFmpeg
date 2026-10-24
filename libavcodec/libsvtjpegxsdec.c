@@ -118,21 +118,22 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
 
     if (!svt_dec->decoder_initialized || ret != avctx->pix_fmt ||
         avctx->width != svt_dec->config.width || avctx->height != svt_dec->config.height) {
-        if (svt_dec->decoder_initialized)
-            svt_jpeg_xs_decoder_close(&svt_dec->decoder);
-        err = svt_jpeg_xs_decoder_init(SVT_JPEGXS_API_VER_MAJOR, SVT_JPEGXS_API_VER_MINOR,
-                                       &svt_dec->decoder, avpkt->data, avpkt->size, &svt_dec->config);
-        if (err) {
-            av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_init failed, err=%d\n", err);
-            return AVERROR_EXTERNAL;
-        }
-
         avctx->pix_fmt = ret;
 
         ret = ff_set_dimensions(avctx, svt_dec->config.width, svt_dec->config.height);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "ff_set_dimensions failed, err=%d\n", ret);
             return ret;
+        }
+
+        if (svt_dec->decoder_initialized)
+            svt_jpeg_xs_decoder_close(&svt_dec->decoder);
+        svt_dec->decoder_initialized = 0;
+        err = svt_jpeg_xs_decoder_init(SVT_JPEGXS_API_VER_MAJOR, SVT_JPEGXS_API_VER_MINOR,
+                                       &svt_dec->decoder, avpkt->data, avpkt->size, &svt_dec->config);
+        if (err) {
+            av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_init failed, err=%d\n", err);
+            return AVERROR_EXTERNAL;
         }
 
         svt_dec->decoder_initialized = 1;
