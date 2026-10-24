@@ -445,7 +445,7 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
     }
 
-    return ret;
+    return AVERROR(EAGAIN);
 }
 
 /**
