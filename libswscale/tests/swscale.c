@@ -82,6 +82,13 @@ struct test_results {
     int iters;
 };
 
+struct runner {
+    /* reused between tests for efficiency */
+    SwsContext *sws_ref_src;
+    SwsContext *sws_src_dst;
+    SwsContext *sws_dst_out;
+};
+
 const SwsFlags flags[] = {
     0, // test defaults
     SWS_FAST_BILINEAR,
@@ -93,11 +100,6 @@ const SwsFlags flags[] = {
     SWS_BICUBIC | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP,
 };
 
-/* reused between tests for efficiency */
-static SwsContext *sws_ref_src;
-static SwsContext *sws_src_dst;
-static SwsContext *sws_dst_out;
-
 static struct {
     FFSFC64 prng_state;
 
@@ -108,6 +110,8 @@ static struct {
     double speedup_min;
     double speedup_max;
     int speedup_count;
+
+    struct runner runner;
 } state = {
     .speedup_min = 1e10,
 };
@@ -268,10 +272,11 @@ static int checked_sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *s
     return ret;
 }
 
-static int scale_new(AVFrame *dst, const AVFrame *src,
+static int scale_new(struct runner *runner, AVFrame *dst, const AVFrame *src,
                      const struct mode *mode, const struct options *opts,
                      int64_t *out_time)
 {
+    SwsContext *sws_src_dst = runner->sws_src_dst;
     sws_src_dst->flags      = mode->flags;
     sws_src_dst->dither     = mode->dither;
     sws_src_dst->scaler     = mode->scaler;
@@ -589,7 +594,8 @@ static int init_frame(AVFrame **pframe, const AVFrame *ref,
 }
 
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
-static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
+static int run_test(struct runner *runner,
+                    enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h,
                     const struct mode *mode, const struct options *opts,
                     const AVFrame *ref, AVFrame **psrc,
@@ -626,7 +632,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
             }
         }
 
-        ret = checked_sws_scale_frame(sws_ref_src, src, ref);
+        ret = checked_sws_scale_frame(runner->sws_ref_src, src, ref);
         if (ret < 0) {
             av_frame_free(&src);
             goto error;
@@ -640,7 +646,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, mode, opts, &r.time)
         : state.hw_device_ctx        ? scale_hw(dst, src, mode, opts, &r.time)
-        :                              scale_new(dst, src, mode, opts, &r.time);
+        :                              scale_new(runner, dst, src, mode, opts, &r.time);
     if (ret < 0)
         goto error;
 
@@ -648,7 +654,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     if (ret < 0)
         goto error;
 
-    ret = checked_sws_scale_frame(sws_dst_out, out, dst);
+    ret = checked_sws_scale_frame(runner->sws_dst_out, out, dst);
     if (ret < 0)
         goto error;
 
@@ -723,12 +729,13 @@ static inline int fmt_disabled(const struct options *opts, enum AVPixelFormat fm
            (scaler_sub < 0 && fmt_is_subsampled(fmt));
 }
 
-static inline int test_formats(const struct options *opts,
+static inline int test_formats(const struct runner *runner,
+                               const struct options *opts,
                                enum AVPixelFormat src, enum AVPixelFormat dst)
 {
     /* Test auxiliary conversions */
-    if (!ff_sws_test_pixfmt_backend(sws_ref_src->backends, src, 1) ||
-        !ff_sws_test_pixfmt_backend(sws_dst_out->backends, dst, 0))
+    if (!ff_sws_test_pixfmt_backend(runner->sws_ref_src->backends, src, 1) ||
+        !ff_sws_test_pixfmt_backend(runner->sws_dst_out->backends, dst, 0))
         return 0;
 
     /* Test main conversion */
@@ -765,7 +772,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
             if (fmt_disabled(opts, dst_fmt))
                 continue;
-            if (!test_formats(opts, src_fmt, dst_fmt))
+            if (!test_formats(&state.runner, opts, src_fmt, dst_fmt))
                 continue;
             for (int h = 0; h < FF_ARRAY_ELEMS(dst_h_values); h++) {
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w_values); w++) {
@@ -783,7 +790,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
                             continue;
 
                         if (ff_sfc64_get(&state.prng_state) <= UINT64_MAX * opts->prob) {
-                            ret = run_test(src_fmt, dst_fmt, dst_w, dst_h,
+                            ret = run_test(&state.runner, src_fmt, dst_fmt, dst_w, dst_h,
                                            &mode, opts, ref, &src, NULL);
                             if (ret < 0)
                                 goto error;
@@ -873,7 +880,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &src, &r);
+        ret = run_test(&state.runner, src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &src, &r);
         if (ret < 0)
             goto error;
     }
@@ -883,6 +890,27 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, const struct options *op
 error:
     av_frame_free(&src);
     return ret;
+}
+
+static int runner_init(struct runner *runner)
+{
+    runner->sws_ref_src = sws_alloc_context();
+    runner->sws_src_dst = sws_alloc_context();
+    runner->sws_dst_out = sws_alloc_context();
+    if (!runner->sws_ref_src || !runner->sws_src_dst || !runner->sws_dst_out)
+        return AVERROR(ENOMEM);
+    runner->sws_ref_src->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
+    runner->sws_dst_out->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
+    runner->sws_ref_src->backends = SWS_BACKEND_ALL;
+    runner->sws_dst_out->backends = SWS_BACKEND_ALL;
+    return 0;
+}
+
+static void runner_free(struct runner *runner)
+{
+    sws_free_context(&runner->sws_ref_src);
+    sws_free_context(&runner->sws_src_dst);
+    sws_free_context(&runner->sws_dst_out);
 }
 
 static int init_ref(AVFrame *ref, const struct options *opts)
@@ -1190,17 +1218,9 @@ int main(int argc, char **argv)
     ff_sfc64_init(&state.prng_state, 0, 0, 0, 12);
     signal(SIGINT, exit_handler);
 
-    sws_ref_src = sws_alloc_context();
-    sws_src_dst = sws_alloc_context();
-    sws_dst_out = sws_alloc_context();
-    if (!sws_ref_src || !sws_src_dst || !sws_dst_out) {
-        ret = AVERROR(ENOMEM);
+    ret = runner_init(&state.runner);
+    if (ret < 0)
         goto error;
-    }
-    sws_ref_src->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
-    sws_dst_out->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
-    sws_ref_src->backends = SWS_BACKEND_ALL;
-    sws_dst_out->backends = SWS_BACKEND_ALL;
 
     ref = av_frame_alloc();
     if (!ref) {
@@ -1220,9 +1240,7 @@ int main(int argc, char **argv)
 
     /* fall through */
 error:
-    sws_free_context(&sws_ref_src);
-    sws_free_context(&sws_src_dst);
-    sws_free_context(&sws_dst_out);
+    runner_free(&state.runner);
     av_buffer_unref(&state.hw_device_ctx);
     av_hwframe_constraints_free(&state.hw_device_constr);
     av_frame_free(&ref);
