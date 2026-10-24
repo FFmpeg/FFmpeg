@@ -2948,6 +2948,7 @@ static int jpeg2000_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             return ret;
 
         ret = jpeg2000_decode_frame(avctx, frame, avpkt);
+        frame->pkt_dts = avpkt->dts;
         av_packet_unref(avpkt);
         if (ret < 0)
             return ret;
