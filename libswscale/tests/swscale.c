@@ -956,6 +956,11 @@ static void runner_free(struct runner *runner)
     av_frame_free(&runner->src);
 }
 
+static int run_tests(const struct options *opts)
+{
+    return state.fp ? run_file_tests(opts) : run_self_tests(opts);
+}
+
 static int init_ref(AVFrame *ref, const struct options *opts)
 {
     SwsContext *ctx = sws_alloc_context();
@@ -1284,7 +1289,7 @@ int main(int argc, char **argv)
     if (ret < 0)
         goto error;
 
-    ret = state.fp ? run_file_tests(&opts) : run_self_tests(&opts);
+    ret = run_tests(&opts);
 
     /* fall through */
 error:
