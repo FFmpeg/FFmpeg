@@ -582,7 +582,7 @@ static int liboapve_encode(AVCodecContext *avctx, AVPacket *avpkt,
     int ret;
 
     av_image_copy2((uint8_t **)imgb->a, imgb->s, frame->data, frame->linesize,
-                   frame->format, frame->width, frame->height);
+                   avctx->pix_fmt, avctx->width, avctx->height);
 
     imgb->ts[0] = frame->pts;
 
