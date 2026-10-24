@@ -1201,6 +1201,8 @@ int ff_sws_op_list_split_at(SwsOpList *ops1, SwsOpList **out_ops2, int index)
     const SwsPixelType type = ff_sws_op_input_type(op);
     ops2->src.format = get_planar_fmt(type, nb_planes);
     ops2->src.desc = av_pix_fmt_desc_get(ops2->src.format);
+    ops2->src.field = FIELD_TOP;
+    ops2->src.interlaced = 0;
     get_input_size(ops1, &ops2->src);
     ops1->dst = ops2->src;
 
