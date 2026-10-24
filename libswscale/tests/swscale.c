@@ -99,6 +99,15 @@ struct runner {
     AVFrame *src;
 };
 
+struct test_case {
+    enum AVPixelFormat src_fmt;
+    enum AVPixelFormat dst_fmt;
+    int dst_w, dst_h;
+    struct mode mode;
+    int has_ref;
+    struct test_results ref_r;
+};
+
 const SwsFlags flags[] = {
     0, // test defaults
     SWS_FAST_BILINEAR,
@@ -617,22 +626,21 @@ static int init_frame(AVFrame **pframe, const AVFrame *ref,
 }
 
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
-static int run_test(struct runner *runner,
-                    enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
-                    int dst_w, int dst_h,
-                    const struct mode *mode, const struct options *opts,
-                    const AVFrame *ref, const struct test_results *ref_r)
+static int run_test(struct runner *runner, const struct test_case *t,
+                    const struct options *opts)
 {
+    const AVFrame *ref = state.ref;
+    const struct test_results *ref_r = t->has_ref ? &t->ref_r : NULL;
     AVFrame *src = runner->src;
     AVFrame *dst = NULL, *out = NULL;
-    const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
+    const int comps = fmt_comps(t->src_fmt) & fmt_comps(t->dst_fmt);
     int ret;
 
     /* Estimate the expected amount of loss from bit depth reduction */
     const float c1 = 0.01 * 0.01; /* stabilization constant */
     const float ref_var = 1.0 / 12.0; /* uniformly distributed signal */
-    const float src_var = estimate_quantization_noise(src_fmt);
-    const float dst_var = estimate_quantization_noise(dst_fmt);
+    const float src_var = estimate_quantization_noise(t->src_fmt);
+    const float dst_var = estimate_quantization_noise(t->dst_fmt);
     const float out_var = estimate_quantization_noise(ref->format);
     const float total_var = src_var + dst_var + out_var;
     const float ssim_luma = (2 * ref_var + c1) / (2 * ref_var + total_var + c1);
@@ -641,9 +649,9 @@ static int run_test(struct runner *runner,
 
     struct test_results r = { 0 };
 
-    if (!src || src->format != src_fmt) {
+    if (!src || src->format != t->src_fmt) {
         av_frame_free(&runner->src);
-        ret = init_frame(&src, ref, ref->width, ref->height, src_fmt);
+        ret = init_frame(&src, ref, ref->width, ref->height, t->src_fmt);
         if (ret < 0)
             goto error;
         if (opts->align_src) {
@@ -662,13 +670,13 @@ static int run_test(struct runner *runner,
         runner->src = src;
     }
 
-    ret = init_frame(&dst, ref, dst_w, dst_h, dst_fmt);
+    ret = init_frame(&dst, ref, t->dst_w, t->dst_h, t->dst_fmt);
     if (ret < 0)
         goto error;
 
-    ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, mode, opts, &r.time)
-        : state.hw_device_ctx        ? scale_hw(dst, src, mode, opts, &r.time)
-        :                              scale_new(runner, dst, src, mode, opts, &r.time);
+    ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, &t->mode, opts, &r.time)
+        : state.hw_device_ctx        ? scale_hw(dst, src, &t->mode, opts, &r.time)
+        :                              scale_new(runner, dst, src, &t->mode, opts, &r.time);
     if (ret < 0)
         goto error;
 
@@ -696,7 +704,7 @@ static int run_test(struct runner *runner,
     }
 
     r.loss = get_loss(r.ssim);
-    if ((opts->api != IMPL_LEGACY) && r.loss - expected_loss > 1e-2 && dst_w >= ref->width && dst_h >= ref->height) {
+    if ((opts->api != IMPL_LEGACY) && r.loss - expected_loss > 1e-2 && t->dst_w >= ref->width && t->dst_h >= ref->height) {
         ret = -1;
         goto bad_loss;
     }
@@ -710,8 +718,8 @@ static int run_test(struct runner *runner,
 
 bad_loss:
     print_results(ref, src, dst,
-                  dst_w, dst_h,
-                  mode, opts,
+                  t->dst_w, t->dst_h,
+                  &t->mode, opts,
                   &r, ref_r,
                   expected_loss);
 
@@ -769,7 +777,6 @@ static inline int test_formats(const struct options *opts,
 
 static int run_self_tests(const struct options *opts)
 {
-    const AVFrame *ref = state.ref;
     const int dst_w_values[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
     const int dst_h_values[] = { opts->h, opts->h - opts->h / 3, opts->h + opts->h / 3 };
 
@@ -810,8 +817,15 @@ static int run_self_tests(const struct options *opts)
                             continue;
 
                         if (ff_sfc64_get(&state.prng_state) <= UINT64_MAX * opts->prob) {
-                            ret = run_test(&state.runners[0], src_fmt, dst_fmt, dst_w, dst_h,
-                                           &mode, opts, ref, NULL);
+                            const struct test_case test = {
+                                .src_fmt = src_fmt,
+                                .dst_fmt = dst_fmt,
+                                .dst_w   = dst_w,
+                                .dst_h   = dst_h,
+                                .mode    = mode,
+                            };
+
+                            ret = run_test(&state.runners[0], &test, opts);
                             if (ret < 0)
                                 goto error;
                         }
@@ -899,7 +913,17 @@ static int run_file_tests(const struct options *opts)
             opts->dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts->dst_fmt)
             continue;
 
-        ret = run_test(&state.runners[0], src_fmt, dst_fmt, dw, dh, &mode, opts, ref, &r);
+        const struct test_case test = {
+            .src_fmt = src_fmt,
+            .dst_fmt = dst_fmt,
+            .dst_w   = dw,
+            .dst_h   = dh,
+            .mode    = mode,
+            .has_ref = 1,
+            .ref_r   = r,
+        };
+
+        ret = run_test(&state.runners[0], &test, opts);
         if (ret < 0)
             goto error;
     }
