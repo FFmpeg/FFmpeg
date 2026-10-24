@@ -10,6 +10,10 @@ FATE_LIBAVFORMAT-$(CONFIG_MP3_MUXER) += fate-id3v2chap
 fate-id3v2chap: libavformat/tests/id3v2chap$(EXESUF)
 fate-id3v2chap: CMD = run libavformat/tests/id3v2chap$(EXESUF)
 
+FATE_LIBAVFORMAT-$(call ALLYES, AU_MUXER AU_DEMUXER) += fate-auenc
+fate-auenc: libavformat/tests/auenc$(EXESUF)
+fate-auenc: CMD = run libavformat/tests/auenc$(EXESUF)
+
 FATE_LIBAVFORMAT += fate-mkdir
 fate-mkdir: libavformat/tests/mkdir$(EXESUF)
 fate-mkdir: CMD = run libavformat/tests/mkdir$(EXESUF)

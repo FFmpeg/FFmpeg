@@ -1,0 +1,12 @@
+channels=1 bps=2 bit_rate=0 tag=37 32 36 32 read_bps=2 read_bit_rate=16000 duration=320
+channels=1 bps=3 bit_rate=0 tag=00 00 00 19 read_bps=3 read_bit_rate=24000 duration=213
+channels=1 bps=4 bit_rate=0 tag=00 00 00 17 read_bps=4 read_bit_rate=32000 duration=160
+channels=1 bps=5 bit_rate=0 tag=00 00 00 1a read_bps=5 read_bit_rate=40000 duration=128
+channels=1 bps=0 bit_rate=16000 tag=37 32 36 32 read_bps=2 read_bit_rate=16000 duration=320
+channels=1 bps=0 bit_rate=40000 tag=00 00 00 1a read_bps=5 read_bit_rate=40000 duration=128
+channels=1 bps=1 bit_rate=0 rejected
+channels=1 bps=0 bit_rate=0 rejected
+channels=2 bps=2 bit_rate=32000 tag=37 32 36 32 read_bps=2 read_bit_rate=32000 duration=160
+channels=2 bps=0 bit_rate=32000 tag=37 32 36 32 read_bps=2 read_bit_rate=32000 duration=160
+channels=2 bps=4 bit_rate=64000 tag=00 00 00 17 read_bps=4 read_bit_rate=64000 duration=80
+channels=2 bps=0 bit_rate=64000 tag=00 00 00 17 read_bps=4 read_bit_rate=64000 duration=80
