@@ -29,6 +29,7 @@
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/cpu.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
@@ -480,22 +481,22 @@ error:
     return ret;
 }
 
-static void print_test_params(char *buf, size_t buf_size,
+static void print_test_params(AVBPrint *bp,
                               const AVFrame *src, const AVFrame *dst,
                               const struct mode *mode, const struct options *opts)
 {
-    snprintf(buf, buf_size,
-             "%-*s %*dx%*d -> %-*s %*dx%*d, flags=0x%0*x dither=%u scaler=%d/%d",
-             opts->pretty ? 14 : 0, av_get_pix_fmt_name(src->format),
-             opts->pretty ?  4 : 0, src->width,
-             opts->pretty ?  4 : 0, src->height,
-             opts->pretty ? 14 : 0, av_get_pix_fmt_name(dst->format),
-             opts->pretty ?  4 : 0, dst->width,
-             opts->pretty ?  4 : 0, dst->height,
-             opts->pretty ?  8 : 0, mode->flags,
-             mode->dither,
-             mode->scaler,
-             mode->scaler_sub);
+    av_bprintf(bp,
+               "%-*s %*dx%*d -> %-*s %*dx%*d, flags=0x%0*x dither=%u scaler=%d/%d",
+               opts->pretty ? 14 : 0, av_get_pix_fmt_name(src->format),
+               opts->pretty ?  4 : 0, src->width,
+               opts->pretty ?  4 : 0, src->height,
+               opts->pretty ? 14 : 0, av_get_pix_fmt_name(dst->format),
+               opts->pretty ?  4 : 0, dst->width,
+               opts->pretty ?  4 : 0, dst->height,
+               opts->pretty ?  8 : 0, mode->flags,
+               mode->dither,
+               mode->scaler,
+               mode->scaler_sub);
 }
 
 static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame *dst,
@@ -505,23 +506,23 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                           const struct test_results *ref_r,
                           float expected_loss)
 {
-    char buf[128];
+    AVBPrint bprint, *bp = &bprint;
+    av_bprint_init(bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
     if (av_log_get_level() >= AV_LOG_INFO) {
-        print_test_params(buf, sizeof(buf), src, dst, mode, opts);
-        printf("%s", buf);
+        print_test_params(bp, src, dst, mode, opts);
 
         if (!opts->bench || !ref_r) {
-            printf(", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
-                   r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
-                   r->loss);
+            av_bprintf(bp, ", SSIM={Y=%f U=%f V=%f A=%f} loss=%e",
+                       r->ssim[0], r->ssim[1], r->ssim[2], r->ssim[3],
+                       r->loss);
             if (ref_r)
-                printf(" (ref=%e)", ref_r->loss);
+                av_bprintf(bp, " (ref=%e)", ref_r->loss);
         }
 
         if (opts->bench) {
-            printf(", time=%*"PRId64"/%u us",
-                   opts->pretty ? 7 : 0, r->time, opts->iters);
+            av_bprintf(bp, ", time=%*"PRId64"/%u us",
+                       opts->pretty ? 7 : 0, r->time, opts->iters);
             if (ref_r) {
                 double ratio = ((double) ref_r->time / ref_r->iters)
                              / ((double) r->time / opts->iters);
@@ -532,28 +533,33 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
                     state.speedup_count++;
                 }
 
-                printf(" (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
-                       opts->pretty ? 7 : 0, ref_r->time, ref_r->iters,
-                       opts->pretty ? 6 : 0, ratio,
-                       speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
+                av_bprintf(bp, " (ref=%*"PRId64"/%u us), speedup=%*.3fx %s%s\033[0m",
+                           opts->pretty ? 7 : 0, ref_r->time, ref_r->iters,
+                           opts->pretty ? 6 : 0, ratio,
+                           speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
             }
         }
-        printf("\n");
+        av_bprintf(bp, "\n");
 
-        fflush(stdout);
+        if (av_bprint_is_complete(bp)) {
+            fputs(bp->str, stdout);
+            fflush(stdout);
+        }
     }
 
     if (r->loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
         const int bad = r->loss - expected_loss > 1e-2;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
         const char *worse_str = bad ? "WORSE" : "worse";
+        av_bprint_clear(bp);
         if (bad) {
-            print_test_params(buf, sizeof(buf), src, dst, mode, opts);
-            av_log(NULL, level, "%s\n", buf);
+            print_test_params(bp, src, dst, mode, opts);
+            av_bprintf(bp, "\n");
         }
-        av_log(NULL, level,
-               "  loss %e is %s by %e, expected loss %e\n",
-               r->loss, worse_str, r->loss - expected_loss, expected_loss);
+        av_bprintf(bp, "  loss %e is %s by %e, expected loss %e\n",
+                   r->loss, worse_str, r->loss - expected_loss, expected_loss);
+        if (av_bprint_is_complete(bp))
+            av_log(NULL, level, "%s", bp->str);
     }
 
     if (ref_r && r->loss - ref_r->loss > 1e-4) {
@@ -569,14 +575,16 @@ static void print_results(const AVFrame *ref, const AVFrame *src, const AVFrame 
         const int bad = r->loss - ref_r->loss > 1e-2 && dst_bits > 1;
         const int level = bad ? AV_LOG_ERROR : AV_LOG_WARNING;
         const char *worse_str = bad ? "WORSE" : "worse";
+        av_bprint_clear(bp);
         if (bad) {
-            print_test_params(buf, sizeof(buf), src, dst, mode, opts);
-            av_log(NULL, level, "%s\n", buf);
+            print_test_params(bp, src, dst, mode, opts);
+            av_bprintf(bp, "\n");
         }
-        av_log(NULL, level,
-               "  loss %e is %s by %e, ref loss %e SSIM={Y=%f U=%f V=%f A=%f}\n",
-               r->loss, worse_str, r->loss - ref_r->loss, ref_r->loss,
-               ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
+        av_bprintf(bp, "  loss %e is %s by %e, ref loss %e SSIM={Y=%f U=%f V=%f A=%f}\n",
+                   r->loss, worse_str, r->loss - ref_r->loss, ref_r->loss,
+                   ref_r->ssim[0], ref_r->ssim[1], ref_r->ssim[2], ref_r->ssim[3]);
+        if (av_bprint_is_complete(bp))
+            av_log(NULL, level, "%s", bp->str);
     }
 }
 
