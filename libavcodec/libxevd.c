@@ -348,7 +348,7 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             memset(&stat, 0, sizeof(XEVD_STAT));
 
             nalu_size = read_nal_unit_length(pkt_au->data + bs_read_pos, XEVD_NAL_UNIT_LENGTH_BYTE, avctx);
-            if (nalu_size == 0) {
+            if (nalu_size <= 0 || nalu_size > pkt_au->size - bs_read_pos - XEVD_NAL_UNIT_LENGTH_BYTE) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid bitstream\n");
                 av_packet_free(&pkt_au);
                 ret = AVERROR_INVALIDDATA;
