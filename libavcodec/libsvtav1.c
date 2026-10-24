@@ -664,9 +664,9 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         frame = NULL;
 
     ret = eb_send_frame(avctx, frame);
+    av_frame_unref(svt_enc->frame);
     if (ret < 0)
         return ret;
-    av_frame_unref(svt_enc->frame);
 
     svt_ret = svt_av1_enc_get_packet(svt_enc->svt_handle, &headerPtr, svt_enc->eos_flag);
     if (svt_ret == EB_NoErrorEmptyQueue)
