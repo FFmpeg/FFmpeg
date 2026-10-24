@@ -138,6 +138,12 @@ typedef struct DCAXllDecoder {
     int    x_syncword_present;        ///< Syncword for extension data at end of frame (DTS:X) is present
     int    x_imax_syncword_present;   ///< Syncword for extension data at end of frame (DTS:X IMAX) is present
 
+    DCAXllChSet x_chset;        ///< Height channel set of the DTS:X standard presentation
+    int     x_heights;          ///< Output carries the four heights (sticky once seen)
+    int     x_heights_decoded;  ///< Heights of the current frame decoded
+    int32_t *x_silence;         ///< Silent heights for a frame whose heights did not decode
+    unsigned int x_silence_size;
+
     int     output_mask;
     int32_t *output_samples[DCA_SPEAKER_COUNT];
 } DCAXllDecoder;

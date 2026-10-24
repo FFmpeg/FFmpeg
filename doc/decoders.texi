@@ -317,6 +317,27 @@ Loud sounds are fully compressed.  Soft sounds are enhanced.
 
 @end table
 
+@section dca
+
+DCA (DTS Coherent Acoustics) audio decoder, including the DTS-HD extensions.
+
+@subsection DCA Decoder Options
+
+@table @option
+
+@item -downmix @var{channel_layout}
+Request a smaller channel layout from the decoder: @samp{stereo},
+@samp{5.0(side)}, @samp{5.1(side)} or @samp{7.1}.
+
+A DTS:X stream in the standard presentation decodes to 7.1.4 by default. Its
+four height channels are carried in an extension at the end of each lossless
+(XLL) frame, and the encoder also folds them into the 7.1 bed, so the decoder
+removes them from the bed when it outputs them. Requesting @samp{7.1} outputs
+the bed as coded instead, with the heights folded in, and so does every
+smaller layout. A @samp{7.1} request has no effect on other streams.
+
+@end table
+
 @section flac
 
 FLAC audio decoder.

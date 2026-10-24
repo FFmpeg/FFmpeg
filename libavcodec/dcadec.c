@@ -434,6 +434,8 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
             s->request_channel_layout = DCA_SPEAKER_LAYOUT_5POINT1;
             av_channel_layout_uninit(&avctx->ch_layout);
             avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1;
+        } else if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1)) {
+            s->x_bed_only = 1;
         }
         else
             av_log(avctx, AV_LOG_WARNING, "Invalid downmix layout\n");

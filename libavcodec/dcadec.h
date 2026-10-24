@@ -72,6 +72,7 @@ typedef struct DCAContext {
     int     core_only;              ///< Core only decoding flag
     int     output_channel_order;
     AVChannelLayout downmix_layout;
+    int     x_bed_only;             ///< Keep a DTS:X 7.1 bed as coded, without its heights
 } DCAContext;
 
 int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask);
