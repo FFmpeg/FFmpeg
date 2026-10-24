@@ -32,6 +32,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -284,6 +285,46 @@ static int au_get_annotations(AVFormatContext *s, AVBPrint *annotations)
     return av_bprint_is_complete(annotations) ? 0 : AVERROR(ENOMEM);
 }
 
+/* Sun encodings 25, 23 and 26 are 3-, 4- and 5-bit G.726. There is no Sun
+ * number for 2-bit G.726; '7262' is the private tag the demuxer reads. */
+static int au_g726le_tag(AVFormatContext *s, AVCodecParameters *par)
+{
+    int64_t bps = par->bits_per_coded_sample;
+
+    if (bps <= 0) {
+        if (par->bit_rate <= 0 || par->sample_rate <= 0 ||
+            par->ch_layout.nb_channels <= 0) {
+            av_log(s, AV_LOG_ERROR, "Cannot determine G.726LE bit width\n");
+            return AVERROR(EINVAL);
+        }
+        bps = av_rescale(par->bit_rate, 1,
+                         (int64_t)par->sample_rate * par->ch_layout.nb_channels);
+    }
+
+    switch (bps) {
+    case 2:
+        av_log(s, AV_LOG_WARNING,
+               "Sun AU has no standard encoding for 2-bit G.726LE; "
+               "writing non-standard '7262' tag\n");
+        par->codec_tag = MKBETAG('7', '2', '6', '2');
+        break;
+    case 3:
+        par->codec_tag = 25;
+        break;
+    case 4:
+        par->codec_tag = 23;
+        break;
+    case 5:
+        par->codec_tag = 26;
+        break;
+    default:
+        av_log(s, AV_LOG_ERROR,
+               "Unsupported G.726LE bit width %"PRId64"\n", bps);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 static int au_write_header(AVFormatContext *s)
 {
     int ret;
@@ -292,10 +333,16 @@ static int au_write_header(AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
     AVBPrint annotations;
 
-    par->codec_tag = ff_codec_get_tag(codec_au_tags, par->codec_id);
-    if (!par->codec_tag) {
-        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
-        return AVERROR(EINVAL);
+    if (par->codec_id == AV_CODEC_ID_ADPCM_G726LE) {
+        ret = au_g726le_tag(s, par);
+        if (ret < 0)
+            return ret;
+    } else {
+        par->codec_tag = ff_codec_get_tag(codec_au_tags, par->codec_id);
+        if (!par->codec_tag) {
+            av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     av_bprint_init(&annotations, 0, INT_MAX - 24);
