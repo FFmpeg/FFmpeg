@@ -162,12 +162,12 @@ struct GfxCaptureContextCpp {
     AVHWFramesContext *frames_ctx { nullptr };
     AVD3D11VAFramesContext *frames_hwctx { nullptr };
 
-    int64_t first_pts { 0 };
-    int64_t last_pts { 0 };
+    int64_t first_pts { AV_NOPTS_VALUE };
+    int64_t last_pts { AV_NOPTS_VALUE };
 
     // dup_frames: last output frame and the QPC time (100 ns units) the next repeat is due
     AVFrame *last_frame { nullptr };
-    int64_t next_pts { 0 };
+    int64_t next_pts { AV_NOPTS_VALUE };
 };
 
 template <typename T>
@@ -1471,12 +1471,12 @@ static int output_frame(AVFilterLink *outlink, AVFrame *frame)
     GfxCaptureContextCpp *ctx = CCTX(outlink->src->priv)->ctx;
 
     // a captured frame can carry a time slightly before an already sent repeat
-    if (ctx->last_pts && frame->pts <= ctx->last_pts)
+    if (ctx->last_pts != AV_NOPTS_VALUE && frame->pts <= ctx->last_pts)
         frame->pts = ctx->last_pts + 1;
 
     ctx->last_pts = frame->pts;
 
-    if (!ctx->first_pts)
+    if (ctx->first_pts == AV_NOPTS_VALUE)
         ctx->first_pts = frame->pts;
     frame->pts -= ctx->first_pts;
 
@@ -1606,13 +1606,15 @@ static int gfxcapture_activate(AVFilterContext *avctx)
         std::unique_lock frame_lock(wgctx->frame_arrived_mutex);
 
         if (wgctx->window_closed && wgctx->frame_seq == last_seq) {
-            ff_outlink_set_status(outlink, AVERROR_EOF, ctx->last_pts - ctx->first_pts + 1);
+            ff_outlink_set_status(outlink, AVERROR_EOF,
+                                  ctx->last_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE
+                                                                  : ctx->last_pts - ctx->first_pts + 1);
             break;
         }
 
         int64_t timeout = TIMESPAN_RES64;
         if (cctx->dup_frames) {
-            if (!ctx->next_pts)
+            if (ctx->next_pts == AV_NOPTS_VALUE)
                 ctx->next_pts = qpc_now() + dup_interval(cctx);
             timeout = av_clip64(ctx->next_pts - qpc_now(), 0, TIMESPAN_RES64);
         }
