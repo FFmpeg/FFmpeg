@@ -34,7 +34,9 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 #include "libavutil/sfc64.h"
+#include "libavutil/slicethread.h"
 #include "libavutil/thread.h"
+#include "libavutil/threadmessage.h"
 #include "libavutil/frame.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -134,6 +136,9 @@ static struct {
     struct runner *runners;
     AVFrame *ref;
     FILE *fp;
+
+    /* Tests waiting for a runner, if running concurrently */
+    AVThreadMessageQueue *queue;
 } state = {
     .speedup_lock = AV_MUTEX_INITIALIZER,
     .speedup_min  = 1e10,
@@ -775,6 +780,13 @@ static inline int test_formats(const struct options *opts,
            ff_sws_test_pixfmt_backend(backend, dst, 1);
 }
 
+static int push_test(const struct test_case *t, const struct options *opts)
+{
+    if (state.queue)
+        return av_thread_message_queue_send(state.queue, (void *) t, 0);
+    return run_test(&state.runners[0], t, opts);
+}
+
 static int run_self_tests(const struct options *opts)
 {
     const int dst_w_values[] = { opts->w, opts->w - opts->w / 3, opts->w + opts->w / 3 };
@@ -825,7 +837,7 @@ static int run_self_tests(const struct options *opts)
                                 .mode    = mode,
                             };
 
-                            ret = run_test(&state.runners[0], &test, opts);
+                            ret = push_test(&test, opts);
                             if (ret < 0)
                                 goto error;
                         }
@@ -923,7 +935,7 @@ static int run_file_tests(const struct options *opts)
             .ref_r   = r,
         };
 
-        ret = run_test(&state.runners[0], &test, opts);
+        ret = push_test(&test, opts);
         if (ret < 0)
             goto error;
     }
@@ -959,6 +971,35 @@ static void runner_free(struct runner *runner)
 static int run_tests(const struct options *opts)
 {
     return state.fp ? run_file_tests(opts) : run_self_tests(opts);
+}
+
+static int run_producer(void *priv)
+{
+    const struct options *opts = priv;
+    int ret = run_tests(opts);
+    /* Let the runners finish all remaining tests */
+    av_thread_message_queue_set_err_recv(state.queue, AVERROR_EOF);
+    return ret;
+}
+
+static int run_runner(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
+{
+    const struct options *opts = priv;
+    struct runner *runner = &state.runners[jobnr];
+    struct test_case test;
+
+    while (!av_thread_message_queue_recv(state.queue, &test, 0)) {
+        int ret = run_test(runner, &test, opts);
+        if (ret < 0) {
+            /* Stop the producer and all other runners */
+            av_thread_message_queue_set_err_send(state.queue, ret);
+            av_thread_message_queue_set_err_recv(state.queue, ret);
+            av_thread_message_flush(state.queue);
+            return ret;
+        }
+    }
+
+    return 0;
 }
 
 static int init_ref(AVFrame *ref, const struct options *opts)
@@ -1253,6 +1294,8 @@ int main(int argc, char **argv)
         .scaler_sub = SWS_SCALE_AUTO,
     };
 
+    AVSliceThread *slicethread = NULL;
+
     int ret = parse_options(argc, argv, &opts, &state.fp);
     if (ret == AVERROR(ENOTSUP)) {
         ret = 0;
@@ -1289,10 +1332,28 @@ int main(int argc, char **argv)
     if (ret < 0)
         goto error;
 
-    ret = run_tests(&opts);
+    if (opts.runners > 1) {
+        ret = av_thread_message_queue_alloc(&state.queue, opts.runners,
+                                            sizeof(struct test_case));
+        if (ret < 0)
+            goto error;
+
+        ret = avpriv_slicethread_create2(&slicethread, &opts, run_runner,
+                                         run_producer, opts.runners);
+        if (ret < 0) {
+            fprintf(stderr, "Failed to create %d runner threads: %s\n",
+                    opts.runners, av_err2str(ret));
+            goto error;
+        }
+        ret = avpriv_slicethread_execute2(slicethread, opts.runners, 1);
+    } else {
+        ret = run_tests(&opts);
+    }
 
     /* fall through */
 error:
+    avpriv_slicethread_free(&slicethread);
+    av_thread_message_queue_free(&state.queue);
     for (int i = 0; state.runners && i < opts.runners; i++)
         runner_free(&state.runners[i]);
     av_freep(&state.runners);
