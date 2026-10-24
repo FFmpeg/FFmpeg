@@ -1206,13 +1206,14 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 if (incl) {
                     int zbp = tag_tree_decode(s, prec->zerobits + cblkno, 100);
                     int v = expn[bandno] + numgbits - 1 - (zbp - tile->comp->roi_shift);
-                    if (v < 0 || v > 30) {
+                    if (zbp >= 100 || v > 30 ||
+                        (v < 0 && (cblk->modes & JPEG2000_CTSY_HTJ2K_F))) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "nonzerobits %d invalid or unsupported\n", v);
                         return AVERROR_INVALIDDATA;
                     }
                     cblk->incl = 1;
-                    cblk->nonzerobits = v;
+                    cblk->nonzerobits = FFMAX(v, 0);
                     cblk->zbp = zbp;
                     cblk->lblock = 3;
                 }
@@ -2029,8 +2030,8 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
 
     memset(t1->data, 0, t1->stride * height * sizeof(*t1->data));
 
-    /* If code-block contains no compressed data: nothing to do. */
-    if (!cblk->length)
+    /* If code-block contains no compressed data or no coded bit-planes: nothing to do. */
+    if (!cblk->length || !cblk->nonzerobits)
         return 0;
 
     memset(t1->flags, 0, t1->stride * (height + 2) * sizeof(*t1->flags));
