@@ -331,6 +331,7 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (pkt->size > 0) {
         int bs_read_pos = 0;
+        int pkt_au_retained = 0;
         XEVD_STAT stat;
         XEVD_BITB bitb;
         int nalu_size;
@@ -394,6 +395,7 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
             // stat.fnum - has negative value if the decoded data is not frame
             if (stat.fnum >= 0) {
+                pkt_au_retained = 1;
                 // store stat.stype into the bitb.pdata[1] that will be retrieved in an image
                 *(int*)bitb.pdata[1] = stat.stype;
 
@@ -427,6 +429,8 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 }
             }
         }
+        if (!pkt_au_retained)
+            av_packet_free(&pkt_au);
     } else { // decoder draining mode handling
 
         while (1) {
