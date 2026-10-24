@@ -63,7 +63,11 @@ fate-jpeg2000dec-p0_16: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpe
 FATE_JPEG2000DEC += fate-jpeg2000dec-ds0_ht_01_b11
 fate-jpeg2000dec-ds0_ht_01_b11: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpeg2000/itu-iso/htj2k_bsets_profile0/ds0_ht_01_b11.j2k
 
+FATE_JPEG2000DEC_FFPROBE-$(call DEMDEC, MXF, JPEG2000) += fate-jpeg2000dec-timestamps
+fate-jpeg2000dec-timestamps: CMD = probeframes -of compact -show_entries frame=pts,pkt_dts $(TARGET_SAMPLES)/jpeg2000/chiens_dcinema2K.mxf
+
 FATE_JPEG2000DEC += $(FATE_JPEG2000DEC-yes)
 
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, IMAGE_J2K_PIPE, JPEG2000) += $(FATE_JPEG2000DEC)
-fate-jpeg2000dec: $(FATE_JPEG2000DEC)
+FATE_SAMPLES_FFPROBE += $(FATE_JPEG2000DEC_FFPROBE-yes)
+fate-jpeg2000dec: $(FATE_JPEG2000DEC) $(FATE_JPEG2000DEC_FFPROBE-yes)
