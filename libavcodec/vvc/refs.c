@@ -145,7 +145,10 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         frame->sps = av_refstruct_ref_c(fc->ps.sps);
         frame->pps = av_refstruct_ref_c(fc->ps.pps);
 
-        frame->rpl = av_refstruct_allocz(s->current_frame.nb_units * sizeof(RefPicListTab));
+        size_t rpl_size;
+        if (av_size_mult(s->current_frame.nb_units, sizeof(RefPicListTab), &rpl_size) < 0)
+            goto fail;
+        frame->rpl = av_refstruct_allocz(rpl_size);
         if (!frame->rpl)
             goto fail;
         frame->nb_rpl_elems = s->current_frame.nb_units;
