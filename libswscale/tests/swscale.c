@@ -1060,6 +1060,27 @@ static int parse_size(struct options *opts, const char *str, char **pbuf)
     return ret;
 }
 
+/* Parses [threads][:runners] */
+static int parse_threads(struct options *opts, const char *str)
+{
+    const char *sep = strchr(str, ':');
+    const char *str_threads = sep == str ? NULL : str;
+    const char *str_runners = sep ? sep + 1 : NULL;
+    int threads = str_threads ? atoi(str_threads) : 1;
+    int runners = str_runners ? atoi(str_runners) : 1;
+    if (threads < 0 || runners < 0)
+        return AVERROR(EINVAL);
+
+    if (!runners) {
+        runners = av_cpu_count();
+        runners = FFMAX(runners, 1);
+    }
+
+    opts->threads = threads;
+    opts->runners = runners;
+    return 0;
+}
+
 static int parse_implementation(const char *str)
 {
     if (!strcmp(str, "legacy"))
@@ -1117,8 +1138,11 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                     "   -hw <device>\n"
                     "       Use Vulkan hardware acceleration on the specified device for the main conversion\n"
                     "       If 'default', use the default device, and skip all tests if none is available\n"
-                    "   -threads <threads>\n"
-                    "       Use the specified number of threads\n"
+                    "   -threads [<threads>][:<runners>]\n"
+                    "       Use the specified number of threads per conversion (default: 1)\n"
+                    "       Optionally run multiple tests concurrently on <runners> threads (default: 1)\n"
+                    "       A value of 0 picks the number of threads automatically\n"
+                    "       Benchmark results may be skewed when using multiple runners\n"
                     "   -cpuflags <cpuflags>\n"
                     "       Uses the specified cpuflags in the tests\n"
                     "   -pretty <1 or 0>\n"
@@ -1247,7 +1271,11 @@ static int parse_options(int argc, char **argv, struct options *opts, FILE **fp)
                 goto end;
             }
         } else if (!strcmp(argv[i], "-threads")) {
-            opts->threads = atoi(argv[i + 1]);
+            ret = parse_threads(opts, argv[i + 1]);
+            if (ret < 0) {
+                fprintf(stderr, "invalid thread count %s\n", argv[i + 1]);
+                goto end;
+            }
         } else if (!strcmp(argv[i], "-p")) {
             opts->prob = atof(argv[i + 1]);
         } else if (!strcmp(argv[i], "-pretty")) {
