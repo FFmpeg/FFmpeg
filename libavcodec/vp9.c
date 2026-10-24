@@ -114,6 +114,12 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
     if (ret < 0)
         return ret;
 
+    if (!avctx->hwaccel && f->tf.f->linesize[1] != f->tf.f->linesize[2]) {
+        av_log(avctx, AV_LOG_ERROR, "uv stride mismatch unsupported\n");
+        ret = AVERROR_PATCHWELCOME;
+        goto fail;
+    }
+
     sz = 64 * s->sb_cols * s->sb_rows;
     if (sz != s->frame_extradata_pool_size) {
         av_refstruct_pool_uninit(&s->frame_extradata_pool);
