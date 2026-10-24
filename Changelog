@@ -2,7 +2,6 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
-- JPEG Multi-Picture Format demuxer
 
 version 9.1:
 - ASTC image encoding and decoding via libastcenc, with .astc and KTX 1.0 muxers and demuxers
@@ -26,6 +25,7 @@ version 9.1:
 - Remove the asf_o demuxer
 - D3D12 DirectML zero-copy inference for the ONNX Runtime DNN backend
 - side_data bitstream filter
+- JPEG Multi-Picture Format demuxer
 
 
 version 9.0:
