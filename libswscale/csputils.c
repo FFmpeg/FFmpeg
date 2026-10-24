@@ -92,23 +92,26 @@ static inline AVRational cie_Z(AVCIExy xy)
 SwsMatrix3x3 ff_sws_rgb2xyz(const AVColorPrimariesDesc *desc)
 {
     SwsMatrix3x3 out = {{{0}}};
-    float S[3], X[3], Z[3], Xw, Zw;
+    float S[3], X[3], Y[3], Z[3], Xw, Zw;
 
-    X[0] = av_q2d(cie_X(desc->prim.r));
-    X[1] = av_q2d(cie_X(desc->prim.g));
-    X[2] = av_q2d(cie_X(desc->prim.b));
+    X[0] = av_q2d(desc->prim.r.x);
+    X[1] = av_q2d(desc->prim.g.x);
+    X[2] = av_q2d(desc->prim.b.x);
 
-    Z[0] = av_q2d(cie_Z(desc->prim.r));
-    Z[1] = av_q2d(cie_Z(desc->prim.g));
-    Z[2] = av_q2d(cie_Z(desc->prim.b));
+    Y[0] = av_q2d(desc->prim.r.y);
+    Y[1] = av_q2d(desc->prim.g.y);
+    Y[2] = av_q2d(desc->prim.b.y);
+
+    for (int i = 0; i < 3; i++)
+        Z[i] = 1.0f - X[i] - Y[i];
 
     Xw = av_q2d(cie_X(desc->wp));
     Zw = av_q2d(cie_Z(desc->wp));
 
-    /* S = XYZ^-1 * W */
+    /* S = xyz^-1 * W */
     for (int i = 0; i < 3; i++) {
         out.m[0][i] = X[i];
-        out.m[1][i] = 1.0f;
+        out.m[1][i] = Y[i];
         out.m[2][i] = Z[i];
     }
 
@@ -117,10 +120,10 @@ SwsMatrix3x3 ff_sws_rgb2xyz(const AVColorPrimariesDesc *desc)
     for (int i = 0; i < 3; i++)
         S[i] = out.m[i][0] * Xw + out.m[i][1] + out.m[i][2] * Zw;
 
-    /* M = [Sc * XYZc] */
+    /* M = [Sc * xyzc] */
     for (int i = 0; i < 3; i++) {
         out.m[0][i] = S[i] * X[i];
-        out.m[1][i] = S[i];
+        out.m[1][i] = S[i] * Y[i];
         out.m[2][i] = S[i] * Z[i];
     }
 
