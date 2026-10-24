@@ -49,6 +49,12 @@
 #define IMPL_NEW    0
 #define IMPL_LEGACY 1
 
+/* Settings used for auxiliary conversions */
+enum {
+    AUX_BACKENDS = SWS_BACKEND_ALL,
+    AUX_FLAGS    = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND,
+};
+
 struct options {
     enum AVPixelFormat src_fmt;
     enum AVPixelFormat dst_fmt;
@@ -742,13 +748,12 @@ static inline int fmt_disabled(const struct options *opts, enum AVPixelFormat fm
            (scaler_sub < 0 && fmt_is_subsampled(fmt));
 }
 
-static inline int test_formats(const struct runner *runner,
-                               const struct options *opts,
+static inline int test_formats(const struct options *opts,
                                enum AVPixelFormat src, enum AVPixelFormat dst)
 {
     /* Test auxiliary conversions */
-    if (!ff_sws_test_pixfmt_backend(runner->sws_ref_src->backends, src, 1) ||
-        !ff_sws_test_pixfmt_backend(runner->sws_dst_out->backends, dst, 0))
+    if (!ff_sws_test_pixfmt_backend(AUX_BACKENDS, src, 1) ||
+        !ff_sws_test_pixfmt_backend(AUX_BACKENDS, dst, 0))
         return 0;
 
     /* Test main conversion */
@@ -783,7 +788,7 @@ static int run_self_tests(const AVFrame *ref, const struct options *opts)
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
             if (fmt_disabled(opts, dst_fmt))
                 continue;
-            if (!test_formats(&state.runner, opts, src_fmt, dst_fmt))
+            if (!test_formats(opts, src_fmt, dst_fmt))
                 continue;
             for (int h = 0; h < FF_ARRAY_ELEMS(dst_h_values); h++) {
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w_values); w++) {
@@ -906,10 +911,10 @@ static int runner_init(struct runner *runner)
     runner->sws_dst_out = sws_alloc_context();
     if (!runner->sws_ref_src || !runner->sws_src_dst || !runner->sws_dst_out)
         return AVERROR(ENOMEM);
-    runner->sws_ref_src->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
-    runner->sws_dst_out->flags = SWS_BILINEAR | SWS_BITEXACT | SWS_ACCURATE_RND;
-    runner->sws_ref_src->backends = SWS_BACKEND_ALL;
-    runner->sws_dst_out->backends = SWS_BACKEND_ALL;
+    runner->sws_ref_src->flags = AUX_FLAGS;
+    runner->sws_dst_out->flags = AUX_FLAGS;
+    runner->sws_ref_src->backends = AUX_BACKENDS;
+    runner->sws_dst_out->backends = AUX_BACKENDS;
     return 0;
 }
 
