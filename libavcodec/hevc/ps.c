@@ -1940,11 +1940,10 @@ static void delta_dlt(GetBitContext *gb, HEVCPPS *pps)
             len = av_log2(max_diff) + 1;
             min_diff_minus1 = get_bits(gb, len);
         }
-        if (max_diff > (min_diff_minus1 + 1))
-            for (int k = 1; k < num_val_delta_dlt; k++) {
-                len = av_log2(max_diff - (min_diff_minus1 + 1)) + 1;
-                skip_bits(gb, len); // delta_val_diff_minus_min
-            }
+        if (max_diff > (min_diff_minus1 + 1)) {
+            len = av_log2(max_diff - (min_diff_minus1 + 1)) + 1;
+            skip_bits_long(gb, (num_val_delta_dlt - 1) * len); // delta_val_diff_minus_min
+        }
     }
 }
 
@@ -1960,8 +1959,7 @@ static int pps_3d_extension(GetBitContext *gb, AVCodecContext *avctx,
             if (get_bits1(gb)) { // dlt_flag[i]
                 if (!get_bits1(gb)) { // dlt_pred_flag[i]
                     if (get_bits1(gb)) { // dlt_val_flags_present_flag[i]
-                        for (int j = 0; j <= ((1 << (pps->pps_bit_depth_for_depth_layers_minus8 + 8)) - 1); j++)
-                            skip_bits1(gb); // dlt_value_flag[i][j]
+                        skip_bits_long(gb, 1 << (pps->pps_bit_depth_for_depth_layers_minus8 + 8)); // dlt_value_flag[i][j]
                     } else
                         delta_dlt(gb, pps);
                 }
