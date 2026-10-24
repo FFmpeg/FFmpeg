@@ -504,6 +504,8 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 {
     AMFSurface* surface = (AMFSurface*)src->data[0];
     AVAMFDeviceContext *amf_ctx = ctx->device_ctx->hwctx;
+    const AMFGuid guid = IID_AMFSurface();
+    AMFData  *data;
     AMFPlane *plane;
     uint8_t  *src_data[4];
     int       src_linesize[4];
@@ -516,10 +518,17 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     if (src->hw_frames_ctx->data != (uint8_t *)ctx || dst->format != ctx->sw_format)
         return AVERROR(EINVAL);
 
-    amf_ctx->lock(amf_ctx->lock_ctx);
-    ret = surface->pVtbl->Convert(surface, AMF_MEMORY_HOST);
-    amf_ctx->unlock(amf_ctx->lock_ctx);
-    AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "Convert(amf::AMF_MEMORY_HOST) failed with error %d\n", ret);
+    if (surface->pVtbl->GetMemoryType(surface) == AMF_MEMORY_HOST) {
+        surface->pVtbl->Acquire(surface);
+    } else {
+        amf_ctx->lock(amf_ctx->lock_ctx);
+        ret = surface->pVtbl->Duplicate(surface, AMF_MEMORY_HOST, &data);
+        amf_ctx->unlock(amf_ctx->lock_ctx);
+        AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "Duplicate(AMF_MEMORY_HOST) failed with error %d\n", ret);
+        ret = data->pVtbl->QueryInterface(data, &guid, (void**)&surface);
+        data->pVtbl->Release(data);
+        AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(AMFSurface) failed with error %d\n", ret);
+    }
 
     planes = (int)surface->pVtbl->GetPlanesCount(surface);
     av_assert0(planes < FF_ARRAY_ELEMS(src_data));
@@ -532,6 +541,7 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     av_image_copy2(dst->data, dst->linesize,
                    src_data, src_linesize, dst->format,
                    w, h);
+    surface->pVtbl->Release(surface);
     return 0;
 }
 
