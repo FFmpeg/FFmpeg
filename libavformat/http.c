@@ -60,7 +60,6 @@
 #define MAX_CACHED_REDIRECTS 32
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
-#define MAX_DATE_LEN  19
 #define WHITESPACES " \n\t\r"
 typedef enum {
     LOWER_PROTO,
@@ -239,7 +238,6 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth);
 static int http_read_header(URLContext *h);
-static int bind_cookies_to_host(HTTPContext *s);
 static int http_shutdown(URLContext *h, int flags);
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
@@ -843,8 +841,12 @@ static int http_open(URLContext *h, const char *uri, int flags,
     if (!s->uri)
         return AVERROR(ENOMEM);
 
-    if (s->cookies && (ret = bind_cookies_to_host(s)) < 0)
-        goto bail_out;
+    if (s->cookies) {
+        char host[1024];
+        av_url_split(NULL, 0, NULL, 0, host, sizeof(host), NULL, NULL, 0, s->location);
+        if ((ret = ff_http_bind_cookies_to_host(&s->cookies, host)) < 0)
+            goto bail_out;
+    }
 
     if (options)
         av_dict_copy(&s->chained_options, *options, 0);
@@ -1103,90 +1105,12 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
     return 0;
 }
 
-static int parse_http_date(const char *date_str, struct tm *buf)
-{
-    char date_buf[MAX_DATE_LEN];
-    int i, j, date_buf_len = MAX_DATE_LEN-1;
-    char *date;
-
-    // strip off any punctuation or whitespace
-    for (i = 0, j = 0; date_str[i] != '\0' && j < date_buf_len; i++) {
-        if ((date_str[i] >= '0' && date_str[i] <= '9') ||
-            (date_str[i] >= 'A' && date_str[i] <= 'Z') ||
-            (date_str[i] >= 'a' && date_str[i] <= 'z')) {
-            date_buf[j] = date_str[i];
-            j++;
-        }
-    }
-    date_buf[j] = '\0';
-    date = date_buf;
-
-    // move the string beyond the day of week
-    while ((*date < '0' || *date > '9') && *date != '\0')
-        date++;
-
-    return av_small_strptime(date, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
-}
-
-static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
-{
-    char *param, *next_param, *cstr, *back;
-    char *saveptr = NULL;
-
-    if (!set_cookie[0])
-        return 0;
-
-    if (!(cstr = av_strdup(set_cookie)))
-        return AVERROR(EINVAL);
-
-    // strip any trailing whitespace
-    back = &cstr[strlen(cstr)-1];
-    while (strchr(WHITESPACES, *back)) {
-        *back='\0';
-        if (back == cstr)
-            break;
-        back--;
-    }
-
-    next_param = cstr;
-    while ((param = av_strtok(next_param, ";", &saveptr))) {
-        char *name, *value;
-        next_param = NULL;
-        param += strspn(param, WHITESPACES);
-        if ((name = av_strtok(param, "=", &value))) {
-            char *end = name + strlen(name);
-            while (end > name && strchr(WHITESPACES, end[-1]))
-                *--end = '\0';
-            if (av_dict_set(dict, name, value ? value : "", 0) < 0) {
-                av_free(cstr);
-                return -1;
-            }
-        }
-    }
-
-    av_free(cstr);
-    return 0;
-}
-
-static const char *cookie_domain(const AVDictionary *cookie_params)
-{
-    const AVDictionaryEntry *e = av_dict_get(cookie_params, "domain", NULL, 0);
-    const char *domain = e ? e->value + (e->value[0] == '.') : "";
-
-    return *domain ? domain : NULL;
-}
-
-static int host_is_ip_literal(const char *host)
-{
-    return !host[strspn(host, "0123456789.")] || strchr(host, ':');
-}
-
 static int host_in_cookie_domain(const char *host, const char *domain)
 {
     int offset = strlen(host) - strlen(domain);
 
     return offset >= 0 && !av_strcasecmp(host + offset, domain) &&
-           (!offset || (host[offset - 1] == '.' && !host_is_ip_literal(host)));
+           (!offset || (host[offset - 1] == '.' && !ff_http_host_is_ip_literal(host)));
 }
 
 static int parse_cookie(HTTPContext *s, const char *p, const char *host,
@@ -1199,7 +1123,7 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
     int len;
 
     // ensure the cookie is parsable
-    if (parse_set_cookie(p, &new_params)) {
+    if (ff_http_parse_set_cookie(p, &new_params)) {
         av_dict_free(&new_params);
         return -1;
     }
@@ -1214,7 +1138,7 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
     // ensure the cookie is not expired or older than an existing value
     if ((e = av_dict_get(new_params, "expires", NULL, 0)) && e->value) {
         struct tm new_tm = {0};
-        if (!parse_http_date(e->value, &new_tm)) {
+        if (!ff_http_parse_date(e->value, &new_tm)) {
             AVDictionaryEntry *e2;
 
             // if the cookie has already expired ignore it
@@ -1227,11 +1151,11 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
             e2 = av_dict_get(*cookies, cookie_entry->key, NULL, 0);
             if (e2 && e2->value) {
                 AVDictionary *old_params = NULL;
-                if (!parse_set_cookie(p, &old_params)) {
+                if (!ff_http_parse_set_cookie(p, &old_params)) {
                     e2 = av_dict_get(old_params, "expires", NULL, 0);
                     if (e2 && e2->value) {
                         struct tm old_tm = {0};
-                        if (!parse_http_date(e->value, &old_tm)) {
+                        if (!ff_http_parse_date(e->value, &old_tm)) {
                             if (av_timegm(&new_tm) < av_timegm(&old_tm)) {
                                 av_dict_free(&new_params);
                                 av_dict_free(&old_params);
@@ -1244,7 +1168,7 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
             }
         }
     }
-    const char *domain = host ? cookie_domain(new_params) : NULL;
+    const char *domain = host ? ff_http_cookie_domain(new_params) : NULL;
     int host_only = host && !domain;
     if (domain && !host_in_cookie_domain(host, domain)) {
         av_log(s, AV_LOG_WARNING, "Ignoring cookie for domain %s set by %s\n", domain, host);
@@ -1268,49 +1192,6 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
     }
     av_dict_set(cookies, name, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
 
-    return 0;
-}
-
-/* Cookies without a Domain apply only to the host they are given for. */
-static int bind_cookies_to_host(HTTPContext *s)
-{
-    char host[1024], *cookies, *cookie, *next, *saveptr = NULL, *bound;
-    AVBPrint bp;
-    int ret = 0;
-
-    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), NULL, NULL, 0, s->location);
-
-    next = cookies = av_strdup(s->cookies);
-    if (!cookies)
-        return AVERROR(ENOMEM);
-
-    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
-    while ((cookie = av_strtok(next, "\n", &saveptr))) {
-        AVDictionary *params = NULL;
-        int len = strlen(cookie), host_only;
-
-        next = NULL;
-        while (len && strchr(WHITESPACES, cookie[len - 1]))
-            len--;
-        if ((ret = parse_set_cookie(cookie, &params)) < 0) {
-            av_dict_free(&params);
-            break;
-        }
-        host_only = !cookie_domain(params) && !av_dict_get(params, "@hostonly", NULL, 0);
-        av_dict_free(&params);
-        av_bprintf(&bp, "%.*s%s%s\n", len, cookie, host_only ? "; @hostonly=" : "", host_only ? host : "");
-    }
-    av_free(cookies);
-    if (ret >= 0 && !av_bprint_is_complete(&bp))
-        ret = AVERROR(ENOMEM);
-    if (ret < 0) {
-        av_bprint_finalize(&bp, NULL);
-        return ret;
-    }
-    if ((ret = av_bprint_finalize(&bp, &bound)) < 0)
-        return ret;
-    av_free(s->cookies);
-    s->cookies = bound;
     return 0;
 }
 
@@ -1341,7 +1222,7 @@ static void parse_expires(HTTPContext *s, const char *p)
 {
     struct tm tm;
 
-    if (!parse_http_date(p, &tm)) {
+    if (!ff_http_parse_date(p, &tm)) {
         s->expires = av_timegm(&tm);
     }
 }
@@ -1525,7 +1406,7 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
         } else if (!av_strcasecmp(tag, "Retry-After")) {
             /* The header can be either an integer that represents seconds, or a date. */
             struct tm tm;
-            int date_ret = parse_http_date(p, &tm);
+            int date_ret = ff_http_parse_date(p, &tm);
             if (!date_ret) {
                 time_t retry   = av_timegm(&tm);
                 int64_t now    = av_gettime() / 1000000;
@@ -1577,7 +1458,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
 
         // continue on to the next cookie if this one cannot be parsed
-        if (parse_set_cookie(cookie, &cookie_params))
+        if (ff_http_parse_set_cookie(cookie, &cookie_params))
             goto skip_cookie;
 
         // if the cookie has no value, skip it
@@ -1594,14 +1475,14 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
             struct tm tm_buf = {0};
-            if (!parse_http_date(e->value, &tm_buf)) {
+            if (!ff_http_parse_date(e->value, &tm_buf)) {
                 if (av_timegm(&tm_buf) < av_gettime() / 1000000)
                     goto skip_cookie;
             }
         }
 
         // if no domain in the cookie assume it applied to this request
-        domain = cookie_domain(cookie_params);
+        domain = ff_http_cookie_domain(cookie_params);
         if (domain && !host_in_cookie_domain(s->host, domain))
             goto skip_cookie;
 
