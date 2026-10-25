@@ -24,6 +24,7 @@
 #include "config.h"
 #include "libavutil/adler32.h"
 #include "libavutil/avstring.h"
+#include "libavutil/gain_map.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/intreadwrite.h"
 
@@ -158,6 +159,25 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                             BSWAP_RAT(AVDynamicHDRPlus, mastering_display_actual_peak_luminance[i][j]);
                         }
                 }
+                goto pod;
+            case AV_PKT_DATA_GAIN_MAP_PARAMS:
+                if (sd->size == sizeof(AVGainMapParams)) {
+                    memcpy(bswap_buf, sd->data, sizeof(AVGainMapParams));
+                    data = bswap_buf;
+                    BSWAP(AVGainMapParams, version);
+                    BSWAP(AVGainMapParams, use_base_color_space);
+                    BSWAP_RAT(AVGainMapParams, base_hdr_headroom);
+                    BSWAP_RAT(AVGainMapParams, alternate_hdr_headroom);
+                    for (int i = 0; i < FF_ARRAY_ELEMS(((AVGainMapParams*)0)->channels); i++) {
+                        BSWAP_RAT(AVGainMapParams, channels[i].gain_map_min);
+                        BSWAP_RAT(AVGainMapParams, channels[i].gain_map_max);
+                        BSWAP_RAT(AVGainMapParams, channels[i].gamma);
+                        BSWAP_RAT(AVGainMapParams, channels[i].base_offset);
+                        BSWAP_RAT(AVGainMapParams, channels[i].alternate_offset);
+                    }
+                    BSWAP(AVGainMapParams, nb_channels);
+                }
+            av_fallthrough;
             pod:
 #endif
 
