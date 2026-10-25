@@ -93,8 +93,26 @@ typedef struct AC3DecodeContext {
     AVChannelLayout downmix_layout;
     SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
 
+///@name AVOptions
+/// Fields backing AVOptions. They hold user configuration (or, for the
+/// exported downmix fields, values derived from the last decoded frame) and
+/// must survive avcodec_flush_buffers(), so they must stay above the start
+/// of the flushable fields below.
+///@{
+    int preferred_stereo_downmix;
+    float ltrt_center_mix_level;
+    float ltrt_surround_mix_level;
+    float loro_center_mix_level;
+    float loro_surround_mix_level;
+    int target_level;                       ///< target level in dBFS
+    INTFLOAT drc_scale;                     ///< percentage of dynamic range compression to be applied
+    int heavy_compression;                  ///< apply heavy compression
+    int consistent_noise_generation;        ///< seed noise generation with AC-3 frame on decode
+///@}
+
 // Start of flushable fields.
-// frame_type must be the flushable field, or the offset changed in ac3_decode_flush().
+// frame_type must be the first flushable field, or the offset changed in
+// ac3_decode_flush(). No AVOption field may be placed at or below this line.
 
 ///@name Bit stream information
 ///@{
@@ -127,12 +145,6 @@ typedef struct AC3DecodeContext {
     int dolby_headphone_mode;               ///< dolby headphone mode                   (dheadphonmod)
 ///@}
 
-    int preferred_stereo_downmix;
-    float ltrt_center_mix_level;
-    float ltrt_surround_mix_level;
-    float loro_center_mix_level;
-    float loro_surround_mix_level;
-    int target_level;                       ///< target level in dBFS
     float level_gain[2];
 
 ///@name Frame syntax parameters
@@ -194,18 +206,12 @@ typedef struct AC3DecodeContext {
 
 ///@name Dynamic range
     INTFLOAT dynamic_range[2];                 ///< dynamic range
-    INTFLOAT drc_scale;                        ///< percentage of dynamic range compression to be applied
-    int heavy_compression;                     ///< apply heavy compression
     INTFLOAT heavy_dynamic_range[2];           ///< heavy dynamic range compression
 ///@}
 
 ///@name Bandwidth
     int start_freq[AC3_MAX_CHANNELS];       ///< start frequency bin                    (strtmant)
     int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin                      (endmant)
-///@}
-
-///@name Consistent noise generation
-    int consistent_noise_generation;        ///< seed noise generation with AC-3 frame on decode
 ///@}
 
 ///@name Rematrixing
