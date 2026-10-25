@@ -1,3 +1,8 @@
+FATE_API_LIBAVCODEC-$(call ALLYES, AC3_ENCODER AC3_DECODER EAC3_DECODER AC3_FIXED_DECODER) += fate-api-ac3-flush
+fate-api-ac3-flush: $(APITESTSDIR)/api-ac3-flush-test$(EXESUF)
+fate-api-ac3-flush: CMD = run $(APITESTSDIR)/api-ac3-flush-test$(EXESUF)
+fate-api-ac3-flush: CMP = null
+
 FATE_API_LIBAVCODEC-$(call ALLYES, LIBASTCENC_ENCODER LIBASTCENC_DECODER) += fate-api-astc-profile
 fate-api-astc-profile: $(APITESTSDIR)/api-astc-profile-test$(EXESUF)
 fate-api-astc-profile: CMD = run $(APITESTSDIR)/api-astc-profile-test$(EXESUF)
