@@ -73,9 +73,11 @@ static inline int linear_vreg_nelems(SwsPixelType type)
 static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
 {
     int count = 0;
-    for (int i = 0; i < 4 * 5; i++)
-        if (!(params->par.lin.zero & (1ULL << i)))
-            count++;
+    LOOP_MASK(params, i) {
+        for (int j = 0; j < 5; j++)
+            if (!(params->par.lin.zero & SWS_MASK(i, j)))
+                count++;
+    }
     const int nelems = linear_vreg_nelems(params->type);
     return (count + nelems - 1) / nelems;
 }

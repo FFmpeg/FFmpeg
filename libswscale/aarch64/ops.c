@@ -83,7 +83,7 @@ static int aarch64_setup_linear(const SwsAArch64OpImplParams *p,
      * The same order must be followed in asmgen_op_linear().
      */
     int i_coeff = 0;
-    for (int i = 0; i < 4; i++) {
+    LOOP_MASK(p, i) {
         for (int j = 0; j < 5; j++) {
             const int jj = (j == 0) ? 4 : (j - 1);
             if (!(p->par.lin.zero & SWS_MASK(i, jj))) {
