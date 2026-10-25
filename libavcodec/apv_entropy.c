@@ -108,100 +108,213 @@ void ff_apv_entropy_build_decode_lut(APVVLCLUT *decode_lut)
     // Build the multi-symbol VLC table.
     for (int start_run = 0; start_run <= 2; start_run++) {
         for (int start_level = 0; start_level <= 4; start_level++) {
-            for (unsigned int code = 0; code < lut_size; code++) {
-                APVMultiVLCLUTEntry *ent;
-                int k_run, k_level;
-                GetBitContext gbc;
-                PutBitContext pbc;
-                uint8_t buffer[16];
-                uint8_t run_first_buffer[16];
-                uint8_t level_first_buffer[16];
+            for (int type = APV_ENTROPY_RUN_FIRST;
+                 type <= APV_ENTROPY_LEVEL_FIRST; type++) {
+                for (unsigned int code = 0; code < lut_size; code++) {
+                    APVMultiVLCLUTEntry *ent;
+                    int k_run, k_level, adv, nb_levels;
+                    GetBitContext gbc;
+                    PutBitContext pbc;
+                    uint8_t buffer[16];
 
-                memset(buffer, 0, sizeof(buffer));
-                init_put_bits(&pbc, buffer, sizeof(buffer));
-                put_bits(&pbc, APV_VLC_LUT_BITS, code);
-                flush_put_bits(&pbc);
+                    memset(buffer, 0, sizeof(buffer));
+                    init_put_bits(&pbc, buffer, sizeof(buffer));
+                    put_bits(&pbc, APV_VLC_LUT_BITS, code);
+                    flush_put_bits(&pbc);
 
-                memcpy(run_first_buffer,   buffer, sizeof(buffer));
-                memcpy(level_first_buffer, buffer, sizeof(buffer));
+                    k_run   = start_run;
+                    k_level = start_level;
 
-                k_run   = start_run;
-                k_level = start_level;
+                    ent = &decode_lut->multi_lut[type][k_run][k_level][code];
+                    memset(ent, 0, sizeof(*ent));
+                    init_get_bits8(&gbc, buffer, sizeof(buffer));
 
-                ent = &decode_lut->run_first_lut[k_run][k_level][code];
-                memset(ent, 0, sizeof(*ent));
-                init_get_bits8(&gbc, run_first_buffer, sizeof(run_first_buffer));
+                    // Symbols alternate between run and level, starting
+                    // with whichever the type indicates (so even values
+                    // of sym are runs).  Stop at the first one which
+                    // does not fit in the lookup bits.
+                    adv       = 0;
+                    nb_levels = 0;
+                    for (int sym = type; sym < type + 4; sym++) {
+                        int value, sign, pos;
 
-                ent->count = 0;
-                for (int i = 0; i <= 1; i++) {
-                    int value, sign, pos;
-
-                    value = apv_read_vlc(&gbc, k_run, decode_lut);
-                    pos = get_bits_count(&gbc);
-                    if (pos > APV_VLC_LUT_BITS)
-                        break;
-                    ent->run[i] = value;
-                    ent->offset[ent->count] = pos;
-                    ++ent->count;
-                    k_run = FFMIN(value >> 2, 2);
-
-                    value = apv_read_vlc(&gbc, k_level, decode_lut);
-                    sign = get_bits1(&gbc);
-                    pos = get_bits_count(&gbc);
-                    if (pos > APV_VLC_LUT_BITS)
-                        break;
-                    ++value;
-                    ent->level[i] = sign ? -value : value;
-                    ent->offset[ent->count] = pos;
-                    ++ent->count;
-                    k_level = FFMIN(value >> 2, 4);
-                    if (i == 0)
-                        ent->k_level_0 = k_level;
+                        if (sym % 2 == 0) {
+                            // Reading a run.
+                            value = apv_read_vlc(&gbc, k_run, decode_lut);
+                            pos   = get_bits_count(&gbc);
+                            if (pos > APV_VLC_LUT_BITS)
+                                break;
+                            adv  += value;
+                            k_run = FFMIN(value >> 2, 2);
+                        } else {
+                            // Reading a level.
+                            value = apv_read_vlc(&gbc, k_level, decode_lut);
+                            sign  = get_bits1(&gbc);
+                            pos   = get_bits_count(&gbc);
+                            if (pos > APV_VLC_LUT_BITS)
+                                break;
+                            ++value;
+                            av_assert0(value <= INT8_MAX);
+                            ent->level[nb_levels] = sign ? -value : value;
+                            ent->level_pos[nb_levels] = adv;
+                            ++nb_levels;
+                            adv    += 1;
+                            k_level = FFMIN(value >> 2, 4);
+                            if (nb_levels == 1)
+                                ent->k_level_0 = k_level;
+                        }
+                        ent->offset[ent->count] = pos;
+                        ++ent->count;
+                    }
+                    // Missing levels write zeroes later in the array where
+                    // they will either be overwritten or not used.
+                    for (int i = nb_levels; i < 2; i++)
+                        ent->level_pos[i] = adv;
+                    // Entries are applied at scan positions below 64, so
+                    // this keeps every write inside the extended zigzag.
+                    av_assert0(adv < 64);
+                    ent->scan_advance = adv;
+                    if (ent->count > 0 && ent->count < 4)
+                        ent->offset[3] = ent->offset[ent->count - 1];
+                    ent->k_run     = k_run;
+                    ent->k_level_1 = k_level;
+                    ent->next = APV_TABLE_INDEX(type ^ (ent->count & 1),
+                                                      k_run, k_level);
                 }
-                if (ent->count > 0 && ent->count < 4)
-                    ent->offset[3] = ent->offset[ent->count - 1];
-                ent->k_run     = k_run;
-                ent->k_level_1 = k_level;
-
-                k_run   = start_run;
-                k_level = start_level;
-
-                ent = &decode_lut->level_first_lut[k_run][k_level][code];
-                memset(ent, 0, sizeof(*ent));
-                init_get_bits8(&gbc, level_first_buffer, sizeof(level_first_buffer));
-
-                ent->count = 0;
-                for (int i = 0; i <= 1; i++) {
-                    int value, sign, pos;
-
-                    value = apv_read_vlc(&gbc, k_level, decode_lut);
-                    sign = get_bits1(&gbc);
-                    pos = get_bits_count(&gbc);
-                    if (pos > APV_VLC_LUT_BITS)
-                        break;
-                    ++value;
-                    ent->level[i] = sign ? -value : value;
-                    ent->offset[ent->count] = pos;
-                    ++ent->count;
-                    k_level = FFMIN(value >> 2, 4);
-                    if (i == 0)
-                        ent->k_level_0 = k_level;
-
-                    value = apv_read_vlc(&gbc, k_run, decode_lut);
-                    pos = get_bits_count(&gbc);
-                    if (pos > APV_VLC_LUT_BITS)
-                        break;
-                    ent->run[i] = value;
-                    ent->offset[ent->count] = pos;
-                    ++ent->count;
-                    k_run = FFMIN(value >> 2, 2);
-                }
-                if (ent->count > 0 && ent->count < 4)
-                    ent->offset[3] = ent->offset[ent->count - 1];
-                ent->k_run     = k_run;
-                ent->k_level_1 = k_level;
             }
         }
+    }
+
+    // Positions past the end of the block all map to the dummy
+    // coefficient slot at the end.
+    for (int i = 0; i < FF_ARRAY_ELEMS(decode_lut->zigzag); i++)
+        decode_lut->zigzag[i] = i < 64 ? ff_zigzag_direct[i] : 64;
+}
+
+// Decode a run code which is too long for the multi-symbol LUT.
+// All such codes fit in the 18 bits already read.
+av_always_inline
+static int apv_decode_long_run(GetBitContext *restrict gbc,
+                               uint32_t next_bits, int k_run,
+                               APVEntropyState *restrict state)
+{
+    uint32_t bits, low_bits;
+    unsigned int leading_zeroes, low_bit_count, low_bit_shift;
+
+    // Remove the prefix bits.
+    bits = next_bits & 0xffff;
+    // Determine code length.
+    leading_zeroes = 15 - av_log2(bits);
+    if (leading_zeroes >= 6) {
+        // 6 zeroes implies run > 64, which is always invalid.
+        av_log(state->log_ctx, AV_LOG_ERROR,
+               "Out-of-range run value: %d leading zeroes.\n",
+               leading_zeroes);
+        return AVERROR_INVALIDDATA;
+    }
+    // Extract the low bits.
+    low_bit_count = leading_zeroes + k_run;
+    low_bit_shift = 16 - (1 + 2 * leading_zeroes + k_run);
+    low_bits = av_zero_extend(bits >> low_bit_shift, low_bit_count);
+    // Skip over the bits just used.
+    skip_bits(gbc, 2 + leading_zeroes + 1 + low_bit_count);
+    // Construct run code.
+    return (2 << k_run) +
+        ((1 << leading_zeroes) - 1) * (1 << k_run) +
+        low_bits;
+}
+
+// Decode a level code which is too long for the multi-symbol LUT,
+// returning the signed level and setting the absolute value.
+// The 18 bits already read are sufficient for the length, but we may
+// need to read more bits to complete the value.
+av_always_inline
+static int apv_decode_long_level(GetBitContext *restrict gbc,
+                                 uint32_t next_bits, int k_level,
+                                 int *abs_level_out, int scan_pos,
+                                 APVEntropyState *restrict state)
+{
+    uint32_t bits;
+    unsigned int leading_zeroes;
+    int level, abs_level, sign;
+
+    // Remove the prefix bits.
+    bits = next_bits & 0xffff;
+    // Determine code length.
+    leading_zeroes = 15 - av_log2(bits);
+    // Skip the prefix and length bits.
+    skip_bits(gbc, 2 + leading_zeroes + 1);
+    // Read the rest of the code and construct the level.
+    // Include the + 1 offset for nonzero value here.
+    abs_level = (2 << k_level) +
+        ((1 << leading_zeroes) - 1) * (1 << k_level) +
+        get_bits(gbc, leading_zeroes + k_level) + 1;
+
+    sign = get_bits1(gbc);
+    if (sign)
+        level = -abs_level;
+    else
+        level = abs_level;
+
+    // Check range (not checked in any other case, only a long
+    // code can be out of range).
+    if (level < APV_MIN_TRANS_COEFF ||
+        level > APV_MAX_TRANS_COEFF) {
+        av_log(state->log_ctx, AV_LOG_ERROR,
+               "Out-of-range AC coefficient value at %d: %d.\n",
+               scan_pos, level);
+        return AVERROR_INVALIDDATA;
+    }
+    *abs_level_out = abs_level;
+    return level;
+}
+
+// Apply the symbols from a multi-symbol LUT entry.  Both levels are
+// always written: absent ones are zero, and any beyond the end of the
+// block go to the dummy coefficient.  Returns nonzero if the end of
+// the block was reached, in which case only the bits up to the symbol
+// which reached it are consumed.
+av_always_inline
+static int apv_apply_multi_entry(int16_t *restrict coeff,
+                                 GetBitContext *restrict gbc,
+                                 const APVMultiVLCLUTEntry *ent,
+                                 const uint8_t *zigzag,
+                                 int *scan_pos_ptr, int type)
+{
+    int scan_pos = *scan_pos_ptr;
+
+    coeff[zigzag[scan_pos + ent->level_pos[0]]] = ent->level[0];
+    coeff[zigzag[scan_pos + ent->level_pos[1]]] = ent->level[1];
+
+    if (scan_pos + ent->scan_advance >= 64) {
+        // We've gone over the end: find the symbol which reached the
+        // end and stop there.
+        int end[4], i;
+
+        if (type == APV_ENTROPY_RUN_FIRST) {
+            end[0] = ent->level_pos[0];
+            end[1] = ent->level_pos[0] + 1;
+            end[2] = ent->level_pos[1];
+            end[3] = ent->level_pos[1] + 1;
+        } else {
+            end[0] = 1;
+            end[1] = ent->level_pos[1];
+            end[2] = ent->level_pos[1] + 1;
+            end[3] = ent->scan_advance;
+        }
+        for (i = 0; i < ent->count - 1; i++) {
+            if (scan_pos + end[i] >= 64)
+                break;
+        }
+        skip_bits(gbc, ent->offset[i]);
+        *scan_pos_ptr = scan_pos + end[i];
+        return 1;
+    } else {
+        // All codes used: advance the bitstream and scan position by
+        // the full values.
+        skip_bits(gbc, ent->offset[3]);
+        *scan_pos_ptr = scan_pos + ent->scan_advance;
+        return 0;
     }
 }
 
@@ -210,7 +323,9 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
                                 APVEntropyState *restrict state)
 {
     const APVVLCLUT *lut = state->decode_lut;
-    int scan_pos;
+    const APVMultiVLCLUTEntry *tables = lut->multi_lut[0][0][0];
+    const uint8_t *zigzag = lut->zigzag;
+    int scan_pos, type, table_index;
     int k_dc = state->prev_k_dc;
     int k_run, k_level;
     uint32_t next_bits, lut_bits;
@@ -256,349 +371,118 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
     // single-symbol LUT is never useful here as the multisymbol lookup
     // has already determined that the code is too long.)
 
-    // Run a single iteration of the run-first LUT to start, then a
-    // single iteration of the level-first LUT if that only read a
-    // single code.  This avoids dealing with the first-AC logic inside
-    // the normal code lookup sequence.
+    // The first level in the block sets the k_level for the next block,
+    // so run the first lookup (and the second, if the first did not
+    // contain a level) separately.
 
-    k_level = state->prev_k_level;
+    scan_pos = 1;
+    k_run    = 0;
+    k_level  = state->prev_k_level;
     {
         next_bits = show_bits(gbc, 18);
         lut_bits = next_bits >> (18 - APV_VLC_LUT_BITS);
 
-        ent = &lut->run_first_lut[0][k_level][lut_bits];
+        ent = &lut->multi_lut[APV_ENTROPY_RUN_FIRST][0][k_level][lut_bits];
 
         if (ent->count == 0) {
-            // One long code.
-            uint32_t bits, low_bits;
-            unsigned int leading_zeroes, low_bit_count, low_bit_shift;
-            int run;
-
-            // Remove the prefix bits.
-            bits = next_bits & 0xffff;
-            // Determine code length.
-            leading_zeroes = 15 - av_log2(bits);
-            if (leading_zeroes >= 6) {
-                // 6 zeroes implies run > 64, which is always invalid.
-                av_log(state->log_ctx, AV_LOG_ERROR,
-                       "Out-of-range run value: %d leading zeroes.\n",
-                       leading_zeroes);
-                return AVERROR_INVALIDDATA;
-            }
-            // Extract the low bits.
-            low_bit_count = leading_zeroes;
-            low_bit_shift = 16 - (1 + 2 * leading_zeroes);
-            low_bits = av_zero_extend(bits >> low_bit_shift, low_bit_count);
-            // Construct run code.
-            run = 2 + ((1 << leading_zeroes) - 1) + low_bits;
-            // Skip over the bits just used.
-            skip_bits(gbc, 2 + leading_zeroes + 1 + low_bit_count);
-
-            scan_pos = run + 1;
+            int run = apv_decode_long_run(gbc, next_bits, 0, state);
+            if (run < 0)
+                return run;
+            scan_pos += run;
             if (scan_pos >= 64)
                 goto end_of_block;
             k_run = FFMIN(run >> 2, 2);
-            goto first_level;
         } else {
-            // One or more short codes starting with a run; if there is
-            // a level code then the length needs to be saved for the
-            // next block.
-
-            scan_pos = ent->run[0] + 1;
-            if (scan_pos >= 64) {
-                skip_bits(gbc, ent->offset[0]);
-                goto end_of_block;
-            }
-            if (ent->count > 1) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[0];
-                ++scan_pos;
+            // The level is only real if the run before it did not
+            // reach the end of the block.
+            if (ent->count > 1 && scan_pos + ent->level_pos[0] < 64)
                 state->prev_k_level = ent->k_level_0;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[1]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 2) {
-                scan_pos += ent->run[1];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[2]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 3) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[1];
-                ++scan_pos;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[3]);
-                    goto end_of_block;
-                }
-            }
-            skip_bits(gbc, ent->offset[3]);
+            if (apv_apply_multi_entry(coeff, gbc, ent, zigzag,
+                                      &scan_pos, APV_ENTROPY_RUN_FIRST))
+                goto end_of_block;
             k_run   = ent->k_run;
             k_level = ent->k_level_1;
-            if (ent->count == 1)
-                goto first_level;
-            else if (ent->count & 1)
-                goto next_is_level;
-            else
-                goto next_is_run;
+            if (ent->count > 1) {
+                type = APV_ENTROPY_RUN_FIRST ^ (ent->count & 1);
+                goto normal_loop;
+            }
         }
     }
 
-    first_level: {
+    // Only read a run, still need to read the first level.
+    {
         next_bits = show_bits(gbc, 18);
         lut_bits = next_bits >> (18 - APV_VLC_LUT_BITS);
 
-        ent = &lut->level_first_lut[k_run][k_level][lut_bits];
+        ent = &lut->multi_lut[APV_ENTROPY_LEVEL_FIRST][k_run][k_level][lut_bits];
 
         if (ent->count == 0) {
-            // One long code.
-            uint32_t bits;
-            unsigned int leading_zeroes;
-            int level, abs_level, sign;
-
-            // Remove the prefix bits.
-            bits = next_bits & 0xffff;
-            // Determine code length.
-            leading_zeroes = 15 - av_log2(bits);
-            // Skip the prefix and length bits.
-            skip_bits(gbc, 2 + leading_zeroes + 1);
-            // Read the rest of the code and construct the level.
-            // Include the + 1 offset for nonzero value here.
-            abs_level = (2 << k_level) +
-                ((1 << leading_zeroes) - 1) * (1 << k_level) +
-                get_bits(gbc, leading_zeroes + k_level) + 1;
-
-            sign = get_bits(gbc, 1);
-            if (sign)
-                level = -abs_level;
-            else
-                level = abs_level;
-
-            // Check range (not checked in any other case, only a long
-            // code can be out of range).
-            if (level < APV_MIN_TRANS_COEFF ||
-                level > APV_MAX_TRANS_COEFF) {
-                av_log(state->log_ctx, AV_LOG_ERROR,
-                       "Out-of-range AC coefficient value at %d: %d.\n",
-                       scan_pos, level);
-                return AVERROR_INVALIDDATA;
-            }
-            coeff[ff_zigzag_direct[scan_pos]] = level;
+            int level, abs_level;
+            level = apv_decode_long_level(gbc, next_bits, k_level,
+                                          &abs_level, scan_pos, state);
+            if (level < APV_MIN_TRANS_COEFF)
+                return level;
+            coeff[zigzag[scan_pos]] = level;
             ++scan_pos;
             k_level = FFMIN(abs_level >> 2, 4);
             state->prev_k_level = k_level;
             if (scan_pos >= 64)
                 goto end_of_block;
-            goto next_is_run;
-
+            type = APV_ENTROPY_RUN_FIRST;
         } else {
-            // One or more short codes.
-
-            coeff[ff_zigzag_direct[scan_pos]] = ent->level[0];
-            ++scan_pos;
             state->prev_k_level = ent->k_level_0;
-            if (scan_pos >= 64) {
-                skip_bits(gbc, ent->offset[0]);
+            if (apv_apply_multi_entry(coeff, gbc, ent, zigzag,
+                                      &scan_pos, APV_ENTROPY_LEVEL_FIRST))
                 goto end_of_block;
-            }
-            if (ent->count > 1) {
-                scan_pos += ent->run[0];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[1]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 2) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[1];
-                ++scan_pos;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[2]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 3) {
-                scan_pos += ent->run[1];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[3]);
-                    goto end_of_block;
-                }
-            }
-            skip_bits(gbc, ent->offset[3]);
             k_run   = ent->k_run;
             k_level = ent->k_level_1;
-            if (ent->count & 1)
-                goto next_is_run;
-            else
-                goto next_is_level;
+            type = APV_ENTROPY_LEVEL_FIRST ^ (ent->count & 1);
         }
     }
 
-    next_is_run: {
+normal_loop:
+    // From here the only state carried between lookups is the index of
+    // the table to use, which each entry supplies for the next one.
+    table_index = APV_TABLE_INDEX(type, k_run, k_level);
+    for (;;) {
         next_bits = show_bits(gbc, 18);
         lut_bits = next_bits >> (18 - APV_VLC_LUT_BITS);
 
-        ent = &lut->run_first_lut[k_run][k_level][lut_bits];
+        ent = &tables[table_index * APV_VLC_LUT_SIZE + lut_bits];
 
         if (ent->count == 0) {
-            // One long code.
-            uint32_t bits, low_bits;
-            unsigned int leading_zeroes, low_bit_count, low_bit_shift;
-            int run;
-
-            // Remove the prefix bits.
-            bits = next_bits & 0xffff;
-            // Determine code length.
-            leading_zeroes = 15 - av_log2(bits);
-            if (leading_zeroes >= 6) {
-                // 6 zeroes implies run > 64, which is always invalid.
-                av_log(state->log_ctx, AV_LOG_ERROR,
-                       "Out-of-range run value: %d leading zeroes.\n",
-                       leading_zeroes);
-                return AVERROR_INVALIDDATA;
+            // Missed in the lookup, so need to re-derive the type,
+            // k_run and k_level from the table index.
+            k_run   = table_index / 5 % 3;
+            k_level = table_index % 5;
+            if (table_index < APV_TABLE_INDEX(APV_ENTROPY_LEVEL_FIRST, 0, 0)) {
+                int run = apv_decode_long_run(gbc, next_bits, k_run, state);
+                if (run < 0)
+                    return run;
+                scan_pos += run;
+                if (scan_pos >= 64)
+                    goto end_of_block;
+                k_run = FFMIN(run >> 2, 2);
+                table_index = APV_TABLE_INDEX(APV_ENTROPY_LEVEL_FIRST, k_run, k_level);
+            } else {
+                int level, abs_level;
+                level = apv_decode_long_level(gbc, next_bits, k_level,
+                                              &abs_level, scan_pos, state);
+                if (level < APV_MIN_TRANS_COEFF)
+                    return level;
+                coeff[zigzag[scan_pos]] = level;
+                ++scan_pos;
+                k_level = FFMIN(abs_level >> 2, 4);
+                if (scan_pos >= 64)
+                    goto end_of_block;
+                table_index = APV_TABLE_INDEX(APV_ENTROPY_RUN_FIRST, k_run, k_level);
             }
-            // Extract the low bits.
-            low_bit_count = leading_zeroes + k_run;
-            low_bit_shift = 16 - (1 + 2 * leading_zeroes + k_run);
-            low_bits = av_zero_extend(bits >> low_bit_shift, low_bit_count);
-            // Construct run code.
-            run = (2 << k_run) +
-                ((1 << leading_zeroes) - 1) * (1 << k_run) +
-                low_bits;
-            // Skip over the bits just used.
-            skip_bits(gbc, 2 + leading_zeroes + 1 + low_bit_count);
-
-            scan_pos += run;
-            if (scan_pos >= 64)
-                goto end_of_block;
-            k_run = FFMIN(run >> 2, 2);
-            goto next_is_level;
-
         } else {
-            // One or more short codes.
-
-            scan_pos += ent->run[0];
-            if (scan_pos >= 64) {
-                skip_bits(gbc, ent->offset[0]);
+            type = table_index >= APV_TABLE_INDEX(APV_ENTROPY_LEVEL_FIRST, 0, 0);
+            if (apv_apply_multi_entry(coeff, gbc, ent, zigzag,
+                                      &scan_pos, type))
                 goto end_of_block;
-            }
-            if (ent->count > 1) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[0];
-                ++scan_pos;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[1]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 2) {
-                scan_pos += ent->run[1];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[2]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 3) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[1];
-                ++scan_pos;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[3]);
-                    goto end_of_block;
-                }
-            }
-            skip_bits(gbc, ent->offset[3]);
-            k_run   = ent->k_run;
-            k_level = ent->k_level_1;
-            if (ent->count & 1)
-                goto next_is_level;
-            else
-                goto next_is_run;
-        }
-    }
-
-    next_is_level: {
-        next_bits = show_bits(gbc, 18);
-        lut_bits = next_bits >> (18 - APV_VLC_LUT_BITS);
-
-        ent = &lut->level_first_lut[k_run][k_level][lut_bits];
-
-        if (ent->count == 0) {
-            // One long code.
-            uint32_t bits;
-            unsigned int leading_zeroes;
-            int level, abs_level, sign;
-
-            // Remove the prefix bits.
-            bits = next_bits & 0xffff;
-            // Determine code length.
-            leading_zeroes = 15 - av_log2(bits);
-            // Skip the prefix and length bits.
-            skip_bits(gbc, 2 + leading_zeroes + 1);
-            // Read the rest of the code and construct the level.
-            // Include the + 1 offset for nonzero value here.
-            abs_level = (2 << k_level) +
-                ((1 << leading_zeroes) - 1) * (1 << k_level) +
-                get_bits(gbc, leading_zeroes + k_level) + 1;
-
-            sign = get_bits(gbc, 1);
-            if (sign)
-                level = -abs_level;
-            else
-                level = abs_level;
-
-            // Check range (not checked in any other case, only a long
-            // code can be out of range).
-            if (level < APV_MIN_TRANS_COEFF ||
-                level > APV_MAX_TRANS_COEFF) {
-                av_log(state->log_ctx, AV_LOG_ERROR,
-                       "Out-of-range AC coefficient value at %d: %d.\n",
-                       scan_pos, level);
-                return AVERROR_INVALIDDATA;
-            }
-            coeff[ff_zigzag_direct[scan_pos]] = level;
-            ++scan_pos;
-            k_level = FFMIN(abs_level >> 2, 4);
-            if (scan_pos >= 64)
-                goto end_of_block;
-            goto next_is_run;
-
-        } else {
-            // One or more short codes.
-
-            coeff[ff_zigzag_direct[scan_pos]] = ent->level[0];
-            ++scan_pos;
-            if (scan_pos >= 64) {
-                skip_bits(gbc, ent->offset[0]);
-                goto end_of_block;
-            }
-            if (ent->count > 1) {
-                scan_pos += ent->run[0];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[1]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 2) {
-                coeff[ff_zigzag_direct[scan_pos]] = ent->level[1];
-                ++scan_pos;
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[2]);
-                    goto end_of_block;
-                }
-            }
-            if (ent->count > 3) {
-                scan_pos += ent->run[1];
-                if (scan_pos >= 64) {
-                    skip_bits(gbc, ent->offset[3]);
-                    goto end_of_block;
-                }
-            }
-            skip_bits(gbc, ent->offset[3]);
-            k_run   = ent->k_run;
-            k_level = ent->k_level_1;
-            if (ent->count & 1)
-                goto next_is_run;
-            else
-                goto next_is_level;
+            table_index = ent->next;
         }
     }
 

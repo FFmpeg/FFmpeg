@@ -313,7 +313,7 @@ static int test_apv_entropy_decode_block(void)
         APVEntropyState state, save_state;
         int16_t block[64];
         int16_t block_test1[64];
-        int16_t block_test2[64];
+        int16_t block_test2[APV_ENTROPY_COEFF_SIZE];
         uint8_t buffer[1024];
         PutBitContext pbc;
         GetBitContext gbc;

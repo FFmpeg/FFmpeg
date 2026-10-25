@@ -193,7 +193,10 @@ static int apv_decode_block(AVCodecContext *avctx,
     APVDecodeContext *apv = avctx->priv_data;
     int err;
 
-    LOCAL_ALIGNED_32(int16_t, coeff, [64]);
+    // Aligned for SIMD use in transquant.
+    LOCAL_ALIGNED_32(int16_t, coeff, [APV_ENTROPY_COEFF_SIZE]);
+    // Zero only the used entries, padding entries may be written but
+    // are never read.
     memset(coeff, 0, 64 * sizeof(int16_t));
 
     err = ff_apv_entropy_decode_block(coeff, gbc, entropy_state);
