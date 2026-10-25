@@ -48,26 +48,25 @@ static LCEVC_ColorFormat map_format(int format)
     return LCEVC_ColorFormat_Unknown;
 }
 
-static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc,
-                            const AVFrame *frame, LCEVC_PictureHandle *picture)
+static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc, const AVFrame *frame,
+                            LCEVC_PictureDesc *desc, LCEVC_PictureHandle *picture)
 {
-    LCEVC_PictureDesc desc;
     LCEVC_ColorFormat fmt = map_format(frame->format);
     LCEVC_PicturePlaneDesc planes[AV_VIDEO_MAX_PLANES] = { 0 };
     int width = frame->width - frame->crop_left - frame->crop_right;
     int height = frame->height - frame->crop_top - frame->crop_bottom;
     LCEVC_ReturnCode res;
 
-    res = LCEVC_DefaultPictureDesc(&desc, fmt, width, height);
+    res = LCEVC_DefaultPictureDesc(desc, fmt, width, height);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
 
-    desc.cropTop    = frame->crop_top;
-    desc.cropBottom = frame->crop_bottom;
-    desc.cropLeft   = frame->crop_left;
-    desc.cropRight  = frame->crop_right;
-    desc.sampleAspectRatioNum  = frame->sample_aspect_ratio.num;
-    desc.sampleAspectRatioDen  = frame->sample_aspect_ratio.den;
+    desc->cropTop    = frame->crop_top;
+    desc->cropBottom = frame->crop_bottom;
+    desc->cropLeft   = frame->crop_left;
+    desc->cropRight  = frame->crop_right;
+    desc->sampleAspectRatioNum  = frame->sample_aspect_ratio.num;
+    desc->sampleAspectRatioDen  = frame->sample_aspect_ratio.den;
 
     for (int i = 0; i < AV_VIDEO_MAX_PLANES; i++) {
         planes[i].firstSample = frame->data[i];
@@ -75,7 +74,7 @@ static int alloc_base_frame(void *logctx, FFLCEVCContext *lcevc,
     }
 
     /* Allocate LCEVC Picture */
-    res = LCEVC_AllocPictureExternal(lcevc->decoder, &desc, NULL, planes, picture);
+    res = LCEVC_AllocPictureExternal(lcevc->decoder, desc, NULL, planes, picture);
     if (res != LCEVC_Success) {
         return AVERROR_EXTERNAL;
     }
@@ -141,6 +140,7 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
     const AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_LCEVC);
     AVFrame *opaque;
     LCEVC_PictureHandle picture;
+    LCEVC_PictureDesc desc, base_desc;
     LCEVC_ReturnCode res;
     int ret;
 
@@ -154,15 +154,15 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
         goto end;
     }
 
-    ret = alloc_base_frame(logctx, lcevc, in, &picture);
+    ret = alloc_base_frame(logctx, lcevc, in, &base_desc, &picture);
     if (ret < 0)
-        goto end;
+        goto fail;
 
     opaque = av_frame_clone(in);
     if (!opaque) {
         LCEVC_FreePicture(lcevc->decoder, picture);
         ret = AVERROR(ENOMEM);
-        goto end;
+        goto fail;
     }
 
     res = LCEVC_SetPictureUserData(lcevc->decoder, picture, opaque);
@@ -170,7 +170,7 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
         LCEVC_FreePicture(lcevc->decoder, picture);
         av_frame_free(&opaque);
         ret = AVERROR_EXTERNAL;
-        goto end;
+        goto fail;
     }
 
     res = LCEVC_SendDecoderBase(lcevc->decoder, lcevc->last_pts, picture, -1, opaque);
@@ -178,22 +178,45 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
         LCEVC_FreePicture(lcevc->decoder, picture);
         av_frame_free(&opaque);
         ret = AVERROR_EXTERNAL;
-        goto end;
+        goto fail;
+    }
+
+    res = LCEVC_PeekDecoderPictureDesc(lcevc->decoder, lcevc->last_pts, &desc);
+    if (res != LCEVC_Success ||
+        desc.width       != frame_ctx->frame->width  ||
+        desc.height      != frame_ctx->frame->height ||
+        desc.colorFormat != map_format(frame_ctx->frame->format)) {
+        if (res == LCEVC_Success &&
+            desc.width       == base_desc.width  &&
+            desc.height      == base_desc.height &&
+            desc.colorFormat == base_desc.colorFormat) {
+            av_log(logctx, AV_LOG_VERBOSE, "Passing the base picture through\n");
+            ret = 1;
+            goto fail;
+        }
+        av_log(logctx, AV_LOG_ERROR, "Output picture does not match the enhancement data\n");
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     memset(&picture, 0, sizeof(picture));
     ret = alloc_enhanced_frame(logctx, frame_ctx, &picture);
     if (ret < 0)
-        goto end;
+        goto fail;
 
     res = LCEVC_SendDecoderPicture(lcevc->decoder, picture);
     if (res != LCEVC_Success) {
         LCEVC_FreePicture(lcevc->decoder, picture);
         ret = AVERROR_EXTERNAL;
-        goto end;
+        goto fail;
     }
 
     ret = 0;
+    goto end;
+fail:
+    LCEVC_SkipDecoder(lcevc->decoder, lcevc->last_pts);
+    LCEVC_SynchronizeDecoder(lcevc->decoder, 0);
+    lcevc_flush_pictures(lcevc);
 end:
     lcevc->last_pts++;
 
