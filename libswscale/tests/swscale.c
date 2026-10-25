@@ -683,8 +683,11 @@ static int run_test(struct runner *runner, const struct test_case *t,
     ret = (opts->api == IMPL_LEGACY) ? scale_legacy(dst, src, &t->mode, opts, &r.time)
         : state.hw_device_ctx        ? scale_hw(dst, src, &t->mode, opts, &r.time)
         :                              scale_new(runner, dst, src, &t->mode, opts, &r.time);
-    if (ret < 0)
+    if (ret < 0) {
+        if (ret == AVERROR(ENOTSUP))
+            ret = 0;
         goto error;
+    }
 
     ret = init_frame(&out, ref, ref->width, ref->height, ref->format);
     if (ret < 0)
@@ -732,8 +735,6 @@ bad_loss:
  error:
     av_frame_free(&dst);
     av_frame_free(&out);
-    if (ret == AVERROR(ENOTSUP))
-        ret = 0;
     return ret;
 }
 
