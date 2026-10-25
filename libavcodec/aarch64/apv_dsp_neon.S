@@ -18,6 +18,7 @@
 
 #include "libavutil/aarch64/asm.S"
 #include "neon.S"
+#include "apv_dsp_constants.h"
 
 /* Dequant one row in 16x8
  * Input levels at x2 + off, qmatrix at x3 + off (function args)
@@ -278,21 +279,15 @@
 .endm
 
 /*
- * void ff_apv_decode_transquant_neon(void *output,           = x0
- *                                    ptrdiff_t pitch,        = x1
- *                                    const int16_t *input,   = x2
- *                                    const int16_t *qmatrix, = x3
- *                                    int bit_depth,          = w4
- *                                    int qp_shift)           = w5
+ * void ff_apv_decode_transquant_neon(void *output,            = x0
+ *                                    ptrdiff_t pitch,         = x1
+ *                                    const int16_t *input,    = x2
+ *                                    const void *constants)   = x3
  */
 function ff_apv_decode_transquant_neon, export=1
-        sub             w7, w4, #2       /* w7 = bd_shift */
-        movz            w14, #1
-
         /* Dequant */
-        sub             w15, w7, #1
-        lsl             w10, w14, w15
-        neg             w15, w7
+        ldp             w5, w10, [x3, #APV_CONST_QP_SHIFT]
+        ldr             w15, [x3, #APV_CONST_NEG_BD_SHIFT]
         dup             v24.4s, w5       /* v24 = qp_shift */
         dup             v25.4s, w10      /* v25 = 1 << (bd_shift - 1) */
         dup             v26.4s, w15      /* v26 = -bd_shift */
@@ -306,11 +301,7 @@ function ff_apv_decode_transquant_neon, export=1
         dequant         v7, #112
 
         /* Row scaling constants */
-        movz            w16, #8, lsl #16 /* w16 = 1 << 19 */
-        lsr             w10, w16, w4
-        orr             w10, w10, w16    /* w10 = (1 << (19 - bit_depth)) + (1 << 19) */
-        lsl             w15, w14, w4
-        sub             w13, w15, #1     /* w13 = (1 << bit_depth) - 1 */
+        ldp             w10, w13, [x3, #APV_CONST_OUTPUT_ROUND]
 
         /* Column butterfly and normalise */
         butterfly_mul
@@ -323,7 +314,7 @@ function ff_apv_decode_transquant_neon, export=1
         butterfly_mul
         dup             v5.4s, w10       /* v5 = output offset */
         dup             v6.4s, w13       /* v6 = output max clip (min clip is zero) */
-        sub             w17, w4, #20     /* w17 = bit_depth - 20 (row_combine shift) */
+        ldr             w17, [x3, #APV_CONST_OUTPUT_SHIFT]
         row_combine
 
         /* Transpose back */

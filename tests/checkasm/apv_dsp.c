@@ -105,20 +105,20 @@ static void generate_block(int16_t *input, const int16_t *qmatrix,
     }
 }
 
-static void check_decode_transquant(int bit_depth)
+static void check_decode_transquant(const APVDSPContext *dsp, int bit_depth)
 {
     LOCAL_ALIGNED_32( int16_t, input,      [64]);
     LOCAL_ALIGNED_32( int16_t, qmatrix,    [64]);
     LOCAL_ALIGNED_32(uint16_t, new_output, [64]);
     LOCAL_ALIGNED_32(uint16_t, ref_output, [64]);
+    LOCAL_ALIGNED_32( uint8_t, new_constants, [APV_DSP_CONSTANTS_SIZE]);
+    LOCAL_ALIGNED_32( uint8_t, ref_constants, [APV_DSP_CONSTANTS_SIZE]);
 
     declare_func(void,
                  void *output,
                  ptrdiff_t pitch,
                  const int16_t *input,
-                 const int16_t *qmatrix,
-                 int bit_depth,
-                 int qp_shift);
+                 const void *constants);
 
     for (int n = 0; n < 256; n++) {
         // Fully random QP for each block.
@@ -141,8 +141,11 @@ static void check_decode_transquant(int bit_depth)
 
         generate_block(input, qmatrix, bit_depth, qp_shift, 0);
 
-        call_ref(ref_output, 16, input, qmatrix, bit_depth, qp_shift);
-        call_new(new_output, 16, input, qmatrix, bit_depth, qp_shift);
+        ff_apv_prepare_constants_c(ref_constants, qmatrix, bit_depth, qp_shift);
+        dsp->prepare_constants    (new_constants, qmatrix, bit_depth, qp_shift);
+
+        call_ref(ref_output, 16, input, ref_constants);
+        call_new(new_output, 16, input, new_constants);
 
         if (memcmp(new_output, ref_output, 64 * sizeof(*ref_output))) {
             fail();
@@ -158,12 +161,15 @@ static void check_decode_transquant(int bit_depth)
             qmatrix[i] = apv_level_scale[0] * 16;
         generate_block(input, qmatrix, bit_depth, qp_shift, 1);
 
-        call_ref(ref_output, 16, input, qmatrix, bit_depth, qp_shift);
-        call_new(new_output, 16, input, qmatrix, bit_depth, qp_shift);
+        ff_apv_prepare_constants_c(ref_constants, qmatrix, bit_depth, qp_shift);
+        dsp->prepare_constants    (new_constants, qmatrix, bit_depth, qp_shift);
+
+        call_ref(ref_output, 16, input, ref_constants);
+        call_new(new_output, 16, input, new_constants);
         if (memcmp(new_output, ref_output, 64 * sizeof(*ref_output)))
             fail();
 
-        bench_new(new_output, 16, input, qmatrix, bit_depth, qp_shift);
+        bench_new(new_output, 16, input, new_constants);
     }
 }
 
@@ -176,7 +182,7 @@ void checkasm_check_apv_dsp(void)
     for (int bit_depth = 10; bit_depth <= 16; bit_depth += 2) {
         if (check_func(dsp.decode_transquant,
                        "decode_transquant_%d", bit_depth))
-            check_decode_transquant(bit_depth);
+            check_decode_transquant(&dsp, bit_depth);
     }
 
     report("decode_transquant");

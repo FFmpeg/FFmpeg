@@ -16,7 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "config.h"
 #include "libavutil/attributes.h"
@@ -38,15 +40,35 @@ static const int8_t apv_trans_matrix[8][8] = {
     {  18, -50,  75, -89,  89, -75,  50, -18 },
 };
 
+typedef struct APVConstantsC {
+    int16_t qmatrix[8][8];
+    int     bit_depth;
+    int     qp_shift;
+} APVConstantsC;
+
+static_assert(sizeof(APVConstantsC) <= APV_DSP_CONSTANTS_SIZE,
+              "APV DSP constants buffer too small");
+
+void ff_apv_prepare_constants_c(void *constants,
+                                const int16_t *qmatrix,
+                                int bit_depth,
+                                int qp_shift)
+{
+    APVConstantsC *c = constants;
+
+    memcpy(c->qmatrix, qmatrix, sizeof(c->qmatrix));
+    c->bit_depth = bit_depth;
+    c->qp_shift  = qp_shift;
+}
+
 static void apv_decode_transquant_c(void *output,
                                     ptrdiff_t pitch,
                                     const int16_t *input_flat,
-                                    const int16_t *qmatrix_flat,
-                                    int bit_depth,
-                                    int qp_shift)
+                                    const void *constants)
 {
-    const int16_t (*input)[8]   = (const int16_t(*)[8])input_flat;
-    const int16_t (*qmatrix)[8] = (const int16_t(*)[8])qmatrix_flat;
+    const APVConstantsC *c = constants;
+    const int16_t (*input)[8] = (const int16_t(*)[8])input_flat;
+    int bit_depth = c->bit_depth;
 
     int16_t scaled_coeff[8][8];
     int32_t recon_sample[8][8];
@@ -59,8 +81,10 @@ static void apv_decode_transquant_c(void *output,
 
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
-                int coeff = ((int)(input[y][x] * qmatrix[y][x] * (1U << qp_shift) +
-                             (1 << (bd_shift - 1)))) >> bd_shift;
+                int coeff = ((int)(input[y][x] *
+                                   c->qmatrix[y][x] *
+                                   (1U << c->qp_shift) +
+                                   (1 << (bd_shift - 1)))) >> bd_shift;
 
                 scaled_coeff[y][x] =
                     av_clip(coeff, APV_MIN_TRANS_COEFF,
@@ -119,6 +143,7 @@ static void apv_decode_transquant_c(void *output,
 
 av_cold void ff_apv_dsp_init(APVDSPContext *dsp)
 {
+    dsp->prepare_constants = ff_apv_prepare_constants_c;
     dsp->decode_transquant = apv_decode_transquant_c;
 
 #if ARCH_X86_64 && HAVE_X86ASM

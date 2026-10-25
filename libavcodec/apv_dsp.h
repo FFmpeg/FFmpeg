@@ -23,16 +23,41 @@
 #include <stdint.h>
 
 
+/**
+ * Size of the buffer holding constants for decode_transquant(), which
+ * must be large enough for the layout used by any implementation.
+ * The buffer must be 32-byte aligned.
+ */
+#define APV_DSP_CONSTANTS_SIZE 512
+
 typedef struct APVDSPContext {
-    void (*decode_transquant)(void *output,
-                              ptrdiff_t pitch,
-                              const int16_t *input,
+    /**
+     * Fill the constants buffer used by decode_transquant() for all
+     * blocks with the same quantisation parameters.  The layout of the
+     * buffer is private to the implementation.
+     */
+    void (*prepare_constants)(void *constants,
                               const int16_t *qmatrix,
                               int bit_depth,
                               int qp_shift);
+
+    /**
+     * Run transquant for a single block.  The constants argument must
+     * have been prepared by a call to prepare_constants() matching the
+     * implementation being used.
+     */
+    void (*decode_transquant)(void *output,
+                              ptrdiff_t pitch,
+                              const int16_t *input,
+                              const void *constants);
 } APVDSPContext;
 
 void ff_apv_dsp_init(APVDSPContext *dsp);
+
+void ff_apv_prepare_constants_c(void *constants,
+                                const int16_t *qmatrix,
+                                int bit_depth,
+                                int qp_shift);
 
 void ff_apv_dsp_init_x86_64(APVDSPContext *dsp);
 

@@ -37,18 +37,23 @@ tmatrix_odd_2b: times 8 dw -89,  75
 tmatrix_odd_3a: times 8 dw  18,  75
 tmatrix_odd_3b: times 8 dw -50, -89
 
-cextern pd_1
 cextern pd_64
-vec_1_19: times 8 dd 1 << 19
+
+; Offsets in the constants buffer.
+; This must match APVConstantsAVX2 in apv_dsp_init.c.
+%define CONST_QMATRIX        0
+%define CONST_DEQUANT_ROUND  256
+%define CONST_OUTPUT_ROUND   288
+%define CONST_QP_SHIFT       320
+%define CONST_BD_SHIFT       324
+%define CONST_OUTPUT_SHIFT   328
 
 SECTION .text
 
 ; void ff_apv_decode_transquant_avx2(void *output,
 ;                                    ptrdiff_t pitch,
 ;                                    const int16_t *input,
-;                                    const int16_t *qmatrix,
-;                                    int bit_depth,
-;                                    int qp_shift);
+;                                    const void *constants);
 
 INIT_YMM avx2
 
@@ -95,37 +100,23 @@ INIT_YMM avx2
     vpsubd    m15, m0,  m4
 %endmacro
 
-cglobal apv_decode_transquant, 5, 7, 16, 32, output, pitch, input, qmatrix, bit_depth, qp_shift, tmp
+cglobal apv_decode_transquant, 4, 5, 16, output, pitch, input, constants, tmp
 
-    ; Building rounding constant to for the final normalisation and
-    ; store it on the stack for use later.
+    ; Load input and dequantise.  The qmatrix values are zero-extended
+    ; in the constants, so vpmaddwd with the sign-extended input gives
+    ; the product directly.
 
-    mova      m0,  [pd_1]
-    mov       tmpd, 19
-    sub       tmpd, bit_depthd
-    movd      xm1, tmpd
-    vpslld    m0,  m0,  xm1
-    vpaddd    m0,  m0,  [vec_1_19]
-    mova      [rsp], m0
-
-    ; Load input and dequantise
-
-    mova      m10, [pd_1]
-    lea       tmpd, [bit_depthd - 2]
-    movd      xm8, qp_shiftm
-    movd      xm9, tmpd
-    vpslld    m10, m10, xm9
-    vpsrld    m10, m10, 1
+    mova      m10, [constantsq + CONST_DEQUANT_ROUND]
+    movd      xm8, [constantsq + CONST_QP_SHIFT]
+    movd      xm9, [constantsq + CONST_BD_SHIFT]
 
     ; m8  = scalar qp_shift
     ; m9  = scalar bd_shift
     ; m10 = vector 1 << (bd_shift - 1)
-    ; m11 = qmatrix load
 
 %macro LOAD_AND_DEQUANT 2 ; (register, constant offset)
-    vpmovsxwd m%1, [inputq   + %2]
-    vpmovsxwd m11, [qmatrixq + %2]
-    vpmaddwd  m%1, m%1, m11
+    vpmovsxwd m%1, [inputq + %2]
+    vpmaddwd  m%1, m%1, [constantsq + CONST_QMATRIX + 2 * %2]
     vpslld    m%1, m%1, xm8
     vpaddd    m%1, m%1, m10
     vpsrad    m%1, m%1, xm9
@@ -193,16 +184,14 @@ cglobal apv_decode_transquant, 5, 7, 16, 32, output, pitch, input, qmatrix, bit_
 
     ; Transform rows.
 
-    TRANSFORM_PASS [rsp]
+    TRANSFORM_PASS [constantsq + CONST_OUTPUT_ROUND]
 
     ; Renormalise, clip and store output.  The rounding constant was
     ; already added by the transform pass, and here we split the shift
     ; on either side of the pack (20 - bit_depth -> 4 and 16 - bit_depth)
     ; so that the saturation precisely captures the clip we want.
 
-    mov       tmpd, 16
-    sub       tmpd, bit_depthd
-    movd      xm0, tmpd
+    movd      xm0, [constantsq + CONST_OUTPUT_SHIFT]
 
     vpsrad    m8,  m8,  4
     vpsrad    m9,  m9,  4
