@@ -182,12 +182,9 @@ static av_cold int dovi_configure_ext(DOVIContext *s, enum AVCodecID codec_id,
         }
     }
 
-    pps = width * height;
-    if (framerate.num > 0 && framerate.den > 0) {
-        pps = pps * framerate.num / framerate.den;
-    } else {
-        pps *= 25; /* sanity fallback */
-    }
+    if (framerate.num <= 0 || framerate.den <= 0)
+        framerate = (AVRational){ 25, 1 }; /* sanity fallback */
+    pps = av_rescale_rnd((int64_t)width * height, framerate.num, framerate.den, AV_ROUND_DOWN);
 
     dv_level = 0;
     for (int i = 1; i < FF_ARRAY_ELEMS(dv_levels); i++) {
