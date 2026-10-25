@@ -318,9 +318,10 @@ static int apv_apply_multi_entry(int16_t *restrict coeff,
     }
 }
 
-int ff_apv_entropy_decode_block(int16_t *restrict coeff,
-                                GetBitContext *restrict gbc,
-                                APVEntropyState *restrict state)
+av_always_inline
+static int apv_entropy_decode_block_internal(int16_t *restrict coeff,
+                                             GetBitContext *restrict gbc,
+                                             APVEntropyState *restrict state)
 {
     const APVVLCLUT *lut = state->decode_lut;
     const APVMultiVLCLUTEntry *tables = lut->multi_lut[0][0][0];
@@ -495,4 +496,17 @@ normal_loop:
         }
         return 0;
     }
+}
+
+int ff_apv_entropy_decode_block(int16_t *restrict coeff,
+                                GetBitContext *restrict gbc,
+                                APVEntropyState *restrict state)
+{
+    // Use a local copy of the bitstream reader in this translation unit
+    // to improve optimisation opportunities.  Only the position in the
+    // bitstream needs to be written back.
+    GetBitContext gb = *gbc;
+    int err = apv_entropy_decode_block_internal(coeff, &gb, state);
+    gbc->index = gb.index;
+    return err;
 }
