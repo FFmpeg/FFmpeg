@@ -482,13 +482,16 @@ static int translate_linear_op(SwsContext *ctx, SwsUOpList *ops,
         .uop  = SWS_UOP_LINEAR,
     };
 
+    const SwsPixel one = ff_sws_pixel_from_q64(uop.type, (AVRational64) {1, 1});
     const uint32_t mask = ff_sws_linear_mask(&op->lin);
     const bool bitexact = ctx->flags & SWS_BITEXACT;
     uint32_t exact = 0;
 
     for (int i = 0; i < 4; i++) {
         if (!SWS_OP_NEEDED(op, i) || !(mask & SWS_MASK_ROW(i))) {
-            uop.par.lin.zero |= SWS_MASK_ROW(i);
+            uop.par.lin.zero |= SWS_MASK_ROW(i) ^ SWS_MASK(i, i);
+            uop.par.lin.one |= SWS_MASK(i, i);
+            uop.data.mat4x5[i][i] = one;
             continue;
         }
         uop.mask |= SWS_COMP(i);
