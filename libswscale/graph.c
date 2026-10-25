@@ -450,7 +450,6 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     SwsInternal *c = sws_internal(sws);
     const int src_w = sws->src_w, src_h = sws->src_h;
     const int dst_w = sws->dst_w, dst_h = sws->dst_h;
-    const int unscaled = src_w == dst_w && src_h == dst_h;
     int align = c->dst_slice_align;
     SwsPass *pass = NULL;
     int ret;
@@ -485,7 +484,7 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
         }
     }
 
-    if (c->srcXYZ && !(c->dstXYZ && unscaled)) {
+    if (c->srcXYZ && !c->dstXYZ) {
         ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, src_w, src_h, input,
                                     0, 1, run_xyz2rgb, NULL, c, NULL, &input);
         if (ret < 0) {
@@ -541,10 +540,13 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
                 c2->srcColorspaceTable[i] = c->srcColorspaceTable[i];
                 c2->dstColorspaceTable[i] = c->dstColorspaceTable[i];
             }
+
+            c2->srcXYZ = c->srcXYZ;
+            c2->dstXYZ = c->dstXYZ;
         }
     }
 
-    if (c->dstXYZ && !(c->srcXYZ && unscaled)) {
+    if (c->dstXYZ && !c->srcXYZ) {
         ret = ff_sws_graph_add_pass(graph, AV_PIX_FMT_RGB48, dst_w, dst_h, pass,
                                     0, 1, run_rgb2xyz, NULL, c, NULL, &pass);
         if (ret < 0)

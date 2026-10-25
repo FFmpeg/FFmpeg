@@ -254,6 +254,23 @@ static void lumRangeFromJpeg16_c(int16_t *_dst, int width,
         dst[i] = ((int64_t) dst[i] * coeff + offset) >> 18;
 }
 
+static void round_xyz12(uint8_t *plane, int stride, int width, int height, int y,
+                        int big_endian)
+{
+    uint8_t *ptr = plane + stride * y;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < 3 * width; j++) {
+            unsigned v = big_endian ? AV_RB16(ptr + 2 * j) : AV_RL16(ptr + 2 * j);
+            v = FFMIN(v + 8, UINT16_MAX) & 0xFFF0;
+            if (big_endian)
+                AV_WB16(ptr + 2 * j, v);
+            else
+                AV_WL16(ptr + 2 * j, v);
+        }
+        ptr += stride;
+    }
+}
+
 
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...)                      \
@@ -551,6 +568,11 @@ int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[]
         } else
             fillPlane(dst[3], dstStride[3], length, height, offset, 255);
     }
+
+    /* XYZ is scaled on its codes like 16-bit RGB */
+    if (c->srcXYZ && c->dstXYZ)
+        round_xyz12(dst[0], dstStride[0], dstW, dstY - lastDstY, lastDstY - dstSliceY,
+                    isBE(dstFormat));
 
 #if HAVE_MMXEXT_INLINE
     if (av_get_cpu_flags() & AV_CPU_FLAG_MMXEXT)
@@ -1123,7 +1145,7 @@ static int scale_internal(SwsContext *sws,
         src2[0] = base;
     }
 
-    if (c->srcXYZ && !(c->dstXYZ && sws->src_w==sws->dst_w && sws->src_h==sws->dst_h)) {
+    if (c->srcXYZ && !c->dstXYZ) {
         uint8_t *base;
 
         av_fast_malloc(&c->xyz_scratch, &c->xyz_scratch_allocated,
@@ -1191,7 +1213,7 @@ static int scale_internal(SwsContext *sws,
                          dst2, dstStride2, dstSliceY, dstSliceH);
     }
 
-    if (c->dstXYZ && !(c->srcXYZ && sws->src_w==sws->dst_w && sws->src_h==sws->dst_h)) {
+    if (c->dstXYZ && !c->srcXYZ) {
         uint8_t *dst;
 
         if (scale_dst) {
