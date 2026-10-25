@@ -980,6 +980,10 @@ static int fmt_analyze(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     if (desc->log2_chroma_w || desc->log2_chroma_h)
         return AVERROR(ENOTSUP);
 
+    /* XYZ decoding requires TRC support, which is not implemented yet */
+    if (desc->flags & AV_PIX_FMT_FLAG_XYZ)
+        return AVERROR(ENOTSUP);
+
     /* No support for semi-planar formats at the moment */
     if (desc->flags & AV_PIX_FMT_FLAG_PLANAR &&
         av_pix_fmt_count_planes(fmt) < desc->nb_components)
