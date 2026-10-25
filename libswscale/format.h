@@ -57,6 +57,10 @@ enum {
     FIELD_BOTTOM, /* bottom/odd rows */
 };
 
+/* The X'Y'Z' conversion: ST 428-1 codes to and from gamma 2.2 RGB */
+#define XYZ_TRC     AVCOL_TRC_SMPTE428
+#define XYZ_RGB_TRC AVCOL_TRC_GAMMA22
+
 typedef struct SwsColor {
     enum AVColorPrimaries prim;
     enum AVColorTransferCharacteristic trc;

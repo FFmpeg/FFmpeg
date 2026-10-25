@@ -723,32 +723,40 @@ static void fill_rgb2yuv_table(SwsInternal *c, const int table[4], int dstRange)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
 
-#if CONFIG_SMALL
-static void init_xyz_tables(uint16_t xyzgamma_tab[4096],  uint16_t xyzgammainv_tab[65536],
-                            uint16_t rgbgamma_tab[65536], uint16_t rgbgammainv_tab[4096])
-#else
+static double trc_peak(enum AVColorTransferCharacteristic trc)
+{
+    return av_csp_trc_func_inv_from_id(trc)(1.0);
+}
+
+static void init_xyz_luts(SwsLuts *luts, enum AVColorTransferCharacteristic trc_in,
+                          enum AVColorTransferCharacteristic trc_out)
+{
+    const av_csp_trc_function to_linear   = av_csp_trc_func_inv_from_id(trc_in);
+    const av_csp_trc_function from_linear = av_csp_trc_func_from_id(trc_out);
+    const double peak_in = trc_peak(trc_in), peak_out = trc_peak(trc_out);
+
+    for (int i = 0; i < 4096; i++)
+        luts->in[i] = lrint(to_linear(i / 4095.0) / peak_in * 65535.0);
+    for (int i = 0; i < 65536; i++)
+        luts->out[i] = lrint(from_linear(i / 65535.0 * peak_out) * 4095.0);
+}
+
+static void init_xyz_tables(SwsLuts *xyz2rgb, SwsLuts *rgb2xyz)
+{
+    init_xyz_luts(xyz2rgb, XYZ_TRC, XYZ_RGB_TRC);
+    init_xyz_luts(rgb2xyz, XYZ_RGB_TRC, XYZ_TRC);
+}
+
+#if !CONFIG_SMALL
 static uint16_t xyzgamma_tab[4096],  rgbgammainv_tab[4096];
 static uint16_t rgbgamma_tab[65536], xyzgammainv_tab[65536];
-static av_cold void init_xyz_tables(void)
-#endif
+static av_cold void init_xyz_tables_once(void)
 {
-    double xyzgamma    = XYZ_GAMMA;
-    double rgbgamma    = 1.0 / RGB_GAMMA;
-    double xyzgammainv = 1.0 / XYZ_GAMMA;
-    double rgbgammainv = RGB_GAMMA;
-
-    /* set input gamma vectors */
-    for (int i = 0; i < 4096; i++) {
-        xyzgamma_tab[i]    = lrint(pow(i / 4095.0, xyzgamma)    * 65535.0);
-        rgbgammainv_tab[i] = lrint(pow(i / 4095.0, rgbgammainv) * 65535.0);
-    }
-
-    /* set output gamma vectors */
-    for (int i = 0; i < 65536; i++) {
-        rgbgamma_tab[i]    = lrint(pow(i / 65535.0, rgbgamma)    * 4095.0);
-        xyzgammainv_tab[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
-    }
+    SwsLuts xyz2rgb = { xyzgamma_tab,    rgbgamma_tab    };
+    SwsLuts rgb2xyz = { rgbgammainv_tab, xyzgammainv_tab };
+    init_xyz_tables(&xyz2rgb, &rgb2xyz);
 }
+#endif
 
 static void fill_xyz_matrix(int16_t mat[3][3], const SwsMatrix3x3 *m, double scale)
 {
@@ -765,7 +773,7 @@ av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
 {
     /* X'Y'Z' puts its 48 cd/m2 white at code 3960 and the top code at
      * 52.37 cd/m2 (ST 428-1), the codes above the white clip in RGB */
-    const double peak = av_csp_trc_func_inv_from_id(AVCOL_TRC_SMPTE428)(1.0);
+    const double peak = trc_peak(XYZ_TRC) / trc_peak(XYZ_RGB_TRC);
     const AVColorPrimariesDesc *bt709 = av_csp_primaries_desc_from_id(AVCOL_PRI_BT709);
     const SwsMatrix3x3 xyz2rgb = ff_sws_xyz2rgb(bt709);
     const SwsMatrix3x3 rgb2xyz = ff_sws_rgb2xyz(bt709);
@@ -783,8 +791,7 @@ av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
     c->rgb2xyz.gamma.in  = c->xyz2rgb.gamma.in  + 4096;
     c->xyz2rgb.gamma.out = c->rgb2xyz.gamma.in  + 4096;
     c->rgb2xyz.gamma.out = c->xyz2rgb.gamma.out + 65536;
-    init_xyz_tables(c->xyz2rgb.gamma.in,  c->rgb2xyz.gamma.out,
-                    c->xyz2rgb.gamma.out, c->rgb2xyz.gamma.in);
+    init_xyz_tables(&c->xyz2rgb.gamma, &c->rgb2xyz.gamma);
 #else
     c->xyz2rgb.gamma.in  = xyzgamma_tab;
     c->xyz2rgb.gamma.out = rgbgamma_tab;
@@ -792,7 +799,7 @@ av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
     c->rgb2xyz.gamma.out = xyzgammainv_tab;
 
     static AVOnce xyz_init_static_once = AV_ONCE_INIT;
-    ff_thread_once(&xyz_init_static_once, init_xyz_tables);
+    ff_thread_once(&xyz_init_static_once, init_xyz_tables_once);
 #endif
     return 0;
 }

@@ -552,9 +552,6 @@ struct SwsInternal {
 
     int use_mmx_vfilter;
 
-/* pre defined color-spaces gamma */
-#define XYZ_GAMMA (2.6)
-#define RGB_GAMMA (2.2)
     SwsColorFunc  xyz12Torgb48;
     SwsColorFunc  rgb48Toxyz12;
     SwsColorXform xyz2rgb;
