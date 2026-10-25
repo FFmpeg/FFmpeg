@@ -46,6 +46,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavutil/loongarch/cpu.h"
 
+#include "csputils.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
@@ -749,22 +750,28 @@ static av_cold void init_xyz_tables(void)
     }
 }
 
+static void fill_xyz_matrix(int16_t mat[3][3], const SwsMatrix3x3 *m)
+{
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            const double v = m->m[i][j] * 4096.0;
+            av_assert1(fabs(v) <= INT16_MAX);
+            mat[i][j] = lrint(v);
+        }
+    }
+}
+
 av_cold int ff_sws_fill_st428_tables(SwsInternal *c)
 {
-    static const int16_t xyz2rgb_matrix[3][3] = {
-        {13270, -6295, -2041},
-        {-3969,  7682,   170},
-        {  228,  -835,  4329} };
-    static const int16_t rgb2xyz_matrix[3][3] = {
-        {1689, 1464,  739},
-        { 871, 2929,  296},
-        {  79,  488, 3891} };
+    const AVColorPrimariesDesc *bt709 = av_csp_primaries_desc_from_id(AVCOL_PRI_BT709);
+    const SwsMatrix3x3 xyz2rgb = ff_sws_xyz2rgb(bt709);
+    const SwsMatrix3x3 rgb2xyz = ff_sws_rgb2xyz(bt709);
 
     if (c->xyz2rgb.gamma.in)
         return 0;
 
-    memcpy(c->xyz2rgb.mat, xyz2rgb_matrix, sizeof(c->xyz2rgb.mat));
-    memcpy(c->rgb2xyz.mat, rgb2xyz_matrix, sizeof(c->rgb2xyz.mat));
+    fill_xyz_matrix(c->xyz2rgb.mat, &xyz2rgb);
+    fill_xyz_matrix(c->rgb2xyz.mat, &rgb2xyz);
 
 #if CONFIG_SMALL
     c->xyz2rgb.gamma.in = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
