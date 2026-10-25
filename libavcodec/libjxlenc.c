@@ -510,8 +510,11 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     }
 
     /* jret != JXL_ENC_SUCCESS means fallthrough from above */
-    if (!sd || !sd->size || jret != JXL_ENC_SUCCESS)
-        libjxl_populate_colorspace(avctx, frame, pix_desc, &info);
+    if (!sd || !sd->size || jret != JXL_ENC_SUCCESS) {
+        ret = libjxl_populate_colorspace(avctx, frame, pix_desc, &info);
+        if (ret < 0)
+            goto end;
+    }
 
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
     jret = JxlEncoderSetFrameBitDepth(ctx->options, &jxl_bit_depth);
