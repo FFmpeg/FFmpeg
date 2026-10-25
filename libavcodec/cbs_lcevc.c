@@ -628,6 +628,9 @@ int ff_cbs_lcevc_add_process_block(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
+    if (position == -1)
+        position = list->nb_blocks;
+
     // Add a new block to the message list.
     err = ff_cbs_lcevc_list_add(list, position);
     if (err < 0)
