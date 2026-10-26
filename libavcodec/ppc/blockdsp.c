@@ -28,9 +28,9 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/blockdsp.h"
+#include "blockdsp_altivec.h"
 
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
 /*
@@ -127,21 +127,6 @@ static long check_dcbzl_effect(void)
     return count;
 }
 
-#if HAVE_ALTIVEC
-static void clear_block_altivec(int16_t *block)
-{
-    LOAD_ZERO;
-    vec_st(zero_s16v,   0, block);
-    vec_st(zero_s16v,  16, block);
-    vec_st(zero_s16v,  32, block);
-    vec_st(zero_s16v,  48, block);
-    vec_st(zero_s16v,  64, block);
-    vec_st(zero_s16v,  80, block);
-    vec_st(zero_s16v,  96, block);
-    vec_st(zero_s16v, 112, block);
-}
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_blockdsp_init_ppc(BlockDSPContext *c)
 {
     // common optimizations whether AltiVec is available or not
@@ -160,6 +145,6 @@ av_cold void ff_blockdsp_init_ppc(BlockDSPContext *c)
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
-    c->clear_block = clear_block_altivec;
+    c->clear_block = ff_clear_block_altivec;
 #endif /* HAVE_ALTIVEC */
 }

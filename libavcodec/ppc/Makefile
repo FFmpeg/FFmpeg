@@ -24,3 +24,7 @@ OBJS-$(CONFIG_MPEG4_DECODER)           += ppc/mpeg4videodsp.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += ppc/svq1enc_altivec.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += ppc/vorbisdsp_altivec.o
 OBJS-$(CONFIG_VP7_DECODER)             += ppc/vp8dsp_altivec.o
+
+# AltiVec optimizations
+# subsystems
+ALTIVEC-OBJS-$(CONFIG_BLOCKDSP)        += ppc/blockdsp_altivec.o
