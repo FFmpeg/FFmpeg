@@ -864,6 +864,19 @@ If not set, the encoder tries to generate a hopefully unique ID for
 the stream.
 @end table
 
+In order to do two pass encoding (where the first pass measures the
+loudness of the stream, and the second pass uses that information
+for accurately preserving the dynamics of the stream), invoke ffmpeg
+e.g. like this:
+
+@example
+ffmpeg -i input.wav -c:a libfdk_xhe_aac -pass 1 -f null -
+ffmpeg -i input.wav -c:a libfdk_xhe_aac -pass 2 out.m4a
+@end example
+
+Doing two pass encoding is the recommended way to use the libfdk_xhe_aac
+encoder.
+
 @anchor{liblc3-enc}
 @section liblc3
 

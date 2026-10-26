@@ -17,6 +17,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "libavutil/base64.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -45,6 +46,10 @@ typedef struct XHEAACContext {
     float *sample_queue;
     int sample_queue_size;
     int nb_sample_queue;
+
+    IIS_XHEAACENC_LOUDNESS_INSTANCE_HANDLE loudness_handle;
+
+    int loudness_exported;
 } XHEAACContext;
 
 static const AVOption xhe_aac_enc_options[] = {
@@ -99,10 +104,85 @@ static av_cold int xhe_aac_encode_close(AVCodecContext *avctx)
                    xhe_aac_get_error(err), err);
         s->handle = NULL;
     }
+    if (s->loudness_handle) {
+        err = IIS_xHEAACEnc_Loudness_Delete(s->loudness_handle);
+        if (err != IIS_XHEAACENC_NO_ERROR)
+            av_log(avctx, AV_LOG_ERROR, "Unexpected error on loudness close: %s (%d)\n",
+                   xhe_aac_get_error(err), err);
+        s->loudness_handle = NULL;
+    }
     ff_af_queue_close(&s->afq);
     av_freep(&s->sample_queue);
 
+    av_freep(&avctx->stats_out);
+
     return 0;
+}
+
+static av_cold int xhe_aac_export_loudness(AVCodecContext *avctx)
+{
+    XHEAACContext *s = avctx->priv_data;
+    unsigned int size, b64_size;
+    const uint8_t *buf = NULL;
+    IIS_XHEAACENC_RETURN_CODE err;
+
+    err = IIS_xHEAACEnc_Loudness_Export(s->loudness_handle, &buf,
+                                        &size);
+    if (err != IIS_XHEAACENC_NO_ERROR) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to export loudness: %s (%d)\n",
+               xhe_aac_get_error(err), err);
+        return AVERROR(EINVAL);
+    }
+    b64_size = AV_BASE64_SIZE(size);
+    avctx->stats_out = av_malloc(b64_size);
+    if (!avctx->stats_out)
+        return AVERROR(ENOMEM);
+
+    av_base64_encode(avctx->stats_out, b64_size,
+                     buf, size);
+
+    return 0;
+}
+
+static av_cold int xhe_aac_import_loudness(AVCodecContext *avctx)
+{
+    XHEAACContext *s = avctx->priv_data;
+    int size;
+    uint8_t *buf = NULL;
+    int ret = AVERROR(EINVAL);
+    IIS_XHEAACENC_RETURN_CODE err;
+
+    if (!avctx->stats_in) {
+        av_log(avctx, AV_LOG_ERROR, "Must provide stats input for second pass\n");
+        return AVERROR(EINVAL);
+    }
+    size = AV_BASE64_DECODE_SIZE(strlen(avctx->stats_in));
+    if (size <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid stats input for second pass\n");
+        return AVERROR(EINVAL);
+    }
+
+    buf = av_malloc(size);
+    if (!buf)
+        return AVERROR(ENOMEM);
+    size = av_base64_decode(buf, avctx->stats_in, size);
+    if (size < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to decode stats input\n");
+        goto error;
+    }
+
+    err = IIS_xHEAACEnc_Loudness_Import(s->loudness_handle, buf, size);
+    if (err != IIS_XHEAACENC_NO_ERROR) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to import loudness data: %s (%d)\n",
+               xhe_aac_get_error(err), err);
+        goto error;
+    }
+
+    ret = 0;
+
+error:
+    av_free(buf);
+    return ret;
 }
 
 static av_cold int xhe_aac_encode_init(AVCodecContext *avctx)
@@ -129,6 +209,37 @@ static av_cold int xhe_aac_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "Unsupported number of channels %d\n", avctx->ch_layout.nb_channels);
         goto error;
+    }
+
+    if (avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
+        IIS_XHEAACENC_LOUDNESS_SETUP loudness_setup;
+
+        loudness_setup.sampleRate = avctx->sample_rate;
+        loudness_setup.channelConfig = channel_config;
+        loudness_setup.audioInputLengthSamples = 0;
+        loudness_setup.audioInputLengthAvailable = 0;
+
+        err = IIS_xHEAACEnc_Loudness_Open(&s->loudness_handle, loudness_setup);
+        if (err != IIS_XHEAACENC_NO_ERROR) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to create loudness handle: %s (%d)\n",
+                   xhe_aac_get_error(err), err);
+            goto error;
+        }
+
+        if (avctx->flags & AV_CODEC_FLAG_PASS1) {
+            /* Arbitrary frame size for the first pass. */
+            avctx->frame_size = avctx->sample_rate * 25 / 1000;
+            /* For the first pass, we don't need to set up the
+             * encoder or anything - we just need the loudness handle. */
+            return 0;
+        }
+
+        /* For pass 2, import the loudness data from the previous run. */
+        int read_ret = xhe_aac_import_loudness(avctx);
+        if (read_ret != 0) {
+            ret = read_ret;
+            goto error;
+        }
     }
 
     err = IIS_xHEAACEnc_Config_Open(&config_handle, avctx->sample_rate, channel_config);
@@ -237,12 +348,23 @@ static av_cold int xhe_aac_encode_init(AVCodecContext *avctx)
             goto error;
         }
     }
-    err = IIS_xHEAACEnc_Config_AddParamValueFloat(config_handle,
-              IIS_XHEAACENC_PARAMETER_LIVE_LOUDNESS_LEVEL, s->live_loudness_level);
-    if (err != IIS_XHEAACENC_NO_ERROR) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to set live loudness level: %s (%d)\n",
-               xhe_aac_get_error(err), err);
-        goto error;
+
+    if (s->loudness_handle) {
+        err = IIS_xHEAACEnc_Config_AddParamValuePointer(config_handle,
+                  IIS_XHEAACENC_PARAMETER_LOUDNESS_DATA, s->loudness_handle);
+        if (err != IIS_XHEAACENC_NO_ERROR) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set loudness object: %s (%d)\n",
+                   xhe_aac_get_error(err), err);
+            goto error;
+        }
+    } else {
+        err = IIS_xHEAACEnc_Config_AddParamValueFloat(config_handle,
+                  IIS_XHEAACENC_PARAMETER_LIVE_LOUDNESS_LEVEL, s->live_loudness_level);
+        if (err != IIS_XHEAACENC_NO_ERROR) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set live loudness level: %s (%d)\n",
+                   xhe_aac_get_error(err), err);
+            goto error;
+        }
     }
 
     err = IIS_xHEAACEnc_Config_Finalize(config_handle);
@@ -368,6 +490,25 @@ static int xhe_aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     IIS_XHEAACENC_RETURN_CODE err;
     int samples_next;
     int ret;
+
+    if (avctx->flags & AV_CODEC_FLAG_PASS1) {
+        *got_packet_ptr = 0;
+
+        if (frame) {
+            err = IIS_xHEAACEnc_Loudness_Measure(s->loudness_handle,
+                                                 (const float *)frame->data[0],
+                                                 frame->nb_samples * avctx->ch_layout.nb_channels);
+            if (err != IIS_XHEAACENC_NO_ERROR) {
+                av_log(avctx, AV_LOG_ERROR, "Unable to measure loudness: %s (%d)\n",
+                       xhe_aac_get_error(err), err);
+                return AVERROR(EINVAL);
+            }
+        } else if (!s->loudness_exported) {
+            s->loudness_exported = 1;
+            return xhe_aac_export_loudness(avctx);
+        }
+        return 0;
+    }
 
     if (frame) {
         int nb_new_samples = frame->nb_samples * avctx->ch_layout.nb_channels;
