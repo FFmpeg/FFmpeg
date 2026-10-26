@@ -757,8 +757,6 @@ static int filter_frame(AVFilterContext *ctx, AVFrame **out, AVFrame *in, AVFram
     return 0;
 }
 
-#define SQR(x) ((x) * (x))
-
 static int config_input(AVFilterLink *inlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
@@ -833,7 +831,10 @@ static int config_input(AVFilterLink *inlink)
                 return AVERROR(ENOMEM);
         }
 
-        sc->search_positions = av_calloc(SQR(2 * s->bm_range / s->bm_step + 1), sizeof(*sc->search_positions));
+        const int nb_positions_x = FFMIN(2LL * s->bm_range / s->bm_step, inlink->w / s->bm_step) + 1;
+        const int nb_positions_y = FFMIN(2LL * s->bm_range / s->bm_step, inlink->h / s->bm_step) + 1;
+
+        sc->search_positions = av_calloc(nb_positions_x * (size_t)nb_positions_y, sizeof(*sc->search_positions));
         if (!sc->search_positions)
             return AVERROR(ENOMEM);
     }
