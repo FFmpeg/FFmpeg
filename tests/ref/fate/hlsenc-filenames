@@ -1,0 +1,420 @@
+https://example.ffmpeg (mpegts, segments)
+segment: https://example.ffmpeg/0.ts
+subtitle: https://example.ffmpeg/0.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg
+https://example.ffmpeg (fmp4, segments)
+segment: https://example.ffmpeg/0.m4s
+subtitle: https://example.ffmpeg/0.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg
+https://example.ffmpeg (mpegts, single file)
+segment: https://example.ffmpeg/.ts
+subtitle: https://example.ffmpeg/.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg
+https://example.ffmpeg (fmp4, single file)
+segment: https://example.ffmpeg/.m4s
+subtitle: https://example.ffmpeg/.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg
+https://example.ffmpeg/ (mpegts, segments)
+segment: https://example.ffmpeg/0.ts
+subtitle: https://example.ffmpeg/0.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg/
+https://example.ffmpeg/ (fmp4, segments)
+segment: https://example.ffmpeg/0.m4s
+subtitle: https://example.ffmpeg/0.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg/
+https://example.ffmpeg/ (mpegts, single file)
+segment: https://example.ffmpeg/.ts
+subtitle: https://example.ffmpeg/.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg/
+https://example.ffmpeg/ (fmp4, single file)
+segment: https://example.ffmpeg/.m4s
+subtitle: https://example.ffmpeg/.vtt
+subtitle playlist: https://example.ffmpeg/_vtt.m3u8
+playlist: https://example.ffmpeg/
+https://user.name:password@example.ffmpeg:8443/dir.name/output (mpegts, segments)
+segment: https://user.name:password@example.ffmpeg:8443/dir.name/output0.ts
+subtitle: https://user.name:password@example.ffmpeg:8443/dir.name/output0.vtt
+subtitle playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output_vtt.m3u8
+playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output
+https://user.name:password@example.ffmpeg:8443/dir.name/output (fmp4, segments)
+segment: https://user.name:password@example.ffmpeg:8443/dir.name/output0.m4s
+subtitle: https://user.name:password@example.ffmpeg:8443/dir.name/output0.vtt
+subtitle playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output_vtt.m3u8
+playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output
+https://user.name:password@example.ffmpeg:8443/dir.name/output (mpegts, single file)
+segment: https://user.name:password@example.ffmpeg:8443/dir.name/output.ts
+subtitle: https://user.name:password@example.ffmpeg:8443/dir.name/output.vtt
+subtitle playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output_vtt.m3u8
+playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output
+https://user.name:password@example.ffmpeg:8443/dir.name/output (fmp4, single file)
+segment: https://user.name:password@example.ffmpeg:8443/dir.name/output.m4s
+subtitle: https://user.name:password@example.ffmpeg:8443/dir.name/output.vtt
+subtitle playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output_vtt.m3u8
+playlist: https://user.name:password@example.ffmpeg:8443/dir.name/output
+https://example.ffmpeg/dir.name/output.m3u8 (mpegts, segments)
+segment: https://example.ffmpeg/dir.name/output0.ts
+subtitle: https://example.ffmpeg/dir.name/output0.vtt
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8
+playlist: https://example.ffmpeg/dir.name/output.m3u8
+https://example.ffmpeg/dir.name/output.m3u8 (fmp4, segments)
+segment: https://example.ffmpeg/dir.name/output0.m4s
+subtitle: https://example.ffmpeg/dir.name/output0.vtt
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8
+playlist: https://example.ffmpeg/dir.name/output.m3u8
+https://example.ffmpeg/dir.name/output.m3u8 (mpegts, single file)
+segment: https://example.ffmpeg/dir.name/output.ts
+subtitle: https://example.ffmpeg/dir.name/output.vtt
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8
+playlist: https://example.ffmpeg/dir.name/output.m3u8
+https://example.ffmpeg/dir.name/output.m3u8 (fmp4, single file)
+segment: https://example.ffmpeg/dir.name/output.m4s
+subtitle: https://example.ffmpeg/dir.name/output.vtt
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8
+playlist: https://example.ffmpeg/dir.name/output.m3u8
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar (mpegts, segments)
+segment: https://example.ffmpeg/dir.name/output0.ts?token=foo.bar
+subtitle: https://example.ffmpeg/dir.name/output0.vtt?token=foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar (fmp4, segments)
+segment: https://example.ffmpeg/dir.name/output0.m4s?token=foo.bar
+subtitle: https://example.ffmpeg/dir.name/output0.vtt?token=foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar (mpegts, single file)
+segment: https://example.ffmpeg/dir.name/output.ts?token=foo.bar
+subtitle: https://example.ffmpeg/dir.name/output.vtt?token=foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar (fmp4, single file)
+segment: https://example.ffmpeg/dir.name/output.m4s?token=foo.bar
+subtitle: https://example.ffmpeg/dir.name/output.vtt?token=foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar
+https://example.ffmpeg/dir.name/output.m3u8#foo.bar (mpegts, segments)
+segment: https://example.ffmpeg/dir.name/output0.ts#foo.bar
+subtitle: https://example.ffmpeg/dir.name/output0.vtt#foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8#foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8#foo.bar
+https://example.ffmpeg/dir.name/output.m3u8#foo.bar (fmp4, segments)
+segment: https://example.ffmpeg/dir.name/output0.m4s#foo.bar
+subtitle: https://example.ffmpeg/dir.name/output0.vtt#foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8#foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8#foo.bar
+https://example.ffmpeg/dir.name/output.m3u8#foo.bar (mpegts, single file)
+segment: https://example.ffmpeg/dir.name/output.ts#foo.bar
+subtitle: https://example.ffmpeg/dir.name/output.vtt#foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8#foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8#foo.bar
+https://example.ffmpeg/dir.name/output.m3u8#foo.bar (fmp4, single file)
+segment: https://example.ffmpeg/dir.name/output.m4s#foo.bar
+subtitle: https://example.ffmpeg/dir.name/output.vtt#foo.bar
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8#foo.bar
+playlist: https://example.ffmpeg/dir.name/output.m3u8#foo.bar
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux (mpegts, segments)
+segment: https://example.ffmpeg/dir.name/output0.ts?token=foo.bar#baz.qux
+subtitle: https://example.ffmpeg/dir.name/output0.vtt?token=foo.bar#baz.qux
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar#baz.qux
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux (fmp4, segments)
+segment: https://example.ffmpeg/dir.name/output0.m4s?token=foo.bar#baz.qux
+subtitle: https://example.ffmpeg/dir.name/output0.vtt?token=foo.bar#baz.qux
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar#baz.qux
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux (mpegts, single file)
+segment: https://example.ffmpeg/dir.name/output.ts?token=foo.bar#baz.qux
+subtitle: https://example.ffmpeg/dir.name/output.vtt?token=foo.bar#baz.qux
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar#baz.qux
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux
+https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux (fmp4, single file)
+segment: https://example.ffmpeg/dir.name/output.m4s?token=foo.bar#baz.qux
+subtitle: https://example.ffmpeg/dir.name/output.vtt?token=foo.bar#baz.qux
+subtitle playlist: https://example.ffmpeg/dir.name/output_vtt.m3u8?token=foo.bar#baz.qux
+playlist: https://example.ffmpeg/dir.name/output.m3u8?token=foo.bar#baz.qux
+dir.name/output (mpegts, segments)
+segment: dir0.ts
+subtitle: dir0.vtt
+subtitle playlist: dir_vtt.m3u8
+playlist: dir.name/output
+dir.name/output (fmp4, segments)
+segment: dir0.m4s
+subtitle: dir0.vtt
+subtitle playlist: dir_vtt.m3u8
+playlist: dir.name/output
+dir.name/output (mpegts, single file)
+segment: dir.ts
+subtitle: dir.vtt
+subtitle playlist: dir_vtt.m3u8
+playlist: dir.name/output
+dir.name/output (fmp4, single file)
+segment: dir.m4s
+subtitle: dir.vtt
+subtitle playlist: dir_vtt.m3u8
+playlist: dir.name/output
+dir.name/output.m3u8 (mpegts, segments)
+segment: dir.name/output0.ts
+subtitle: dir.name/output0.vtt
+subtitle playlist: dir.name/output_vtt.m3u8
+playlist: dir.name/output.m3u8
+dir.name/output.m3u8 (fmp4, segments)
+segment: dir.name/output0.m4s
+subtitle: dir.name/output0.vtt
+subtitle playlist: dir.name/output_vtt.m3u8
+playlist: dir.name/output.m3u8
+dir.name/output.m3u8 (mpegts, single file)
+segment: dir.name/output.ts
+subtitle: dir.name/output.vtt
+subtitle playlist: dir.name/output_vtt.m3u8
+playlist: dir.name/output.m3u8
+dir.name/output.m3u8 (fmp4, single file)
+segment: dir.name/output.m4s
+subtitle: dir.name/output.vtt
+subtitle playlist: dir.name/output_vtt.m3u8
+playlist: dir.name/output.m3u8
+foo#bar.ts (mpegts, segments)
+segment: foo#bar0.ts
+subtitle: foo#bar0.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar.ts
+foo#bar.ts (fmp4, segments)
+segment: foo#bar0.m4s
+subtitle: foo#bar0.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar.ts
+foo#bar.ts (mpegts, single file)
+segment: foo#bar.ts
+subtitle: foo#bar.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar.ts
+foo#bar.ts (fmp4, single file)
+segment: foo#bar.m4s
+subtitle: foo#bar.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar.ts
+foo?bar.ts (mpegts, segments)
+segment: foo?bar0.ts
+subtitle: foo?bar0.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar.ts
+foo?bar.ts (fmp4, segments)
+segment: foo?bar0.m4s
+subtitle: foo?bar0.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar.ts
+foo?bar.ts (mpegts, single file)
+segment: foo?bar.ts
+subtitle: foo?bar.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar.ts
+foo?bar.ts (fmp4, single file)
+segment: foo?bar.m4s
+subtitle: foo?bar.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar.ts
+foo#bar (mpegts, segments)
+segment: foo#bar0.ts
+subtitle: foo#bar0.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar
+foo#bar (fmp4, segments)
+segment: foo#bar0.m4s
+subtitle: foo#bar0.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar
+foo#bar (mpegts, single file)
+segment: foo#bar.ts
+subtitle: foo#bar.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar
+foo#bar (fmp4, single file)
+segment: foo#bar.m4s
+subtitle: foo#bar.vtt
+subtitle playlist: foo#bar_vtt.m3u8
+playlist: foo#bar
+foo?bar (mpegts, segments)
+segment: foo?bar0.ts
+subtitle: foo?bar0.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar
+foo?bar (fmp4, segments)
+segment: foo?bar0.m4s
+subtitle: foo?bar0.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar
+foo?bar (mpegts, single file)
+segment: foo?bar.ts
+subtitle: foo?bar.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar
+foo?bar (fmp4, single file)
+segment: foo?bar.m4s
+subtitle: foo?bar.vtt
+subtitle playlist: foo?bar_vtt.m3u8
+playlist: foo?bar
+file:foo#bar.ts (mpegts, segments)
+segment: file:foo#bar0.ts
+subtitle: file:foo#bar0.vtt
+subtitle playlist: file:foo#bar_vtt.m3u8
+playlist: file:foo#bar.ts
+file:foo#bar.ts (fmp4, segments)
+segment: file:foo#bar0.m4s
+subtitle: file:foo#bar0.vtt
+subtitle playlist: file:foo#bar_vtt.m3u8
+playlist: file:foo#bar.ts
+file:foo#bar.ts (mpegts, single file)
+segment: file:foo#bar.ts
+subtitle: file:foo#bar.vtt
+subtitle playlist: file:foo#bar_vtt.m3u8
+playlist: file:foo#bar.ts
+file:foo#bar.ts (fmp4, single file)
+segment: file:foo#bar.m4s
+subtitle: file:foo#bar.vtt
+subtitle playlist: file:foo#bar_vtt.m3u8
+playlist: file:foo#bar.ts
+file:foo?bar.ts (mpegts, segments)
+segment: file:foo?bar0.ts
+subtitle: file:foo?bar0.vtt
+subtitle playlist: file:foo?bar_vtt.m3u8
+playlist: file:foo?bar.ts
+file:foo?bar.ts (fmp4, segments)
+segment: file:foo?bar0.m4s
+subtitle: file:foo?bar0.vtt
+subtitle playlist: file:foo?bar_vtt.m3u8
+playlist: file:foo?bar.ts
+file:foo?bar.ts (mpegts, single file)
+segment: file:foo?bar.ts
+subtitle: file:foo?bar.vtt
+subtitle playlist: file:foo?bar_vtt.m3u8
+playlist: file:foo?bar.ts
+file:foo?bar.ts (fmp4, single file)
+segment: file:foo?bar.m4s
+subtitle: file:foo?bar.vtt
+subtitle playlist: file:foo?bar_vtt.m3u8
+playlist: file:foo?bar.ts
+foo.m3u8?token=foo.bar (mpegts, segments)
+segment: foo.m3u8?token=foo0.ts
+subtitle: foo.m3u8?token=foo0.vtt
+subtitle playlist: foo.m3u8?token=foo_vtt.m3u8
+playlist: foo.m3u8?token=foo.bar
+foo.m3u8?token=foo.bar (fmp4, segments)
+segment: foo.m3u8?token=foo0.m4s
+subtitle: foo.m3u8?token=foo0.vtt
+subtitle playlist: foo.m3u8?token=foo_vtt.m3u8
+playlist: foo.m3u8?token=foo.bar
+foo.m3u8?token=foo.bar (mpegts, single file)
+segment: foo.m3u8?token=foo.ts
+subtitle: foo.m3u8?token=foo.vtt
+subtitle playlist: foo.m3u8?token=foo_vtt.m3u8
+playlist: foo.m3u8?token=foo.bar
+foo.m3u8?token=foo.bar (fmp4, single file)
+segment: foo.m3u8?token=foo.m4s
+subtitle: foo.m3u8?token=foo.vtt
+subtitle playlist: foo.m3u8?token=foo_vtt.m3u8
+playlist: foo.m3u8?token=foo.bar
+file:foo.m3u8?token=foo.bar (mpegts, segments)
+segment: file:foo.m3u8?token=foo0.ts
+subtitle: file:foo.m3u8?token=foo0.vtt
+subtitle playlist: file:foo.m3u8?token=foo_vtt.m3u8
+playlist: file:foo.m3u8?token=foo.bar
+file:foo.m3u8?token=foo.bar (fmp4, segments)
+segment: file:foo.m3u8?token=foo0.m4s
+subtitle: file:foo.m3u8?token=foo0.vtt
+subtitle playlist: file:foo.m3u8?token=foo_vtt.m3u8
+playlist: file:foo.m3u8?token=foo.bar
+file:foo.m3u8?token=foo.bar (mpegts, single file)
+segment: file:foo.m3u8?token=foo.ts
+subtitle: file:foo.m3u8?token=foo.vtt
+subtitle playlist: file:foo.m3u8?token=foo_vtt.m3u8
+playlist: file:foo.m3u8?token=foo.bar
+file:foo.m3u8?token=foo.bar (fmp4, single file)
+segment: file:foo.m3u8?token=foo.m4s
+subtitle: file:foo.m3u8?token=foo.vtt
+subtitle playlist: file:foo.m3u8?token=foo_vtt.m3u8
+playlist: file:foo.m3u8?token=foo.bar
+dir#tag/output.m3u8 (mpegts, segments)
+segment: dir#tag/output0.ts
+subtitle: dir#tag/output0.vtt
+subtitle playlist: dir#tag/output_vtt.m3u8
+playlist: dir#tag/output.m3u8
+dir#tag/output.m3u8 (fmp4, segments)
+segment: dir#tag/output0.m4s
+subtitle: dir#tag/output0.vtt
+subtitle playlist: dir#tag/output_vtt.m3u8
+playlist: dir#tag/output.m3u8
+dir#tag/output.m3u8 (mpegts, single file)
+segment: dir#tag/output.ts
+subtitle: dir#tag/output.vtt
+subtitle playlist: dir#tag/output_vtt.m3u8
+playlist: dir#tag/output.m3u8
+dir#tag/output.m3u8 (fmp4, single file)
+segment: dir#tag/output.m4s
+subtitle: dir#tag/output.vtt
+subtitle playlist: dir#tag/output_vtt.m3u8
+playlist: dir#tag/output.m3u8
+dir?tag/output.m3u8 (mpegts, segments)
+segment: dir?tag/output0.ts
+subtitle: dir?tag/output0.vtt
+subtitle playlist: dir?tag/output_vtt.m3u8
+playlist: dir?tag/output.m3u8
+dir?tag/output.m3u8 (fmp4, segments)
+segment: dir?tag/output0.m4s
+subtitle: dir?tag/output0.vtt
+subtitle playlist: dir?tag/output_vtt.m3u8
+playlist: dir?tag/output.m3u8
+dir?tag/output.m3u8 (mpegts, single file)
+segment: dir?tag/output.ts
+subtitle: dir?tag/output.vtt
+subtitle playlist: dir?tag/output_vtt.m3u8
+playlist: dir?tag/output.m3u8
+dir?tag/output.m3u8 (fmp4, single file)
+segment: dir?tag/output.m4s
+subtitle: dir?tag/output.vtt
+subtitle playlist: dir?tag/output_vtt.m3u8
+playlist: dir?tag/output.m3u8
+file:dir#tag/output.m3u8 (mpegts, segments)
+segment: file:dir#tag/output0.ts
+subtitle: file:dir#tag/output0.vtt
+subtitle playlist: file:dir#tag/output_vtt.m3u8
+playlist: file:dir#tag/output.m3u8
+file:dir#tag/output.m3u8 (fmp4, segments)
+segment: file:dir#tag/output0.m4s
+subtitle: file:dir#tag/output0.vtt
+subtitle playlist: file:dir#tag/output_vtt.m3u8
+playlist: file:dir#tag/output.m3u8
+file:dir#tag/output.m3u8 (mpegts, single file)
+segment: file:dir#tag/output.ts
+subtitle: file:dir#tag/output.vtt
+subtitle playlist: file:dir#tag/output_vtt.m3u8
+playlist: file:dir#tag/output.m3u8
+file:dir#tag/output.m3u8 (fmp4, single file)
+segment: file:dir#tag/output.m4s
+subtitle: file:dir#tag/output.vtt
+subtitle playlist: file:dir#tag/output_vtt.m3u8
+playlist: file:dir#tag/output.m3u8
+file:dir?tag/output.m3u8 (mpegts, segments)
+segment: file:dir?tag/output0.ts
+subtitle: file:dir?tag/output0.vtt
+subtitle playlist: file:dir?tag/output_vtt.m3u8
+playlist: file:dir?tag/output.m3u8
+file:dir?tag/output.m3u8 (fmp4, segments)
+segment: file:dir?tag/output0.m4s
+subtitle: file:dir?tag/output0.vtt
+subtitle playlist: file:dir?tag/output_vtt.m3u8
+playlist: file:dir?tag/output.m3u8
+file:dir?tag/output.m3u8 (mpegts, single file)
+segment: file:dir?tag/output.ts
+subtitle: file:dir?tag/output.vtt
+subtitle playlist: file:dir?tag/output_vtt.m3u8
+playlist: file:dir?tag/output.m3u8
+file:dir?tag/output.m3u8 (fmp4, single file)
+segment: file:dir?tag/output.m4s
+subtitle: file:dir?tag/output.vtt
+subtitle playlist: file:dir?tag/output_vtt.m3u8
+playlist: file:dir?tag/output.m3u8

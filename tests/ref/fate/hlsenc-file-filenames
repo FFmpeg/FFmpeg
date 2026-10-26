@@ -1,0 +1,260 @@
+capture_1:take#2/output.m3u8 (mpegts, segments)
+segment: capture_1:take#2/output0.ts
+subtitle: capture_1:take#2/output0.vtt
+subtitle playlist: capture_1:take#2/output_vtt.m3u8
+playlist: capture_1:take#2/output.m3u8
+capture_1:take#2/output.m3u8 (fmp4, segments)
+segment: capture_1:take#2/output0.m4s
+subtitle: capture_1:take#2/output0.vtt
+subtitle playlist: capture_1:take#2/output_vtt.m3u8
+playlist: capture_1:take#2/output.m3u8
+capture_1:take#2/output.m3u8 (mpegts, single file)
+segment: capture_1:take#2/output.ts
+subtitle: capture_1:take#2/output.vtt
+subtitle playlist: capture_1:take#2/output_vtt.m3u8
+playlist: capture_1:take#2/output.m3u8
+capture_1:take#2/output.m3u8 (fmp4, single file)
+segment: capture_1:take#2/output.m4s
+subtitle: capture_1:take#2/output.vtt
+subtitle playlist: capture_1:take#2/output_vtt.m3u8
+playlist: capture_1:take#2/output.m3u8
+capture_1:take?2/output.m3u8 (mpegts, segments)
+segment: capture_1:take?2/output0.ts
+subtitle: capture_1:take?2/output0.vtt
+subtitle playlist: capture_1:take?2/output_vtt.m3u8
+playlist: capture_1:take?2/output.m3u8
+capture_1:take?2/output.m3u8 (fmp4, segments)
+segment: capture_1:take?2/output0.m4s
+subtitle: capture_1:take?2/output0.vtt
+subtitle playlist: capture_1:take?2/output_vtt.m3u8
+playlist: capture_1:take?2/output.m3u8
+capture_1:take?2/output.m3u8 (mpegts, single file)
+segment: capture_1:take?2/output.ts
+subtitle: capture_1:take?2/output.vtt
+subtitle playlist: capture_1:take?2/output_vtt.m3u8
+playlist: capture_1:take?2/output.m3u8
+capture_1:take?2/output.m3u8 (fmp4, single file)
+segment: capture_1:take?2/output.m4s
+subtitle: capture_1:take?2/output.vtt
+subtitle playlist: capture_1:take?2/output_vtt.m3u8
+playlist: capture_1:take?2/output.m3u8
+my video:dir#tag/output.m3u8 (mpegts, segments)
+segment: my video:dir#tag/output0.ts
+subtitle: my video:dir#tag/output0.vtt
+subtitle playlist: my video:dir#tag/output_vtt.m3u8
+playlist: my video:dir#tag/output.m3u8
+my video:dir#tag/output.m3u8 (fmp4, segments)
+segment: my video:dir#tag/output0.m4s
+subtitle: my video:dir#tag/output0.vtt
+subtitle playlist: my video:dir#tag/output_vtt.m3u8
+playlist: my video:dir#tag/output.m3u8
+my video:dir#tag/output.m3u8 (mpegts, single file)
+segment: my video:dir#tag/output.ts
+subtitle: my video:dir#tag/output.vtt
+subtitle playlist: my video:dir#tag/output_vtt.m3u8
+playlist: my video:dir#tag/output.m3u8
+my video:dir#tag/output.m3u8 (fmp4, single file)
+segment: my video:dir#tag/output.m4s
+subtitle: my video:dir#tag/output.vtt
+subtitle playlist: my video:dir#tag/output_vtt.m3u8
+playlist: my video:dir#tag/output.m3u8
+my video:dir?tag/output.m3u8 (mpegts, segments)
+segment: my video:dir?tag/output0.ts
+subtitle: my video:dir?tag/output0.vtt
+subtitle playlist: my video:dir?tag/output_vtt.m3u8
+playlist: my video:dir?tag/output.m3u8
+my video:dir?tag/output.m3u8 (fmp4, segments)
+segment: my video:dir?tag/output0.m4s
+subtitle: my video:dir?tag/output0.vtt
+subtitle playlist: my video:dir?tag/output_vtt.m3u8
+playlist: my video:dir?tag/output.m3u8
+my video:dir?tag/output.m3u8 (mpegts, single file)
+segment: my video:dir?tag/output.ts
+subtitle: my video:dir?tag/output.vtt
+subtitle playlist: my video:dir?tag/output_vtt.m3u8
+playlist: my video:dir?tag/output.m3u8
+my video:dir?tag/output.m3u8 (fmp4, single file)
+segment: my video:dir?tag/output.m4s
+subtitle: my video:dir?tag/output.vtt
+subtitle playlist: my video:dir?tag/output_vtt.m3u8
+playlist: my video:dir?tag/output.m3u8
+file://[dir/output.m3u8 (mpegts, segments)
+segment: file://[dir/output0.ts
+subtitle: file://[dir/output0.vtt
+subtitle playlist: file://[dir/output_vtt.m3u8
+playlist: file://[dir/output.m3u8
+file://[dir/output.m3u8 (fmp4, segments)
+segment: file://[dir/output0.m4s
+subtitle: file://[dir/output0.vtt
+subtitle playlist: file://[dir/output_vtt.m3u8
+playlist: file://[dir/output.m3u8
+file://[dir/output.m3u8 (mpegts, single file)
+segment: file://[dir/output.ts
+subtitle: file://[dir/output.vtt
+subtitle playlist: file://[dir/output_vtt.m3u8
+playlist: file://[dir/output.m3u8
+file://[dir/output.m3u8 (fmp4, single file)
+segment: file://[dir/output.m4s
+subtitle: file://[dir/output.vtt
+subtitle playlist: file://[dir/output_vtt.m3u8
+playlist: file://[dir/output.m3u8
+crypto:file:dir#tag/output.m3u8 (mpegts, segments)
+segment: crypto:file:dir#tag/output0.ts
+subtitle: crypto:file:dir#tag/output0.vtt
+subtitle playlist: crypto:file:dir#tag/output_vtt.m3u8
+playlist: crypto:file:dir#tag/output.m3u8
+crypto:file:dir#tag/output.m3u8 (fmp4, segments)
+segment: crypto:file:dir#tag/output0.m4s
+subtitle: crypto:file:dir#tag/output0.vtt
+subtitle playlist: crypto:file:dir#tag/output_vtt.m3u8
+playlist: crypto:file:dir#tag/output.m3u8
+crypto:file:dir#tag/output.m3u8 (mpegts, single file)
+segment: crypto:file:dir#tag/output.ts
+subtitle: crypto:file:dir#tag/output.vtt
+subtitle playlist: crypto:file:dir#tag/output_vtt.m3u8
+playlist: crypto:file:dir#tag/output.m3u8
+crypto:file:dir#tag/output.m3u8 (fmp4, single file)
+segment: crypto:file:dir#tag/output.m4s
+subtitle: crypto:file:dir#tag/output.vtt
+subtitle playlist: crypto:file:dir#tag/output_vtt.m3u8
+playlist: crypto:file:dir#tag/output.m3u8
+crypto+file:dir?tag/output.m3u8 (mpegts, segments)
+segment: crypto+file:dir?tag/output0.ts
+subtitle: crypto+file:dir?tag/output0.vtt
+subtitle playlist: crypto+file:dir?tag/output_vtt.m3u8
+playlist: crypto+file:dir?tag/output.m3u8
+crypto+file:dir?tag/output.m3u8 (fmp4, segments)
+segment: crypto+file:dir?tag/output0.m4s
+subtitle: crypto+file:dir?tag/output0.vtt
+subtitle playlist: crypto+file:dir?tag/output_vtt.m3u8
+playlist: crypto+file:dir?tag/output.m3u8
+crypto+file:dir?tag/output.m3u8 (mpegts, single file)
+segment: crypto+file:dir?tag/output.ts
+subtitle: crypto+file:dir?tag/output.vtt
+subtitle playlist: crypto+file:dir?tag/output_vtt.m3u8
+playlist: crypto+file:dir?tag/output.m3u8
+crypto+file:dir?tag/output.m3u8 (fmp4, single file)
+segment: crypto+file:dir?tag/output.m4s
+subtitle: crypto+file:dir?tag/output.vtt
+subtitle playlist: crypto+file:dir?tag/output_vtt.m3u8
+playlist: crypto+file:dir?tag/output.m3u8
+crypto:dir#tag/output.m3u8 (mpegts, segments)
+segment: crypto:dir#tag/output0.ts
+subtitle: crypto:dir#tag/output0.vtt
+subtitle playlist: crypto:dir#tag/output_vtt.m3u8
+playlist: crypto:dir#tag/output.m3u8
+crypto:dir#tag/output.m3u8 (fmp4, segments)
+segment: crypto:dir#tag/output0.m4s
+subtitle: crypto:dir#tag/output0.vtt
+subtitle playlist: crypto:dir#tag/output_vtt.m3u8
+playlist: crypto:dir#tag/output.m3u8
+crypto:dir#tag/output.m3u8 (mpegts, single file)
+segment: crypto:dir#tag/output.ts
+subtitle: crypto:dir#tag/output.vtt
+subtitle playlist: crypto:dir#tag/output_vtt.m3u8
+playlist: crypto:dir#tag/output.m3u8
+crypto:dir#tag/output.m3u8 (fmp4, single file)
+segment: crypto:dir#tag/output.m4s
+subtitle: crypto:dir#tag/output.vtt
+subtitle playlist: crypto:dir#tag/output_vtt.m3u8
+playlist: crypto:dir#tag/output.m3u8
+crypto:dir?tag/output.m3u8 (mpegts, segments)
+segment: crypto:dir?tag/output0.ts
+subtitle: crypto:dir?tag/output0.vtt
+subtitle playlist: crypto:dir?tag/output_vtt.m3u8
+playlist: crypto:dir?tag/output.m3u8
+crypto:dir?tag/output.m3u8 (fmp4, segments)
+segment: crypto:dir?tag/output0.m4s
+subtitle: crypto:dir?tag/output0.vtt
+subtitle playlist: crypto:dir?tag/output_vtt.m3u8
+playlist: crypto:dir?tag/output.m3u8
+crypto:dir?tag/output.m3u8 (mpegts, single file)
+segment: crypto:dir?tag/output.ts
+subtitle: crypto:dir?tag/output.vtt
+subtitle playlist: crypto:dir?tag/output_vtt.m3u8
+playlist: crypto:dir?tag/output.m3u8
+crypto:dir?tag/output.m3u8 (fmp4, single file)
+segment: crypto:dir?tag/output.m4s
+subtitle: crypto:dir?tag/output.vtt
+subtitle playlist: crypto:dir?tag/output_vtt.m3u8
+playlist: crypto:dir?tag/output.m3u8
+crypto:crypto+file:dir#tag/output.m3u8 (mpegts, segments)
+segment: crypto:crypto+file:dir#tag/output0.ts
+subtitle: crypto:crypto+file:dir#tag/output0.vtt
+subtitle playlist: crypto:crypto+file:dir#tag/output_vtt.m3u8
+playlist: crypto:crypto+file:dir#tag/output.m3u8
+crypto:crypto+file:dir#tag/output.m3u8 (fmp4, segments)
+segment: crypto:crypto+file:dir#tag/output0.m4s
+subtitle: crypto:crypto+file:dir#tag/output0.vtt
+subtitle playlist: crypto:crypto+file:dir#tag/output_vtt.m3u8
+playlist: crypto:crypto+file:dir#tag/output.m3u8
+crypto:crypto+file:dir#tag/output.m3u8 (mpegts, single file)
+segment: crypto:crypto+file:dir#tag/output.ts
+subtitle: crypto:crypto+file:dir#tag/output.vtt
+subtitle playlist: crypto:crypto+file:dir#tag/output_vtt.m3u8
+playlist: crypto:crypto+file:dir#tag/output.m3u8
+crypto:crypto+file:dir#tag/output.m3u8 (fmp4, single file)
+segment: crypto:crypto+file:dir#tag/output.m4s
+subtitle: crypto:crypto+file:dir#tag/output.vtt
+subtitle playlist: crypto:crypto+file:dir#tag/output_vtt.m3u8
+playlist: crypto:crypto+file:dir#tag/output.m3u8
+crypto+crypto:file:dir?tag/output.m3u8 (mpegts, segments)
+segment: crypto+crypto:file:dir?tag/output0.ts
+subtitle: crypto+crypto:file:dir?tag/output0.vtt
+subtitle playlist: crypto+crypto:file:dir?tag/output_vtt.m3u8
+playlist: crypto+crypto:file:dir?tag/output.m3u8
+crypto+crypto:file:dir?tag/output.m3u8 (fmp4, segments)
+segment: crypto+crypto:file:dir?tag/output0.m4s
+subtitle: crypto+crypto:file:dir?tag/output0.vtt
+subtitle playlist: crypto+crypto:file:dir?tag/output_vtt.m3u8
+playlist: crypto+crypto:file:dir?tag/output.m3u8
+crypto+crypto:file:dir?tag/output.m3u8 (mpegts, single file)
+segment: crypto+crypto:file:dir?tag/output.ts
+subtitle: crypto+crypto:file:dir?tag/output.vtt
+subtitle playlist: crypto+crypto:file:dir?tag/output_vtt.m3u8
+playlist: crypto+crypto:file:dir?tag/output.m3u8
+crypto+crypto:file:dir?tag/output.m3u8 (fmp4, single file)
+segment: crypto+crypto:file:dir?tag/output.m4s
+subtitle: crypto+crypto:file:dir?tag/output.vtt
+subtitle playlist: crypto+crypto:file:dir?tag/output_vtt.m3u8
+playlist: crypto+crypto:file:dir?tag/output.m3u8
+crypto:capture_1:take#2/output.m3u8 (mpegts, segments)
+segment: crypto:capture_1:take#2/output0.ts
+subtitle: crypto:capture_1:take#2/output0.vtt
+subtitle playlist: crypto:capture_1:take#2/output_vtt.m3u8
+playlist: crypto:capture_1:take#2/output.m3u8
+crypto:capture_1:take#2/output.m3u8 (fmp4, segments)
+segment: crypto:capture_1:take#2/output0.m4s
+subtitle: crypto:capture_1:take#2/output0.vtt
+subtitle playlist: crypto:capture_1:take#2/output_vtt.m3u8
+playlist: crypto:capture_1:take#2/output.m3u8
+crypto:capture_1:take#2/output.m3u8 (mpegts, single file)
+segment: crypto:capture_1:take#2/output.ts
+subtitle: crypto:capture_1:take#2/output.vtt
+subtitle playlist: crypto:capture_1:take#2/output_vtt.m3u8
+playlist: crypto:capture_1:take#2/output.m3u8
+crypto:capture_1:take#2/output.m3u8 (fmp4, single file)
+segment: crypto:capture_1:take#2/output.m4s
+subtitle: crypto:capture_1:take#2/output.vtt
+subtitle playlist: crypto:capture_1:take#2/output_vtt.m3u8
+playlist: crypto:capture_1:take#2/output.m3u8
+crypto+file://[dir/output.m3u8 (mpegts, segments)
+segment: crypto+file://[dir/output0.ts
+subtitle: crypto+file://[dir/output0.vtt
+subtitle playlist: crypto+file://[dir/output_vtt.m3u8
+playlist: crypto+file://[dir/output.m3u8
+crypto+file://[dir/output.m3u8 (fmp4, segments)
+segment: crypto+file://[dir/output0.m4s
+subtitle: crypto+file://[dir/output0.vtt
+subtitle playlist: crypto+file://[dir/output_vtt.m3u8
+playlist: crypto+file://[dir/output.m3u8
+crypto+file://[dir/output.m3u8 (mpegts, single file)
+segment: crypto+file://[dir/output.ts
+subtitle: crypto+file://[dir/output.vtt
+subtitle playlist: crypto+file://[dir/output_vtt.m3u8
+playlist: crypto+file://[dir/output.m3u8
+crypto+file://[dir/output.m3u8 (fmp4, single file)
+segment: crypto+file://[dir/output.m4s
+subtitle: crypto+file://[dir/output.vtt
+subtitle playlist: crypto+file://[dir/output_vtt.m3u8
+playlist: crypto+file://[dir/output.m3u8

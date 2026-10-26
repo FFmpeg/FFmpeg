@@ -794,6 +794,7 @@ TESTPROGS-$(and $(CONFIG_AC3_PARSER),$(CONFIG_AC3_DECODER)) += parse_skip_sample
 FIFO-MUXER-TESTPROGS-$(CONFIG_NETWORK)   += fifo_muxer
 TESTPROGS-$(CONFIG_FIFO_MUXER)           += $(FIFO-MUXER-TESTPROGS-yes)
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
+TESTPROGS-$(CONFIG_HLS_MUXER)            += hlsenc
 TESTPROGS-$(CONFIG_HTTP_PROTOCOL)        += http httpcookie
 # http_nobody covers the http, httpproxy and libcurl read paths.
 HTTP_NOBODY_TESTPROG-$(CONFIG_HTTP_PROTOCOL)      = http_nobody

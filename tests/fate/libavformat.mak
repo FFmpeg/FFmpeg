@@ -101,6 +101,14 @@ FATE_LIBAVFORMAT-yes += fate-url
 fate-url: libavformat/tests/url$(EXESUF)
 fate-url: CMD = run libavformat/tests/url$(EXESUF)
 
+FATE_LIBAVFORMAT-$(call ALLYES, HLS_MUXER MP4_MUXER) += fate-hlsenc-filenames
+fate-hlsenc-filenames: libavformat/tests/hlsenc$(EXESUF)
+fate-hlsenc-filenames: CMD = run libavformat/tests/hlsenc$(EXESUF)
+
+FATE_LIBAVFORMAT-$(call ALLYES, HLS_MUXER MP4_MUXER FILE_PROTOCOL) += fate-hlsenc-file-filenames
+fate-hlsenc-file-filenames: libavformat/tests/hlsenc$(EXESUF)
+fate-hlsenc-file-filenames: CMD = run libavformat/tests/hlsenc$(EXESUF) file
+
 FATE_LIBAVFORMAT-$(CONFIG_IMF_DEMUXER) += fate-imf
 fate-imf: libavformat/tests/imf$(EXESUF)
 fate-imf: CMD = run libavformat/tests/imf$(EXESUF)
