@@ -36,8 +36,6 @@
 
 #include "mpegvideo_altivec.h"
 
-#if HAVE_ALTIVEC
-
 /* AltiVec version of dct_unquantize_h263
    this code assumes `block' is 16 bytes-aligned */
 static av_always_inline
@@ -97,12 +95,9 @@ static void dct_unquantize_h263_inter_altivec(const MPVContext *s,
 
     dct_unquantize_h263_altivec(block, nb_coeffs, qadd, qmul);
 }
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_mpv_unquantize_init_altivec(MPVUnquantDSPContext *s, int bitexact)
 {
-#if HAVE_ALTIVEC
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_altivec;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_altivec;
-#endif /* HAVE_ALTIVEC */
 }

@@ -33,8 +33,6 @@
 
 #include "h264dsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 /****************************************************************************
  * IDCT transform:
  ****************************************************************************/
@@ -783,12 +781,10 @@ static void biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src, pt
 
 H264_WEIGHT(16)
 H264_WEIGHT( 8)
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_h264dsp_init_altivec(H264DSPContext *c, const int bit_depth,
                                      const int chroma_format_idc)
 {
-#if HAVE_ALTIVEC
     if (bit_depth == 8) {
         c->idct_add = h264_idct_add_altivec;
         if (chroma_format_idc <= 1)
@@ -807,5 +803,4 @@ av_cold void ff_h264dsp_init_altivec(H264DSPContext *c, const int bit_depth,
         c->biweight_pixels_tab[0] = biweight_h264_pixels16_altivec;
         c->biweight_pixels_tab[1] = biweight_h264_pixels8_altivec;
     }
-#endif /* HAVE_ALTIVEC */
 }

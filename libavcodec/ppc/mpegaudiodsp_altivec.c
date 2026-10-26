@@ -30,8 +30,6 @@
 
 #include "mpegaudiodsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
 
@@ -131,11 +129,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
     *out = sum;
 }
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_mpadsp_init_altivec(MPADSPContext *s)
 {
-#if HAVE_ALTIVEC
     s->apply_window_float = apply_window_mp3;
-#endif /* HAVE_ALTIVEC */
 }

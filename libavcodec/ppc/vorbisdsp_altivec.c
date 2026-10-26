@@ -27,7 +27,6 @@
 
 #include "vorbisdsp_altivec.h"
 
-#if HAVE_ALTIVEC
 static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
                                             ptrdiff_t blocksize)
 {
@@ -50,11 +49,8 @@ static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
         vec_stl(m, 0, mag+i);
     }
 }
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_vorbisdsp_init_altivec(VorbisDSPContext *c)
 {
-#if HAVE_ALTIVEC
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_altivec;
-#endif /* HAVE_ALTIVEC */
 }

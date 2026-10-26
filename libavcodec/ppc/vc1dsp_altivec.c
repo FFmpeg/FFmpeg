@@ -28,8 +28,6 @@
 
 #include "vc1dsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 // main steps of 8x8 transform
 #define STEP8(s0, s1, s2, s3, s4, s5, s6, s7, vec_rnd) \
 do { \
@@ -351,14 +349,10 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, ptrdiff_t stride,
 #undef OP_U8_ALTIVEC
 #undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_vc1dsp_init_altivec(VC1DSPContext *dsp)
 {
-#if HAVE_ALTIVEC
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;
-#endif /* HAVE_ALTIVEC */
 }

@@ -27,8 +27,6 @@
 
 #include "mpegvideoencdsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 #if HAVE_VSX
 static int pix_norm1_altivec(const uint8_t *pix, ptrdiff_t line_size)
 {
@@ -146,13 +144,9 @@ static int pix_sum_altivec(const uint8_t *pix, ptrdiff_t line_size)
 
 #endif /* HAVE_VSX */
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_mpegvideoencdsp_init_altivec(MpegvideoEncDSPContext *c,
                                              AVCodecContext *avctx)
 {
-#if HAVE_ALTIVEC
     c->pix_norm1 = pix_norm1_altivec;
     c->pix_sum   = pix_sum_altivec;
-#endif /* HAVE_ALTIVEC */
 }

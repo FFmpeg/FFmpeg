@@ -29,8 +29,6 @@
 
 #include "pixblockdsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 #if HAVE_VSX
 static void get_pixels_altivec(int16_t *restrict block, const uint8_t *pixels,
                                ptrdiff_t stride)
@@ -225,8 +223,6 @@ static void diff_pixels_altivec(int16_t *restrict block, const uint8_t *s1,
 
 #endif /* HAVE_VSX */
 
-#endif /* HAVE_ALTIVEC */
-
 #if HAVE_VSX
 static void get_pixels_vsx(int16_t *restrict block, const uint8_t *pixels,
                            ptrdiff_t stride)
@@ -264,13 +260,11 @@ static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
 av_cold void ff_pixblockdsp_init_altivec(PixblockDSPContext *c,
                                          unsigned high_bit_depth)
 {
-#if HAVE_ALTIVEC
     c->diff_pixels = diff_pixels_altivec;
 
     if (!high_bit_depth) {
         c->get_pixels = get_pixels_altivec;
     }
-#endif /* HAVE_ALTIVEC */
 }
 
 av_cold void ff_pixblockdsp_init_vsx(PixblockDSPContext *c,

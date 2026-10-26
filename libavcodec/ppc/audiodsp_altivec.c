@@ -32,8 +32,6 @@
 
 #include "audiodsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
                                            int order)
 {
@@ -55,8 +53,6 @@ static int32_t scalarproduct_int16_altivec(const int16_t *v1, const int16_t *v2,
 
     return ires;
 }
-
-#endif /* HAVE_ALTIVEC */
 
 #if HAVE_VSX
 
@@ -85,9 +81,7 @@ static int32_t scalarproduct_int16_vsx(const int16_t *v1, const int16_t *v2, int
 
 av_cold void ff_audiodsp_init_altivec(AudioDSPContext *c)
 {
-#if HAVE_ALTIVEC
     c->scalarproduct_int16 = scalarproduct_int16_altivec;
-#endif /* HAVE_ALTIVEC */
 }
 
 av_cold void ff_audiodsp_init_vsx(AudioDSPContext *c)

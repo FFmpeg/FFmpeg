@@ -29,7 +29,6 @@
 
 #include "hpeldsp_altivec.h"
 
-#if HAVE_ALTIVEC
 /* next one assumes that ((line_size % 16) == 0) */
 void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
@@ -361,11 +360,9 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, ptrdi
         pixels += line_size;
     }
 }
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_hpeldsp_init_altivec(HpelDSPContext *c, int flags)
 {
-#if HAVE_ALTIVEC
     c->avg_pixels_tab[0][0]        = ff_avg_pixels16_altivec;
     c->avg_pixels_tab[1][0]        = avg_pixels8_altivec;
     c->avg_pixels_tab[1][3]        = avg_pixels8_xy2_altivec;
@@ -377,5 +374,4 @@ av_cold void ff_hpeldsp_init_altivec(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_altivec;
     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
-#endif /* HAVE_ALTIVEC */
 }

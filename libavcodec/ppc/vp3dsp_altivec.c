@@ -29,8 +29,6 @@
 
 #include "vp3dsp_altivec.h"
 
-#if HAVE_ALTIVEC
-
 static const vec_s16 constants =
     {0, 64277, 60547, 54491, 46341, 36410, 25080, 12785};
 #if HAVE_BIGENDIAN
@@ -190,12 +188,8 @@ static void vp3_idct_add_altivec(uint8_t *dst, ptrdiff_t stride, int16_t block[6
     memset(block, 0, sizeof(*block) * 64);
 }
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_vp3dsp_init_altivec(VP3DSPContext *c)
 {
-#if HAVE_ALTIVEC
     c->idct_put = vp3_idct_put_altivec;
     c->idct_add = vp3_idct_add_altivec;
-#endif
 }

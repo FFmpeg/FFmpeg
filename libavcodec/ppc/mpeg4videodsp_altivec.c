@@ -28,7 +28,6 @@
 
 #include "mpeg4videodsp_altivec.h"
 
-#if HAVE_ALTIVEC
 /* AltiVec-enhanced gmc1. ATM this code assumes stride is a multiple of 8
  * to preserve proper dst alignment. */
 static void gmc1_altivec(uint8_t *dst /* align 8 */, const uint8_t *src /* align1 */,
@@ -126,11 +125,8 @@ static void gmc1_altivec(uint8_t *dst /* align 8 */, const uint8_t *src /* align
         src += stride;
     }
 }
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_mpeg4videodsp_init_altivec(Mpeg4VideoDSPContext *c)
 {
-#if HAVE_ALTIVEC
     c->gmc1 = gmc1_altivec;
-#endif /* HAVE_ALTIVEC */
 }

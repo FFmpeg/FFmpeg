@@ -28,8 +28,6 @@
 
 #include "fdct.h"
 
-#if HAVE_ALTIVEC
-
 #define vs16(v)   ((vector signed short) (v))
 #define vs32(v)     ((vector signed int) (v))
 #define  vu8(v)  ((vector unsigned char) (v))
@@ -457,5 +455,3 @@ void ff_fdct_altivec(int16_t *block)
 #undef CTS
     /* }}} */
 }
-
-#endif /* HAVE_ALTIVEC */

@@ -28,7 +28,6 @@
 
 #include "h264chroma_altivec.h"
 
-#if HAVE_ALTIVEC
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
 
@@ -47,16 +46,13 @@
 #undef OP_U8_ALTIVEC
 #undef PREFIX_h264_chroma_mc8_altivec
 #undef PREFIX_h264_chroma_mc8_num
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_h264chroma_init_altivec(H264ChromaContext *c, int bit_depth)
 {
-#if HAVE_ALTIVEC
     const int high_bit_depth = bit_depth > 8;
 
     if (!high_bit_depth) {
         c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
         c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
     }
-#endif /* HAVE_ALTIVEC */
 }

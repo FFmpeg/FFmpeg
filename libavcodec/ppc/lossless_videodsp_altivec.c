@@ -29,7 +29,6 @@
 
 #include "lossless_videodsp_altivec.h"
 
-#if HAVE_ALTIVEC
 static void add_bytes_altivec(uint8_t *dst, uint8_t *src, ptrdiff_t w)
 {
     register int i;
@@ -46,11 +45,8 @@ static void add_bytes_altivec(uint8_t *dst, uint8_t *src, ptrdiff_t w)
     for (; i < w; i++)
         dst[i] = src[i];
 }
-#endif /* HAVE_ALTIVEC */
 
 av_cold void ff_llviddsp_init_altivec(LLVidDSPContext *c)
 {
-#if HAVE_ALTIVEC
     c->add_bytes = add_bytes_altivec;
-#endif /* HAVE_ALTIVEC */
 }
