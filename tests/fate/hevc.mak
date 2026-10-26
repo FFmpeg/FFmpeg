@@ -376,6 +376,11 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-tile-row-order-
 fate-hevc-tile-row-order-nokey: CMD = framecrc -tile_interleave 1 -skip_loop_filter nokey -i $(TARGET_SAMPLES)/hevc/tile_row_order_nokey.hevc -pix_fmt yuv420p
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-tile-row-order-nokey
 
+# Exercise the last two inverse-quantization table entries with 12-bit 4:4:4.
+fate-hevc-12bit-qp74: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/12bit-444-qp74.hevc -pix_fmt yuv444p12le -vf scale
+fate-hevc-12bit-qp75: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/12bit-444-qp75.hevc -pix_fmt yuv444p12le -vf scale
+FATE_HEVC-$(call FRAMEMD5, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += fate-hevc-12bit-qp74 fate-hevc-12bit-qp75
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
