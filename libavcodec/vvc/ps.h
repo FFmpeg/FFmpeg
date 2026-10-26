@@ -99,8 +99,8 @@ typedef struct VVCPPS {
     uint16_t width;
     uint16_t height;
 
-    uint16_t slice_start_offset[VVC_MAX_SLICES];
-    uint16_t num_ctus_in_slice [VVC_MAX_SLICES];
+    uint32_t slice_start_offset[VVC_MAX_SLICES];
+    uint32_t num_ctus_in_slice [VVC_MAX_SLICES];
 
     uint16_t min_cb_width;
     uint16_t min_cb_height;
