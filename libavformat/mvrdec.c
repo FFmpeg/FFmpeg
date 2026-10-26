@@ -200,7 +200,6 @@ const FFInputFormat ff_mvr_demuxer = {
     .p.name         = "mvr",
     .p.long_name    = NULL_IF_CONFIG_SMALL("MVR CCTV"),
     .p.extensions   = "mvr",
-    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(MVRContext),
     .read_probe     = mvr_probe,
     .read_header    = mvr_read_header,
