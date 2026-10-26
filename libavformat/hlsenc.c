@@ -2045,6 +2045,60 @@ fail:
     return ret;
 }
 
+static int hls_append_segment_pattern(const char *url, const char *pattern,
+                                      char **filename)
+{
+    URLComponents uc;
+    const char *name = url;
+    const char *proto;
+    const char *extension = NULL;
+    const char *path_end;
+    const char *path;
+    const char *p;
+    int add_slash = 0;
+    int is_file;
+    int ret;
+
+    /* Classify the underlying protocol before applying URL syntax. */
+    while (av_strstart(name, "crypto:", &name) ||
+           av_strstart(name, "crypto+", &name))
+        ;
+    proto = avio_find_protocol_name(name);
+    is_file = (proto && !strcmp(proto, "file")) || is_dos_path(name) ||
+              av_strstart(name, "file:", NULL);
+    if (!is_file) {
+        ret = ff_url_decompose(&uc, name, NULL);
+        if (ret < 0)
+            return ret;
+        is_file = !URL_COMPONENT_HAVE(uc, scheme);
+    }
+
+    path_end = url + strlen(url);
+    if (is_file) {
+        /* Preserve file naming, including literal '?' and '#' characters. */
+        extension = strrchr(url, '.');
+    } else {
+        path = uc.path;
+        path_end = uc.url_component_end_path;
+        add_slash = path == path_end && URL_COMPONENT_HAVE(uc, authority);
+        for (p = path_end; p > path; p--)
+            if (p[-1] == '/' || (HAVE_DOS_PATHS && p[-1] == '\\'))
+                break;
+        path = p;
+
+        for (p = path; p < path_end; p++)
+            if (*p == '.')
+                extension = p;
+    }
+
+    if (!extension)
+        extension = path_end;
+
+    *filename = av_asprintf("%.*s%s%s%s", (int)(extension - url), url,
+                            add_slash ? "/" : "", pattern, path_end);
+    return *filename ? 0 : AVERROR(ENOMEM);
+}
+
 static int get_nth_codec_stream_index(AVFormatContext *s,
                                       enum AVMediaType codec_type,
                                       int64_t stream_id)
@@ -3060,16 +3114,9 @@ static int hls_init(AVFormatContext *s)
             if (ret < 0)
                 return ret;
         } else {
-            char *p = strrchr(vs->m3u8_name, '.');
-            if (p)
-                *p = '\0';
-
-            vs->basename = av_asprintf("%s%s", vs->m3u8_name, pattern);
-            if (!vs->basename)
-                return AVERROR(ENOMEM);
-
-            if (p)
-                *p = '.';
+            ret = hls_append_segment_pattern(vs->m3u8_name, pattern, &vs->basename);
+            if (ret < 0)
+                return ret;
         }
 
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
@@ -3133,25 +3180,21 @@ static int hls_init(AVFormatContext *s)
             EXTERN const FFOutputFormat ff_webvtt_muxer;
             vs->vtt_oformat = &ff_webvtt_muxer.p;
 
-            char *p = strrchr(vs->m3u8_name, '.');
-            if (p)
-                *p = '\0';
-
-            vs->vtt_basename = av_asprintf("%s%s", vs->m3u8_name, vtt_pattern);
-            if (!vs->vtt_basename)
-                return AVERROR(ENOMEM);
+            ret = hls_append_segment_pattern(vs->m3u8_name, vtt_pattern,
+                                              &vs->vtt_basename);
+            if (ret < 0)
+                return ret;
 
             if (hls->subtitle_filename) {
                 ret = format_name(hls->subtitle_filename, &vs->vtt_m3u8_name, i, vs->varname);
                 if (ret < 0)
                     return ret;
             } else {
-                vs->vtt_m3u8_name = av_asprintf("%s_vtt.m3u8", vs->m3u8_name);
-                if (!vs->vtt_m3u8_name)
-                    return AVERROR(ENOMEM);
+                ret = hls_append_segment_pattern(vs->m3u8_name, "_vtt.m3u8",
+                                                 &vs->vtt_m3u8_name);
+                if (ret < 0)
+                    return ret;
             }
-            if (p)
-                *p = '.';
         }
 
         if ((ret = hls_mux_init(s, vs)) < 0)
