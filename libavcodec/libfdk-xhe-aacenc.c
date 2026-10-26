@@ -54,7 +54,7 @@ typedef struct XHEAACContext {
 
 static const AVOption xhe_aac_enc_options[] = {
     { "vbr", "VBR mode (0-6)", offsetof(XHEAACContext, vbr), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 6, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
-    { "live_loudness_level", "target loudness level in live encoding mode [LUFS]", offsetof(XHEAACContext, live_loudness_level), AV_OPT_TYPE_FLOAT, { .dbl = -24 }, -31.0, -10.0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "live_loudness_level", "target loudness level in live encoding mode [LUFS]", offsetof(XHEAACContext, live_loudness_level), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, -31.0, -10.0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "rap_interval", "Random Access Point interval", offsetof(XHEAACContext, rap_interval), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT64_MAX, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "stream_id", "unique ID of this stream within one adaptation set", offsetof(XHEAACContext, stream_id), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 65535, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     FF_AAC_PROFILE_OPTS
@@ -358,6 +358,13 @@ static av_cold int xhe_aac_encode_init(AVCodecContext *avctx)
             goto error;
         }
     } else {
+        if (s->live_loudness_level > -10.0) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "-live_loudness_level not set - defaulting to -24 dB. "
+                   "Consider using two pass encoding to avoid having to "
+                   "hardcode a value.\n");
+            s->live_loudness_level = -24;
+        }
         err = IIS_xHEAACEnc_Config_AddParamValueFloat(config_handle,
                   IIS_XHEAACENC_PARAMETER_LIVE_LOUDNESS_LEVEL, s->live_loudness_level);
         if (err != IIS_XHEAACENC_NO_ERROR) {
