@@ -26388,9 +26388,21 @@ The larger the distance from the central point, the brighter the image becomes.
 This can be used to reverse a vignette effect, though there is no automatic
 detection to extract the lens @option{angle} and other settings (yet). It can
 also be used to create a burning effect.
+
+@item wavelet
+Like @samp{backward}, but the noise amplified in the dark areas is suppressed
+in an undecimated 9/7 wavelet domain: detail coefficients are shrunk toward 0
+according to the local attenuation and the @option{noise} level, while the
+low frequencies, which average over larger areas, are kept.
+It needs about 150 bytes of memory per pixel.
 @end table
 
 Default value is @samp{forward}.
+
+@item noise
+Set the standard deviation of the input noise in 8-bit levels, used by the
+@samp{wavelet} mode. Quantization alone contributes about 0.3-0.4.
+Default is @code{0.5}.
 
 @item eval
 Set evaluation mode for the expressions (@option{angle}, @option{x0}, @option{y0}).
