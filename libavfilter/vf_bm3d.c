@@ -314,7 +314,7 @@ static void block_matching_multi(BM3DContext *s, const uint8_t *ref, int ref_lin
     const int height = s->planeheight[plane];
     const int block_size = s->block_size;
     const int step = s->bm_step;
-    const int range = s->bm_range / step * step;
+    const int range = FFMIN(s->bm_range, FFMAX(width, height)) / step * step;
     int l = search_boundary(0, range, step, 0, y, x);
     int r = search_boundary(width - block_size, range, step, 0, y, x);
     int t = search_boundary(0, range, step, 1, y, x);
