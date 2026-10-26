@@ -41,6 +41,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "video.h"
+#include "wavelet97.h"
 
 typedef struct OWDenoiseContext {
     const AVClass *class;
@@ -77,116 +78,6 @@ DECLARE_ALIGNED(8, static const uint8_t, dither)[8][8] = {
     { 42,  26,  38,  22,  41,  25,  37,  21 },
 };
 
-static const double coeff[2][5] = {
-    {
-         0.6029490182363579  * M_SQRT2,
-         0.2668641184428723  * M_SQRT2,
-        -0.07822326652898785 * M_SQRT2,
-        -0.01686411844287495 * M_SQRT2,
-         0.02674875741080976 * M_SQRT2,
-    },{
-         1.115087052456994   / M_SQRT2,
-        -0.5912717631142470  / M_SQRT2,
-        -0.05754352622849957 / M_SQRT2,
-         0.09127176311424948 / M_SQRT2,
-    }
-};
-
-static const double icoeff[2][5] = {
-    {
-         1.115087052456994   / M_SQRT2,
-         0.5912717631142470  / M_SQRT2,
-        -0.05754352622849957 / M_SQRT2,
-        -0.09127176311424948 / M_SQRT2,
-    },{
-         0.6029490182363579  * M_SQRT2,
-        -0.2668641184428723  * M_SQRT2,
-        -0.07822326652898785 * M_SQRT2,
-         0.01686411844287495 * M_SQRT2,
-         0.02674875741080976 * M_SQRT2,
-    }
-};
-
-
-static inline void decompose(float *dst_l, float *dst_h, const float *src,
-                             int linesize, int w)
-{
-    int x, i;
-    for (x = 0; x < w; x++) {
-        double sum_l = src[x * linesize] * coeff[0][0];
-        double sum_h = src[x * linesize] * coeff[1][0];
-        for (i = 1; i <= 4; i++) {
-            const double s = src[avpriv_mirror(x - i, w - 1) * linesize]
-                           + src[avpriv_mirror(x + i, w - 1) * linesize];
-
-            sum_l += coeff[0][i] * s;
-            sum_h += coeff[1][i] * s;
-        }
-        dst_l[x * linesize] = sum_l;
-        dst_h[x * linesize] = sum_h;
-    }
-}
-
-static inline void compose(float *dst, const float *src_l, const float *src_h,
-                           int linesize, int w)
-{
-    int x, i;
-    for (x = 0; x < w; x++) {
-        double sum_l = src_l[x * linesize] * icoeff[0][0];
-        double sum_h = src_h[x * linesize] * icoeff[1][0];
-        for (i = 1; i <= 4; i++) {
-            const int x0 = avpriv_mirror(x - i, w - 1) * linesize;
-            const int x1 = avpriv_mirror(x + i, w - 1) * linesize;
-
-            sum_l += icoeff[0][i] * (src_l[x0] + src_l[x1]);
-            sum_h += icoeff[1][i] * (src_h[x0] + src_h[x1]);
-        }
-        dst[x * linesize] = (sum_l + sum_h) * 0.5;
-    }
-}
-
-static inline void decompose2D(float *dst_l, float *dst_h, const float *src,
-                               int xlinesize, int ylinesize,
-                               int step, int w, int h)
-{
-    int y, x;
-    for (y = 0; y < h; y++)
-        for (x = 0; x < step; x++)
-            decompose(dst_l + ylinesize*y + xlinesize*x,
-                      dst_h + ylinesize*y + xlinesize*x,
-                      src   + ylinesize*y + xlinesize*x,
-                      step * xlinesize, (w - x + step - 1) / step);
-}
-
-static inline void compose2D(float *dst, const float *src_l, const float *src_h,
-                             int xlinesize, int ylinesize,
-                             int step, int w, int h)
-{
-    int y, x;
-    for (y = 0; y < h; y++)
-        for (x = 0; x < step; x++)
-            compose(dst   + ylinesize*y + xlinesize*x,
-                    src_l + ylinesize*y + xlinesize*x,
-                    src_h + ylinesize*y + xlinesize*x,
-                    step * xlinesize, (w - x + step - 1) / step);
-}
-
-static void decompose2D2(float *dst[4], float *src, float *temp[2],
-                         int linesize, int step, int w, int h)
-{
-    decompose2D(temp[0], temp[1], src,     1, linesize, step, w, h);
-    decompose2D( dst[0],  dst[1], temp[0], linesize, 1, step, h, w);
-    decompose2D( dst[2],  dst[3], temp[1], linesize, 1, step, h, w);
-}
-
-static void compose2D2(float *dst, float *src[4], float *temp[2],
-                       int linesize, int step, int w, int h)
-{
-    compose2D(temp[0],  src[0],  src[1], linesize, 1, step, h, w);
-    compose2D(temp[1],  src[2],  src[3], linesize, 1, step, h, w);
-    compose2D(dst,     temp[0], temp[1], 1, linesize, step, w, h);
-}
-
 static void filter(OWDenoiseContext *s,
                    uint8_t       *dst, int dst_linesize,
                    const uint8_t *src, int src_linesize,
@@ -211,7 +102,8 @@ static void filter(OWDenoiseContext *s,
     }
 
     for (i = 0; i < depth; i++)
-        decompose2D2(s->plane[i + 1], s->plane[i][0], s->plane[0] + 1, s->linesize, 1<<i, width, height);
+        ff_wavelet97_decompose(s->plane[i + 1], s->plane[i][0], s->plane[0] + 1,
+                               ff_wavelet97_coeff, s->linesize, 1<<i, width, height);
 
     for (i = 0; i < depth; i++) {
         for (j = 1; j < 4; j++) {
@@ -227,7 +119,8 @@ static void filter(OWDenoiseContext *s,
         }
     }
     for (i = depth-1; i >= 0; i--)
-        compose2D2(s->plane[i][0], s->plane[i + 1], s->plane[0] + 1, s->linesize, 1<<i, width, height);
+        ff_wavelet97_compose(s->plane[i][0], s->plane[i + 1], s->plane[0] + 1,
+                             s->linesize, 1<<i, width, height);
 
     if (s->pixel_depth <= 8) {
         for (y = 0; y < height; y++) {
