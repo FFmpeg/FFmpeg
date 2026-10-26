@@ -193,6 +193,13 @@ static int dovi_split_filter(AVBSFContext *ctx, AVPacket *out)
         int payload_size;
         if (!nal_is_kept(s, &s->pkt.nals[i], &payload, &payload_size))
             continue;
+        if (s->out_nal_length_size && s->out_nal_length_size < 4 &&
+            payload_size >= 1 << (8 * s->out_nal_length_size)) {
+            av_log(ctx, AV_LOG_ERROR, "NAL unit size %d does not fit in %d bytes\n",
+                   payload_size, s->out_nal_length_size);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         out_size += prefix_size + payload_size;
         kept_count++;
     }
