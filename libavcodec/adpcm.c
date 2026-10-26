@@ -1545,11 +1545,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    ADPCMDecodeContext *c = avctx->priv_data;
+    av_unused ADPCMDecodeContext *c = avctx->priv_data;
     int channels = avctx->ch_layout.nb_channels;
-    int16_t *samples;
-    int16_t **samples_p;
-    int st; /* stereo */
+    av_unused int16_t *samples;
+    av_unused int16_t **samples_p;
+    av_unused int st; /* stereo */
     int nb_samples, coded_samples, approx_nb_samples, ret;
     GetByteContext gb;
 
