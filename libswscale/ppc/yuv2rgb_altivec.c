@@ -95,7 +95,6 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "yuv2rgb_altivec.h"
@@ -561,12 +560,9 @@ static int altivec_uyvy_rgb32(SwsInternal *c, const unsigned char *const *in,
  *
  * So we just fall back to the C codes for this.
  */
-av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
+av_cold SwsFunc ff_yuv2rgb_init_altivec(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
-        return NULL;
-
     /*
      * and this seems not to matter too much I tried a bunch of
      * videos with abnormal widths and MPlayer crashes elsewhere.
@@ -632,11 +628,11 @@ av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
     return NULL;
 }
 
-av_cold void ff_yuv2rgb_init_tables_ppc(SwsInternal *c,
-                                        const int inv_table[4],
-                                        int brightness,
-                                        int contrast,
-                                        int saturation)
+av_cold void ff_yuv2rgb_init_tables_altivec(SwsInternal *c,
+                                            const int inv_table[4],
+                                            int brightness,
+                                            int contrast,
+                                            int saturation)
 {
 #if HAVE_ALTIVEC
     SwsInternalAltivec *const a = sws_internal_altivec(c);
@@ -645,9 +641,6 @@ av_cold void ff_yuv2rgb_init_tables_ppc(SwsInternal *c,
         DECLARE_ALIGNED(16, signed short, tmp)[8];
         vector signed short vec;
     } buf;
-
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
-        return;
 
     buf.tmp[0] = ((0xffffLL) * contrast >> 8) >> 9;                               // cy
     buf.tmp[1] = -256 * brightness;                                               // oy

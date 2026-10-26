@@ -2023,9 +2023,6 @@ av_cold void ff_sws_init_swscale_vsx(SwsInternal *c)
     const int cpu_flags = av_get_cpu_flags();
     const unsigned char power8 = HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8;
 
-    if (!(cpu_flags & AV_CPU_FLAG_VSX))
-        return;
-
 #if !HAVE_BIGENDIAN
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {

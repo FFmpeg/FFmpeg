@@ -723,6 +723,8 @@ int ff_yuv2rgb_c_init_tables(SwsInternal *c, const int inv_table[4],
                              int contrast, int saturation);
 void ff_yuv2rgb_init_tables_ppc(SwsInternal *c, const int inv_table[4],
                                 int brightness, int contrast, int saturation);
+void ff_yuv2rgb_init_tables_altivec(SwsInternal *c, const int inv_table[4],
+                                    int brightness, int contrast, int saturation);
 
 void ff_updateMMXDitherTables(SwsInternal *c, int dstY);
 
@@ -741,6 +743,7 @@ av_cold int ff_sws_fill_st428_tables(SwsInternal *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c);
+SwsFunc ff_yuv2rgb_init_altivec(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_loongarch(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_aarch64(SwsInternal *c);
 
@@ -1012,6 +1015,7 @@ int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
  */
 void ff_get_unscaled_swscale(SwsInternal *c);
 void ff_get_unscaled_swscale_ppc(SwsInternal *c);
+void ff_get_unscaled_swscale_altivec(SwsInternal *c);
 void ff_get_unscaled_swscale_arm(SwsInternal *c);
 void ff_get_unscaled_swscale_aarch64(SwsInternal *c);
 void ff_get_unscaled_swscale_loongarch(SwsInternal *c);
@@ -1034,6 +1038,7 @@ void ff_sws_init_output_funcs(SwsInternal *c,
                               yuv2packedX_fn *yuv2packedX,
                               yuv2anyX_fn *yuv2anyX);
 void ff_sws_init_swscale_ppc(SwsInternal *c);
+void ff_sws_init_swscale_altivec(SwsInternal *c);
 void ff_sws_init_swscale_vsx(SwsInternal *c);
 void ff_sws_init_swscale_x86(SwsInternal *c);
 void ff_sws_init_swscale_aarch64(SwsInternal *c);

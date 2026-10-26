@@ -27,7 +27,6 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
 #include "libavutil/intfloat.h"
 #include "yuv2rgb_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
@@ -230,13 +229,10 @@ yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, BE)
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_sws_init_swscale_ppc(SwsInternal *c)
+av_cold void ff_sws_init_swscale_altivec(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
     enum AVPixelFormat dstFormat = c->opts.dst_format;
-
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
-        return;
 
 #if HAVE_BIGENDIAN
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
@@ -280,6 +276,4 @@ av_cold void ff_sws_init_swscale_ppc(SwsInternal *c)
         }
     }
 #endif /* HAVE_ALTIVEC */
-
-    ff_sws_init_swscale_vsx(c);
 }

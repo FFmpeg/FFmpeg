@@ -19,10 +19,35 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
+#include "libavutil/ppc/cpu.h"
 
 #include "libswscale/swscale_internal.h"
+
+av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (PPC_ALTIVEC(cpu_flags))
+        return ff_yuv2rgb_init_altivec(c);
+
+    return NULL;
+}
+
+av_cold void ff_yuv2rgb_init_tables_ppc(SwsInternal *c,
+                                        const int inv_table[4],
+                                        int brightness,
+                                        int contrast,
+                                        int saturation)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (PPC_ALTIVEC(cpu_flags))
+        ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness, contrast,
+                                       saturation);
+}
 
 #if HAVE_ALTIVEC
 av_cold int ff_sws_init_altivec_bufs(SwsInternal *c)

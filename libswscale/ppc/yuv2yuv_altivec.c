@@ -25,7 +25,6 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
@@ -185,12 +184,9 @@ static int yv12touyvy_unscaled_altivec(SwsInternal *c, const uint8_t *const src[
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_get_unscaled_swscale_ppc(SwsInternal *c)
+av_cold void ff_get_unscaled_swscale_altivec(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
-        return;
-
     if (!(c->opts.src_w & 15) && !(c->opts.flags & SWS_BITEXACT) &&
         c->opts.src_format == AV_PIX_FMT_YUV420P) {
         enum AVPixelFormat dstFormat = c->opts.dst_format;
