@@ -24,14 +24,14 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/h264dec.h"
 #include "libavcodec/h264dsp.h"
+
+#include "h264dsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -785,13 +785,10 @@ H264_WEIGHT(16)
 H264_WEIGHT( 8)
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
-                                 const int chroma_format_idc)
+av_cold void ff_h264dsp_init_altivec(H264DSPContext *c, const int bit_depth,
+                                     const int chroma_format_idc)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     if (bit_depth == 8) {
         c->idct_add = h264_idct_add_altivec;
         if (chroma_format_idc <= 1)

@@ -23,13 +23,13 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/me_cmp.h"
+
+#include "me_cmp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -723,12 +723,9 @@ static int hadamard8_diff16_altivec(MPVEncContext *s, const uint8_t *dst,
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_me_cmp_init_ppc(MECmpContext *c, AVCodecContext *avctx)
+av_cold void ff_me_cmp_init_altivec(MECmpContext *c, AVCodecContext *avctx)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
     c->pix_abs[0][3] = sad16_xy2_altivec;

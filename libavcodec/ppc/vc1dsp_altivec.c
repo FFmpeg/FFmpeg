@@ -22,11 +22,11 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/vc1dsp.h"
+
+#include "vc1dsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -353,12 +353,9 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, ptrdiff_t stride,
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_vc1dsp_init_ppc(VC1DSPContext *dsp)
+av_cold void ff_vc1dsp_init_altivec(VC1DSPContext *dsp)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;

@@ -36,12 +36,12 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
+
+#include "idctdsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -253,13 +253,10 @@ static void idct_add_altivec(uint8_t *dest, ptrdiff_t stride, int16_t *blk)
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_idctdsp_init_ppc(IDCTDSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
+av_cold void ff_idctdsp_init_altivec(IDCTDSPContext *c, AVCodecContext *avctx,
+                                     unsigned high_bit_depth)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     if (!high_bit_depth && avctx->lowres == 0) {
         if ((avctx->idct_algo == FF_IDCT_AUTO && !(avctx->flags & AV_CODEC_FLAG_BITEXACT)) ||
             (avctx->idct_algo == FF_IDCT_ALTIVEC)) {

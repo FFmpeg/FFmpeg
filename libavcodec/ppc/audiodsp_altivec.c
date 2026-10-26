@@ -26,11 +26,11 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/audiodsp.h"
+
+#include "audiodsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -83,19 +83,16 @@ static int32_t scalarproduct_int16_vsx(const int16_t *v1, const int16_t *v2, int
 
 #endif /* HAVE_VSX */
 
-av_cold void ff_audiodsp_init_ppc(AudioDSPContext *c)
+av_cold void ff_audiodsp_init_altivec(AudioDSPContext *c)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     c->scalarproduct_int16 = scalarproduct_int16_altivec;
 #endif /* HAVE_ALTIVEC */
+}
 
+av_cold void ff_audiodsp_init_vsx(AudioDSPContext *c)
+{
 #if HAVE_VSX
-    if (!PPC_VSX(av_get_cpu_flags()))
-        return;
-
     c->scalarproduct_int16 = scalarproduct_int16_vsx;
 #endif /* HAVE_VSX */
 }

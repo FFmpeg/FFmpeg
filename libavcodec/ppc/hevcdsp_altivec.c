@@ -22,11 +22,11 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/hevc/dsp.h"
+
+#include "hevcdsp_altivec.h"
 
 #if HAVE_ALTIVEC
 static const vec_s16 trans4[4] = {
@@ -107,12 +107,9 @@ static av_always_inline void scale(vec_s32 res[4], vec_s16 res_packed[2],
 #undef BIT_DEPTH
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_hevc_dsp_init_ppc(HEVCDSPContext *c, const int bit_depth)
+av_cold void ff_hevc_dsp_init_altivec(HEVCDSPContext *c, const int bit_depth)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     if (bit_depth == 8)
         c->idct[0] = ff_hevc_idct_4x4_8_altivec;
     if (bit_depth == 10)

@@ -21,11 +21,11 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/mpegvideoencdsp.h"
+
+#include "mpegvideoencdsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -148,13 +148,10 @@ static int pix_sum_altivec(const uint8_t *pix, ptrdiff_t line_size)
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
-                                         AVCodecContext *avctx)
+av_cold void ff_mpegvideoencdsp_init_altivec(MpegvideoEncDSPContext *c,
+                                             AVCodecContext *avctx)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     c->pix_norm1 = pix_norm1_altivec;
     c->pix_sum   = pix_sum_altivec;
 #endif /* HAVE_ALTIVEC */

@@ -28,13 +28,13 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/cpu.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/mpegvideo_unquantize.h"
+
+#include "mpegvideo_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -99,12 +99,9 @@ static void dct_unquantize_h263_inter_altivec(const MPVContext *s,
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_mpv_unquantize_init_ppc(MPVUnquantDSPContext *s, int bitexact)
+av_cold void ff_mpv_unquantize_init_altivec(MPVUnquantDSPContext *s, int bitexact)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_altivec;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_altivec;
 #endif /* HAVE_ALTIVEC */

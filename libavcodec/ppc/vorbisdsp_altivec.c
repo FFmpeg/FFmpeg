@@ -21,11 +21,11 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/vorbisdsp.h"
+
+#include "vorbisdsp_altivec.h"
 
 #if HAVE_ALTIVEC
 static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
@@ -52,12 +52,9 @@ static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
 }
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_vorbisdsp_init_ppc(VorbisDSPContext *c)
+av_cold void ff_vorbisdsp_init_altivec(VorbisDSPContext *c)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     c->vorbis_inverse_coupling = vorbis_inverse_coupling_altivec;
 #endif /* HAVE_ALTIVEC */
 }

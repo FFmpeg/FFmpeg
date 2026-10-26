@@ -21,8 +21,6 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/avcodec.h"
@@ -461,19 +459,3 @@ void ff_fdct_altivec(int16_t *block)
 }
 
 #endif /* HAVE_ALTIVEC */
-
-av_cold void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
-                                 unsigned high_bit_depth)
-{
-#if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
-    if (!high_bit_depth) {
-        if (avctx->dct_algo == FF_DCT_AUTO ||
-            avctx->dct_algo == FF_DCT_ALTIVEC) {
-            c->fdct = ff_fdct_altivec;
-        }
-    }
-#endif /* HAVE_ALTIVEC */
-}

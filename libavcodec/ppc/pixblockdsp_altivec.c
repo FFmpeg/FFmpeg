@@ -23,11 +23,11 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
 #include "libavcodec/pixblockdsp.h"
+
+#include "pixblockdsp_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -261,24 +261,22 @@ static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
 }
 #endif /* HAVE_VSX */
 
-av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
-                                     unsigned high_bit_depth)
+av_cold void ff_pixblockdsp_init_altivec(PixblockDSPContext *c,
+                                         unsigned high_bit_depth)
 {
 #if HAVE_ALTIVEC
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
-
     c->diff_pixels = diff_pixels_altivec;
 
     if (!high_bit_depth) {
         c->get_pixels = get_pixels_altivec;
     }
 #endif /* HAVE_ALTIVEC */
+}
 
+av_cold void ff_pixblockdsp_init_vsx(PixblockDSPContext *c,
+                                     unsigned high_bit_depth)
+{
 #if HAVE_VSX
-    if (!PPC_VSX(av_get_cpu_flags()))
-        return;
-
     c->diff_pixels = diff_pixels_vsx;
 
     if (!high_bit_depth)
