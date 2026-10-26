@@ -23,7 +23,5 @@
 
 void ff_pixblockdsp_init_altivec(PixblockDSPContext *c,
                                  unsigned high_bit_depth);
-void ff_pixblockdsp_init_vsx(PixblockDSPContext *c,
-                             unsigned high_bit_depth);
 
 #endif /* AVCODEC_PPC_PIXBLOCKDSP_ALTIVEC_H */

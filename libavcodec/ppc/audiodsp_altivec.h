@@ -22,6 +22,5 @@
 #include "libavcodec/audiodsp.h"
 
 void ff_audiodsp_init_altivec(AudioDSPContext *c);
-void ff_audiodsp_init_vsx(AudioDSPContext *c);
 
 #endif /* AVCODEC_PPC_AUDIODSP_ALTIVEC_H */

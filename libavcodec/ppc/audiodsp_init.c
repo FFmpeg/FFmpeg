@@ -23,6 +23,7 @@
 #include "libavcodec/audiodsp.h"
 
 #include "audiodsp_altivec.h"
+#include "audiodsp_vsx.h"
 
 av_cold void ff_audiodsp_init_ppc(AudioDSPContext *c)
 {

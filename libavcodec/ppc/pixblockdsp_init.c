@@ -23,6 +23,7 @@
 #include "libavcodec/pixblockdsp.h"
 
 #include "pixblockdsp_altivec.h"
+#include "pixblockdsp_vsx.h"
 
 av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
                                      unsigned high_bit_depth)
