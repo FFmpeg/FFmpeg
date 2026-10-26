@@ -99,7 +99,6 @@
 #include "libavutil/pixdesc.h"
 #include "yuv2rgb_altivec.h"
 
-#if HAVE_ALTIVEC
 // util_altivec.h includes the system header altivec.h which redefines bool,
 // making it incompatible with stdbool.h. It therefore must not be included
 // before another one of our headers that may use bool.
@@ -552,8 +551,6 @@ static int altivec_uyvy_rgb32(SwsInternal *c, const unsigned char *const *in,
     return srcSliceH;
 }
 
-#endif /* HAVE_ALTIVEC */
-
 /* Ok currently the acceleration routine only supports
  * inputs of widths a multiple of 16
  * and heights a multiple 2
@@ -562,7 +559,6 @@ static int altivec_uyvy_rgb32(SwsInternal *c, const unsigned char *const *in,
  */
 av_cold SwsFunc ff_yuv2rgb_init_altivec(SwsInternal *c)
 {
-#if HAVE_ALTIVEC
     /*
      * and this seems not to matter too much I tried a bunch of
      * videos with abnormal widths and MPlayer crashes elsewhere.
@@ -623,7 +619,6 @@ av_cold SwsFunc ff_yuv2rgb_init_altivec(SwsInternal *c)
         }
         break;
     }
-#endif /* HAVE_ALTIVEC */
 
     return NULL;
 }
@@ -634,7 +629,6 @@ av_cold void ff_yuv2rgb_init_tables_altivec(SwsInternal *c,
                                             int contrast,
                                             int saturation)
 {
-#if HAVE_ALTIVEC
     SwsInternalAltivec *const a = sws_internal_altivec(c);
 
     union {
@@ -657,10 +651,7 @@ av_cold void ff_yuv2rgb_init_tables_altivec(SwsInternal *c,
     a->CGU    = vec_splat((vector signed short) buf.vec, 4);
     a->CGV    = vec_splat((vector signed short) buf.vec, 5);
     return;
-#endif /* HAVE_ALTIVEC */
 }
-
-#if HAVE_ALTIVEC
 
 static av_always_inline void yuv2packedX_altivec(SwsInternal *c,
                                                  const int16_t *lumFilter,
@@ -893,4 +884,3 @@ YUV2PACKEDX_WRAPPER(argb,  AV_PIX_FMT_ARGB);
 YUV2PACKEDX_WRAPPER(rgba,  AV_PIX_FMT_RGBA);
 YUV2PACKEDX_WRAPPER(rgb24, AV_PIX_FMT_RGB24);
 YUV2PACKEDX_WRAPPER(bgr24, AV_PIX_FMT_BGR24);
-#endif /* HAVE_ALTIVEC */

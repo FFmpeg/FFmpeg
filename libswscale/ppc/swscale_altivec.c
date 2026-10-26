@@ -31,7 +31,6 @@
 #include "yuv2rgb_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#if HAVE_ALTIVEC
 #if HAVE_BIGENDIAN
 #define vzero vec_splat_s32(0)
 
@@ -227,11 +226,8 @@ yuv2plane1_float(yuv2plane1_float_altivec,       float,    LE)
 yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, BE)
 #endif
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_sws_init_swscale_altivec(SwsInternal *c)
 {
-#if HAVE_ALTIVEC
     enum AVPixelFormat dstFormat = c->opts.dst_format;
 
 #if HAVE_BIGENDIAN
@@ -275,5 +271,4 @@ av_cold void ff_sws_init_swscale_altivec(SwsInternal *c)
             break;
         }
     }
-#endif /* HAVE_ALTIVEC */
 }

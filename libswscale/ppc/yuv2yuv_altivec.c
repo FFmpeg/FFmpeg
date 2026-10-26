@@ -28,7 +28,6 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
-#if HAVE_ALTIVEC
 #include "libavutil/ppc/util_altivec.h"
 
 static int yv12toyuy2_unscaled_altivec(SwsInternal *c, const uint8_t *const src[],
@@ -182,11 +181,8 @@ static int yv12touyvy_unscaled_altivec(SwsInternal *c, const uint8_t *const src[
     return srcSliceH;
 }
 
-#endif /* HAVE_ALTIVEC */
-
 av_cold void ff_get_unscaled_swscale_altivec(SwsInternal *c)
 {
-#if HAVE_ALTIVEC
     if (!(c->opts.src_w & 15) && !(c->opts.flags & SWS_BITEXACT) &&
         c->opts.src_format == AV_PIX_FMT_YUV420P) {
         enum AVPixelFormat dstFormat = c->opts.dst_format;
@@ -197,5 +193,4 @@ av_cold void ff_get_unscaled_swscale_altivec(SwsInternal *c)
         else if (dstFormat == AV_PIX_FMT_UYVY422)
             c->convert_unscaled = yv12touyvy_unscaled_altivec;
     }
-#endif /* HAVE_ALTIVEC */
 }
