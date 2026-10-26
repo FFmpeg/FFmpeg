@@ -2319,6 +2319,12 @@ as trusted. If the linked TLS library contains a default this might not
 need to be specified for verification to work, but not all libraries and
 setups have defaults built in.
 The file must be in OpenSSL PEM format.
+When no file is given, Windows builds using OpenSSL 3.2 or later with
+Windows certificate store support also use certificates from the system
+ROOT store. OpenSSL applies its usual certificate checks. Additional
+trust restrictions stored as Windows certificate properties, rather than
+encoded in the certificates themselves, are not enforced by its Windows
+certificate store loader.
 
 @item tls_verify, verify=@var{1|0}
 If enabled, try to verify the peer that we are communicating with.
@@ -2392,6 +2398,12 @@ as trusted. If the linked TLS library contains a default this might not
 need to be specified for verification to work, but not all libraries and
 setups have defaults built in.
 The file must be in OpenSSL PEM format.
+When no file is given, Windows builds using OpenSSL 3.2 or later with
+Windows certificate store support also use certificates from the system
+ROOT store. OpenSSL applies its usual certificate checks. Additional
+trust restrictions stored as Windows certificate properties, rather than
+encoded in the certificates themselves, are not enforced by its Windows
+certificate store loader.
 
 @item tls_verify, verify=@var{1|0}
 If enabled, try to verify the peer that we are communicating with.

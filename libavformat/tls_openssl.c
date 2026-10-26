@@ -719,6 +719,14 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
             av_log(h, AV_LOG_WARNING, "Failure setting default verify locations: %s\n",
                 openssl_get_error(c));
         }
+#if defined(_WIN32) && !defined(OPENSSL_NO_WINSTORE) && \
+    OPENSSL_VERSION_NUMBER >= 0x30200000L /* OpenSSL 3.2 */
+        // Windows has no default CA directory, so also trust its ROOT system store
+        if (!SSL_CTX_load_verify_store(c->ctx, "org.openssl.winstore://")) {
+            av_log(h, AV_LOG_WARNING, "Failure registering the Windows certificate store: %s\n",
+                openssl_get_error(c));
+        }
+#endif
     }
 
     if (s->cert_file) {
