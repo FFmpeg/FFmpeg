@@ -19,6 +19,9 @@ OBJS-$(HAVE_LASX)      += $(LASX-OBJS)       $(LASX-OBJS-yes)
 OBJS-$(HAVE_ALTIVEC) += $(ALTIVEC-OBJS) $(ALTIVEC-OBJS-yes)
 OBJS-$(HAVE_VSX)     += $(VSX-OBJS) $(VSX-OBJS-yes)
 
+$(sort $(addprefix $(SUBDIR),$(ALTIVEC-OBJS) $(ALTIVEC-OBJS-yes))): CFLAGS += $(ALTIVECFLAGS)
+$(sort $(addprefix $(SUBDIR),$(VSX-OBJS) $(VSX-OBJS-yes))): CFLAGS += $(VSXFLAGS)
+
 OBJS-$(HAVE_RV)      += $(RV-OBJS)      $(RV-OBJS-yes)
 OBJS-$(HAVE_RVV)     += $(RVV-OBJS)     $(RVV-OBJS-yes)
 OBJS-$(HAVE_RV_ZVBB) += $(RVVB-OBJS)    $(RVVB-OBJS-yes)

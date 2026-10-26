@@ -6679,29 +6679,31 @@ elif enabled ppc; then
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
     if enabled altivec; then
-        check_allcflags -maltivec -mabi=altivec
+        test_cflags -maltivec -mabi=altivec && append ALTIVECFLAGS -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
         check_cc altivec altivec.h "vector signed int v1 = (vector signed int) { 0 };
                                     vector signed int v2 = (vector signed int) { 1 };
-                                    v1 = vec_add(v1, v2);"
+                                    v1 = vec_add(v1, v2);" $ALTIVECFLAGS
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
     if enabled vsx; then
-        check_allcflags -mvsx
+        append VSXFLAGS $ALTIVECFLAGS
+        test_cflags $VSXFLAGS -mvsx && append VSXFLAGS -mvsx
         check_cc vsx altivec.h "int v[4] = { 0 };
-                                vector signed int v1 = vec_vsx_ld(0, v);"
+                                vector signed int v1 = vec_vsx_ld(0, v);" $VSXFLAGS
+        enabled vsx && ALTIVECFLAGS=$VSXFLAGS
     fi
 
     if enabled power8; then
-        check_cpp_condition power8 "altivec.h" "defined(_ARCH_PWR8)"
+        check_cpp_condition power8 "altivec.h" "defined(_ARCH_PWR8)" $ALTIVECFLAGS
     fi
 
     if enabled altivec; then
         check_cc vec_xl altivec.h "const unsigned char *y1i = { 0 };
-                                   vector unsigned char y0 = vec_xl(0, y1i);"
+                                   vector unsigned char y0 = vec_xl(0, y1i);" $ALTIVECFLAGS
     fi
 
 elif enabled riscv; then
@@ -8546,6 +8548,8 @@ MSAFLAGS=$MSAFLAGS
 MMIFLAGS=$MMIFLAGS
 LSXFLAGS=$LSXFLAGS
 LASXFLAGS=$LASXFLAGS
+ALTIVECFLAGS=$ALTIVECFLAGS
+VSXFLAGS=$VSXFLAGS
 BUILDSUF=$build_suffix
 PROGSSUF=$progs_suffix
 FULLNAME=$FULLNAME
