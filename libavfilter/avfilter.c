@@ -27,6 +27,7 @@
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/frame.h"
+#include "libavutil/framepool.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
@@ -41,7 +42,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "framequeue.h"
-#include "framepool.h"
 #include "video.h"
 
 static void tlog_ref(void *ctx, AVFrame *ref, int end)

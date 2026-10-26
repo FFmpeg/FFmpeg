@@ -27,9 +27,10 @@
 
 #include <stdint.h>
 
+#include "libavutil/framepool.h"
+
 #include "avfilter.h"
 #include "filters.h"
-#include "framepool.h"
 #include "framequeue.h"
 
 typedef struct FilterLinkInternal {

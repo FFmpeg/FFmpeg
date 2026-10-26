@@ -17,7 +17,6 @@ OBJS = allfilters.o                                                     \
        ccfifo.o                                                         \
        drawutils.o                                                      \
        formats.o                                                        \
-       framepool.o                                                      \
        framequeue.o                                                     \
        graphdump.o                                                      \
        graphparser.o                                                    \
@@ -672,7 +671,7 @@ OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
 # Objects duplicated from other libraries for shared builds
-SHLIBOBJS                                    += log2_tab.o
+SHLIBOBJS                                    += framepool.o log2_tab.o
 
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES)                += avfilterres.o

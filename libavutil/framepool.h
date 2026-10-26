@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_FRAMEPOOL_H
-#define AVFILTER_FRAMEPOOL_H
+#ifndef AVUTIL_FRAMEPOOL_H
+#define AVUTIL_FRAMEPOOL_H
 
-#include "libavutil/buffer.h"
-#include "libavutil/frame.h"
-#include "libavutil/internal.h"
+#include "buffer.h"
+#include "frame.h"
+#include "internal.h"
 
 /**
  * Frame pool. This structure must be initialized with
@@ -106,4 +106,4 @@ void ff_frame_pool_uninit(FFFramePool *pool);
 AVFrame *ff_frame_pool_get(FFFramePool *pool);
 
 
-#endif /* AVFILTER_FRAMEPOOL_H */
+#endif /* AVUTIL_FRAMEPOOL_H */

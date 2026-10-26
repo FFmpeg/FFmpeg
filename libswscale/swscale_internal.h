@@ -28,10 +28,10 @@
 #include "swscale.h"
 #include "graph.h"
 
-#include "libavfilter/framepool.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
+#include "libavutil/framepool.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mem_internal.h"
