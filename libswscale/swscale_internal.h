@@ -41,7 +41,7 @@
 #include "libavutil/half2float.h"
 
 #if HAVE_ALTIVEC
-#define SWSINTERNAL_ADDITIONAL_ASM_SIZE (7*16 + 2*8 + /* alignment */ 16)
+#define SWSINTERNAL_ADDITIONAL_ASM_SIZE (7*16 + /* alignment */ 16)
 #endif
 #ifndef SWSINTERNAL_ADDITIONAL_ASM_SIZE
 #define SWSINTERNAL_ADDITIONAL_ASM_SIZE 0
@@ -549,6 +549,10 @@ struct SwsInternal {
     DECLARE_ALIGNED(8, uint32_t, dither32)[8];
 
     const uint8_t *chrDither8, *lumDither8;
+
+#if HAVE_ALTIVEC
+    int16_t (*vYCoeffsBank)[8], (*vCCoeffsBank)[8];
+#endif
 
     int use_mmx_vfilter;
 
