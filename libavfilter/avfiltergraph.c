@@ -544,7 +544,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
             return ret;
         /* note: EAGAIN could indicate a partial success, not counted yet */
         if (ret >= 0) {
-            print_filter_formats(log_ctx, AV_LOG_DEBUG, f);
+            print_filter_formats(log_ctx, AV_LOG_TRACE, f);
             count_queried++;
         }
     }
