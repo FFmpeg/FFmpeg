@@ -11662,7 +11662,7 @@ static int mov_parse_heif_layered_video_tmap(AVFormatContext *s, const HEIFGroup
 
     payload = av_malloc(tmap->item->extent_length);
     if (!payload) {
-        return AVERROR(ENOMEM);
+        err = AVERROR(ENOMEM);
         goto fail;
     }
 
