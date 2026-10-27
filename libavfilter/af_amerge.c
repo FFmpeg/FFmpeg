@@ -109,11 +109,11 @@ static int query_formats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
         s->in[i].nb_ch = INLAYOUT(ctx, i)->nb_channels;
+        if (s->in[i].nb_ch > SWR_CH_MAX - nb_ch) {
+            av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
+            return AVERROR(EINVAL);
+        }
         nb_ch += s->in[i].nb_ch;
-    }
-    if (nb_ch > SWR_CH_MAX) {
-        av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
-        return AVERROR(EINVAL);
     }
     ret = av_channel_layout_custom_init(&outlayout, nb_ch);
     if (ret < 0)
