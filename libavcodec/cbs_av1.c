@@ -1199,7 +1199,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     flush_put_bits(pbc);
     av_assert0(data_pos <= start_pos);
 
-    if (8 * obu->obu_size > put_bits_left(pbc)) {
+    if (obu->obu_size > put_bits_left(pbc) / 8) {
         av_refstruct_unref(&priv->sequence_header_ref);
         av_buffer_unref(&priv->frame_header_ref);
         *priv = av1ctx;

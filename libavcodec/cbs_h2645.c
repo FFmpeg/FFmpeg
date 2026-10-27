@@ -272,7 +272,7 @@ int ff_cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
     av_assert0(data_bit_start >= 0 &&
                data_size > data_bit_start / 8);
 
-    if (data_size * 8 + 8 > put_bits_left(pbc))
+    if (data_size + 1 > put_bits_left(pbc) / 8)
         return AVERROR(ENOSPC);
 
     if (!rest)
