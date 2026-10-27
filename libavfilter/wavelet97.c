@@ -90,6 +90,33 @@ static inline void compose(float *dst, const float *src_l, const float *src_h,
     }
 }
 
+static inline void decompose_decimated(float *dst, const float *src,
+                                       const double coeff[2][5], int stride, int n)
+{
+    int x, i;
+    for (x = 0; x < n; x++) {
+        const double *c = coeff[x & 1];
+        double sum = src[x * stride] * c[0];
+        for (i = 1; i <= 4; i++)
+            sum += c[i] * (src[avpriv_mirror(x - i, n - 1) * stride]
+                         + src[avpriv_mirror(x + i, n - 1) * stride]);
+        dst[x * stride] = sum;
+    }
+}
+
+static inline void compose_decimated(float *dst, const float *src,
+                                     int stride, int n)
+{
+    int x, i;
+    for (x = 0; x < n; x++) {
+        double sum = src[x * stride] * icoeff[x & 1][0];
+        for (i = 1; i <= 4; i++)
+            sum += icoeff[(x + i) & 1][i] * (src[avpriv_mirror(x - i, n - 1) * stride]
+                                           + src[avpriv_mirror(x + i, n - 1) * stride]);
+        dst[x * stride] = sum;
+    }
+}
+
 void ff_wavelet97_decompose_lines(float *dst_l, float *dst_h, const float *src,
                                   const double coeff[2][5],
                                   int xlinesize, int ylinesize,
@@ -115,6 +142,23 @@ void ff_wavelet97_compose_lines(float *dst, const float *src_l, const float *src
                     src_l + ylinesize*y + xlinesize*x,
                     src_h + ylinesize*y + xlinesize*x,
                     step * xlinesize, (w - x + step - 1) / step);
+}
+
+void ff_wavelet97_decompose_decimated_lines(float *dst, const float *src,
+                                            const double coeff[2][5],
+                                            int xstride, int ystride,
+                                            int len, int line0, int line1)
+{
+    for (int y = line0; y < line1; y++)
+        decompose_decimated(dst + ystride*y, src + ystride*y, coeff, xstride, len);
+}
+
+void ff_wavelet97_compose_decimated_lines(float *dst, const float *src,
+                                          int xstride, int ystride,
+                                          int len, int line0, int line1)
+{
+    for (int y = line0; y < line1; y++)
+        compose_decimated(dst + ystride*y, src + ystride*y, xstride, len);
 }
 
 void ff_wavelet97_decompose(float *dst[4], const float *src, float *temp[2],

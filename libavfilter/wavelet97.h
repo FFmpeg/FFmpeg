@@ -53,6 +53,25 @@ void ff_wavelet97_compose_lines(float *dst, const float *src_l, const float *src
                                 int step, int w, int line0, int line1);
 
 /**
+ * Decimated analysis of lines line0..line1-1 along one direction.
+ * Line y, sample x is at src[y * ystride + x * xstride], x < len, len >= 2.
+ * Lowpass coefficients are written to even, highpass ones to odd x of dst.
+ *
+ * @param coeff    lowpass and highpass filters, normally ff_wavelet97_coeff
+ */
+void ff_wavelet97_decompose_decimated_lines(float *dst, const float *src,
+                                            const double coeff[2][5],
+                                            int xstride, int ystride,
+                                            int len, int line0, int line1);
+
+/**
+ * Inverse of ff_wavelet97_decompose_decimated_lines() with ff_wavelet97_coeff.
+ */
+void ff_wavelet97_compose_decimated_lines(float *dst, const float *src,
+                                          int xstride, int ystride,
+                                          int len, int line0, int line1);
+
+/**
  * One level of undecimated 2D analysis, filters are mirrored at the plane borders.
  *
  * @param dst      output bands LL, LH, HL, HH (horizontal/vertical filter)
