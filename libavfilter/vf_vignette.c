@@ -231,71 +231,210 @@ static int wavelet_levels(int w, int h)
 
 #define BOX_RADIUS 3
 
-static void box_filter(float *dst, const float *src, float *temp,
-                       int linesize, int step, int w, int h)
+enum PassType {
+    PASS_DECOMPOSE,
+    PASS_COMPOSE,
+    PASS_BOX,
+    PASS_ENERGY,
+    PASS_GAIN,
+};
+
+/**
+ * Samples of a plane processed by a pass, sample x of line y is at
+ * y * ystride + x * xstride, x < w, y < h.
+ */
+typedef struct Lattice {
+    int xstride, ystride, w, h;
+} Lattice;
+
+static Lattice transpose(Lattice l)
 {
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
+    return (Lattice){ l.ystride, l.xstride, l.h, l.w };
+}
+
+/**
+ * One operation on the lines of a lattice, run in parallel over slices of lines
+ */
+typedef struct WaveletPass {
+    enum PassType type;
+    Lattice lat;
+    float *dst[2];
+    const float *src[3];
+    const double (*coeff)[5];
+    int step;                           ///< filter dilation
+} WaveletPass;
+
+static void box_lines(const WaveletPass *p, int line0, int line1)
+{
+    const Lattice l = p->lat;
+
+    for (int y = line0; y < line1; y++) {
+        for (int x = 0; x < l.w; x++) {
             double sum = 0;
 
             for (int k = -BOX_RADIUS; k <= BOX_RADIUS; k++)
-                sum += src[y * linesize + avpriv_mirror(x + k * step, w - 1)];
-            temp[y * linesize + x] = sum / (2 * BOX_RADIUS + 1);
-        }
-    }
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            double sum = 0;
-
-            for (int k = -BOX_RADIUS; k <= BOX_RADIUS; k++)
-                sum += temp[avpriv_mirror(y + k * step, h - 1) * linesize + x];
-            dst[y * linesize + x] = sum / (2 * BOX_RADIUS + 1);
+                sum += p->src[0][y * l.ystride + avpriv_mirror(x + k * p->step, l.w - 1) * l.xstride];
+            p->dst[0][y * l.ystride + x * l.xstride] = sum / (2 * BOX_RADIUS + 1);
         }
     }
 }
 
-static void shrink_band(float *band, const float *var, float *temp[3],
-                        int linesize, int step, int w, int h)
+static void energy_lines(const WaveletPass *p, int line0, int line1)
 {
+    const Lattice l = p->lat;
+
+    for (int y = line0; y < line1; y++) {
+        for (int x = 0; x < l.w; x++) {
+            const int i = y * l.ystride + x * l.xstride;
+            const float band = p->src[0][i], var = p->src[1][i];
+
+            p->dst[0][i] = band * band / var;
+            p->dst[1][i] = 1 / var;
+        }
+    }
+}
+
+static void gain_lines(const WaveletPass *p, int line0, int line1)
+{
+    const Lattice l = p->lat;
     // energy a box must have to count as signal: noise + 3 standard errors, assuming independent coefficients
     const double threshold = 1 + 3 * sqrt(2.0 / ((2 * BOX_RADIUS + 1) * (2 * BOX_RADIUS + 1)));
 
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            const int i = y * linesize + x;
+    for (int y = line0; y < line1; y++) {
+        for (int x = 0; x < l.w; x++) {
+            const int i = y * l.ystride + x * l.xstride;
+            const float signal = FFMAX(p->src[0][i] - threshold, 0) / p->src[1][i];
 
-            temp[0][i] = band[i] * band[i] / var[i];
-            temp[1][i] = 1 / var[i];
-        }
-    }
-    box_filter(temp[0], temp[0], temp[2], linesize, step, w, h);
-    box_filter(temp[1], temp[1], temp[2], linesize, step, w, h);
-
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            const int i = y * linesize + x;
-            const float signal = FFMAX(temp[0][i] - threshold, 0) / temp[1][i];
-
-            band[i] *= signal / (signal + var[i]);
+            p->dst[0][i] *= signal / (signal + p->src[2][i]);
         }
     }
 }
 
-static void filter_plane_wavelet(VignetteContext *s,
+static int run_pass_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    const WaveletPass *p = arg;
+    const Lattice l = p->lat;
+    const int line0 = l.h *  jobnr      / nb_jobs;
+    const int line1 = l.h * (jobnr + 1) / nb_jobs;
+
+    switch (p->type) {
+    case PASS_DECOMPOSE:
+        ff_wavelet97_decompose_lines(p->dst[0], p->dst[1], p->src[0], p->coeff,
+                                     l.xstride, l.ystride, p->step, l.w, line0, line1);
+        break;
+    case PASS_COMPOSE:
+        ff_wavelet97_compose_lines(p->dst[0], p->src[0], p->src[1],
+                                   l.xstride, l.ystride, p->step, l.w, line0, line1);
+        break;
+    case PASS_BOX:    box_lines(p, line0, line1);    break;
+    case PASS_ENERGY: energy_lines(p, line0, line1); break;
+    case PASS_GAIN:   gain_lines(p, line0, line1);   break;
+    }
+    return 0;
+}
+
+static void run_pass(AVFilterContext *ctx, WaveletPass *p)
+{
+    if (p->lat.h > 0)
+        ff_filter_execute(ctx, run_pass_slice, p, NULL,
+                          FFMIN(p->lat.h, ff_filter_get_nb_threads(ctx)));
+}
+
+static void decompose(AVFilterContext *ctx, float *dst[4], const float *src, float *temp[2],
+                      const double coeff[2][5], int step, Lattice lat)
+{
+    WaveletPass p = { PASS_DECOMPOSE, lat, { temp[0], temp[1] }, { src }, coeff, step };
+
+    run_pass(ctx, &p);
+    p.lat = transpose(lat);
+    p.src[0] = temp[0]; p.dst[0] = dst[0]; p.dst[1] = dst[1];
+    run_pass(ctx, &p);
+    p.src[0] = temp[1]; p.dst[0] = dst[2]; p.dst[1] = dst[3];
+    run_pass(ctx, &p);
+}
+
+static void compose(AVFilterContext *ctx, float *dst, float *const src[4], float *temp[2],
+                    int step, Lattice lat)
+{
+    WaveletPass p = { PASS_COMPOSE, transpose(lat), { temp[0] }, { src[0], src[1] }, NULL, step };
+
+    run_pass(ctx, &p);
+    p.dst[0] = temp[1]; p.src[0] = src[2]; p.src[1] = src[3];
+    run_pass(ctx, &p);
+    p.lat = lat;
+    p.dst[0] = dst; p.src[0] = temp[0]; p.src[1] = temp[1];
+    run_pass(ctx, &p);
+}
+
+static void box_filter(AVFilterContext *ctx, float *plane, float *temp, int step, Lattice lat)
+{
+    WaveletPass p = { PASS_BOX, lat, { temp }, { plane }, NULL, step };
+
+    run_pass(ctx, &p);
+    p.lat = transpose(lat);
+    p.dst[0] = plane; p.src[0] = temp;
+    run_pass(ctx, &p);
+}
+
+/**
+ * Wiener shrinkage of a detail band toward 0, the signal variance is estimated
+ * from a box of coefficients, weighted by their precision.
+ */
+static void shrink_band(AVFilterContext *ctx, float *band, const float *var, float *temp[3],
+                        int step, Lattice lat)
+{
+    WaveletPass p = { PASS_ENERGY, lat, { temp[0], temp[1] }, { band, var } };
+
+    run_pass(ctx, &p);
+    box_filter(ctx, temp[0], temp[2], step, lat);
+    box_filter(ctx, temp[1], temp[2], step, lat);
+    p.type = PASS_GAIN;
+    p.dst[0] = band; p.src[0] = temp[0]; p.src[1] = temp[1]; p.src[2] = var;
+    run_pass(ctx, &p);
+}
+
+static void transform(AVFilterContext *ctx, float *cur, float *var, int levels, Lattice lat)
+{
+    VignetteContext *s = ctx->priv;
+    const size_t plane_size = s->wplane_size;
+    float *next      = var + plane_size;
+    float *temp[2]   = { var + 2 * plane_size, var + 3 * plane_size };
+    float *vbands[4] = { var + 4 * plane_size, var + 5 * plane_size,
+                         var + 6 * plane_size, var + 7 * plane_size };
+    float *hbands    = var + 8 * plane_size;
+
+    for (int i = 0; i < levels; i++) {
+        float *bands[4] = { next, hbands + 3 * i * plane_size,
+                            hbands + (3 * i + 1) * plane_size, hbands + (3 * i + 2) * plane_size };
+        float *scratch[3] = { temp[0], temp[1], cur };
+
+        decompose(ctx, bands,  cur, temp, ff_wavelet97_coeff, 1 << i, lat);
+        decompose(ctx, vbands, var, temp, s->sqcoeff,         1 << i, lat);
+        for (int j = 1; j < 4; j++)
+            shrink_band(ctx, bands[j], vbands[j], scratch, 1 << i, lat);
+        FFSWAP(float *, cur, next);
+        FFSWAP(float *, var, vbands[0]);
+    }
+
+    for (int i = levels - 1; i >= 0; i--) {
+        float *bands[4] = { cur, hbands + 3 * i * plane_size,
+                            hbands + (3 * i + 1) * plane_size, hbands + (3 * i + 2) * plane_size };
+
+        compose(ctx, next, bands, temp, 1 << i, lat);
+        FFSWAP(float *, cur, next);
+    }
+}
+
+static void filter_plane_wavelet(AVFilterContext *ctx,
                                  uint8_t *dst, int dst_linesize,
                                  const uint8_t *src, int src_linesize, int pixel_step,
                                  int w, int h, int hsub, int vsub, int bias)
 {
-    const int linesize   = s->fmap_linesize;
-    const size_t plane_size = s->wplane_size;
-    const int levels     = wavelet_levels(w, h);
-    float *cur       = s->wplanes;
-    float *next      = cur + plane_size;
-    float *var       = next + plane_size;
-    float *temp[2]   = { var + plane_size, var + 2 * plane_size };
-    float *vbands[4] = { var + 3 * plane_size, var + 4 * plane_size,
-                         var + 5 * plane_size, var + 6 * plane_size };
-    float *hbands    = var + 7 * plane_size;
+    VignetteContext *s = ctx->priv;
+    const int linesize = s->fmap_linesize;
+    const Lattice lat  = { 1, linesize, w, h };
+    float *cur = s->wplanes;
+    float *var = cur + s->wplane_size;
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
@@ -307,27 +446,7 @@ static void filter_plane_wavelet(VignetteContext *s,
         }
     }
 
-    for (int i = 0; i < levels; i++) {
-        float *bands[4] = { next, hbands + 3 * i * plane_size,
-                            hbands + (3 * i + 1) * plane_size, hbands + (3 * i + 2) * plane_size };
-
-        float *scratch[3] = { temp[0], temp[1], cur };
-
-        ff_wavelet97_decompose(bands,  cur, temp, ff_wavelet97_coeff, linesize, 1 << i, w, h);
-        ff_wavelet97_decompose(vbands, var, temp, s->sqcoeff,         linesize, 1 << i, w, h);
-        for (int j = 1; j < 4; j++)
-            shrink_band(bands[j], vbands[j], scratch, linesize, 1 << i, w, h);
-        FFSWAP(float *, cur, next);
-        FFSWAP(float *, var, vbands[0]);
-    }
-
-    for (int i = levels - 1; i >= 0; i--) {
-        float *bands[4] = { cur, hbands + 3 * i * plane_size,
-                            hbands + (3 * i + 1) * plane_size, hbands + (3 * i + 2) * plane_size };
-
-        ff_wavelet97_compose(next, bands, temp, linesize, 1 << i, w, h);
-        FFSWAP(float *, cur, next);
-    }
+    transform(ctx, cur, var, wavelet_levels(w, h), lat);
 
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -335,11 +454,13 @@ static void filter_plane_wavelet(VignetteContext *s,
                 av_clip_uint8(cur[y * linesize + x] + bias + get_dither_value(s));
 }
 
-static void filter_frame_wavelet(VignetteContext *s, AVFrame *out, const AVFrame *in)
+static void filter_frame_wavelet(AVFilterContext *ctx, AVFrame *out, const AVFrame *in)
 {
+    VignetteContext *s = ctx->priv;
+
     if (s->desc->flags & AV_PIX_FMT_FLAG_RGB) {
         for (int c = 0; c < 3; c++)
-            filter_plane_wavelet(s, out->data[0] + c, out->linesize[0],
+            filter_plane_wavelet(ctx, out->data[0] + c, out->linesize[0],
                                  in->data[0] + c, in->linesize[0], 3,
                                  in->width, in->height, 0, 0, 0);
         return;
@@ -350,7 +471,7 @@ static void filter_frame_wavelet(VignetteContext *s, AVFrame *out, const AVFrame
         const int hsub = chroma ? s->desc->log2_chroma_w : 0;
         const int vsub = chroma ? s->desc->log2_chroma_h : 0;
 
-        filter_plane_wavelet(s, out->data[plane], out->linesize[plane],
+        filter_plane_wavelet(ctx, out->data[plane], out->linesize[plane],
                              in->data[plane], in->linesize[plane], 1,
                              AV_CEIL_RSHIFT(in->width, hsub), AV_CEIL_RSHIFT(in->height, vsub),
                              hsub, vsub, chroma ? 127 : 0);
@@ -381,7 +502,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         update_context(s, inlink, in);
 
     if (s->mode == MODE_WAVELET) {
-        filter_frame_wavelet(s, out, in);
+        filter_frame_wavelet(ctx, out, in);
     } else if (s->desc->flags & AV_PIX_FMT_FLAG_RGB) {
         uint8_t       *dst = out->data[0];
         const uint8_t *src = in ->data[0];
@@ -500,7 +621,7 @@ const FFFilter ff_vf_vignette = {
     .p.name        = "vignette",
     .p.description = NULL_IF_CONFIG_SMALL("Make or reverse a vignette effect."),
     .p.priv_class  = &vignette_class,
-    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(VignetteContext),
     .init          = init,
     .uninit        = uninit,
