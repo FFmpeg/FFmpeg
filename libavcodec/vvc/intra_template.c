@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavcodec/bit_depth_template.c"
 
 #include "intra.h"
@@ -525,6 +526,8 @@ do {                                  \
 
     top_available = ff_vvc_get_top_available(lc, x, y, unfilter_top_size, c_idx);
     memcpy(top, src + ref_line * stride, top_available * sizeof(pixel));
+
+    av_assume(ref_line >= -4);
 
     for (int i = -1; i >= ref_line; i--) {
         if (cand_up_left) {
