@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* MMX/SSE2/AVX-optimized 10-bit H.264 qpel code
+;* SSE2/AVX-optimized 10-bit H.264 qpel code
 ;*****************************************************************************
 ;* Copyright (C) 2011 x264 project
 ;*
@@ -52,13 +52,26 @@ SECTION .text
     mova  %1, %2
 %endmacro
 
-%macro ADDW 3
-%if mmsize == 8
-    paddw %1, %2
-%else
-    movu  %3, %2
+; 4-wide (8-byte row) avg store: exact 8-byte traffic via movq, so no
+; 16-byte alignment is required of dst. m6 is free at all use sites.
+%macro AVG_MOVQ 2
+    movq m6, %1
+    pavgw %2, m6
+    movq %1, %2
+%endmacro
+
+; MC00 4-wide avg uses only m0, so scratch in m1 keeps its count at 2.
+%macro AVG_MOVQ1 2
+    movq m1, %1
+    pavgw %2, m1
+    movq %1, %2
+%endmacro
+
+; %4 selects the temp load width: movu for 8-wide rows, movq for
+; 4-wide 10-bit rows (8 bytes)
+%macro ADDW 3-4 movu
+    %4  %3, %2
     paddw %1, %3
-%endif
 %endmacro
 
 %macro FILT_H 4
@@ -74,17 +87,17 @@ SECTION .text
 %macro PRELOAD_V 0
     lea      r3, [r2*3]
     sub      r1, r3
-    movu     m0, [r1+r2]
-    movu     m1, [r1+r2*2]
+    OP_LOAD  m0, [r1+r2]
+    OP_LOAD  m1, [r1+r2*2]
     add      r1, r3
-    movu     m2, [r1]
-    movu     m3, [r1+r2]
-    movu     m4, [r1+r2*2]
+    OP_LOAD  m2, [r1]
+    OP_LOAD  m3, [r1+r2]
+    OP_LOAD  m4, [r1+r2*2]
     add      r1, r3
 %endmacro
 
 %macro FILT_V 8
-    movu     %6, [r1]
+    OP_LOAD  %6, [r1]
     paddw    %1, %6
     mova     %7, %2
     paddw    %7, %5
@@ -96,16 +109,19 @@ SECTION .text
 %endmacro
 
 %macro MC 1
-%define OP_MOV mova
-INIT_MMX mmxext
-%1 put, 4
 INIT_XMM sse2
+%define OP_MOV movq
+%define OP_LOAD movq
+%1 put, 4
+%define OP_MOV mova
+%define OP_LOAD movu
 %1 put, 8
 
-%define OP_MOV AVG_MOV
-INIT_MMX mmxext
+%define OP_MOV AVG_MOVQ
+%define OP_LOAD movq
 %1 avg, 4
-INIT_XMM sse2
+%define OP_MOV AVG_MOV
+%define OP_LOAD movu
 %1 avg, 8
 %endmacro
 
@@ -153,7 +169,7 @@ cglobal %1_h264_qpel%4_%2_10, %5,%6 + 2,%7
 ;cpu, put/avg, mc, 4/8, ...
 %macro cglobal_mc 6
 %assign i %3*2
-%if cpuflag(sse2)
+%if %3 == 8
 MCAxA_OP %1, %2, %3, i, %4,%5,%6
 %endif
 
@@ -170,25 +186,37 @@ stub_%1_h264_qpel%3_%2_10 %+ SUFFIX:
 ; void ff_h264_qpel_mc00(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro COPY4 0
-    movu          m0, [r1     ]
+    OP_LOAD       m0, [r1     ]
     OP_MOV [r0     ], m0
-    movu          m0, [r1+r2  ]
+    OP_LOAD       m0, [r1+r2  ]
     OP_MOV [r0+r2  ], m0
-    movu          m0, [r1+r2*2]
+    OP_LOAD       m0, [r1+r2*2]
     OP_MOV [r0+r2*2], m0
-    movu          m0, [r1+r3  ]
+    OP_LOAD       m0, [r1+r3  ]
     OP_MOV [r0+r3  ], m0
 %endmacro
 
 %macro MC00 1
-INIT_MMX mmxext
-cglobal_mc %1, mc00, 4, 3,4,0
+INIT_XMM sse2
+%define OP_LOAD4 movq
+%define OP_LOAD8 movu
+%ifidn %1, put
+%define OP_MOV4 movq
+%define OP_MOV8 mova
+%else
+%define OP_MOV4 AVG_MOVQ1
+%define OP_MOV8 AVG_MOV
+%endif
+cglobal_mc %1, mc00, 4, 3,4,2
     lea           r3, [r2*3]
+%define OP_MOV OP_MOV4
+%define OP_LOAD OP_LOAD4
     COPY4
     ret
 
-INIT_XMM sse2
 cglobal %1_h264_qpel8_mc00_10, 3,4
+%define OP_MOV OP_MOV8
+%define OP_LOAD OP_LOAD8
     lea  r3, [r2*3]
     COPY4
     lea  r0, [r0+r2*4]
@@ -214,28 +242,31 @@ cglobal %1_h264_qpel16_mc00_10, 3,4
     RET
 %endmacro
 
-%define OP_MOV mova
 MC00 put
 
-%define OP_MOV AVG_MOV
 MC00 avg
 
 ;-----------------------------------------------------------------------------
 ; void ff_h264_qpel_mc20(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro MC_CACHE 1
-%define OP_MOV mova
-INIT_MMX mmxext
+INIT_XMM sse2
+%define OP_MOV movq
+%define OP_LOAD movq
 %1 put, 4
 INIT_XMM ssse3, cache64
+%define OP_MOV mova
+%define OP_LOAD movu
 %1 put, 8
 INIT_XMM sse2
 %1 put, 8
 
-%define OP_MOV AVG_MOV
-INIT_MMX mmxext
+%define OP_MOV AVG_MOVQ
+%define OP_LOAD movq
 %1 avg, 4
 INIT_XMM ssse3, cache64
+%define OP_MOV AVG_MOV
+%define OP_LOAD movu
 %1 avg, 8
 INIT_XMM sse2
 %1 avg, 8
@@ -252,15 +283,14 @@ cglobal_mc %1, mc20, %2, 3,4,9
     %define p16 [pw_16]
 %endif
 .nextrow:
-%if %0 == 4
-    movu     m2, [r1-4]
-    movu     m3, [r1-2]
-    movu     m4, [r1+0]
-    ADDW     m2, [r1+6], m5
-    ADDW     m3, [r1+4], m5
-    ADDW     m4, [r1+2], m5
+%if %2 == 4
+    movq     m2, [r1-4]
+    movq     m3, [r1-2]
+    movq     m4, [r1+0]
+    ADDW     m2, [r1+6], m5, movq
+    ADDW     m3, [r1+4], m5, movq
+    ADDW     m4, [r1+2], m5, movq
 %else ; movu is slow on these processors
-%if mmsize==16
     movu     m2, [r1-4]
     movu     m0, [r1+6]
     mova     m6, m0
@@ -274,16 +304,6 @@ cglobal_mc %1, mc20, %2, 3,4,9
     PALIGNR  m7, m0, m2, 6, m5
     paddw    m4, m7
     SWAP      2, 6
-%else
-    movu     m2, [r1-4]
-    movu     m6, [r1+4]
-    PALIGNR  m3, m6, m2, 2, m5
-    paddw    m3, m6
-    PALIGNR  m4, m6, m2, 4, m5
-    PALIGNR  m7, m6, m2, 6, m5
-    paddw    m4, m7
-    paddw    m2, [r1+6]
-%endif
 %endif
 
     FILT_H   m2, m3, m4, p16
@@ -327,15 +347,14 @@ cglobal_mc %1, mc10, %2, 3,5,9
     %define p16 [pw_16]
 %endif
 .nextrow:
-%if %0 == 4
-    movu     m2, [r1-4]
-    movu     m3, [r1-2]
-    movu     m4, [r1+0]
-    ADDW     m2, [r1+6], m5
-    ADDW     m3, [r1+4], m5
-    ADDW     m4, [r1+2], m5
+%if %2 == 4
+    movq     m2, [r1-4]
+    movq     m3, [r1-2]
+    movq     m4, [r1+0]
+    ADDW     m2, [r1+6], m5, movq
+    ADDW     m3, [r1+4], m5, movq
+    ADDW     m4, [r1+2], m5, movq
 %else ; movu is slow on these processors
-%if mmsize==16
     movu     m2, [r1-4]
     movu     m0, [r1+6]
     mova     m6, m0
@@ -349,23 +368,13 @@ cglobal_mc %1, mc10, %2, 3,5,9
     PALIGNR  m7, m0, m2, 6, m5
     paddw    m4, m7
     SWAP      2, 6
-%else
-    movu     m2, [r1-4]
-    movu     m6, [r1+4]
-    PALIGNR  m3, m6, m2, 2, m5
-    paddw    m3, m6
-    PALIGNR  m4, m6, m2, 4, m5
-    PALIGNR  m7, m6, m2, 6, m5
-    paddw    m4, m7
-    paddw    m2, [r1+6]
-%endif
 %endif
 
     FILT_H   m2, m3, m4, p16
     psraw    m2, 1
     pxor     m0, m0
     CLIPW    m2, m0, m1
-    movu     m3, [r4]
+    OP_LOAD  m3, [r4]
     pavgw    m2, m3
     OP_MOV [r0], m2
     add      r0, r2
@@ -391,8 +400,9 @@ v_filt%9_%10_10:
     ret
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 RESET_MM_PERMUTATION
+%define OP_LOAD movq
 %assign i 0
 %rep 4
 V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 4, i
@@ -402,6 +412,7 @@ SWAP 0,1,2,3,4,5
 
 INIT_XMM sse2
 RESET_MM_PERMUTATION
+%define OP_LOAD movu
 %assign i 0
 %rep 6
 V_FILT m0, m1, m2, m3, m4, m5, m6, m7, 8, i
@@ -442,7 +453,7 @@ cglobal_mc %1, mc01, %2, 3,5,8
 %rep %2
     %assign i (j % 6)
     call v_filt%2_ %+ i %+ _10
-    movu     m7, [r4]
+    OP_LOAD  m7, [r4]
     pavgw    m0, m7
     OP_MOV [r0], m0
     SWAP 0,1,2,3,4,5
@@ -472,16 +483,21 @@ h_filt%1_%2_10:
 ;FILT_H with fewer registers and averaged with the FILT_V result
 ;m6,m7 are tmp registers, m0 is the FILT_V result, the rest are to be used next in the next iteration
 ;unfortunately I need three registers, so m5 will have to be re-read from memory
-    movu     m5, [r4-4]
-    ADDW     m5, [r4+6], m7
-    movu     m6, [r4-2]
-    ADDW     m6, [r4+4], m7
+%if %1 == 4
+%define HROW movq
+%else
+%define HROW movu
+%endif
+    HROW     m5, [r4-4]
+    ADDW     m5, [r4+6], m7, HROW
+    HROW     m6, [r4-2]
+    ADDW     m6, [r4+4], m7, HROW
     paddw    m5, [pw_16]
     psubw    m5, m6  ; a-b
     psraw    m5, 2   ; (a-b)/4
     psubw    m5, m6  ; (a-b)/4-b
-    movu     m6, [r4+0]
-    ADDW     m6, [r4+2], m7
+    HROW     m6, [r4+0]
+    ADDW     m6, [r4+2], m7, HROW
     paddw    m5, m6  ; (a-b)/4-b+c
     psraw    m5, 2   ; ((a-b)/4-b+c)/4
     paddw    m5, m6  ; ((a-b)/4-b+c)/4+c = (a-5*b+20*c)/16
@@ -490,12 +506,12 @@ h_filt%1_%2_10:
 ;avg FILT_V, FILT_H
     pavgw    m0, m5
 %if %0!=4
-    movu     m5, [r1+r5]
+    HROW     m5, [r1+r5]
 %endif
     ret
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 RESET_MM_PERMUTATION
 %assign i 0
 %rep 3
@@ -594,7 +610,7 @@ MC MC33
 %endmacro
 
 %macro FILT_VNRD 8
-    movu     %6, [r1]
+    ROWMOV   %6, [r1]
     paddw    %1, %6
     mova     %7, %2
     paddw    %7, %5
@@ -604,43 +620,47 @@ MC MC33
 %endmacro
 
 %macro HV 1
-%if mmsize==16
-%define PAD 12
-%define COUNT 2
+%if %1 == 8
+%assign ROWHV mmsize
+%assign PAD 12
+%assign COUNT 2
+%define ROWMOV movu
 %else
-%define PAD 4
-%define COUNT 3
+%assign ROWHV 8
+%assign PAD 4
+%assign COUNT 3
+%define ROWMOV movq
 %endif
 put_hv%1_10:
     neg      r2           ; This actually saves instructions
-    lea      r1, [r1+r2*2-mmsize+PAD]
+    lea      r1, [r1+r2*2-ROWHV+PAD]
     lea      r4, [rsp+PAD+gprsize]
     mov     r3d, COUNT
 .v_loop:
-    movu     m0, [r1]
+    ROWMOV   m0, [r1]
     sub      r1, r2
-    movu     m1, [r1]
+    ROWMOV   m1, [r1]
     sub      r1, r2
-    movu     m2, [r1]
+    ROWMOV   m2, [r1]
     sub      r1, r2
-    movu     m3, [r1]
+    ROWMOV   m3, [r1]
     sub      r1, r2
-    movu     m4, [r1]
+    ROWMOV   m4, [r1]
     sub      r1, r2
 %assign i 0
 %rep %1-1
     FILT_VNRD m0, m1, m2, m3, m4, m5, m6, m7
     psubw    m0, [pad20]
-    movu     [r4+i*mmsize*3], m0
+    ROWMOV   [r4+i*ROWHV*3], m0
     sub      r1, r2
     SWAP 0,1,2,3,4,5
 %assign i i+1
 %endrep
     FILT_VNRD m0, m1, m2, m3, m4, m5, m6, m7
     psubw    m0, [pad20]
-    movu     [r4+i*mmsize*3], m0
-    add      r4, mmsize
-    lea      r1, [r1+r2*8+mmsize]
+    ROWMOV   [r4+i*ROWHV*3], m0
+    add      r4, ROWHV
+    lea      r1, [r1+r2*8+ROWHV]
 %if %1==8
     lea      r1, [r1+r2*4]
 %endif
@@ -650,9 +670,8 @@ put_hv%1_10:
     ret
 %endmacro
 
-INIT_MMX mmxext
-HV 4
 INIT_XMM sse2
+HV 4
 HV 8
 
 %macro H_LOOP 1
@@ -667,13 +686,20 @@ HV 8
     %define s3 [tap3]
     %define d1 [depad]
 %endif
+%if %1 == 4
+%assign ROWHL 8
+%define ROWMOV movq
+%else
+%assign ROWHL mmsize
+%define ROWMOV movu
+%endif
 h%1_loop_op:
-    movu       m1, [r1+mmsize-4]
-    movu       m2, [r1+mmsize-2]
-    mova       m3, [r1+mmsize+0]
-    movu       m4, [r1+mmsize+2]
-    movu       m5, [r1+mmsize+4]
-    movu       m6, [r1+mmsize+6]
+    ROWMOV     m1, [r1+ROWHL-4]
+    ROWMOV     m2, [r1+ROWHL-2]
+    ROWMOV     m3, [r1+ROWHL+0]
+    ROWMOV     m4, [r1+ROWHL+2]
+    ROWMOV     m5, [r1+ROWHL+4]
+    ROWMOV     m6, [r1+ROWHL+6]
 %if num_mmregs > 8
     pmaddwd    m1, s1
     pmaddwd    m2, s1
@@ -710,18 +736,22 @@ h%1_loop_op:
     pxor       m0, m0
 %endif
     CLIPW      m1, m0, m7
-    add        r1, mmsize*3
+    add        r1, ROWHL*3
     ret
 %endmacro
 
-INIT_MMX mmxext
-H_LOOP 4
 INIT_XMM sse2
+H_LOOP 4
 H_LOOP 8
 
 %macro MC22 2
 cglobal_mc %1, mc22, %2, 3,7,12
-%define PAD mmsize*8*4*2      ; SIZE*16*4*sizeof(pixel)
+%if %2 == 4
+%assign PADMC22 8*8*4*2       ; SIZE*16*4*sizeof(pixel)
+%else
+%assign PADMC22 mmsize*8*4*2  ; SIZE*16*4*sizeof(pixel)
+%endif
+%define PAD PADMC22
     mov      r6, rsp          ; backup stack pointer
     and     rsp, ~(mmsize-1)  ; align stack
     sub     rsp, PAD
@@ -757,7 +787,16 @@ MC MC22
 ;-----------------------------------------------------------------------------
 %macro MC12 2
 cglobal_mc %1, mc12, %2, 3,7,12
-%define PAD mmsize*8*4*2        ; SIZE*16*4*sizeof(pixel)
+%if %2 == 4
+%assign RBMC12 8
+%assign PADMC12 8*8*4*2        ; SIZE*16*4*sizeof(pixel)
+%define ROWMOV movq
+%else
+%assign RBMC12 mmsize
+%assign PADMC12 mmsize*8*4*2   ; SIZE*16*4*sizeof(pixel)
+%define ROWMOV movu
+%endif
+%define PAD PADMC12
     mov        r6, rsp          ; backup stack pointer
     and       rsp, ~(mmsize-1)  ; align stack
     sub       rsp, PAD
@@ -779,7 +818,7 @@ cglobal_mc %1, mc12, %2, 3,7,12
 .h_loop:
     call h%2_loop_op
 
-    movu       m3, [r1+r4-2*mmsize] ; movu needed for mc32, etc
+    ROWMOV     m3, [r1+r4-2*RBMC12] ; movu needed for mc32, etc
     paddw      m3, [depad2]
     psrlw      m3, 5
     psubw      m3, [unpad]
@@ -819,23 +858,30 @@ MC MC32
 ; void ff_h264_qpel_mc21(uint8_t *dst, uint8_t *src, int stride)
 ;-----------------------------------------------------------------------------
 %macro H_NRD 1
+%if %1 == 4
+%assign ROWHN 8
+%define ROWMOV movq
+%else
+%assign ROWHN mmsize
+%define ROWMOV movu
+%endif
 put_h%1_10:
     add       rsp, gprsize
     mov       r3d, %1
     xor       r4d, r4d
     mova       m6, [pad20]
 .nextrow:
-    movu       m2, [r5-4]
-    movu       m3, [r5-2]
-    movu       m4, [r5+0]
-    ADDW       m2, [r5+6], m5
-    ADDW       m3, [r5+4], m5
-    ADDW       m4, [r5+2], m5
+    ROWMOV     m2, [r5-4]
+    ROWMOV     m3, [r5-2]
+    ROWMOV     m4, [r5+0]
+    ADDW       m2, [r5+6], m5, ROWMOV
+    ADDW       m3, [r5+4], m5, ROWMOV
+    ADDW       m4, [r5+2], m5, ROWMOV
 
     FILT_H2    m2, m3, m4
     psubw      m2, m6
-    mova [rsp+r4], m2
-    add       r4d, mmsize*3
+    ROWMOV [rsp+r4], m2
+    add       r4d, ROWHN*3
     add        r5, r2
     dec       r3d
     jg .nextrow
@@ -843,26 +889,31 @@ put_h%1_10:
     ret
 %endmacro
 
-INIT_MMX mmxext
-H_NRD 4
 INIT_XMM sse2
+H_NRD 4
 H_NRD 8
 
 %macro MC21 2
 cglobal_mc %1, mc21, %2, 3,7,12
     mov   r5, r1
 .body:
-%define PAD mmsize*8*3*2   ; SIZE*16*4*sizeof(pixel)
+%if %2 == 4
+%assign RBMC21 8
+%assign PADMC21 8*8*3*2     ; SIZE*16*4*sizeof(pixel)
+%else
+%assign RBMC21 mmsize
+%assign PADMC21 mmsize*8*3*2 ; SIZE*16*4*sizeof(pixel)
+%endif
     mov   r6, rsp          ; backup stack pointer
     and  rsp, ~(mmsize-1)  ; align stack
 
-    sub  rsp, PAD
+    sub  rsp, PADMC21
     call put_h%2_10
 
-    sub  rsp, PAD
+    sub  rsp, PADMC21
     call put_hv%2_10
 
-    mov r4d, PAD-mmsize    ; H buffer
+    mov r4d, PADMC21-RBMC21 ; H buffer
     jmp stub_%1_h264_qpel%2_mc12_10 %+ SUFFIX %+ .body
 %endmacro
 
