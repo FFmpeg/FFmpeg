@@ -614,6 +614,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_SPEEX,           0xA109 },
     { AV_CODEC_ID_G728,            0xCD02 },
     { AV_CODEC_ID_FLAC,            0xF1AC },
+    { AV_CODEC_ID_OPUS,            0x704F },
     /* DFPWM does not have an assigned format tag; it uses a GUID in WAVEFORMATEX instead */
     { AV_CODEC_ID_DFPWM,           0xFFFE },
     { AV_CODEC_ID_ADPCM_SWF,       ('S' << 8) + 'F' },
