@@ -2517,7 +2517,7 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     if (s != s1) {
         // copy qscale data if necessary
         for (int i = 0; i < 3; i++) {
-            if (s->qps[i] != s1->qps[1]) {
+            if (s->qps[i] != s1->qps[i]) {
                 qps_changed = 1;
                 memcpy(&s->qmat[i], &s1->qmat[i], sizeof(s->qmat[i]));
             }
