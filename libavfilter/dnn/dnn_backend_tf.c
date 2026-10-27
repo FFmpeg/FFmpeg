@@ -748,6 +748,7 @@ static void infer_completion_callback(void *args) {
 err:
     tf_free_request(infer_request);
     av_freep(&outputs);
+    av_freep(&request->lltask);
 
     if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
         destroy_request_item(&request);
@@ -794,6 +795,7 @@ static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
     }
 err:
     tf_free_request(request->infer_request);
+    av_freep(&request->lltask);
     if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
         destroy_request_item(&request);
     }
@@ -874,6 +876,7 @@ static int dnn_flush_tf(const DNNModel *model)
     ret = fill_model_input_tf(tf_model, request);
     if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to fill model input.\n");
+        av_freep(&request->lltask);
         if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
             destroy_request_item(&request);
         }
