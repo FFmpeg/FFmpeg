@@ -1265,8 +1265,8 @@ fail:
     return err;
 }
 
-static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
-                         SwsCompiledOp *out)
+static int compile_ops_spirv(SwsContext *sws, const SwsOpList *ops,
+                             SwsCompiledOp *out)
 {
     SwsUOpList *uops = NULL;
     int err;
@@ -1334,6 +1334,6 @@ fail:
 const SwsOpBackend backend_spirv = {
     .name      = "spirv",
     .flags     = SWS_BACKEND_SPIRV,
-    .compile   = compile_spirv,
+    .compile   = compile_ops_spirv,
     .hw_format = AV_PIX_FMT_VULKAN,
 };

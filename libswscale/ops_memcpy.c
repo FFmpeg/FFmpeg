@@ -75,7 +75,7 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
     }
 }
 
-static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
+static int compile_ops_memcpy(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     MemcpyPriv p = {0};
 
@@ -149,6 +149,6 @@ static int compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 const SwsOpBackend backend_murder = {
     .name       = "memcpy",
     .flags      = SWS_BACKEND_MEMCPY,
-    .compile    = compile,
+    .compile    = compile_ops_memcpy,
     .hw_format  = AV_PIX_FMT_NONE,
 };

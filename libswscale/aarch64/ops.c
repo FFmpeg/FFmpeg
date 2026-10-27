@@ -151,7 +151,7 @@ static int aarch64_setup(const SwsUOp *uop, const SwsAArch64OpImplParams *p,
 }
 
 /*********************************************************************/
-static int aarch64_compile_uops(SwsContext *ctx, const SwsUOpList *uops,
+static int compile_uops_aarch64(SwsContext *ctx, const SwsUOpList *uops,
                                 SwsCompiledOp *out)
 {
     int ret;
@@ -218,8 +218,8 @@ error:
 }
 
 /*********************************************************************/
-static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
-                           SwsCompiledOp *out)
+static int compile_ops_aarch64(SwsContext *ctx, const SwsOpList *ops,
+                               SwsCompiledOp *out)
 {
     SwsUOpList *uops = ff_sws_uop_list_alloc();
     if (!uops)
@@ -232,7 +232,7 @@ static int aarch64_compile(SwsContext *ctx, const SwsOpList *ops,
     if (ret < 0)
         goto error;
 
-    ret = aarch64_compile_uops(ctx, uops, out);
+    ret = compile_uops_aarch64(ctx, uops, out);
 
 error:
     ff_sws_uop_list_free(&uops);
@@ -243,7 +243,7 @@ error:
 const SwsOpBackend backend_aarch64 = {
     .name         = "aarch64",
     .flags        = SWS_BACKEND_AARCH64,
-    .compile      = aarch64_compile,
-    .compile_uops = aarch64_compile_uops,
+    .compile      = compile_ops_aarch64,
+    .compile_uops = compile_uops_aarch64,
     .hw_format    = AV_PIX_FMT_NONE,
 };

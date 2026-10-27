@@ -179,7 +179,7 @@ fail:
     return ret;
 }
 
-static int compile_c(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
+static int compile_ops_c(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     SwsUOpList *uops = ff_sws_uop_list_alloc();
     if (!uops)
@@ -203,7 +203,7 @@ fail:
 const SwsOpBackend backend_c = {
     .name           = "c",
     .flags          = SWS_BACKEND_C,
-    .compile        = compile_c,
+    .compile        = compile_ops_c,
     .compile_uops   = compile_uops_c,
     .hw_format      = AV_PIX_FMT_NONE,
 };

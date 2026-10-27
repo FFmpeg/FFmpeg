@@ -716,7 +716,7 @@ fail:
     return ret;
 }
 
-static int compile_x86(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
+static int compile_ops_x86(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
 {
     const int cpu_flags = av_get_cpu_flags();
     const int mmsize = get_mmsize();
@@ -749,7 +749,7 @@ fail:
 const SwsOpBackend backend_x86 = {
     .name           = "x86",
     .flags          = SWS_BACKEND_X86,
-    .compile        = compile_x86,
+    .compile        = compile_ops_x86,
     .compile_uops   = compile_uops_x86,
     .hw_format      = AV_PIX_FMT_NONE,
 };
