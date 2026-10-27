@@ -32,7 +32,28 @@
 extern const double ff_wavelet97_coeff[2][5];
 
 /**
- * One level of 2D analysis, filters are mirrored at the plane borders.
+ * Undecimated analysis of lines line0..line1-1 along one direction.
+ * Line y, sample x is at src[y * ylinesize + x * xlinesize], x < w, w >= 2.
+ *
+ * @param dst_l    lowpass output, same layout as src
+ * @param dst_h    highpass output, same layout as src
+ * @param coeff    lowpass and highpass filters, normally ff_wavelet97_coeff
+ * @param step     dilation of the filters, 1 << level
+ */
+void ff_wavelet97_decompose_lines(float *dst_l, float *dst_h, const float *src,
+                                  const double coeff[2][5],
+                                  int xlinesize, int ylinesize,
+                                  int step, int w, int line0, int line1);
+
+/**
+ * Inverse of ff_wavelet97_decompose_lines() with ff_wavelet97_coeff.
+ */
+void ff_wavelet97_compose_lines(float *dst, const float *src_l, const float *src_h,
+                                int xlinesize, int ylinesize,
+                                int step, int w, int line0, int line1);
+
+/**
+ * One level of undecimated 2D analysis, filters are mirrored at the plane borders.
  *
  * @param dst      output bands LL, LH, HL, HH (horizontal/vertical filter)
  * @param src      input plane

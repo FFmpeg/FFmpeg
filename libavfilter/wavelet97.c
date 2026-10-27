@@ -90,13 +90,13 @@ static inline void compose(float *dst, const float *src_l, const float *src_h,
     }
 }
 
-static inline void decompose2D(float *dst_l, float *dst_h, const float *src,
-                               const double coeff[2][5],
-                               int xlinesize, int ylinesize,
-                               int step, int w, int h)
+void ff_wavelet97_decompose_lines(float *dst_l, float *dst_h, const float *src,
+                                  const double coeff[2][5],
+                                  int xlinesize, int ylinesize,
+                                  int step, int w, int line0, int line1)
 {
     int y, x;
-    for (y = 0; y < h; y++)
+    for (y = line0; y < line1; y++)
         for (x = 0; x < step; x++)
             decompose(dst_l + ylinesize*y + xlinesize*x,
                       dst_h + ylinesize*y + xlinesize*x,
@@ -104,12 +104,12 @@ static inline void decompose2D(float *dst_l, float *dst_h, const float *src,
                       coeff, step * xlinesize, (w - x + step - 1) / step);
 }
 
-static inline void compose2D(float *dst, const float *src_l, const float *src_h,
-                             int xlinesize, int ylinesize,
-                             int step, int w, int h)
+void ff_wavelet97_compose_lines(float *dst, const float *src_l, const float *src_h,
+                                int xlinesize, int ylinesize,
+                                int step, int w, int line0, int line1)
 {
     int y, x;
-    for (y = 0; y < h; y++)
+    for (y = line0; y < line1; y++)
         for (x = 0; x < step; x++)
             compose(dst   + ylinesize*y + xlinesize*x,
                     src_l + ylinesize*y + xlinesize*x,
@@ -121,15 +121,15 @@ void ff_wavelet97_decompose(float *dst[4], const float *src, float *temp[2],
                             const double coeff[2][5],
                             int linesize, int step, int w, int h)
 {
-    decompose2D(temp[0], temp[1], src,     coeff, 1, linesize, step, w, h);
-    decompose2D( dst[0],  dst[1], temp[0], coeff, linesize, 1, step, h, w);
-    decompose2D( dst[2],  dst[3], temp[1], coeff, linesize, 1, step, h, w);
+    ff_wavelet97_decompose_lines(temp[0], temp[1], src,     coeff, 1, linesize, step, w, 0, h);
+    ff_wavelet97_decompose_lines( dst[0],  dst[1], temp[0], coeff, linesize, 1, step, h, 0, w);
+    ff_wavelet97_decompose_lines( dst[2],  dst[3], temp[1], coeff, linesize, 1, step, h, 0, w);
 }
 
 void ff_wavelet97_compose(float *dst, float *const src[4], float *temp[2],
                           int linesize, int step, int w, int h)
 {
-    compose2D(temp[0],  src[0],  src[1], linesize, 1, step, h, w);
-    compose2D(temp[1],  src[2],  src[3], linesize, 1, step, h, w);
-    compose2D(dst,     temp[0], temp[1], 1, linesize, step, w, h);
+    ff_wavelet97_compose_lines(temp[0],  src[0],  src[1], linesize, 1, step, h, 0, w);
+    ff_wavelet97_compose_lines(temp[1],  src[2],  src[3], linesize, 1, step, h, 0, w);
+    ff_wavelet97_compose_lines(dst,     temp[0], temp[1], 1, linesize, step, w, 0, h);
 }
