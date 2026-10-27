@@ -70,6 +70,7 @@ typedef struct VignetteContext {
     int mode;                           ///< Mode
     int eval_mode;                      ///< EvalMode
     double noise;
+    int decimated;
     double sqcoeff[2][5];
     float *wplanes;
     size_t wplane_size;
@@ -105,6 +106,7 @@ static const AVOption vignette_options[] = {
     { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     { "aspect", "set aspect ratio", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 1}, 0, DBL_MAX, .flags = FLAGS },
     { "noise", "set input noise standard deviation for wavelet mode", OFFSET(noise), AV_OPT_TYPE_DOUBLE, {.dbl = 0.5}, 0.01, 255, FLAGS },
+    { "decimated", "use a decimated wavelet transform, faster but lower quality", OFFSET(decimated), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -234,6 +236,8 @@ static int wavelet_levels(int w, int h)
 enum PassType {
     PASS_DECOMPOSE,
     PASS_COMPOSE,
+    PASS_DECOMPOSE_DECIMATED,
+    PASS_COMPOSE_DECIMATED,
     PASS_BOX,
     PASS_ENERGY,
     PASS_GAIN,
@@ -326,6 +330,14 @@ static int run_pass_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         ff_wavelet97_compose_lines(p->dst[0], p->src[0], p->src[1],
                                    l.xstride, l.ystride, p->step, l.w, line0, line1);
         break;
+    case PASS_DECOMPOSE_DECIMATED:
+        ff_wavelet97_decompose_decimated_lines(p->dst[0], p->src[0], p->coeff,
+                                               l.xstride, l.ystride, l.w, line0, line1);
+        break;
+    case PASS_COMPOSE_DECIMATED:
+        ff_wavelet97_compose_decimated_lines(p->dst[0], p->src[0],
+                                             l.xstride, l.ystride, l.w, line0, line1);
+        break;
     case PASS_BOX:    box_lines(p, line0, line1);    break;
     case PASS_ENERGY: energy_lines(p, line0, line1); break;
     case PASS_GAIN:   gain_lines(p, line0, line1);   break;
@@ -366,6 +378,27 @@ static void compose(AVFilterContext *ctx, float *dst, float *const src[4], float
     run_pass(ctx, &p);
 }
 
+static void decompose_decimated(AVFilterContext *ctx, float *plane, float *temp,
+                                const double coeff[2][5], Lattice lat)
+{
+    WaveletPass p = { PASS_DECOMPOSE_DECIMATED, lat, { temp }, { plane }, coeff };
+
+    run_pass(ctx, &p);
+    p.lat = transpose(lat);
+    p.dst[0] = plane; p.src[0] = temp;
+    run_pass(ctx, &p);
+}
+
+static void compose_decimated(AVFilterContext *ctx, float *plane, float *temp, Lattice lat)
+{
+    WaveletPass p = { PASS_COMPOSE_DECIMATED, transpose(lat), { temp }, { plane } };
+
+    run_pass(ctx, &p);
+    p.lat = lat;
+    p.dst[0] = plane; p.src[0] = temp;
+    run_pass(ctx, &p);
+}
+
 static void box_filter(AVFilterContext *ctx, float *plane, float *temp, int step, Lattice lat)
 {
     WaveletPass p = { PASS_BOX, lat, { temp }, { plane }, NULL, step };
@@ -393,7 +426,7 @@ static void shrink_band(AVFilterContext *ctx, float *band, const float *var, flo
     run_pass(ctx, &p);
 }
 
-static void transform(AVFilterContext *ctx, float *cur, float *var, int levels, Lattice lat)
+static void transform_undecimated(AVFilterContext *ctx, float *cur, float *var, int levels, Lattice lat)
 {
     VignetteContext *s = ctx->priv;
     const size_t plane_size = s->wplane_size;
@@ -425,6 +458,40 @@ static void transform(AVFilterContext *ctx, float *cur, float *var, int levels, 
     }
 }
 
+/**
+ * Lattice of the lowpass coefficients of the given level of a decimated transform
+ */
+static Lattice level_lattice(Lattice lat, int level)
+{
+    return (Lattice){ lat.xstride << level, lat.ystride << level,
+                      AV_CEIL_RSHIFT(lat.w, level), AV_CEIL_RSHIFT(lat.h, level) };
+}
+
+static void transform_decimated(AVFilterContext *ctx, float *cur, float *var, int levels, Lattice lat)
+{
+    VignetteContext *s = ctx->priv;
+    const size_t plane_size = s->wplane_size;
+    float *temp[3] = { var + plane_size, var + 2 * plane_size, var + 3 * plane_size };
+
+    for (int i = 0; i < levels; i++) {
+        const Lattice level = level_lattice(lat, i);
+
+        decompose_decimated(ctx, cur, temp[0], ff_wavelet97_coeff, level);
+        decompose_decimated(ctx, var, temp[0], s->sqcoeff,         level);
+        for (int j = 1; j < 4; j++) {
+            const int offset = (j & 1) * level.xstride + (j >> 1) * level.ystride;
+            const Lattice band = { 2 * level.xstride, 2 * level.ystride,
+                                   (level.w + !(j & 1)) / 2, (level.h + !(j >> 1)) / 2 };
+            float *scratch[3] = { temp[0] + offset, temp[1] + offset, temp[2] + offset };
+
+            shrink_band(ctx, cur + offset, var + offset, scratch, 1, band);
+        }
+    }
+
+    for (int i = levels - 1; i >= 0; i--)
+        compose_decimated(ctx, cur, temp[0], level_lattice(lat, i));
+}
+
 static void filter_plane_wavelet(AVFilterContext *ctx,
                                  uint8_t *dst, int dst_linesize,
                                  const uint8_t *src, int src_linesize, int pixel_step,
@@ -446,7 +513,10 @@ static void filter_plane_wavelet(AVFilterContext *ctx,
         }
     }
 
-    transform(ctx, cur, var, wavelet_levels(w, h), lat);
+    if (s->decimated)
+        transform_decimated(ctx, cur, var, wavelet_levels(w, h), lat);
+    else
+        transform_undecimated(ctx, cur, var, wavelet_levels(w, h), lat);
 
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -597,7 +667,7 @@ static int config_props(AVFilterLink *inlink)
 
     if (s->mode == MODE_WAVELET) {
         s->wplane_size = (size_t)s->fmap_linesize * inlink->h;
-        s->wplanes = av_malloc_array(s->wplane_size, (9 + 3 * wavelet_levels(inlink->w, inlink->h)) * sizeof(*s->wplanes));
+        s->wplanes = av_malloc_array(s->wplane_size, (s->decimated ? 5 : 9 + 3 * wavelet_levels(inlink->w, inlink->h)) * sizeof(*s->wplanes));
         if (!s->wplanes)
             return AVERROR(ENOMEM);
     }
