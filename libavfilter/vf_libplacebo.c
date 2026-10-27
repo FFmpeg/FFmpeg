@@ -262,6 +262,7 @@ typedef struct LibplaceboContext {
     int gamut_mode;
     int tonemapping;
     float tonemapping_param;
+    struct pl_tone_map_constants tone_constants;
     int inverse_tonemapping;
     int tonemapping_lut_size;
     float contrast_recovery;
@@ -434,10 +435,39 @@ static int update_settings(AVFilterContext *ctx)
         .percentile = s->percentile,
     };
 
+    struct pl_tone_map_constants tone_constants = s->tone_constants;
+    if (s->tonemapping_param) {
+        switch (s->tonemapping) {
+        case TONE_MAP_ST2094_40:
+        case TONE_MAP_ST2094_10:
+            tone_constants.knee_adaptation = s->tonemapping_param;
+            break;
+        case TONE_MAP_BT2390:
+            tone_constants.knee_offset = s->tonemapping_param;
+            break;
+        case TONE_MAP_AUTO:
+        case TONE_MAP_SPLINE:
+            tone_constants.spline_contrast = s->tonemapping_param;
+            break;
+        case TONE_MAP_REINHARD:
+            tone_constants.reinhard_contrast = s->tonemapping_param;
+            break;
+        case TONE_MAP_MOBIUS:
+        case TONE_MAP_GAMMA:
+            tone_constants.linear_knee = s->tonemapping_param;
+            break;
+        case TONE_MAP_LINEAR:
+            tone_constants.exposure = s->tonemapping_param;
+            break;
+        default:
+            break;
+        }
+    }
+
     opts->color_map_params = (struct pl_color_map_params) {
         PL_COLOR_MAP_DEFAULTS
         .tone_mapping_function = get_tonemapping_func(s->tonemapping),
-        .tone_mapping_param = s->tonemapping_param,
+        .tone_constants = tone_constants,
         .inverse_tone_mapping = s->inverse_tonemapping,
         .lut_size = s->tonemapping_lut_size,
         .contrast_recovery = s->contrast_recovery,
@@ -1891,7 +1921,18 @@ static const AVOption libplacebo_options[] = {
         { "hable", "Filmic tone-mapping (Hable)", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_HABLE}, 0, 0, STATIC, .unit = "tonemap" },
         { "gamma", "Gamma function with knee", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_GAMMA}, 0, 0, STATIC, .unit = "tonemap" },
         { "linear", "Perceptually linear stretch", 0, AV_OPT_TYPE_CONST, {.i64 = TONE_MAP_LINEAR}, 0, 0, STATIC, .unit = "tonemap" },
-    { "tonemapping_param", "Tunable parameter for some tone-mapping functions", OFFSET(tonemapping_param), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 100.0, .flags = DYNAMIC },
+    { "tonemapping_param", "Tunable parameter for some tone-mapping functions; use the corresponding tonemapping_* options instead", OFFSET(tonemapping_param), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 100.0, .flags = DYNAMIC | AV_OPT_FLAG_DEPRECATED },
+    { "tonemapping_knee_adaptation", "Scene-average knee point adaptation", OFFSET(tone_constants.knee_adaptation), AV_OPT_TYPE_FLOAT, {.dbl = 0.4}, 0.0, 1.0, DYNAMIC },
+    { "tonemapping_knee_minimum", "Minimum knee point in PQ space", OFFSET(tone_constants.knee_minimum), AV_OPT_TYPE_FLOAT, {.dbl = 0.1}, 0.0, 0.5, DYNAMIC },
+    { "tonemapping_knee_maximum", "Maximum knee point in PQ space", OFFSET(tone_constants.knee_maximum), AV_OPT_TYPE_FLOAT, {.dbl = 0.8}, 0.5, 1.0, DYNAMIC },
+    { "tonemapping_knee_default", "Fallback knee point without scene average metadata", OFFSET(tone_constants.knee_default), AV_OPT_TYPE_FLOAT, {.dbl = 0.4}, 0.0, 1.0, DYNAMIC },
+    { "tonemapping_knee_offset", "BT.2390 knee point offset", OFFSET(tone_constants.knee_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.5, 2.0, DYNAMIC },
+    { "tonemapping_slope_tuning", "Spline slope tuning", OFFSET(tone_constants.slope_tuning), AV_OPT_TYPE_FLOAT, {.dbl = 1.5}, 0.0, 10.0, DYNAMIC },
+    { "tonemapping_slope_offset", "Spline slope offset", OFFSET(tone_constants.slope_offset), AV_OPT_TYPE_FLOAT, {.dbl = 0.2}, 0.0, 1.0, DYNAMIC },
+    { "tonemapping_spline_contrast", "Spline curve contrast", OFFSET(tone_constants.spline_contrast), AV_OPT_TYPE_FLOAT, {.dbl = 0.5}, 0.0, 1.5, DYNAMIC },
+    { "tonemapping_reinhard_contrast", "Reinhard contrast at the display peak", OFFSET(tone_constants.reinhard_contrast), AV_OPT_TYPE_FLOAT, {.dbl = 0.5}, 0.0, 1.0, DYNAMIC },
+    { "tonemapping_linear_knee", "Linear-light knee point for Mobius and gamma", OFFSET(tone_constants.linear_knee), AV_OPT_TYPE_FLOAT, {.dbl = 0.3}, 0.0, 1.0, DYNAMIC },
+    { "tonemapping_exposure", "Exposure for linear tone mapping", OFFSET(tone_constants.exposure), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 10.0, DYNAMIC },
     { "inverse_tonemapping", "Inverse tone mapping (range expansion)", OFFSET(inverse_tonemapping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "tonemapping_lut_size", "Tone-mapping LUT size", OFFSET(tonemapping_lut_size), AV_OPT_TYPE_INT, {.i64 = 256}, 2, 1024, DYNAMIC },
     { "contrast_recovery", "HDR contrast recovery strength", OFFSET(contrast_recovery), AV_OPT_TYPE_FLOAT, {.dbl = 0.30}, 0.0, 3.0, DYNAMIC },
