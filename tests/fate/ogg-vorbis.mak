@@ -7,6 +7,19 @@ fate-ogg-vorbis-copy-chained-meta: $(APITESTSDIR)/api-dump-stream-meta-test$(EXE
 fate-ogg-vorbis-copy-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-vorbis-chained-meta.txt
 fate-ogg-vorbis-copy-chained-meta: CMD = run_with_temp "$(FFMPEG) -nostdin -hide_banner -loglevel quiet -i $(TARGET_SAMPLES)/ogg-vorbis/chained-meta.ogg -c copy -f ogg -y" "$(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF)" ogg
 
+# Chain two streams cut from the same sample, the second one with a comment
+# header larger than 64 KiB (as with embedded cover art).
+FATE_OGG_COPY_VORBIS-$(call FRAMECRC, OGG FFMETADATA, VORBIS, OGG_MUXER CONCAT_PROTOCOL) += fate-ogg-vorbis-chained-large-comment
+fate-ogg-vorbis-chained-large-comment: CMD = \
+    cleanfiles="$${cleanfiles} $${outfile}.txt $${outfile}.1.ogg $${outfile}.2.ogg"; \
+    printf ";FFMETADATA1\ncomment=%070000d\n" 0 > "$${outfile}.txt" && \
+    ffmpeg -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c copy -t 0.5 -fflags +bitexact \
+        -y "$$(target_path "$${outfile}.1.ogg")" && \
+    ffmpeg -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -i "$$(target_path "$${outfile}.txt")" \
+        -map 0 -map_metadata 1 -c copy -t 0.5 -fflags +bitexact -serial_offset 1 \
+        -y "$$(target_path "$${outfile}.2.ogg")" && \
+    framecrc -i "concat:$$(target_path "$${outfile}.1.ogg")|$$(target_path "$${outfile}.2.ogg")" -c copy
+
 FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS) += fate-ogg-vorbis-initial-padding-chained
 fate-ogg-vorbis-initial-padding-chained: CMD = ffprobe_demux -of default -show_entries stream=codec_name,initial_padding $(TARGET_SAMPLES)/ogg-vorbis/chained-meta.ogg
 
