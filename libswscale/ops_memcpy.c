@@ -42,7 +42,6 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
                            int x_start, int y_start, int x_end, int y_end)
 {
     const MemcpyPriv *p = priv;
-    const int lines = y_end - y_start;
     av_assert1(x_start == 0 && x_end == exec->width);
 
     for (int i = 0; i < p->num_planes; i++) {
@@ -57,21 +56,23 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
             continue; /* plane was already ref'd */
         }
 
-        const int bytes = x_end * exec->block_size_out[i];
-        const int use_loop = out_stride < 0 ||
-                             out_stride > bytes + SWS_MAX_PADDING;
-        const size_t span = (size_t) (lines - 1) * out_stride + bytes;
-        if (!in && !use_loop) {
-            memset(out, p->clear_value[i], span);
-        } else if (!in) {
-            for (int y = y_start; y < y_end; y++) {
+        size_t bytes = x_end * exec->block_size_out[i];
+        int lines = y_end - y_start;
+
+        /* Replace the per-line loop with a bulk memset/memcpy when possible. */
+        if ((!in || out_stride == in_stride) &&
+            out_stride >= 0 && (size_t) out_stride <= bytes + SWS_MAX_PADDING) {
+            bytes += (size_t) (lines - 1) * out_stride;
+            lines = 1;
+        }
+
+        if (!in) {
+            for (int y = 0; y < lines; y++) {
                 memset(out, p->clear_value[i], bytes);
                 out += out_stride;
             }
-        } else if (out_stride == in_stride && !use_loop) {
-            memcpy(out, in, span);
         } else {
-            for (int y = y_start; y < y_end; y++) {
+            for (int y = 0; y < lines; y++) {
                 memcpy(out, in, bytes);
                 out += out_stride;
                 in  += in_stride;
