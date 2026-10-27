@@ -279,7 +279,8 @@ static int get_buffer(AVFrame *frame, int align)
     if (ret < 0 || align >= 0)
         return ret;
 
-    for (int p = 0; p < av_pix_fmt_count_planes(frame->format); p++) {
+    const int nb_planes = av_pix_fmt_count_planes(frame->format);
+    for (int p = 0; p < nb_planes; p++) {
         const int is_chroma = p == 1 || p == 2;
         const int h = is_chroma ? AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h)
                                 : frame->height;
