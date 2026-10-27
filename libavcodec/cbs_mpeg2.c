@@ -319,7 +319,7 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
         av_assert0(slice->data_bit_start >= 0 &&
                    slice->data_size > slice->data_bit_start / 8);
 
-        if (slice->data_size * 8 + 8 > put_bits_left(pbc))
+        if (slice->data_size + 1 > put_bits_left(pbc) / 8)
             return AVERROR(ENOSPC);
 
         // First copy the remaining bits of the first byte
