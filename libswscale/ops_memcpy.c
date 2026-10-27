@@ -60,9 +60,16 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
         int lines = y_end - y_start;
 
         /* Replace the per-line loop with a bulk memset/memcpy when possible. */
+        const size_t abs_stride = FFABS(out_stride);
         if ((!in || out_stride == in_stride) &&
-            out_stride >= 0 && (size_t) out_stride <= bytes + SWS_MAX_PADDING) {
-            bytes += (size_t) (lines - 1) * out_stride;
+            abs_stride <= bytes + SWS_MAX_PADDING) {
+            if (out_stride < 0) {
+                const ptrdiff_t offset = (lines - 1) * out_stride;
+                out += offset;
+                if (in)
+                    in += offset;
+            }
+            bytes += (lines - 1) * abs_stride;
             lines = 1;
         }
 
