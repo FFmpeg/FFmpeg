@@ -46,30 +46,32 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
     av_assert1(x_start == 0 && x_end == exec->width);
 
     for (int i = 0; i < p->num_planes; i++) {
-        uint8_t *out = exec->out[i];
-        const int idx = p->index[i];
+        uint8_t         *out        = exec->out[i];
+        const ptrdiff_t  out_stride = exec->out_stride[i];
+        const int        idx        = p->index[i];
+        const uint8_t   *in         = (idx >= 0) ? exec->in[idx] : NULL;
+        const ptrdiff_t  in_stride  = (idx >= 0) ? exec->in_stride[idx] : 0;
         const int bytes = x_end * exec->block_size_out[i];
-        const int use_loop = exec->out_stride[i] < 0 ||
-                             exec->out_stride[i] > bytes + SWS_MAX_PADDING;
-        const size_t span = (size_t) (lines - 1) * exec->out_stride[i] + bytes;
-        if (idx < 0 && !use_loop) {
+        const int use_loop = out_stride < 0 ||
+                             out_stride > bytes + SWS_MAX_PADDING;
+        const size_t span = (size_t) (lines - 1) * out_stride + bytes;
+        if (!in && !use_loop) {
             memset(out, p->clear_value[i], span);
-        } else if (idx < 0) {
+        } else if (!in) {
             for (int y = y_start; y < y_end; y++) {
                 memset(out, p->clear_value[i], bytes);
-                out += exec->out_stride[i];
+                out += out_stride;
             }
-        } else if (out == exec->in[idx]) {
-            av_assert1(exec->out_stride[i] == exec->in_stride[idx]);
+        } else if (out == in) {
+            av_assert1(out_stride == in_stride);
             continue; /* plane was already ref'd */
-        } else if (exec->out_stride[i] == exec->in_stride[idx] && !use_loop) {
-            memcpy(out, exec->in[idx], span);
+        } else if (out_stride == in_stride && !use_loop) {
+            memcpy(out, in, span);
         } else {
-            const uint8_t *in = exec->in[idx];
             for (int y = y_start; y < y_end; y++) {
                 memcpy(out, in, bytes);
-                out += exec->out_stride[i];
-                in  += exec->in_stride[idx];
+                out += out_stride;
+                in  += in_stride;
             }
         }
     }
