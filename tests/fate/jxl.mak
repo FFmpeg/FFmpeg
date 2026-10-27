@@ -22,6 +22,10 @@ fate-jxl-small-ext-box: CMD = framecrc -i $(TARGET_SAMPLES)/jxl/l.jxl -c copy
 FATE_JPEGXL_PARSE += fate-jxl-multiframe-permuted-toc
 fate-jxl-multiframe-permuted-toc: CMD = framecrc -i $(TARGET_SAMPLES)/jxl/orange.jxl -c copy
 
+# two concatenated images, the first ends with an empty box, the last box of the second has size 0
+FATE_JPEGXL_PARSE += fate-jxl-parse-empty-box
+fate-jxl-parse-empty-box: CMD = framecrc -f jpegxl_pipe -i $(TARGET_SAMPLES)/jxl/concat-empty-box.jxl -c copy
+
 FATE_JPEGXL_PARSE += $(FATE_JPEGXL_PARSE-yes)
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, IMAGE_JPEGXL_PIPE, , JPEGXL_PARSER) += $(FATE_JPEGXL_PARSE)
 fate-jxl-parse: $(FATE_JPEGXL_PARSE)

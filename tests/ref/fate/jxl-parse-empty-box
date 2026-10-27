@@ -1,0 +1,7 @@
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: jpegxl
+#dimensions 0: 768x512
+#sar 0: 0/1
+0,          0,          0,        1,       80, 0xd74d1418
+0,          1,          1,        1,       72, 0x39d01246
