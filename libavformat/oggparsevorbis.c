@@ -463,7 +463,6 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     int duration, flags = 0;
     int bos, skip_packet = 0;
     int ret, new_extradata_size;
-    PutByteContext pb;
 
     if (os->psize == 0)
         return AVERROR_INVALIDDATA;
@@ -609,20 +608,32 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     /* All three headers for the new chained stream have been collected;
      * pack them into new extradata to be attached to the next data packet. */
     if (priv->header && priv->comment && priv->setup) {
-        new_extradata_size = priv->header_size + priv->comment_size + priv->setup_size + 6;
+        uint64_t total_size = (uint64_t)priv->header_size + priv->comment_size +
+                              priv->setup_size;
+        uint8_t *p;
+
+        /* Use Xiph lacing like vorbis_header() does: 16-bit sizes cannot
+         * describe headers larger than 64 KiB, e.g. a comment header with
+         * embedded cover art. */
+        if (total_size + total_size / 255 + 3 > INT_MAX)
+            return AVERROR_INVALIDDATA;
+        new_extradata_size = 1 + priv->header_size / 255 + 1 +
+                             priv->comment_size / 255 + 1 + total_size;
 
         ret = av_reallocp(&os->new_extradata, new_extradata_size);
         if (ret < 0)
             return ret;
 
         os->new_extradata_size = new_extradata_size;
-        bytestream2_init_writer(&pb, os->new_extradata, new_extradata_size);
-        bytestream2_put_be16(&pb, priv->header_size);
-        bytestream2_put_buffer(&pb, priv->header, priv->header_size);
-        bytestream2_put_be16(&pb, priv->comment_size);
-        bytestream2_put_buffer(&pb, priv->comment, priv->comment_size);
-        bytestream2_put_be16(&pb, priv->setup_size);
-        bytestream2_put_buffer(&pb, priv->setup, priv->setup_size);
+        p     = os->new_extradata;
+        *p++  = 2;
+        p    += av_xiphlacing(p, priv->header_size);
+        p    += av_xiphlacing(p, priv->comment_size);
+        memcpy(p, priv->header, priv->header_size);
+        p    += priv->header_size;
+        memcpy(p, priv->comment, priv->comment_size);
+        p    += priv->comment_size;
+        memcpy(p, priv->setup, priv->setup_size);
 
         av_freep(&priv->header);
         priv->header_size = 0;
