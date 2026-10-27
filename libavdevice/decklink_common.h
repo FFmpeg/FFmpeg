@@ -103,6 +103,11 @@ static inline bool DECKLINK_IsEqualIID(const REFIID& riid1, const REFIID& riid2)
 }
 #endif
 
+#ifdef __APPLE__
+/* The macOS SDK only provides IUnknownUUID. */
+#define IID_IUnknown CFUUIDGetUUIDBytes(IUnknownUUID)
+#endif
+
 class decklink_output_callback;
 class decklink_input_callback;
 
