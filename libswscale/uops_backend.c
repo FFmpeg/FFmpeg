@@ -106,9 +106,9 @@ static const SwsUOpTable uop_table = {
     },
 };
 
-static void process(const SwsOpExec *exec, const void *priv,
-                    const int bx_start, const int y_start,
-                    int bx_end, int y_end)
+static void process_c(const SwsOpExec *exec, const void *priv,
+                      const int bx_start, const int y_start,
+                      int bx_end, int y_end)
 {
     const SwsOpChain *chain = priv;
     const SwsOpImpl *impl = chain->impl;
@@ -159,7 +159,7 @@ static int compile_uops_c(SwsContext *ctx, const SwsUOpList *uops, SwsCompiledOp
         .cpu_flags   = chain->cpu_flags,
         .priv        = chain,
         .free        = ff_sws_op_chain_free_cb,
-        .func        = process,
+        .func        = process_c,
     };
 
     memcpy(out->over_read,  chain->over_read,  sizeof(out->over_read));
