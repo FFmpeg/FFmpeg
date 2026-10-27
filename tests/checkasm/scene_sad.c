@@ -59,6 +59,26 @@ static void check_scene_sad(int depth)
                     depth, (unsigned long long) sum1, (unsigned long long) sum2);
             fail();
         }
+        if (depth == 8) {
+            for (int offset1 = 0; offset1 < 16; offset1++) {
+                for (int offset2 = 0; offset2 < 16; offset2++) {
+                    /* Odd strides also exercise unaligned rows. */
+                    call_ref(src1 + offset1, STRIDE - 1,
+                             src2 + offset2, STRIDE - 3,
+                             width - 17, HEIGHT, &sum1);
+                    call_new(src1 + offset1, STRIDE - 1,
+                             src2 + offset2, STRIDE - 3,
+                             width - 17, HEIGHT, &sum2);
+                    if (sum1 != sum2) {
+                        fprintf(stderr, "scene_sad8: sum mismatch at offsets "
+                                "%d/%d: %llu != %llu\n", offset1, offset2,
+                                (unsigned long long) sum1,
+                                (unsigned long long) sum2);
+                        fail();
+                    }
+                }
+            }
+        }
         bench_new(src1, STRIDE, src2, STRIDE, width, HEIGHT, &sum2);
     }
 }
