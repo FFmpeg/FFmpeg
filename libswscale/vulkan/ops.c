@@ -787,7 +787,8 @@ static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
     if (!vk_fmts)
         return AVERROR(ENOTSUP);
 
-    for (int i = 0; i < av_pix_fmt_count_planes(fmt); i++) {
+    const int nb_planes = av_pix_fmt_count_planes(fmt);
+    for (int i = 0; i < nb_planes; i++) {
         view_fmts[i] = word_fmt ? word_fmt : ff_vk_map_fmt_to_rep(vk_fmts[i], rep);
         if (view_fmts[i] == VK_FORMAT_UNDEFINED)
             return AVERROR(ENOTSUP);
@@ -800,8 +801,9 @@ static int get_view_fmts(VkFormat view_fmts[AV_NUM_DATA_POINTERS],
  * have to cover the highest plane referenced, not just the plane count. */
 static int rw_op_img_count(const SwsOp *op, const uint8_t *planes)
 {
+    const int nb_planes = ff_sws_rw_op_planes(op);
     int count = 0;
-    for (int i = 0; i < ff_sws_rw_op_planes(op); i++)
+    for (int i = 0; i < nb_planes; i++)
         count = FFMAX(count, planes[i] + 1);
     return count;
 }
