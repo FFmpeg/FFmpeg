@@ -51,6 +51,12 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
         const int        idx        = p->index[i];
         const uint8_t   *in         = (idx >= 0) ? exec->in[idx] : NULL;
         const ptrdiff_t  in_stride  = (idx >= 0) ? exec->in_stride[idx] : 0;
+
+        if (out == in) {
+            av_assert1(out_stride == in_stride);
+            continue; /* plane was already ref'd */
+        }
+
         const int bytes = x_end * exec->block_size_out[i];
         const int use_loop = out_stride < 0 ||
                              out_stride > bytes + SWS_MAX_PADDING;
@@ -62,9 +68,6 @@ static void process_memcpy(const SwsOpExec *exec, const void *priv,
                 memset(out, p->clear_value[i], bytes);
                 out += out_stride;
             }
-        } else if (out == in) {
-            av_assert1(out_stride == in_stride);
-            continue; /* plane was already ref'd */
         } else if (out_stride == in_stride && !use_loop) {
             memcpy(out, in, span);
         } else {
