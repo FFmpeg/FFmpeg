@@ -179,7 +179,7 @@ error:
            av_err2str(err));
 }
 
-static void free_fn(void *priv)
+static void spirv_free(void *priv)
 {
     VulkanPriv *p = priv;
     ff_vk_exec_pool_free(&p->s->vkctx, &p->e);
@@ -1312,7 +1312,7 @@ static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
         .opaque      = true,
         .func_opaque = spirv_process,
         .priv        = p,
-        .free        = free_fn,
+        .free        = spirv_free,
     };
 
     av_log(sws, AV_LOG_DEBUG, "Compiled micro-ops:\n");
@@ -1327,7 +1327,7 @@ static int compile_spirv(SwsContext *sws, const SwsOpList *ops,
 
 fail:
     ff_sws_uop_list_free(&uops);
-    free_fn(p);
+    spirv_free(p);
     return err;
 }
 
