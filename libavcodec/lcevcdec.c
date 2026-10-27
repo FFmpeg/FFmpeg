@@ -145,6 +145,31 @@ static int alloc_enhanced_frame(FFLCEVCFrame *frame_ctx,
     return 0;
 }
 
+static int lcevc_flush_pictures(FFLCEVCContext *lcevc)
+{
+    LCEVC_PictureHandle picture;
+    LCEVC_ReturnCode res;
+
+    while (1) {
+        AVFrame *base = NULL;
+        res = LCEVC_ReceiveDecoderBase (lcevc->decoder, &picture);
+        if (res != LCEVC_Success && res != LCEVC_Again)
+            return AVERROR_EXTERNAL;
+
+        if (res == LCEVC_Again)
+            break;
+
+        LCEVC_GetPictureUserData(lcevc->decoder, picture, (void **)&base);
+        av_frame_free(&base);
+
+        res = LCEVC_FreePicture(lcevc->decoder, picture);
+        if (res != LCEVC_Success)
+            return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
 static int lcevc_send_frame(FFLCEVCFrame *frame_ctx, const AVFrame *in)
 {
     FFLCEVCContext *lcevc = frame_ctx->lcevc;
@@ -266,31 +291,6 @@ static int generate_output(FFLCEVCFrame *frame_ctx, AVFrame *out)
     res = LCEVC_FreePicture(lcevc->decoder, picture);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
-
-    return 0;
-}
-
-static int lcevc_flush_pictures(FFLCEVCContext *lcevc)
-{
-    LCEVC_PictureHandle picture;
-    LCEVC_ReturnCode res;
-
-    while (1) {
-        AVFrame *base = NULL;
-        res = LCEVC_ReceiveDecoderBase (lcevc->decoder, &picture);
-        if (res != LCEVC_Success && res != LCEVC_Again)
-            return AVERROR_EXTERNAL;
-
-        if (res == LCEVC_Again)
-            break;
-
-        LCEVC_GetPictureUserData(lcevc->decoder, picture, (void **)&base);
-        av_frame_free(&base);
-
-        res = LCEVC_FreePicture(lcevc->decoder, picture);
-        if (res != LCEVC_Success)
-            return AVERROR_EXTERNAL;
-    }
 
     return 0;
 }
