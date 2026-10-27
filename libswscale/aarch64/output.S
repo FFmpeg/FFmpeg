@@ -165,7 +165,7 @@ function ff_yuv2planeX_10_neon, export=1
         ldr             x14, [x12], #8                  // Load src pointer
         ldrsh           w15, [x13], #2                  // Load filter coefficient
         add             x14, x14, x7, lsl #1            // Add pixel offset
-        ldrh            w16, [x14]
+        ldrsh           w16, [x14]
 
         sxtw            x16, w16
         sxtw            x15, w15
