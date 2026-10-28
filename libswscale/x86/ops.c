@@ -622,12 +622,6 @@ do {                                                                            
     return 0;
 }
 
-static void normalize_clear(SwsUOp *uop)
-{
-    for (int i = 0; i < 4; i++)
-        uop->data.vec4[i] = ff_sws_pixel_expand32(uop->type, uop->data.vec4[i]);
-}
-
 static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiledOp *out)
 {
     int ret, mmsize = get_mmsize();
@@ -662,8 +656,6 @@ static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiled
         int op_block_size = out->block_size;
 
         if (uop_is_type_invariant(uop->uop)) {
-            if (uop->uop == SWS_UOP_CLEAR)
-                normalize_clear(uop);
             op_block_size *= ff_sws_pixel_type_size(uop->type);
             uop->type = SWS_PIXEL_U8;
         }
