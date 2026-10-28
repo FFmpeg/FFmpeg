@@ -186,7 +186,7 @@ static int parse_time_code_rate(AVFormatContext *s, AVStream *st, TimeTracker *t
             return time_tracker_init(tt, st, valid_time_code_rates[i].rate, s);
         }
     }
-    av_log(s, AV_LOG_FATAL, "invalid mcc time code rate: %s", time_code_rate);
+    av_log(s, AV_LOG_FATAL, "invalid mcc time code rate: %s\n", time_code_rate);
     return AVERROR_INVALIDDATA;
 }
 
@@ -292,7 +292,7 @@ static int mcc_read_header(AVFormatContext *s)
         MCCTimecode tc;
         ret = mcc_parse_time_code(&line_left, &tc);
         if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "can't parse mcc time code");
+            av_log(s, AV_LOG_ERROR, "can't parse mcc time code\n");
             continue;
         }
 
