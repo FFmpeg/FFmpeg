@@ -1,5 +1,5 @@
-7cab095419286aec7affcf4eb697f4c9 *tests/data/fate/jpeg-mpf-gainmap.jpeg_mpf
-5653 tests/data/fate/jpeg-mpf-gainmap.jpeg_mpf
+a94724be0101759474066d233ef14001 *tests/data/fate/jpeg-mpf-gainmap.jpeg_mpf
+5649 tests/data/fate/jpeg-mpf-gainmap.jpeg_mpf
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
@@ -10,7 +10,7 @@
 #codec_id 1: rawvideo
 #dimensions 1: 64x48
 #sar 1: 1/1
-0,          0,          0,        1,     9216, 0xdfa842b3
+0,          0,          0,        1,     9216, 0xe5834dd7
 1,          0,          0,        1,     9216, 0x662fcc6a
 frame|stream_index=0
 frame|stream_index=1|side_datum/gain_map_parameters:side_data_type=Gain map parameters|side_datum/gain_map_parameters:version=0|side_datum/gain_map_parameters:use_base_color_space=1|side_datum/gain_map_parameters:base_hdr_headroom=0/1|side_datum/gain_map_parameters:alternate_hdr_headroom=5895489/1048576|component_entry/rgb:gain_map_min=-3392315/4194304|component_entry/rgb:gain_map_max=13278945/2097152|component_entry/rgb:gamma=691797/1048576|component_entry/rgb:base_offset=1/64|component_entry/rgb:alternate_offset=1/64

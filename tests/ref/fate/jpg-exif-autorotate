@@ -1,11 +1,11 @@
-91c8b8fb4ed6aeaa7eeb241508fee8c2 *tests/data/fate/jpg-exif-autorotate.image2
-90658 tests/data/fate/jpg-exif-autorotate.image2
+2360f445d5ca4a79c176f4be2ebe2de6 *tests/data/fate/jpg-exif-autorotate.image2
+90660 tests/data/fate/jpg-exif-autorotate.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 300x200
 #sar 0: 1/1
-0,          0,          0,        1,    90000, 0x85315584
+0,          0,          0,        1,    90000, 0x587421ed
 [FRAME]
 media_type=video
 stream_index=0
@@ -19,7 +19,7 @@ best_effort_timestamp_time=0.000000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=90658
+pkt_size=90660
 width=300
 height=200
 crop_top=0
@@ -45,12 +45,12 @@ TAG:ImageLength=    200
 TAG:BitsPerSample=      8,       8,       8
 TAG:Compression=  32773
 TAG:PhotometricInterpretation=      6
-TAG:StripOffsets=      8,    8085,   16195,   24339,   32486,   40643,   48791,   56934
-  65084,   73197,   81294,   89409
+TAG:StripOffsets=      8,    8085,   16195,   24340,   32487,   40644,   48793,   56936
+  65086,   73198,   81296,   89411
 TAG:SamplesPerPixel=      3
 TAG:RowsPerStrip=     18
-TAG:StripByteCounts=   8077,    8110,    8144,    8147,    8157,    8148,    8143,    8150
-   8113,    8097,    8115,     897
+TAG:StripByteCounts=   8077,    8110,    8145,    8147,    8157,    8149,    8143,    8150
+   8112,    8098,    8115,     897
 TAG:XResolution=     72:1      
 TAG:YResolution=     72:1      
 TAG:ResolutionUnit=      2

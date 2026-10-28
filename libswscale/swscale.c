@@ -598,6 +598,7 @@ int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[]
  */
 static void solve_range_convert(uint16_t src_min, uint16_t src_max,
                                 uint16_t dst_min, uint16_t dst_max,
+                                uint16_t src_ref, uint16_t dst_ref,
                                 int src_bits, int src_shift, int mult_shift,
                                 uint32_t *coeff, int64_t *offset)
 {
@@ -605,8 +606,8 @@ static void solve_range_convert(uint16_t src_min, uint16_t src_max,
     uint16_t dst_range = dst_max - dst_min;
     int total_shift = mult_shift + src_shift;
     *coeff = AV_CEIL_RSHIFT(((uint64_t) dst_range << total_shift) / src_range, src_shift);
-    *offset = ((int64_t) dst_max << total_shift) -
-              ((int64_t) src_max << src_shift) * *coeff +
+    *offset = ((int64_t) dst_ref << total_shift) -
+              ((int64_t) src_ref << src_shift) * *coeff +
               (1U << (mult_shift - 1));
 }
 
@@ -619,6 +620,7 @@ static void init_range_convert_constants(SwsInternal *c)
     const uint16_t mpeg_min = 16U << (bit_depth - 8);
     const uint16_t mpeg_max_lum = 235U << (bit_depth - 8);
     const uint16_t mpeg_max_chr = 240U << (bit_depth - 8);
+    const uint16_t chr_center = 128U << (bit_depth - 8);
     const uint16_t jpeg_max = (1U << bit_depth) - 1;
     uint16_t src_min, src_max_lum, src_max_chr;
     uint16_t dst_min, dst_max_lum, dst_max_chr;
@@ -638,9 +640,11 @@ static void init_range_convert_constants(SwsInternal *c)
         dst_max_chr = jpeg_max;
     }
     solve_range_convert(src_min, src_max_lum, dst_min, dst_max_lum,
+                        src_max_lum, dst_max_lum,
                         src_bits, src_shift, mult_shift,
                         &c->lumConvertRange_coeff, &c->lumConvertRange_offset);
     solve_range_convert(src_min, src_max_chr, dst_min, dst_max_chr,
+                        chr_center, chr_center,
                         src_bits, src_shift, mult_shift,
                         &c->chrConvertRange_coeff, &c->chrConvertRange_offset);
 }

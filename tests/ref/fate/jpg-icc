@@ -1,11 +1,11 @@
-b2cee4b7c68dc804cbd90fe9a0f895d5 *tests/data/fate/jpg-icc.mjpeg
-11002 tests/data/fate/jpg-icc.mjpeg
+1cc2f8fe008f2d401c68564529627a04 *tests/data/fate/jpg-icc.mjpeg
+11007 tests/data/fate/jpg-icc.mjpeg
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 128x128
 #sar 0: 1/1
-0,          0,          0,        1,    49152, 0x5d8a29e8
+0,          0,          0,        1,    49152, 0x98696b81
 [FRAME]
 media_type=video
 stream_index=0
@@ -19,7 +19,7 @@ best_effort_timestamp_time=0.000000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=11002
+pkt_size=11007
 width=128
 height=128
 crop_top=0

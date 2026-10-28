@@ -1,11 +1,11 @@
-e91d7401ba21087b06683672b0cdabd3 *tests/data/fate/jpg-exif-rotation-override.image2
-90688 tests/data/fate/jpg-exif-rotation-override.image2
+1435de70731f0776b1b6e29bde169d8c *tests/data/fate/jpg-exif-rotation-override.image2
+90692 tests/data/fate/jpg-exif-rotation-override.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 200x300
 #sar 0: 1/1
-0,          0,          0,        1,    90000, 0x373a5584
+0,          0,          0,        1,    90000, 0xb02221ed
 [FRAME]
 media_type=video
 stream_index=0
@@ -19,7 +19,7 @@ best_effort_timestamp_time=0.000000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=90688
+pkt_size=90692
 width=200
 height=300
 crop_top=0
@@ -50,7 +50,7 @@ TAG:StripOffsets=      8,    8464,   16902,   25347,   33787,   42187,   50628, 
 TAG:SamplesPerPixel=      3
 TAG:RowsPerStrip=     28
 TAG:StripByteCounts=   8456,    8438,    8445,    8440,    8400,    8441,    8451,    8415
-   8434,    8425,    5979
+   8434,    8425,    5983
 TAG:XResolution=     72:1      
 TAG:YResolution=     72:1      
 TAG:ResolutionUnit=      2
