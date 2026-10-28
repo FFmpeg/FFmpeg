@@ -264,7 +264,7 @@ static int h264_filter(AVBSFContext *ctx)
     AVPacket *in;
     int output_picture_number = INT_MIN;
     int field_poc[2];
-    int queued = 0, ret;
+    int queued = 0, nb_pictures = 0, ret;
 
     ret = ff_bsf_get_packet(ctx, &in);
     if (ret < 0)
@@ -340,6 +340,11 @@ static int h264_filter(AVBSFContext *ctx)
             }
 
             if (output_picture_number != h264->last_poc) {
+                if (++nb_pictures > 2) {
+                    av_log(ctx, AV_LOG_ERROR, "More than two pictures in a packet\n");
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
                 if (h264->last_poc != INT_MIN) {
                     int64_t diff = FFABS(h264->last_poc - (int64_t)output_picture_number);
 
