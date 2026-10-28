@@ -578,6 +578,20 @@ static void handle_init_section_args(void *context, const char *key,
     }
 }
 
+struct start_info {
+    char time_offset[MAX_FIELD_LEN];
+};
+
+static void handle_start_args(void *context, const char *key,
+                              int key_len, char **dest, int *dest_len)
+{
+    struct start_info *info = context;
+    if (!strncmp(key, "TIME-OFFSET=", key_len)) {
+        *dest     =        info->time_offset;
+        *dest_len = sizeof(info->time_offset);
+    }
+}
+
 struct rendition_info {
     char type[16];
     char uri[MAX_URL_SIZE];
@@ -1142,9 +1156,10 @@ static int parse_playlist(HLSContext *c, const char *url,
             }
 
         } else if (av_strstart(line, "#EXT-X-START:", &ptr)) {
-            const char *time_offset_value = NULL;
-            if (av_strstart(ptr, "TIME-OFFSET=", &time_offset_value)) {
-                double offset = strtod(time_offset_value, NULL) * AV_TIME_BASE;
+            struct start_info info = {0};
+            ff_parse_key_value(ptr, handle_start_args, &info);
+            if (info.time_offset[0]) {
+                double offset = strtod(info.time_offset, NULL) * AV_TIME_BASE;
                 if (offset >= -0x1p63 && offset < 0x1p63) {
                     start_time_offset = offset;
                     time_offset_flag  = 1;

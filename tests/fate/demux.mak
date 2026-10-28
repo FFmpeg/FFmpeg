@@ -243,7 +243,7 @@ tests/data/hls-start-master.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.5\n#EXT-X-TARGETDURATION:0\n#EXTINF:0.144,\nhls-start-0.ts\n#EXTINF:0.144,\nhls-start-1.ts\n#EXTINF:0.144,\nhls-start-2.ts\n#EXTINF:0.144,\nhls-start-3.ts\n' > tests/data/hls-start-media.m3u8
 	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.5\n#EXT-X-ENDLIST\n#EXT-X-TARGETDURATION:0\n#EXTINF:0.144,\nhls-start-0.ts\n#EXTINF:0.144,\nhls-start-1.ts\n#EXTINF:0.144,\nhls-start-2.ts\n#EXTINF:0.144,\nhls-start-3.ts\n' > tests/data/hls-start-endlist.m3u8
 	$(Q)printf '#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="a",URI="hls-start-rendition.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="a"\nhls-start-media.m3u8\n' > tests/data/hls-start-variant.m3u8
-	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.1\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="a",URI="hls-start-rendition.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="a"\nhls-start-media.m3u8\n' > $@
+	$(Q)printf '#EXTM3U\n#EXT-X-START:PRECISE=NO,TIME-OFFSET=0.1\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="a",URI="hls-start-rendition.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="a"\nhls-start-media.m3u8\n' > $@
 
 FATE_HLS_START = fate-hls-start-master-demux  \
                  fate-hls-start-variant-demux \
