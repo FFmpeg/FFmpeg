@@ -279,84 +279,22 @@ fate-aac-nmr-abr-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s
 fate-aac-nmr-abr-encode: CMP_TARGET = 451
 fate-aac-nmr-abr-encode: FUZZ = 15
 
-tests/data/fate/aac-5_1_2.adts: TAG = GEN
-tests/data/fate/aac-5_1_2.adts: tests/data/asynth-44100-8.wav
-tests/data/fate/aac-5_1_2.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "5.1.2(back)" -i $(TARGET_PATH)/tests/data/asynth-44100-8.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-5_1_4.adts: TAG = GEN
-tests/data/fate/aac-5_1_4.adts: tests/data/asynth-44100-10.wav
-tests/data/fate/aac-5_1_4.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "5.1.4" -i $(TARGET_PATH)/tests/data/asynth-44100-10.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-7_1_2.adts: TAG = GEN
-tests/data/fate/aac-7_1_2.adts: tests/data/asynth-44100-10.wav
-tests/data/fate/aac-7_1_2.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "7.1.2" -i $(TARGET_PATH)/tests/data/asynth-44100-10.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-5_1_6.adts: TAG = GEN
-tests/data/fate/aac-5_1_6.adts: tests/data/asynth-44100-12.wav
-tests/data/fate/aac-5_1_6.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "5.1.6" -i $(TARGET_PATH)/tests/data/asynth-44100-12.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-7_2_3.adts: TAG = GEN
-tests/data/fate/aac-7_2_3.adts: tests/data/asynth-44100-12.wav
-tests/data/fate/aac-7_2_3.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "7.2.3" -i $(TARGET_PATH)/tests/data/asynth-44100-12.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-7_1_4.adts: TAG = GEN
-tests/data/fate/aac-7_1_4.adts: tests/data/asynth-44100-12.wav
-tests/data/fate/aac-7_1_4.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "7.1.4" -i $(TARGET_PATH)/tests/data/asynth-44100-12.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-7_1_6.adts: TAG = GEN
-tests/data/fate/aac-7_1_6.adts: tests/data/asynth-44100-14.wav
-tests/data/fate/aac-7_1_6.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "7.1.6" -i $(TARGET_PATH)/tests/data/asynth-44100-14.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-9_1_4.adts: TAG = GEN
-tests/data/fate/aac-9_1_4.adts: tests/data/asynth-44100-14.wav
-tests/data/fate/aac-9_1_4.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "9.1.4" -i $(TARGET_PATH)/tests/data/asynth-44100-14.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
-tests/data/fate/aac-9_1_6.adts: TAG = GEN
-tests/data/fate/aac-9_1_6.adts: tests/data/asynth-44100-16.wav
-tests/data/fate/aac-9_1_6.adts: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-ch_layout "9.1.6" -i $(TARGET_PATH)/tests/data/asynth-44100-16.wav \
-	-c:a aac -aac_pce 1 -aframes 5 -f adts -y $(TARGET_PATH)/$@ 2>/dev/null
-
 define FATE_AAC_LAYOUT_TEST
 FATE_AAC_ENCODE_FFPROBE += fate-aac-encode-$(1)
-fate-aac-encode-$(1): tests/data/fate/aac-$(1).adts
-fate-aac-encode-$(1): CMD = probe -show_entries stream=codec_name,channel_layout $(TARGET_PATH)/tests/data/fate/aac-$(1).adts
+fate-aac-encode-$(1): tests/data/asynth-44100-$(3).wav
+fate-aac-encode-$(1): CMD = ffmpeg -auto_conversion_filters -ch_layout "$(2)" -i $(TARGET_PATH)/tests/data/asynth-44100-$(3).wav \
+    -c:a aac -aac_pce 1 -aframes 5 -f adts - | probe -count_packets -show_entries stream=codec_name,channel_layout pipe:
 endef
 
-$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_2))
-$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_4))
-$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_6))
-$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_2))
-$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_4))
-$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_6))
-$(eval $(call FATE_AAC_LAYOUT_TEST,7_2_3))
-$(eval $(call FATE_AAC_LAYOUT_TEST,9_1_4))
-$(eval $(call FATE_AAC_LAYOUT_TEST,9_1_6))
+$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_2,5.1.2(back),8))
+$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_4,5.1.4,10))
+$(eval $(call FATE_AAC_LAYOUT_TEST,5_1_6,5.1.6,12))
+$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_2,7.1.2,10))
+$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_4,7.1.4,12))
+$(eval $(call FATE_AAC_LAYOUT_TEST,7_1_6,7.1.6,14))
+$(eval $(call FATE_AAC_LAYOUT_TEST,7_2_3,7.2.3,12))
+$(eval $(call FATE_AAC_LAYOUT_TEST,9_1_4,9.1.4,14))
+$(eval $(call FATE_AAC_LAYOUT_TEST,9_1_6,9.1.6,16))
 
 FATE_AAC_LATM += fate-aac-latm_000000001180bc60
 fate-aac-latm_000000001180bc60: CMD = pcm -i $(TARGET_SAMPLES)/aac/latm_000000001180bc60.mpg
