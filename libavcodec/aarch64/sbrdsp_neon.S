@@ -200,37 +200,83 @@ endfunc
 function ff_sbr_hf_gen_neon, export=1
         sxtw            x4, w4
         sxtw            x5, w5
+        ld1             {v1.2s}, [x3]
+        ld1             {v2.2s}, [x2]
         movrel          x6, factors
         ld1             {v7.4s}, [x6]
-        dup             v1.4s, v0.s[0]
-        mov             v2.8b, v1.8b
-        mov             v2.s[2], v7.s[0]
-        mov             v2.s[3], v7.s[0]
-        fmul            v1.4s, v1.4s, v2.4s
-        ld1             {v0.d}[0], [x3]
-        ld1             {v0.d}[1], [x2]
-        fmul            v0.4s, v0.4s, v1.4s
-        fmul            v1.4s, v0.4s, v7.4s
-        rev64           v0.4s, v0.4s
+        fmul            v1.2s, v1.2s, v0.s[0]
+        fmul            v2.2s, v2.2s, v0.s[0]           // a2, a3
+        fmul            v1.2s, v1.2s, v0.s[0]           // a0, a1
+        fmul            v4.4s, v7.4s, v1.s[1]           // a1, -a1, a1, -a1
+        fmul            v5.4s, v7.4s, v2.s[1]           // a3, -a3, a3, -a3
         sub             x7, x5, x4
+        subs            x7, x7, #8
         add             x0, x0, x4, lsl #3
         add             x1, x1, x4, lsl #3
-        sub             x1, x1, #16
-1:      ld1             {v2.4s}, [x1], #16
-        ld1             {v3.2s}, [x1]
-        fmul            v4.4s, v2.4s, v1.4s
-        fmul            v5.4s, v2.4s, v0.4s
-        faddp           v4.4s, v4.4s, v4.4s
-        faddp           v5.4s, v5.4s, v5.4s
-        faddp           v4.4s, v4.4s, v4.4s
-        faddp           v5.4s, v5.4s, v5.4s
-        mov             v4.s[1], v5.s[0]
-        fadd            v4.2s, v4.2s, v3.2s
-        st1             {v4.2s}, [x0], #8
-        sub             x1, x1, #8
-        subs            x7, x7, #1
-        b.gt            1b
-        ret
+        b.lt            2f
+1:      ldr             q16, [x1, #-16]                 // X_low[i-2], X_low[i-1]
+        ld1             {v18.4s, v19.4s, v20.4s, v21.4s}, [x1], #64 // X_low[i] .. X_low[i+7]
+        subs            x7, x7, #8
+        ext             v22.16b, v16.16b, v18.16b, #8   // X_low[i-1], X_low[i]
+        ext             v23.16b, v18.16b, v19.16b, #8
+        ext             v24.16b, v19.16b, v20.16b, #8
+        ext             v25.16b, v20.16b, v21.16b, #8
+        rev64           v17.4s, v16.4s                  // swap re/im
+        rev64           v26.4s, v18.4s
+        rev64           v27.4s, v19.4s
+        rev64           v28.4s, v20.4s
+        rev64           v29.4s, v22.4s
+        rev64           v30.4s, v23.4s
+        rev64           v31.4s, v24.4s
+        rev64           v3.4s,  v25.4s
+        fmla            v21.4s, v20.4s, v1.s[0]
+        fmla            v20.4s, v19.4s, v1.s[0]
+        fmla            v19.4s, v18.4s, v1.s[0]
+        fmla            v18.4s, v16.4s, v1.s[0]
+        fmls            v21.4s, v28.4s, v4.4s
+        fmls            v20.4s, v27.4s, v4.4s
+        fmls            v19.4s, v26.4s, v4.4s
+        fmls            v18.4s, v17.4s, v4.4s
+        fmla            v21.4s, v25.4s, v2.s[0]
+        fmla            v20.4s, v24.4s, v2.s[0]
+        fmla            v19.4s, v23.4s, v2.s[0]
+        fmla            v18.4s, v22.4s, v2.s[0]
+        fmls            v21.4s, v3.4s,  v5.4s
+        fmls            v20.4s, v31.4s, v5.4s
+        fmls            v19.4s, v30.4s, v5.4s
+        fmls            v18.4s, v29.4s, v5.4s
+        st1             {v18.4s, v19.4s, v20.4s, v21.4s}, [x0], #64
+        b.ge            1b
+2:      tbz             w7, #2, 3f                      // 4 outputs left?
+        ldr             q16, [x1, #-16]
+        ld1             {v18.4s, v19.4s}, [x1], #32
+        ext             v22.16b, v16.16b, v18.16b, #8
+        ext             v24.16b, v18.16b, v19.16b, #8
+        rev64           v17.4s, v16.4s
+        rev64           v20.4s, v18.4s
+        rev64           v23.4s, v22.4s
+        rev64           v25.4s, v24.4s
+        fmla            v19.4s, v18.4s, v1.s[0]
+        fmla            v18.4s, v16.4s, v1.s[0]
+        fmls            v19.4s, v20.4s, v4.4s
+        fmls            v18.4s, v17.4s, v4.4s
+        fmla            v19.4s, v24.4s, v2.s[0]
+        fmla            v18.4s, v22.4s, v2.s[0]
+        fmls            v19.4s, v25.4s, v5.4s
+        fmls            v18.4s, v23.4s, v5.4s
+        st1             {v18.4s, v19.4s}, [x0], #32
+3:      tbz             w7, #1, 4f                      // 2 outputs left?
+        ldr             q16, [x1, #-16]
+        ld1             {v18.4s}, [x1]
+        ext             v22.16b, v16.16b, v18.16b, #8
+        rev64           v17.4s, v16.4s
+        rev64           v23.4s, v22.4s
+        fmla            v18.4s, v16.4s, v1.s[0]
+        fmls            v18.4s, v17.4s, v4.4s
+        fmla            v18.4s, v22.4s, v2.s[0]
+        fmls            v18.4s, v23.4s, v5.4s
+        st1             {v18.4s}, [x0]
+4:      ret
 endfunc
 
 function ff_sbr_hf_g_filt_neon, export=1
