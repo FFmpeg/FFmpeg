@@ -743,11 +743,7 @@ static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
         }
     }
 
-    ret = compile_single(args, ops, link, input, output);
-    if (ret != AVERROR(ENOTSUP))
-        goto fail; /* either success or a hard error */
-
-    /* Find any unresolved filter */
+    /* Split off any unresolved filters, since no backend implements these */
     for (int idx = 1; idx < ops->num_ops - 1; idx++) {
         const SwsOp *op = &ops->ops[idx];
         if (op->op == SWS_OP_FILTER_H || op->op == SWS_OP_FILTER_V) {
@@ -766,11 +762,11 @@ static int compile_subpass(const CompileArgs *args, SwsOpList **pops,
         }
     }
 
-    /* If we didn't find any more operations to eliminate, then this ops list
-     * is simply unsupported by any of the available backends */
-    av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
-    ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
-    ret = AVERROR(ENOTSUP);
+    ret = compile_single(args, ops, link, input, output);
+    if (ret == AVERROR(ENOTSUP)) {
+        av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
+        ff_sws_op_list_print(ctx, AV_LOG_WARNING, AV_LOG_TRACE, ops);
+    }
 
 fail:
     ff_sws_op_list_free(&ops);
