@@ -51,6 +51,7 @@ SHLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o
 TESTPROGS = colorspace                                                  \
             floatimg_cmp                                                \
             pixdesc_query                                               \
+            range_convert                                               \
             swscale                                                     \
             unscaled_threaded                                           \
 

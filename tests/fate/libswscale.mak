@@ -1,3 +1,7 @@
+FATE_LIBSWSCALE += fate-sws-range-convert
+fate-sws-range-convert: libswscale/tests/range_convert$(EXESUF)
+fate-sws-range-convert: CMD = run libswscale/tests/range_convert$(EXESUF)
+
 FATE_LIBSWSCALE += fate-sws-unscaled-threaded
 fate-sws-unscaled-threaded: libswscale/tests/unscaled_threaded$(EXESUF)
 fate-sws-unscaled-threaded: CMD = run libswscale/tests/unscaled_threaded$(EXESUF)
