@@ -1317,6 +1317,10 @@ static int parse_frame_header(void *avctx, JXLParseContext *ctx, GetBitContext *
     else
         toc_count = 2 + num_lf_groups + num_groups * num_passes;
 
+    /* each TOC entry takes at least 12 bits */
+    if ((int64_t)toc_count * 12 > get_bits_left(gb))
+        return AVERROR_BUFFER_TOO_SMALL;
+
     // permuted toc
     if (get_bits1(gb)) {
         JXLEntropyDecoder dec;
