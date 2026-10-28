@@ -697,10 +697,14 @@ static int copy_pl_queue(const AVVulkanDeviceContext *hwctx,
     return 0;
 }
 
+/* Creates or imports the Vulkan device, unless already done */
 static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
+
+    if (s->gpu)
+        return 0;
 
     if (hwctx) {
         struct pl_vulkan_import_params import_params = {
@@ -754,12 +758,16 @@ fail:
     return err;
 }
 
+/* Sets up the state depending on the GPU, unless already done */
 static int libplacebo_setup_gpu(AVFilterContext *avctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
     uint8_t *buf = NULL;
     size_t buf_len;
+
+    if (s->inputs)
+        return 0;
 
     /* Parse the user shaders, if requested */
     if (s->shader_bin_len)
@@ -1417,13 +1425,18 @@ fail:
     return err;
 }
 
-/* Adopt the Vulkan device of the input's hardware frames. query_formats
- * advertised Vulkan only, so a non-Vulkan input here is a configuration error. */
+/* Adopt the Vulkan device of the input's hardware frames, unless a device was
+ * already set up. query_formats advertised Vulkan only, so a non-Vulkan input
+ * here is a configuration error. */
 static int inherit_device(AVFilterLink *inlink)
 {
     AVFilterContext *avctx = inlink->dst;
+    LibplaceboContext *s   = avctx->priv;
     FilterLink        *l   = ff_filter_link(inlink);
     AVHWFramesContext *hwfc;
+
+    if (s->gpu)
+        return 0;
 
     if (inlink->format != AV_PIX_FMT_VULKAN || !l->hw_frames_ctx) {
         av_log(avctx, AV_LOG_ERROR, "inherit_device requires a Vulkan "
@@ -1465,15 +1478,10 @@ static int libplacebo_config_input(AVFilterLink *inlink)
             inlink->sample_aspect_ratio = av_inv_q(inlink->sample_aspect_ratio);
     }
 
-    /* Deferred Vulkan setup (inherit_device): the device was not created at
-     * init; adopt the one the input frames live on. */
-    if (!s->gpu) {
-        av_assert0(s->inherit_device);
+    if (s->inherit_device)
         RET(inherit_device(inlink));
-        RET(init_vulkan(avctx, choose_default_device(avctx)));
-        RET(libplacebo_setup_gpu(avctx));
-    }
-
+    RET(init_vulkan(avctx, choose_default_device(avctx)));
+    RET(libplacebo_setup_gpu(avctx));
     return config_input_vulkan(inlink);
 
 fail:
