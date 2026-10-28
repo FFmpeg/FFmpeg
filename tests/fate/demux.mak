@@ -265,13 +265,8 @@ fate-jxs-concat-demux: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/jxs/lena.jxs|
 # fails. After find_stream_info the layout must stay 80, not 0.
 # ffprobe cannot be used: it aborts on the failed decoder open before
 # printing -show_entries.
-tests/data/vpk-div0.vpk: TAG = GEN
-tests/data/vpk-div0.vpk: | tests/data
-	$(Q)printf '\040\113\120\126\126\120\000\370\004\000\073\003\141\071\126\062\066\066\060\070\120' > $@
-
-FATE_FFMPEG-$(call ALLYES, VPK_DEMUXER ADPCM_PSX_DECODER FILE_PROTOCOL NULL_MUXER) += fate-demux-vpk-div0
-fate-demux-vpk-div0: tests/data/vpk-div0.vpk
-fate-demux-vpk-div0: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/vpk-div0.vpk -map 0 -c copy -f null -
+FATE_FFMPEG-$(call ALLYES, VPK_DEMUXER ADPCM_PSX_DECODER PIPE_PROTOCOL NULL_MUXER) += fate-demux-vpk-div0
+fate-demux-vpk-div0: CMD = printf "\040\113\120\126\126\120\000\370\004\000\073\003\141\071\126\062\066\066\060\070\120" | ffmpeg -i pipe: -map 0 -c copy -f null -
 fate-demux-vpk-div0: CMP = grep
 fate-demux-vpk-div0: REF = 80 channels
 
