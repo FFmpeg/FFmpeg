@@ -509,6 +509,7 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 static void libplacebo_uninit(AVFilterContext *avctx);
 static int libplacebo_config_input(AVFilterLink *inlink);
 static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx);
+static int libplacebo_setup_gpu(AVFilterContext *avctx);
 
 /* Creates the log, shader cache and output format shared by all filters */
 static int init_common(AVFilterContext *avctx)
@@ -614,6 +615,7 @@ static int libplacebo_init(AVFilterContext *avctx)
                 vkhwctx = avhwctx->hwctx;
         }
         RET(init_vulkan(avctx, vkhwctx));
+        RET(libplacebo_setup_gpu(avctx));
     }
 
     return 0;
@@ -684,8 +686,6 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
-    uint8_t *buf = NULL;
-    size_t buf_len;
 
     if (hwctx) {
         struct pl_vulkan_import_params import_params = {
@@ -733,6 +733,18 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
 
     s->gpu = s->vulkan->gpu;
     pl_gpu_set_cache(s->gpu, s->cache);
+    return 0;
+
+fail:
+    return err;
+}
+
+static int libplacebo_setup_gpu(AVFilterContext *avctx)
+{
+    int err = 0;
+    LibplaceboContext *s = avctx->priv;
+    uint8_t *buf = NULL;
+    size_t buf_len;
 
     /* Parse the user shaders, if requested */
     if (s->shader_bin_len)
@@ -1422,6 +1434,8 @@ static int libplacebo_config_input(AVFilterLink *inlink)
         if (!avctx->hw_device_ctx)
             return AVERROR(ENOMEM);
         if ((err = init_vulkan(avctx, hwfc->device_ctx->hwctx)) < 0)
+            return err;
+        if ((err = libplacebo_setup_gpu(avctx)) < 0)
             return err;
     }
 
