@@ -1164,12 +1164,12 @@ static int parse_playlist(HLSContext *c, const char *url,
                     start_time_offset = offset;
                     time_offset_flag  = 1;
                 } else {
-                    av_log(c->ctx, AV_LOG_WARNING, "TIME-OFFSET value is"
-                                                    "invalid, it will be ignored");
+                    av_log(c->ctx, AV_LOG_WARNING, "TIME-OFFSET value is "
+                                                    "invalid, it will be ignored\n");
                 }
             } else {
-                av_log(c->ctx, AV_LOG_WARNING, "#EXT-X-START value is"
-                                                "invalid, it will be ignored");
+                av_log(c->ctx, AV_LOG_WARNING, "#EXT-X-START value is "
+                                                "invalid, it will be ignored\n");
                 continue;
             }
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
