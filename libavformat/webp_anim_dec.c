@@ -65,9 +65,10 @@ typedef struct WebPAnimDemuxContext {
     int vp8x_flags;
 
     int has_iccp;
-    int has_exif;
     int has_anim;
-    int has_xmp;
+
+    int64_t exif_offset;
+    int64_t xmp_offset;
 
     int usebgcolor;
 } WebPAnimDemuxContext;
@@ -280,7 +281,9 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->duration = FFMIN(duration, ctx->max_delay);
             return ret;
         case MKTAG('E', 'X', 'I', 'F'):
-            if (ctx->has_exif) {
+            if (offset == ctx->exif_offset) {
+                avio_skip(pb, size);
+            } else if (ctx->exif_offset) {
                 av_log(s, loglevel, "Extra EXIF chunk found\n");
                 if (explode)
                     return AVERROR_INVALIDDATA;
@@ -304,11 +307,13 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
                     av_packet_side_data_remove(st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data, AV_PKT_DATA_EXIF);
                     return ret;
                 }
-                ctx->has_exif = 1;
+                ctx->exif_offset = offset;
             }
             break;
         case MKTAG('X', 'M', 'P', ' '):
-            if (ctx->has_xmp) {
+            if (offset == ctx->xmp_offset) {
+                avio_skip(pb, size);
+            } else if (ctx->xmp_offset) {
                 av_log(s, loglevel, "Extra XMP chunk found\n");
                 if (explode)
                     return AVERROR_INVALIDDATA;
@@ -331,7 +336,7 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
                 xmp[size] = '\0';
                 av_dict_set(&s->metadata, "xmp", xmp, AV_DICT_DONT_STRDUP_VAL);
-                ctx->has_xmp = 1;
+                ctx->xmp_offset = offset;
             }
             break;
         default:
