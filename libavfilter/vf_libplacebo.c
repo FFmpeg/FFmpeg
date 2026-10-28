@@ -989,7 +989,7 @@ static int unmap_output(LibplaceboContext *s, struct pl_frame *target, AVFrame *
 }
 
 static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
-                            AVFrame *out, const AVFrame *ref)
+                            AVFrame *out, const AVFrame *ref, bool progressive)
 {
     int err, changed = 0;
 
@@ -1003,8 +1003,6 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
     out->alpha_mode = outlink->alpha_mode;
     if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
         out->chroma_location = outlink->chroma_location;
-    if (s->deinterlace)
-        out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
     if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
@@ -1028,6 +1026,9 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
 
     if (s->apply_filmgrain)
         av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+
+    if (progressive)
+        out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
     return 0;
 }
@@ -1080,7 +1081,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     if (!ref)
         goto props_done;
 
-    RET(set_output_props(s, outlink, out, ref));
+    RET(set_output_props(s, outlink, out, ref, s->deinterlace));
 
 props_done:
     out->pts = pts;
