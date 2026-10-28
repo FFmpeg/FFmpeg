@@ -479,6 +479,10 @@ int main(void)
             "toggle=100",
             "toggle==1",
             "flags=+mu-lame : num=42: toggle=0",
+            "flags=+1.5",
+            "flags=-1.5",
+            "flags=+100000000000000000000",
+            "flags=-100000000000000000000",
             "num=42 : string=blahblah",
             "rational=0 : rational=1/2 : rational=1/-1",
             "rational=-1/0",
@@ -549,7 +553,9 @@ int main(void)
         av_log_set_level(AV_LOG_QUIET);
 
         for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
-            int silence_log = !strcmp(options[i], "rational=-1/0"); // inf formatting differs between platforms
+            // inf formatting differs between platforms, and so may %f of 1e20
+            int silence_log = !strcmp(options[i], "rational=-1/0") ||
+                              strstr(options[i], "100000000000000000000");
             av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
             if (silence_log)
                 av_log_set_callback(NULL);
@@ -559,6 +565,8 @@ int main(void)
                 printf("OK    '%s'\n", options[i]);
             av_log_set_callback(log_callback_help);
         }
+        // a rejected +x/-x flags update must leave the value untouched
+        printf("flags=%d\n", test_ctx.flags);
         av_opt_free(&test_ctx);
     }
 

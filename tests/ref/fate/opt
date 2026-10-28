@@ -269,6 +269,18 @@ Setting entry with key 'flags' to value '+mu-lame'
 Setting entry with key 'num' to value '42'
 Setting entry with key 'toggle' to value '0'
 OK    'flags=+mu-lame : num=42: toggle=0'
+Setting options string 'flags=+1.5'
+Setting entry with key 'flags' to value '+1.5'
+Value 1.500000 for parameter 'flags' is not a valid set of 32bit integer flags
+Error 'flags=+1.5'
+Setting options string 'flags=-1.5'
+Setting entry with key 'flags' to value '-1.5'
+Value 1.500000 for parameter 'flags' is not a valid set of 32bit integer flags
+Error 'flags=-1.5'
+Setting options string 'flags=+100000000000000000000'
+Error 'flags=+100000000000000000000'
+Setting options string 'flags=-100000000000000000000'
+Error 'flags=-100000000000000000000'
 Setting options string 'num=42 : string=blahblah'
 Setting entry with key 'num' to value '42'
 Setting entry with key 'string' to value 'blahblah'
@@ -487,6 +499,7 @@ Setting options string 'array_int=2147483648'
 Setting entry with key 'array_int' to value '2147483648'
 Value 2147483648.000000 for parameter 'array_int' out of range [0 - 2.14748e+09]
 Error 'array_int=2147483648'
+flags=5
 
 Testing av_opt_set_from_string()
 Setting options string ''

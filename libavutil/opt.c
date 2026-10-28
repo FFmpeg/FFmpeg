@@ -505,11 +505,20 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             }
         }
         if (type == AV_OPT_TYPE_FLAGS && dst) {
+            unsigned int operand;
+            /* Validate the operand of a '+' or '-' update and let
+             * write_number() convert it: casting a double outside the
+             * int64_t range (or inf/nan) to int64_t is undefined behaviour,
+             * and the cast would also drop a fractional part that
+             * write_number() is meant to reject, so "+1.5" used to be
+             * accepted while "1.5" is refused. */
+            if (cmd && (ret = write_number(obj, o, &operand, d, 1, 1, 0)) < 0)
+                return ret;
             intnum = *(unsigned int*)dst;
             if (cmd == '+')
-                d = intnum | (int64_t)d;
+                d = intnum | operand;
             else if (cmd == '-')
-                d = intnum &~(int64_t)d;
+                d = intnum &~operand;
         }
 
         if ((ret = write_number(obj, o, dst, d, 1, 1, 0)) < 0)
