@@ -169,6 +169,14 @@ static int vc1_parse(AVCodecParserContext *s,
     int next = END_NOT_FOUND;
     int i = vpc->bytes_to_skip;
 
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        /* Each call is a whole frame: scan it from its own start code */
+        unesc_index          = 0;
+        search_state         = NO_MATCH;
+        vpc->prev_start_code = 0;
+        i                    = 0;
+    }
+
     if (!vpc->extradata_parsed) {
         vpc->extradata_parsed = 1;
         vc1_parse_extradata(s, avctx);
@@ -205,12 +213,14 @@ static int vc1_parse(AVCodecParserContext *s,
             }
         }
         if ((s->flags & PARSER_FLAG_COMPLETE_FRAMES) &&
-                unesc_index >= UNESCAPED_THRESHOLD &&
+                (unesc_index >= UNESCAPED_THRESHOLD || i == buf_size) &&
                 vpc->prev_start_code == (VC1_CODE_FRAME & 0xFF))
         {
             // No need to keep scanning the rest of the buffer for
             // start codes if we know it contains a complete frame and
-            // we've already unescaped all we need of the frame header
+            // we've already unescaped all we need of the frame header,
+            // or the frame ended first, as a skipped frame does
+            memset(unesc_buffer + unesc_index, 0, UNESCAPED_THRESHOLD - unesc_index);
             vc1_extract_header(s, avctx, unesc_buffer, unesc_index);
             unesc_index = 0;
             break;
