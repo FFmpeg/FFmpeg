@@ -1417,11 +1417,45 @@ fail:
     return err;
 }
 
-static int libplacebo_config_input(AVFilterLink *inlink)
+/* Adopt the Vulkan device of the input's hardware frames. query_formats
+ * advertised Vulkan only, so a non-Vulkan input here is a configuration error. */
+static int inherit_device(AVFilterLink *inlink)
 {
     AVFilterContext *avctx = inlink->dst;
-    LibplaceboContext *s   = avctx->priv;
     FilterLink        *l   = ff_filter_link(inlink);
+    AVHWFramesContext *hwfc;
+
+    if (inlink->format != AV_PIX_FMT_VULKAN || !l->hw_frames_ctx) {
+        av_log(avctx, AV_LOG_ERROR, "inherit_device requires a Vulkan "
+               "hardware frames context on the input.\n");
+        return AVERROR(EINVAL);
+    }
+    hwfc = (AVHWFramesContext *) l->hw_frames_ctx->data;
+    av_buffer_unref(&avctx->hw_device_ctx);
+    avctx->hw_device_ctx = av_buffer_ref(hwfc->device_ref);
+    if (!avctx->hw_device_ctx)
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
+static int config_input_vulkan(AVFilterLink *inlink)
+{
+    LibplaceboContext *s = inlink->dst->priv;
+
+    if (inlink->format == AV_PIX_FMT_VULKAN)
+        return ff_vk_filter_config_input(inlink);
+
+    /* Forward this to the vkctx for format selection */
+    s->vkctx.input_format = inlink->format;
+
+    return 0;
+}
+
+static int libplacebo_config_input(AVFilterLink *inlink)
+{
+    int err;
+    AVFilterContext *avctx = inlink->dst;
+    LibplaceboContext *s   = avctx->priv;
 
     if (s->rotation % PL_ROTATION_180 == PL_ROTATION_90) {
         /* Swap width and height for 90 degree rotations to make the size and
@@ -1432,35 +1466,18 @@ static int libplacebo_config_input(AVFilterLink *inlink)
     }
 
     /* Deferred Vulkan setup (inherit_device): the device was not created at
-     * init; adopt the one the input frames live on. query_formats advertised
-     * Vulkan only, so a non-Vulkan input here is a configuration error. */
+     * init; adopt the one the input frames live on. */
     if (!s->gpu) {
-        AVHWFramesContext *hwfc;
-        int err;
         av_assert0(s->inherit_device);
-        if (inlink->format != AV_PIX_FMT_VULKAN || !l->hw_frames_ctx) {
-            av_log(avctx, AV_LOG_ERROR, "inherit_device requires a Vulkan "
-                   "hardware frames context on the input.\n");
-            return AVERROR(EINVAL);
-        }
-        hwfc = (AVHWFramesContext *) l->hw_frames_ctx->data;
-        av_buffer_unref(&avctx->hw_device_ctx);
-        avctx->hw_device_ctx = av_buffer_ref(hwfc->device_ref);
-        if (!avctx->hw_device_ctx)
-            return AVERROR(ENOMEM);
-        if ((err = init_vulkan(avctx, hwfc->device_ctx->hwctx)) < 0)
-            return err;
-        if ((err = libplacebo_setup_gpu(avctx)) < 0)
-            return err;
+        RET(inherit_device(inlink));
+        RET(init_vulkan(avctx, choose_default_device(avctx)));
+        RET(libplacebo_setup_gpu(avctx));
     }
 
-    if (inlink->format == AV_PIX_FMT_VULKAN)
-        return ff_vk_filter_config_input(inlink);
+    return config_input_vulkan(inlink);
 
-    /* Forward this to the vkctx for format selection */
-    s->vkctx.input_format = inlink->format;
-
-    return 0;
+fail:
+    return err;
 }
 
 static inline AVRational max_q(AVRational a, AVRational b)
