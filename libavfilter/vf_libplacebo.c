@@ -965,6 +965,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     RET(av_frame_copy_props(out, ref));
     out->width = outlink->w;
     out->height = outlink->h;
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
     out->colorspace = outlink->colorspace;
     out->color_range = outlink->color_range;
     out->alpha_mode = outlink->alpha_mode;
@@ -995,15 +996,6 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 
     if (s->apply_filmgrain)
         av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
-
-    if (s->reset_sar) {
-        out->sample_aspect_ratio = ref->sample_aspect_ratio;
-    } else {
-        const AVRational ar_ref  = { ref->width, ref->height };
-        const AVRational ar_out  = { out->width, out->height };
-        const AVRational stretch = av_div_q(ar_ref, ar_out);
-        out->sample_aspect_ratio = av_mul_q(ref->sample_aspect_ratio, stretch);
-    }
 
 props_done:
     out->pts = pts;
