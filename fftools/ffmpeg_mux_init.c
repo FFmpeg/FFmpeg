@@ -682,7 +682,6 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         const char *frame_pix_fmt = NULL;
         const char *intra_matrix = NULL, *inter_matrix = NULL;
         const char *chroma_intra_matrix = NULL;
-        int do_pass = 0;
         int i;
 
         opt_match_per_stream_str(ost, &o->frame_sizes, oc, st, &frame_size);
@@ -761,67 +760,6 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             if (p) p++;
         }
         video_enc->rc_override_count = i;
-
-        /* two pass mode */
-        opt_match_per_stream_int(ost, &o->pass, oc, st, &do_pass);
-        if (do_pass) {
-            if (do_pass & 1)
-                video_enc->flags |= AV_CODEC_FLAG_PASS1;
-            if (do_pass & 2)
-                video_enc->flags |= AV_CODEC_FLAG_PASS2;
-        }
-
-        opt_match_per_stream_str(ost, &o->passlogfiles, oc, st, &ost->logfile_prefix);
-        if (ost->logfile_prefix &&
-            !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
-            return AVERROR(ENOMEM);
-
-        if (do_pass) {
-            int ost_idx = -1;
-            char logfilename[1024];
-            FILE *f;
-
-            /* compute this stream's global index */
-            for (int idx = 0; idx <= ost->file->index; idx++)
-                ost_idx += output_files[idx]->nb_streams;
-
-            snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
-                     ost->logfile_prefix ? ost->logfile_prefix :
-                                           DEFAULT_PASS_LOGFILENAME_PREFIX,
-                     ost_idx);
-            if (!strcmp(video_enc->codec->name, "libx264") || !strcmp(video_enc->codec->name, "libvvenc")) {
-                if (av_opt_is_set_to_default_by_name(video_enc, "stats",
-                                                     AV_OPT_SEARCH_CHILDREN) > 0)
-                    av_opt_set(video_enc, "stats", logfilename,
-                               AV_OPT_SEARCH_CHILDREN);
-            } else if (!strcmp(video_enc->codec->name, "libx265")) {
-                if (av_opt_is_set_to_default_by_name(video_enc, "x265-stats",
-                                                     AV_OPT_SEARCH_CHILDREN) > 0)
-                    av_opt_set(video_enc, "x265-stats", logfilename,
-                               AV_OPT_SEARCH_CHILDREN);
-            } else {
-                if (video_enc->flags & AV_CODEC_FLAG_PASS2) {
-                    char  *logbuffer = read_file_to_string(logfilename);
-
-                    if (!logbuffer) {
-                        av_log(ost, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
-                               logfilename);
-                        return AVERROR(EIO);
-                    }
-                    video_enc->stats_in = logbuffer;
-                }
-                if (video_enc->flags & AV_CODEC_FLAG_PASS1) {
-                    f = fopen_utf8(logfilename, "wb");
-                    if (!f) {
-                        av_log(ost, AV_LOG_FATAL,
-                               "Cannot write log file '%s' for pass-1 encoding: %s\n",
-                               logfilename, strerror(errno));
-                        return AVERROR(errno);
-                    }
-                    ost->logfile = f;
-                }
-            }
-        }
 
         opt_match_per_stream_int(ost, &o->force_fps, oc, st, &ms->force_fps);
 
@@ -1604,6 +1542,73 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     }
     if (ret < 0)
         goto fail;
+
+
+    if (ost->enc) {
+        AVCodecContext *enc = ost->enc->enc_ctx;
+        int do_pass = 0;
+
+        /* two pass mode */
+        opt_match_per_stream_int(ost, &o->pass, oc, st, &do_pass);
+        if (do_pass) {
+            if (do_pass & 1)
+                enc->flags |= AV_CODEC_FLAG_PASS1;
+            if (do_pass & 2)
+                enc->flags |= AV_CODEC_FLAG_PASS2;
+        }
+
+        opt_match_per_stream_str(ost, &o->passlogfiles, oc, st, &ost->logfile_prefix);
+        if (ost->logfile_prefix &&
+            !(ost->logfile_prefix = av_strdup(ost->logfile_prefix)))
+            return AVERROR(ENOMEM);
+
+        if (do_pass) {
+            int ost_idx = -1;
+            char logfilename[1024];
+            FILE *f;
+
+            /* compute this stream's global index */
+            for (int idx = 0; idx <= ost->file->index; idx++)
+                ost_idx += output_files[idx]->nb_streams;
+
+            snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
+                     ost->logfile_prefix ? ost->logfile_prefix :
+                                           DEFAULT_PASS_LOGFILENAME_PREFIX,
+                     ost_idx);
+            if (!strcmp(enc->codec->name, "libx264") || !strcmp(enc->codec->name, "libvvenc")) {
+                if (av_opt_is_set_to_default_by_name(enc, "stats",
+                                                     AV_OPT_SEARCH_CHILDREN) > 0)
+                    av_opt_set(enc, "stats", logfilename,
+                               AV_OPT_SEARCH_CHILDREN);
+            } else if (!strcmp(enc->codec->name, "libx265")) {
+                if (av_opt_is_set_to_default_by_name(enc, "x265-stats",
+                                                     AV_OPT_SEARCH_CHILDREN) > 0)
+                    av_opt_set(enc, "x265-stats", logfilename,
+                               AV_OPT_SEARCH_CHILDREN);
+            } else {
+                if (enc->flags & AV_CODEC_FLAG_PASS2) {
+                    char  *logbuffer = read_file_to_string(logfilename);
+
+                    if (!logbuffer) {
+                        av_log(ost, AV_LOG_FATAL, "Error reading log file '%s' for pass-2 encoding\n",
+                               logfilename);
+                        return AVERROR(EIO);
+                    }
+                    enc->stats_in = logbuffer;
+                }
+                if (enc->flags & AV_CODEC_FLAG_PASS1) {
+                    f = fopen_utf8(logfilename, "wb");
+                    if (!f) {
+                        av_log(ost, AV_LOG_FATAL,
+                               "Cannot write log file '%s' for pass-1 encoding: %s\n",
+                               logfilename, strerror(errno));
+                        return AVERROR(errno);
+                    }
+                    ost->logfile = f;
+                }
+            }
+        }
+    }
 
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
