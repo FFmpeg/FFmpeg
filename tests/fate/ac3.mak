@@ -160,24 +160,16 @@ fate-ac3-fixed-encode-3: CMD = framecrc -i $(SRC) -c:a ac3_fixed -flags2 +fixed_
 
 # With coupling and rematrixing disabled, this produces bap=0, dexp=24 bins
 # whose dither affects the decoded output.
-tests/data/fate/ac3-fixed-dexp24.ac3: TAG = GEN
-tests/data/fate/ac3-fixed-dexp24.ac3: tests/data/asynth-44100-2.wav
-tests/data/fate/ac3-fixed-dexp24.ac3: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-	-hide_banner -loglevel error -nostdin \
-	-i $(TARGET_PATH)/tests/data/asynth-44100-2.wav \
-	-c:a ac3_fixed -b:a 192k \
-	-channel_coupling 0 -stereo_rematrixing 0 -flags +bitexact \
-	-frames:a 173 -f ac3 -y $(TARGET_PATH)/$@
-
 FATE_AC3_FIXED_DEXP24-$(call ALLYES, FFMPEG WAV_DEMUXER ARESAMPLE_FILTER ATRIM_FILTER \
                                     AC3_FIXED_ENCODER FRAMECRC_MUXER \
                                     AC3_MUXER AC3_DEMUXER AC3_FIXED_DECODER \
                                     PCM_S16LE_DECODER PCM_S16LE_ENCODER \
-                                    FILE_PROTOCOL) += fate-ac3-fixed-dexp24
-fate-ac3-fixed-dexp24: tests/data/fate/ac3-fixed-dexp24.ac3
-fate-ac3-fixed-dexp24: CMD = framecrc -auto_conversion_filters -c ac3_fixed \
-                                   -i $(TARGET_PATH)/tests/data/fate/ac3-fixed-dexp24.ac3 \
+                                    FILE_PROTOCOL PIPE_PROTOCOL) += fate-ac3-fixed-dexp24
+fate-ac3-fixed-dexp24: tests/data/asynth-44100-2.wav
+fate-ac3-fixed-dexp24: CMD = ffmpeg -auto_conversion_filters -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav \
+                                   -c:a ac3_fixed -b:a 192k -channel_coupling 0 -stereo_rematrixing 0 \
+                                   -flags +bitexact -frames:a 173 -f ac3 - | \
+                             framecrc -auto_conversion_filters -c ac3_fixed -i pipe: \
                                    -af atrim=start_sample=264192
 
 # digital silence encoded with the bitexact fixed-point encoder must decode
@@ -185,12 +177,6 @@ fate-ac3-fixed-dexp24: CMD = framecrc -auto_conversion_filters -c ac3_fixed \
 # The former truncating dequantization (mantissa >> exp) collapsed the dither
 # mantissas to coarse {-1, 0} steps, raising the decoded noise floor by a
 # factor of ~7 (stddev 18.22 instead of 2.69, tiny_psnr f32 units).
-tests/data/fate/ac3-silence.ac3: TAG = GEN
-tests/data/fate/ac3-silence.ac3: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
-	-f lavfi -i anullsrc=r=44100:cl=stereo -t 1 \
-	-c:a ac3_fixed -b:a 192k -flags +bitexact -f ac3 -y $(TARGET_PATH)/$@ 2>/dev/null
-
 tests/data/fate/ac3-silence.f32: TAG = GEN
 tests/data/fate/ac3-silence.f32: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data/fate
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
@@ -201,8 +187,10 @@ FATE_AC3_DITHER-$(call ALLYES, FFMPEG LAVFI_INDEV ANULLSRC_FILTER ATRIM_FILTER \
                                ARESAMPLE_FILTER AC3_FIXED_ENCODER AC3_MUXER \
                                AC3_DEMUXER AC3_DECODER PCM_F32LE_ENCODER \
                                PCM_F32LE_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-ac3-float-dither
-fate-ac3-float-dither: tests/data/fate/ac3-silence.ac3 tests/data/fate/ac3-silence.f32
-fate-ac3-float-dither: CMD = ffmpeg -auto_conversion_filters -cons_noisegen 1 -i $(TARGET_PATH)/tests/data/fate/ac3-silence.ac3 -af atrim=end_sample=44100 -f f32le -
+fate-ac3-float-dither: tests/data/fate/ac3-silence.f32
+fate-ac3-float-dither: CMD = ffmpeg -auto_conversion_filters -f lavfi -i anullsrc=r=44100:cl=stereo -t 1 \
+                             -c:a ac3_fixed -b:a 192k -flags +bitexact -f ac3 - | \
+                         ffmpeg -auto_conversion_filters -cons_noisegen 1 -i pipe: -af atrim=end_sample=44100 -f f32le -
 fate-ac3-float-dither: CMP = stddev
 fate-ac3-float-dither: CMP_UNIT = f32
 fate-ac3-float-dither: REF = tests/data/fate/ac3-silence.f32
