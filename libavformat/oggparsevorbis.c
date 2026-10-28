@@ -209,9 +209,18 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
  * [framing_flag] = read one bit | Not Used
  */
 
+enum VorbisPacketType {
+    VORBIS_PACKET_DATA,
+    VORBIS_PACKET_ID,
+    VORBIS_PACKET_COMMENT,
+    VORBIS_PACKET_SETUP,
+    VORBIS_PACKET_RESERVED,
+};
+
 struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
+    enum VorbisPacketType last_packet; ///< type of the last packet seen by vorbis_packet()
     AVVorbisParseContext *vp;
     int64_t bos_page_pos;
     int ts_offset;
@@ -445,6 +454,56 @@ static int vorbis_header(AVFormatContext *s, int idx)
     return 1;
 }
 
+/**
+ * Check that a packet follows the identification, comment, setup order of a
+ * chained stream's headers, and record it as the last packet.
+ *
+ * An identification header starts a new set. A misplaced packet discards the
+ * buffered headers, so an incomplete or misordered set is never packed.
+ * Reserved packet types are ignored, per Vorbis I §1.3.2.
+ *
+ * @return 0 if the packet is in order, AVERROR_INVALIDDATA otherwise
+ */
+static int vorbis_check_packet_order(AVFormatContext *s,
+                                     struct oggvorbis_private *priv,
+                                     enum VorbisPacketType type)
+{
+    enum VorbisPacketType last = priv->last_packet;
+    const char *error = NULL;
+
+    switch (type) {
+    case VORBIS_PACKET_RESERVED:
+        return 0;
+    case VORBIS_PACKET_DATA:
+        if (last == VORBIS_PACKET_ID || last == VORBIS_PACKET_COMMENT)
+            error = "data packet before the setup header";
+        break;
+    case VORBIS_PACKET_ID:
+        if (last == VORBIS_PACKET_ID || last == VORBIS_PACKET_COMMENT)
+            error = "identification header before the setup header";
+        break;
+    case VORBIS_PACKET_COMMENT:
+        if (last != VORBIS_PACKET_ID)
+            error = "comment header without identification header";
+        break;
+    case VORBIS_PACKET_SETUP:
+        if (last != VORBIS_PACKET_COMMENT)
+            error = "setup header without comment header";
+        break;
+    }
+
+    if (error)
+        av_log(s, AV_LOG_WARNING,
+               "Invalid chained stream headers: %s, discarding them\n", error);
+
+    if (error || type == VORBIS_PACKET_ID)
+        for (int i = 0; i < 3; i++)
+            av_freep(&priv->packet[i]);
+
+    priv->last_packet = error && type != VORBIS_PACKET_ID ? VORBIS_PACKET_DATA : type;
+    return error ? AVERROR_INVALIDDATA : 0;
+}
+
 static int vorbis_packet(AVFormatContext *s, int idx)
 {
     struct ogg *ogg = s->priv_data;
@@ -553,6 +612,8 @@ static int vorbis_packet(AVFormatContext *s, int idx)
      * skipped; the headers are buffered and attached as extradata to the
      * first data packet that follows. */
     if (flags & VORBIS_FLAG_HEADER) {
+        vorbis_check_packet_order(s, priv, VORBIS_PACKET_ID);
+
         ret = vorbis_parse_header(s, s->streams[idx], os->buf + os->pstart, os->psize);
         if (ret < 0)
             return ret;
@@ -568,11 +629,8 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     }
 
     if (flags & VORBIS_FLAG_COMMENT) {
-        if (!priv->packet[0]) {
-            av_log(s, AV_LOG_WARNING,
-                   "Comment header without identification header, ignoring it\n");
+        if (vorbis_check_packet_order(s, priv, VORBIS_PACKET_COMMENT) < 0)
             return 1;
-        }
 
         ret = vorbis_update_metadata(s, idx);
         if (ret < 0)
@@ -590,6 +648,9 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     }
 
     if (flags & VORBIS_FLAG_SETUP) {
+        if (vorbis_check_packet_order(s, priv, VORBIS_PACKET_SETUP) < 0)
+            return 1;
+
         ret = av_reallocp(&priv->packet[2], os->psize);
         if (ret < 0)
             return ret;
@@ -600,6 +661,9 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         skip_packet = 1;
     }
 
+    if (!skip_packet)
+        vorbis_check_packet_order(s, priv, os->buf[os->pstart] & 1 ?
+                                  VORBIS_PACKET_RESERVED : VORBIS_PACKET_DATA);
 
     /* All three headers for the new chained stream have been collected;
      * pack them into new extradata to be attached to the next data packet. */
