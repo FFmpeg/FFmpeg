@@ -41,13 +41,14 @@ static int init(AVBSFContext *ctx)
     PCMContext *s = ctx->priv_data;
     AVRational sr = av_make_q(ctx->par_in->sample_rate, 1);
     int64_t min_samples;
+    int bits_per_sample = av_get_bits_per_sample(ctx->par_in->codec_id);
 
-    if (ctx->par_in->ch_layout.nb_channels <= 0 || ctx->par_in->sample_rate <= 0)
+    if (ctx->par_in->ch_layout.nb_channels <= 0 || ctx->par_in->sample_rate <= 0 ||
+        ctx->par_in->ch_layout.nb_channels > INT_MAX / bits_per_sample)
         return AVERROR(EINVAL);
 
     ctx->time_base_out = av_inv_q(sr);
-    s->sample_size = ctx->par_in->ch_layout.nb_channels *
-                     av_get_bits_per_sample(ctx->par_in->codec_id) / 8;
+    s->sample_size = ctx->par_in->ch_layout.nb_channels * bits_per_sample / 8;
 
     if (s->frame_rate.num) {
         min_samples = av_rescale_q_rnd(1, sr, s->frame_rate, AV_ROUND_DOWN);
