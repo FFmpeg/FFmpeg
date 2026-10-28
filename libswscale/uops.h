@@ -255,6 +255,10 @@ typedef struct SwsPackUOp {
     uint8_t pattern[4]; /* bit depth pattern, from MSB to LSB */
 } SwsPackUOp;
 
+/**
+ * The clear values (SwsUOp.data.vec4) are always expanded to repeating 32-bit
+ * patterns, so they remain valid if the uop is executed as a smaller type.
+ */
 typedef struct SwsClearUOp {
     SwsCompMask one;  /* mask of coefficients equal to all 1s */
     SwsCompMask zero; /* mask of coefficients equal to all 0s */

@@ -488,6 +488,15 @@ static void check_vec4(const char *name, SwsUOp *uop)
     check_simple(name, uop);
 }
 
+static void check_clear(const char *name, SwsUOp *uop)
+{
+    /* Clear values are always expanded to 32 bits, see SwsClearUOp */
+    for (int i = 0; i < 4; i++)
+        uop->data.vec4[i] = ff_sws_pixel_expand32(uop->type, rndpx(uop->type));
+
+    check_simple(name, uop);
+}
+
 #define MK_RANGES(R) ((const unsigned[]) { R, R, R, R })
 
 static void check_read(const char *name, SwsUOp *uop)
@@ -715,7 +724,7 @@ void checkasm_check_sw_ops(void)
     CHECK_FOR(PACK,             check_pack);
     CHECK_FOR(LSHIFT,           check_simple);
     CHECK_FOR(RSHIFT,           check_simple);
-    CHECK_FOR(CLEAR,            check_vec4);
+    CHECK_FOR(CLEAR,            check_clear);
     CHECK_FOR(LINEAR,           check_linear);
     CHECK_FOR(DITHER,           check_dither);
     CHECK_FOR(LUT_3D,           check_lut_3d);
