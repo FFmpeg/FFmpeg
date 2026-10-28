@@ -988,10 +988,54 @@ static int unmap_output(LibplaceboContext *s, struct pl_frame *target, AVFrame *
     return 0;
 }
 
+static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
+                            AVFrame *out, const AVFrame *ref)
+{
+    int err, changed = 0;
+
+    if ((err = av_frame_copy_props(out, ref)) < 0)
+        return err;
+    out->width = outlink->w;
+    out->height = outlink->h;
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
+    out->colorspace = outlink->colorspace;
+    out->color_range = outlink->color_range;
+    out->alpha_mode = outlink->alpha_mode;
+    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        out->chroma_location = outlink->chroma_location;
+    if (s->deinterlace)
+        out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
+
+    if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
+        /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
+         * output colorspace defaults */
+        out->color_primaries = AVCOL_PRI_BT2020;
+        out->color_trc = AVCOL_TRC_SMPTE2084;
+        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+    }
+
+    if (s->color_trc >= 0)
+        out->color_trc = s->color_trc;
+    if (s->color_primaries >= 0)
+        out->color_primaries = s->color_primaries;
+
+    /* Strip side data if no longer relevant */
+    if (out->width != ref->width || out->height != ref->height)
+        changed |= AV_SIDE_DATA_PROP_SIZE_DEPENDENT;
+    if (ref->color_trc != out->color_trc || ref->color_primaries != out->color_primaries)
+        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+    av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data, changed);
+
+    if (s->apply_filmgrain)
+        av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+
+    return 0;
+}
+
 /* Construct and emit an output frame for a given timestamp */
 static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
-    int err = 0, changed = 0;
+    int err = 0;
     LibplaceboContext *s = ctx->priv;
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -1036,40 +1080,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     if (!ref)
         goto props_done;
 
-    RET(av_frame_copy_props(out, ref));
-    out->width = outlink->w;
-    out->height = outlink->h;
-    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
-    out->colorspace = outlink->colorspace;
-    out->color_range = outlink->color_range;
-    out->alpha_mode = outlink->alpha_mode;
-    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
-        out->chroma_location = outlink->chroma_location;
-    if (s->deinterlace)
-        out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
-
-    if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
-        /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
-         * output colorspace defaults */
-        out->color_primaries = AVCOL_PRI_BT2020;
-        out->color_trc = AVCOL_TRC_SMPTE2084;
-        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
-    }
-
-    if (s->color_trc >= 0)
-        out->color_trc = s->color_trc;
-    if (s->color_primaries >= 0)
-        out->color_primaries = s->color_primaries;
-
-    /* Strip side data if no longer relevant */
-    if (out->width != ref->width || out->height != ref->height)
-        changed |= AV_SIDE_DATA_PROP_SIZE_DEPENDENT;
-    if (ref->color_trc != out->color_trc || ref->color_primaries != out->color_primaries)
-        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
-    av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data, changed);
-
-    if (s->apply_filmgrain)
-        av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+    RET(set_output_props(s, outlink, out, ref));
 
 props_done:
     out->pts = pts;
