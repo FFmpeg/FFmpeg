@@ -79,7 +79,9 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *pkt)
 
         if (!hdr.chan_config) {
             GetBitContext gb;
-            init_get_bits(&gb, pkt->data, pkt->size * 8);
+            ret = init_get_bits8(&gb, pkt->data, pkt->size);
+            if (ret < 0)
+                goto fail;
             if (get_bits(&gb, 3) != 5) {
                 avpriv_report_missing_feature(bsfc,
                                               "PCE-based channel configuration "
