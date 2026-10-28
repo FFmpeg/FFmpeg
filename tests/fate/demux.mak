@@ -233,6 +233,31 @@ fate-hls-shared-renditions-demux: tests/data/hls-shared-renditions.m3u8
 fate-hls-shared-renditions-demux: CLEANFILES = tests/data/hls-shared-renditions*.m3u8 tests/data/hls-shared-renditions-*.ts tests/data/hls-shared-renditions-*.vtt
 fate-hls-shared-renditions-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-shared-renditions.m3u8 -show_programs
 
+tests/data/hls-start-master.m3u8: TAG = GEN
+tests/data/hls-start-master.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+        -f lavfi -i "aevalsrc=0:s=16000:d=0.576" -c:a mp2fixed -flags +bitexact -muxdelay 0 -muxpreload 0 \
+        -f hls -hls_time 0.144 -hls_list_size 0 -hls_flags omit_endlist \
+        -hls_segment_filename $(TARGET_PATH)/tests/data/hls-start-%d.ts \
+        $(TARGET_PATH)/tests/data/hls-start-rendition.m3u8 2>/dev/null
+	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.5\n#EXT-X-TARGETDURATION:0\n#EXTINF:0.144,\nhls-start-0.ts\n#EXTINF:0.144,\nhls-start-1.ts\n#EXTINF:0.144,\nhls-start-2.ts\n#EXTINF:0.144,\nhls-start-3.ts\n' > tests/data/hls-start-media.m3u8
+	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.5\n#EXT-X-ENDLIST\n#EXT-X-TARGETDURATION:0\n#EXTINF:0.144,\nhls-start-0.ts\n#EXTINF:0.144,\nhls-start-1.ts\n#EXTINF:0.144,\nhls-start-2.ts\n#EXTINF:0.144,\nhls-start-3.ts\n' > tests/data/hls-start-endlist.m3u8
+	$(Q)printf '#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="a",URI="hls-start-rendition.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="a"\nhls-start-media.m3u8\n' > tests/data/hls-start-variant.m3u8
+	$(Q)printf '#EXTM3U\n#EXT-X-START:TIME-OFFSET=0.1\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="a",URI="hls-start-rendition.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=64000,AUDIO="a"\nhls-start-media.m3u8\n' > $@
+
+FATE_HLS_START = fate-hls-start-master-demux  \
+                 fate-hls-start-variant-demux \
+                 fate-hls-start-media-demux   \
+                 fate-hls-start-endlist-demux
+
+FATE_HLS_START-$(call FILTERDEMDECENCMUX, AEVALSRC ARESAMPLE, HLS MPEGTS, MP2 MP3FLOAT PCM_F64LE, MP2FIXED, HLS MPEGTS, LAVFI_INDEV MPEGAUDIO_PARSER) += $(FATE_HLS_START)
+FATE_FFMPEG_FFPROBE += $(FATE_HLS_START-yes)
+$(FATE_HLS_START): tests/data/hls-start-master.m3u8
+fate-hls-start-master-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-start-master.m3u8 -prefer_x_start 1 -max_reload 1
+fate-hls-start-variant-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-start-variant.m3u8 -prefer_x_start 1 -max_reload 1
+fate-hls-start-media-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-start-media.m3u8 -prefer_x_start 1 -max_reload 1
+fate-hls-start-endlist-demux: CMD = ffprobe_demux $(TARGET_PATH)/tests/data/hls-start-endlist.m3u8 -prefer_x_start 1 -max_reload 1
+
 FATE_SAMPLES_DEMUX-$(call PARSERDEM, JPEGXS, IMAGE_JPEGXS_PIPE, CONCAT_PROTOCOL) += fate-jxs-concat-demux
 fate-jxs-concat-demux: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/jxs/lena.jxs|$(TARGET_SAMPLES)/jxs/lena.jxs -c:v copy"
 
