@@ -52,12 +52,12 @@ static int lcevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
     for (int i = 0; i < buf_size; i++) {
         int nut;
 
-        pc->state = (pc->state << 8) | buf[i];
+        pc->state64 = (pc->state64 << 8) | buf[i];
 
-        if (((pc->state >> 8) & 0xFFFFFF) != START_CODE)
+        if (((pc->state64 >> 24) & 0xFFFFFF) != START_CODE)
             continue;
 
-        nut = (pc->state >> 1) & 0x1F;
+        nut = (pc->state64 >> 17) & 0x1F;
 
         // Beginning of access unit
         if (nut == LCEVC_IDR_NUT || nut == LCEVC_NON_IDR_NUT) {
@@ -65,7 +65,7 @@ static int lcevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
                 pc->frame_start_found = 1;
             else {
                 pc->frame_start_found = 0;
-                return i - 3;
+                return i - (5 + !((pc->state64 >> 48) & 0xFF));
             }
         }
     }
