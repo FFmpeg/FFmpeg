@@ -1,4 +1,4 @@
-FATE_RTSP_FFPROBE-$(call ALLYES, SDP_DEMUXER FILE_PROTOCOL) \
+FATE_RTSP_FFPROBE-$(call ALLYES, SDP_DEMUXER PIPE_PROTOCOL) \
                                += fate-rtsp-sdp-sample-rate \
                                   fate-rtsp-sdp-sample-rate-leading-zero \
                                   fate-rtsp-sdp-sample-rate-negative \
@@ -14,15 +14,12 @@ FATE_RTSP_FFPROBE-$(call ALLYES, SDP_DEMUXER FILE_PROTOCOL) \
 # from opening a transport, which keeps these tests offline.
 SDP_SAMPLE_RATE_HEAD = v=0\no=- 0 0 IN IP4 127.0.0.1\ns=SampleRate\nc=IN IP4 127.0.0.1\nt=0 0\nm=audio 5004 RTP/AVP 97\na=rtpmap:97 L16/44100/1\n
 SDP_SAMPLE_RATE_PROBE = run ffprobe$(PROGSSUF)$(EXESUF) -v error \
-    -sdp_flags custom_io -protocol_whitelist file \
+    -f sdp -sdp_flags custom_io -protocol_whitelist pipe \
     -analyzeduration 0 -probesize 32 \
     -show_entries stream=sample_rate -print_format compact
 
 define FATE_SDP_SAMPLE_RATE_CMD
-    cleanfiles="$${cleanfiles} $${outfile}.sdp"; \
-    printf "$(SDP_SAMPLE_RATE_HEAD)a=SampleRate:integer;$(1)\n" \
-        > "$${outfile}.sdp"; \
-    $(SDP_SAMPLE_RATE_PROBE) "$$(target_path "$${outfile}.sdp")"
+    printf "$(SDP_SAMPLE_RATE_HEAD)a=SampleRate:integer;$(1)\n" | $(SDP_SAMPLE_RATE_PROBE) pipe:
 endef
 
 # A valid attribute must be applied, otherwise the tests below would pass
