@@ -17190,6 +17190,10 @@ content with black borders, while a value of @code{1.0} always crops off parts
 of the content. Intermediate values are possible, leading to a mix of the two
 approaches.
 
+@item sar
+Force the output sample aspect ratio. The default of @code{0} derives it from
+the input, see @option{reset_sar}.
+
 @item fit_mode
 Specify the content fit strategy according to a list of predefined modes.
 Determines how the input image is to be placed inside the destination crop

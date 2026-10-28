@@ -186,6 +186,7 @@ typedef struct LibplaceboContext {
     int force_divisible_by;
     int reset_sar;
     int normalize_sar;
+    AVRational out_sar;
     int fit_mode;
     int fit_sense;
     int apply_filmgrain;
@@ -1635,6 +1636,9 @@ static int libplacebo_config_output(AVFilterLink *outlink)
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     }
 
+    if (s->out_sar.num)
+        outlink->sample_aspect_ratio = s->out_sar;
+
     /* Frame rate */
     if (s->fps.num) {
         ol->frame_rate = s->fps;
@@ -1680,6 +1684,7 @@ fail:
 
 #define OPTS_COMMON                                                                                                                                                 \
     { "format", "Output video format", OFFSET(out_format_string), AV_OPT_TYPE_STRING, .flags = STATIC },                                                            \
+    { "sar", "Output sample aspect ratio (0 for automatic)", OFFSET(out_sar), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, INT_MAX, STATIC },                               \
     { "inherit_device", "Inherit the Vulkan device from the input's hardware frames context",                                                                       \
         OFFSET(inherit_device), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, .flags = STATIC },                                                                              \
     { "shader_cache",  "Set shader cache path", OFFSET(shader_cache), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = STATIC },                                         \
