@@ -571,6 +571,17 @@ static int append_inputs(AVFilterContext *avctx, int nb_inputs,
     return 0;
 }
 
+/* Returns the filter's own Vulkan device, if it has one */
+static const AVVulkanDeviceContext *choose_default_device(const AVFilterContext *avctx)
+{
+    if (avctx->hw_device_ctx) {
+        const AVHWDeviceContext *avhwctx = (void *) avctx->hw_device_ctx->data;
+        if (avhwctx->type == AV_HWDEVICE_TYPE_VULKAN)
+            return avhwctx->hwctx;
+    }
+    return NULL;
+}
+
 static int libplacebo_init(AVFilterContext *avctx)
 {
     int err = 0;
@@ -618,13 +629,7 @@ static int libplacebo_init(AVFilterContext *avctx)
      * hw_device_ctx even if it would be compatible. This ensure consistent
      * behaviour when the flag is set. */
     if (!s->inherit_device) {
-        const AVVulkanDeviceContext *vkhwctx = NULL;
-        if (avctx->hw_device_ctx) {
-            const AVHWDeviceContext *avhwctx = (void *) avctx->hw_device_ctx->data;
-            if (avhwctx->type == AV_HWDEVICE_TYPE_VULKAN)
-                vkhwctx = avhwctx->hwctx;
-        }
-        RET(init_vulkan(avctx, vkhwctx));
+        RET(init_vulkan(avctx, choose_default_device(avctx)));
         RET(libplacebo_setup_gpu(avctx));
     }
 
