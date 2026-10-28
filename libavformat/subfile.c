@@ -123,18 +123,19 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
         end = c->end;
         if (end == INT64_MAX && (end = ffurl_seek(c->h, 0, AVSEEK_SIZE)) < 0)
             return end;
+    end = FFMAX(end, c->start);
 
     switch (whence) {
     case AVSEEK_SIZE:
         return end - c->start;
     case SEEK_SET:
-        new_pos = c->start + av_clip(pos, 0, end - c->start);
+        new_pos = c->start + av_clip64(pos, 0, end - c->start);
         break;
     case SEEK_CUR:
-        new_pos = c->pos + av_clip(pos, -(c->pos - c->start), end - c->pos);
+        new_pos = c->pos + av_clip64(pos, -(c->pos - c->start), end - c->pos);
         break;
     case SEEK_END:
-        new_pos = end + av_clip(pos, -(end - c->start), 0);
+        new_pos = end + av_clip64(pos, -(end - c->start), 0);
         break;
     default:
         av_assert0(0);
