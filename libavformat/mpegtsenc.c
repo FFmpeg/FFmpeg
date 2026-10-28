@@ -2452,6 +2452,7 @@ static int mpegts_check_bitstream(AVFormatContext *s, AVStream *st,
     } list[] = {
         { AV_CODEC_ID_H264, "h264_mp4toannexb", 0xff, 0x01 /* configurationVersion in AVCDecoderConfigurationRecord  */},
         { AV_CODEC_ID_HEVC, "hevc_mp4toannexb", 0xff, 0x01 /* configurationVersion in HEVCDecoderConfigurationRecord */},
+        { AV_CODEC_ID_LCEVC, "lcevc_metadata",  0xff, 0x01 /* configurationVersion in LCEVCDecoderConfigurationRecord */},
         { AV_CODEC_ID_VVC,  "vvc_mp4toannexb",  0xf8, 0xf8 /* reserved '11111'b    in VVCDecoderConfigurationRecord  */},
     };
 
