@@ -24,6 +24,10 @@
 #include "demux.h"
 #include "internal.h"
 
+typedef struct MSFDemuxContext {
+    int packet_size;
+} MSFDemuxContext;
+
 static int msf_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "MSF", 3))
@@ -43,6 +47,7 @@ static int msf_probe(const AVProbeData *p)
 
 static int msf_read_header(AVFormatContext *s)
 {
+    MSFDemuxContext *msf = s->priv_data;
     unsigned codec, size;
     AVStream *st;
     int ret;
@@ -90,6 +95,8 @@ static int msf_read_header(AVFormatContext *s)
             avpriv_request_sample(s, "Codec %d", codec);
             return AVERROR_PATCHWELCOME;
     }
+    msf->packet_size = st->codecpar->block_align ? st->codecpar->block_align
+                                                 : 1024 * st->codecpar->ch_layout.nb_channels;
     st->duration = av_get_audio_frame_duration2(st->codecpar, size);
     avio_skip(s->pb, 0x40 - avio_tell(s->pb));
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
@@ -99,15 +106,16 @@ static int msf_read_header(AVFormatContext *s)
 
 static int msf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecParameters *par = s->streams[0]->codecpar;
+    MSFDemuxContext *msf = s->priv_data;
 
-    return av_get_packet(s->pb, pkt, par->block_align ? par->block_align : 1024 * par->ch_layout.nb_channels);
+    return av_get_packet(s->pb, pkt, msf->packet_size);
 }
 
 const FFInputFormat ff_msf_demuxer = {
     .p.name         = "msf",
     .p.long_name    = NULL_IF_CONFIG_SMALL("Sony PS3 MSF"),
     .p.extensions   = "msf",
+    .priv_data_size = sizeof(MSFDemuxContext),
     .read_probe     = msf_probe,
     .read_header    = msf_read_header,
     .read_packet    = msf_read_packet,
