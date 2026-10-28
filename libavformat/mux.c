@@ -241,9 +241,16 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                 goto fail;
             }
 
-            if (!par->block_align)
-                par->block_align = par->ch_layout.nb_channels *
-                                   av_get_bits_per_sample(par->codec_id) >> 3;
+            if (!par->block_align) {
+                int64_t block_align = (int64_t)par->ch_layout.nb_channels *
+                                      av_get_bits_per_sample(par->codec_id) >> 3;
+                if (block_align < 0 || block_align > INT_MAX) {
+                    av_log(s, AV_LOG_ERROR, "invalid channel count\n");
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+                par->block_align = block_align;
+            }
             break;
         case AVMEDIA_TYPE_VIDEO:
             if ((par->width <= 0 || par->height <= 0) &&
