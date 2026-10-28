@@ -29,24 +29,12 @@ fate-astc-ktx: CMD = transcode lavfi "testsrc=size=128x128" ktx \
 
 # Check the KTX enum and single-level header fields directly rather than only
 # through the FFmpeg KTX demuxer, which could mirror the muxer's mistake.
-FATE_ASTC-$(call ENCMUX, LIBASTCENC, KTX, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC_FILTER FILE_PROTOCOL) += fate-astc-ktx-header
+FATE_ASTC-$(call ENCMUX, LIBASTCENC, KTX, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC_FILTER PIPE_PROTOCOL) += fate-astc-ktx-header
 fate-astc-ktx-header: CMD = \
-    cleanfiles="$${cleanfiles} $${outfile}.linear.ktx $${outfile}.srgb.ktx"; \
-    linear="$$(target_path "$${outfile}.linear.ktx")"; \
-    srgb="$$(target_path "$${outfile}.srgb.ktx")"; \
-    read_le32() { \
-        od -An -tx1 -j "$$2" -N 4 "$$1" | tr -d "[:space:]"; \
-    }; \
     ffmpeg -f lavfi -i "testsrc=size=16x16" -frames:v 1 -c:v libastcenc -block_size 8x8 -profile:v ldr -srgb 0 \
-        -f ktx -y "$$linear" && \
+        -f ktx - | od -An -tx1 -v -j 28 | sed -n 1,2p && \
     ffmpeg -f lavfi -i "testsrc=size=16x16" -frames:v 1 -c:v libastcenc -block_size 8x8 -profile:v ldr-srgb -srgb 1 \
-        -f ktx -y "$$srgb" && \
-    printf "linear glInternalFormat: " && read_le32 "$${outfile}.linear.ktx" 28 && printf "\n" && \
-    printf "linear faces: " && read_le32 "$${outfile}.linear.ktx" 52 && printf "\n" && \
-    printf "linear mipmap levels: " && read_le32 "$${outfile}.linear.ktx" 56 && printf "\n" && \
-    printf "srgb glInternalFormat: " && read_le32 "$${outfile}.srgb.ktx" 28 && printf "\n" && \
-    printf "srgb faces: " && read_le32 "$${outfile}.srgb.ktx" 52 && printf "\n" && \
-    printf "srgb mipmap levels: " && read_le32 "$${outfile}.srgb.ktx" 56 && printf "\n"
+        -f ktx - | od -An -tx1 -v -j 28 | sed -n 1,2p
 
 # The KTX linear GL enum fixes the colour space but not the endpoint format, so a
 # linear texture may hold HDR endpoints and must be sampled with HDR precision by
@@ -141,14 +129,13 @@ fate-astc-3d:  CMD = transcode lavfi "testsrc=size=64x64" astc \
 # and the specific "Writing HDR ASTC to KTX 1.0 is not supported" message.
 # The command asserts the non-zero exit status, and CMP = grep asserts the
 # diagnostic.
-FATE_ASTC-$(call ENCMUX, LIBASTCENC, KTX, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC_FILTER FORMAT_FILTER SCALE_FILTER FILE_PROTOCOL) += fate-astc-ktx-hdr-reject
+FATE_ASTC-$(call ENCMUX, LIBASTCENC, KTX, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC_FILTER FORMAT_FILTER SCALE_FILTER PIPE_PROTOCOL) += fate-astc-ktx-hdr-reject
 fate-astc-ktx-hdr-reject: CMP = grep
 fate-astc-ktx-hdr-reject: REF = Writing HDR ASTC to KTX 1.0 is not supported
 fate-astc-ktx-hdr-reject: CMD = \
-    cleanfiles="$${cleanfiles} $${outfile}.ktx"; \
     ffmpeg -y -f lavfi -i "testsrc=size=128x128,format=gbrapf32" \
     -threads 1 -c:v libastcenc -block_size 8x8 -frames:v 1 \
-    -f ktx "$$(target_path "$${outfile}.ktx")" ; \
+    -f ktx - ; \
     test $$? -ne 0
 
 FATE_ASTC += $(FATE_ASTC-yes)

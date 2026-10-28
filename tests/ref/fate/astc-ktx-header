@@ -1,6 +1,4 @@
-linear glInternalFormat: b7930000
-linear faces: 01000000
-linear mipmap levels: 01000000
-srgb glInternalFormat: d7930000
-srgb faces: 01000000
-srgb mipmap levels: 01000000
+ b7 93 00 00 08 19 00 00 10 00 00 00 10 00 00 00
+ 00 00 00 00 00 00 00 00 01 00 00 00 01 00 00 00
+ d7 93 00 00 08 19 00 00 10 00 00 00 10 00 00 00
+ 00 00 00 00 00 00 00 00 01 00 00 00 01 00 00 00
