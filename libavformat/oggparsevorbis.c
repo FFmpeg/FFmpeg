@@ -213,12 +213,6 @@ struct oggvorbis_private {
     unsigned int len[3];
     unsigned char *packet[3];
     AVVorbisParseContext *vp;
-    uint8_t *header;
-    int header_size;
-    uint8_t *comment;
-    int comment_size;
-    uint8_t *setup;
-    int setup_size;
     int64_t bos_page_pos;
     int ts_offset;
     int64_t last_page_granule;
@@ -273,10 +267,6 @@ static void vorbis_cleanup(AVFormatContext *s, int idx)
         av_vorbis_parse_free(&priv->vp);
         for (i = 0; i < 3; i++)
             av_freep(&priv->packet[i]);
-
-        av_freep(&priv->header);
-        av_freep(&priv->comment);
-        av_freep(&priv->setup);
     }
 }
 
@@ -462,7 +452,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     struct oggvorbis_private *priv = os->private;
     int duration, flags = 0;
     int bos, skip_packet = 0;
-    int ret, new_extradata_size;
+    int ret;
 
     if (os->psize == 0)
         return AVERROR_INVALIDDATA;
@@ -567,12 +557,12 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         if (ret < 0)
             return ret;
 
-        ret = av_reallocp(&priv->header, os->psize);
+        ret = av_reallocp(&priv->packet[0], os->psize);
         if (ret < 0)
             return ret;
 
-        memcpy(priv->header, os->buf + os->pstart, os->psize);
-        priv->header_size = os->psize;
+        memcpy(priv->packet[0], os->buf + os->pstart, os->psize);
+        priv->len[0] = os->psize;
 
         skip_packet = 1;
     }
@@ -582,24 +572,24 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         if (ret < 0)
             return ret;
 
-        ret = av_reallocp(&priv->comment, os->psize);
+        ret = av_reallocp(&priv->packet[1], os->psize);
         if (ret < 0)
             return ret;
 
-        memcpy(priv->comment, os->buf + os->pstart, os->psize);
-        priv->comment_size = os->psize;
+        memcpy(priv->packet[1], os->buf + os->pstart, os->psize);
+        priv->len[1] = os->psize;
 
         flags = 0;
         skip_packet = 1;
     }
 
     if (flags & VORBIS_FLAG_SETUP) {
-        ret = av_reallocp(&priv->setup, os->psize);
+        ret = av_reallocp(&priv->packet[2], os->psize);
         if (ret < 0)
             return ret;
 
-        memcpy(priv->setup, os->buf + os->pstart, os->psize);
-        priv->setup_size = os->psize;
+        memcpy(priv->packet[2], os->buf + os->pstart, os->psize);
+        priv->len[2] = os->psize;
 
         skip_packet = 1;
     }
@@ -607,40 +597,14 @@ static int vorbis_packet(AVFormatContext *s, int idx)
 
     /* All three headers for the new chained stream have been collected;
      * pack them into new extradata to be attached to the next data packet. */
-    if (priv->header && priv->comment && priv->setup) {
-        uint64_t total_size = (uint64_t)priv->header_size + priv->comment_size +
-                              priv->setup_size;
-        uint8_t *p;
-
-        /* Use Xiph lacing like vorbis_header() does: 16-bit sizes cannot
-         * describe headers larger than 64 KiB, e.g. a comment header with
-         * embedded cover art. */
-        if (total_size + total_size / 255 + 3 > INT_MAX)
-            return AVERROR_INVALIDDATA;
-        new_extradata_size = 1 + priv->header_size / 255 + 1 +
-                             priv->comment_size / 255 + 1 + total_size;
-
-        ret = av_reallocp(&os->new_extradata, new_extradata_size);
-        if (ret < 0)
+    if (priv->packet[0] && priv->packet[1] && priv->packet[2]) {
+        av_freep(&os->new_extradata);
+        ret = fixup_vorbis_headers(s, priv, &os->new_extradata);
+        if (ret < 0) {
+            os->new_extradata_size = 0;
             return ret;
-
-        os->new_extradata_size = new_extradata_size;
-        p     = os->new_extradata;
-        *p++  = 2;
-        p    += av_xiphlacing(p, priv->header_size);
-        p    += av_xiphlacing(p, priv->comment_size);
-        memcpy(p, priv->header, priv->header_size);
-        p    += priv->header_size;
-        memcpy(p, priv->comment, priv->comment_size);
-        p    += priv->comment_size;
-        memcpy(p, priv->setup, priv->setup_size);
-
-        av_freep(&priv->header);
-        priv->header_size = 0;
-        av_freep(&priv->comment);
-        priv->comment_size = 0;
-        av_freep(&priv->setup);
-        priv->setup_size = 0;
+        }
+        os->new_extradata_size = ret;
 
         av_vorbis_parse_free(&priv->vp);
         priv->vp = av_vorbis_parse_init(os->new_extradata, os->new_extradata_size);
