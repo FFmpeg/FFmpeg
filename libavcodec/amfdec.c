@@ -512,6 +512,19 @@ static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface,
     int                 format_amf;
 
     if (avctx->hw_device_ctx && ((AVHWDeviceContext*)avctx->hw_device_ctx->data)->type == AV_HWDEVICE_TYPE_AMF) {
+        AVHWFramesContext *frames_ctx;
+        enum AVPixelFormat sw_format;
+
+        if (!avctx->hw_frames_ctx)
+            return AVERROR(EINVAL);
+        frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
+        sw_format  = av_amf_to_av_format(surface->pVtbl->GetFormat(surface));
+        if (sw_format != frames_ctx->sw_format) {
+            ret = amf_reinit_frames_context(avctx, sw_format, frames_ctx->width, frames_ctx->height);
+            if (ret < 0)
+                return ret;
+        }
+
         // prepare frame similar to  ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
 
         ret = ff_decode_frame_props(avctx, frame);
