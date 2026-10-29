@@ -360,6 +360,7 @@ OBJS-$(CONFIG_LATM_MUXER)                += latmenc.o rawenc.o
 OBJS-$(CONFIG_LC3_DEMUXER)               += lc3.o
 OBJS-$(CONFIG_LC3_MUXER)                 += lc3.o
 OBJS-$(CONFIG_LCEVC_DEMUXER)             += lcevcdec.o
+OBJS-$(CONFIG_LCEVC_MUXER)               += rawenc.o
 OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
 OBJS-$(CONFIG_LOAS_DEMUXER)              += loasdec.o rawdec.o
 OBJS-$(CONFIG_LUODAT_DEMUXER)            += luodatdec.o

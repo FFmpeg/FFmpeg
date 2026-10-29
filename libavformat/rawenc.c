@@ -472,6 +472,31 @@ const FFOutputFormat ff_evc_muxer = {
 };
 #endif
 
+#if CONFIG_LCEVC_MUXER
+static int lcevc_check_bitstream(AVFormatContext *s, AVStream *st,
+                                const AVPacket *pkt)
+{
+    if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                          AV_RB24(pkt->data) != 0x000001)
+        return ff_stream_add_bitstream_filter(st, "lcevc_metadata", NULL);
+    return 1;
+}
+
+const FFOutputFormat ff_lcevc_muxer = {
+    .p.name            = "lcevc",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("raw LCEVC video"),
+    .p.extensions      = "lcevc",
+    .p.audio_codec     = AV_CODEC_ID_NONE,
+    .p.video_codec     = AV_CODEC_ID_LCEVC,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
+    .write_packet      = ff_raw_write_packet,
+    .check_bitstream   = lcevc_check_bitstream,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_M4V_MUXER
 const FFOutputFormat ff_m4v_muxer = {
     .p.name            = "m4v",
