@@ -121,7 +121,7 @@ typedef struct LCEVCRawEncodedData {
 
     uint8_t     *data;
     AVBufferRef *data_ref;
-    size_t       header_size;
+    ptrdiff_t    data_offset;
     size_t       data_size;
 
     LCEVCRawSequenceConfig *sc; ///< RefStruct references
