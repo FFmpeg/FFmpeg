@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/bprint.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "avformat.h"
@@ -301,16 +302,20 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
     av_log(s, AV_LOG_TRACE, "NSV got header; filepos %"PRId64"\n", avio_tell(pb));
 
     if (strings_size > 0) {
-        char *strings; /* last byte will be '\0' to play safe with str*() */
+        AVBPrint strings;
         char *p, *endp;
         char *token, *value;
         char quote;
+        int ret;
 
-        p = strings = av_mallocz((size_t)strings_size + 1);
-        if (!p)
-            return AVERROR(ENOMEM);
-        endp = strings + strings_size;
-        avio_read(pb, strings, strings_size);
+        av_bprint_init(&strings, 0, AV_BPRINT_SIZE_UNLIMITED);
+        ret = avio_read_to_bprint(pb, &strings, strings_size);
+        if (ret < 0) {
+            av_bprint_finalize(&strings, NULL);
+            return ret;
+        }
+        p = strings.str;
+        endp = strings.str + strings.len;
         while (p < endp) {
             while (*p == ' ')
                 p++; /* strip out spaces */
@@ -330,7 +335,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
             av_log(s, AV_LOG_TRACE, "NSV NSVf INFO: %s='%s'\n", token, value);
             av_dict_set(&s->metadata, token, value, 0);
         }
-        av_free(strings);
+        av_bprint_finalize(&strings, NULL);
     }
     if (avio_feof(pb))
         return -1;
