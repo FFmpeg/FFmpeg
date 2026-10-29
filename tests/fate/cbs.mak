@@ -183,6 +183,20 @@ FATE_CBS_VVC-$(call FATE_CBS_NO_DEC_DEPS, VVC) = $(FATE_CBS_vvc)
 FATE_SAMPLES_AVCONV += $(FATE_CBS_VVC-yes)
 fate-cbs-vvc: $(FATE_CBS_VVC-yes)
 
+# LCEVC read/write
+
+FATE_CBS_LCEVC_SAMPLES =      \
+    8bit_2D.lcevc             \
+    8bit_2D_vui.lcevc         \
+
+
+$(foreach N,$(FATE_CBS_LCEVC_SAMPLES),$(eval $(call FATE_CBS_NO_DEC_TEST,lcevc,$(basename $(N)),lcevc/$(N),lcevc)))
+
+FATE_CBS_LCEVC-$(call ALLYES, LCEVC_DEMUXER LCEVC_PARSER LCEVC_METADATA_BSF LCEVC_MUXER) = $(FATE_CBS_lcevc)
+
+FATE_SAMPLES_AVCONV += $(FATE_CBS_LCEVC-yes)
+fate-cbs-lcevc: $(FATE_CBS_LCEVC-yes)
+
 # MPEG-2 read/write
 
 FATE_CBS_MPEG2_SAMPLES =     \
