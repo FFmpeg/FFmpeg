@@ -507,6 +507,9 @@ static inline enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
 #define MOV_MP4_FPCM_TAG  MKTAG('f', 'p', 'c', 'm')
 #define MOV_MP4_IPCM_TAG  MKTAG('i', 'p', 'c', 'm')
 
+#define MOV_MP4_DJMD_TAG  MKTAG('d', 'j', 'm', 'd')
+#define MOV_MP4_DBGI_TAG  MKTAG('d', 'b', 'g', 'i')
+
 struct MP4TrackKindValueMapping {
     int         disposition;
     const char *value;

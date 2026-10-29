@@ -81,6 +81,8 @@ const AVCodecTag ff_codec_movsubtitle_tags[] = {
 
 const AVCodecTag ff_codec_movdata_tags[] = {
     { AV_CODEC_ID_BIN_DATA, MKTAG('g', 'p', 'm', 'd') },
+    { AV_CODEC_ID_BIN_DATA, MOV_MP4_DJMD_TAG },
+    { AV_CODEC_ID_BIN_DATA, MOV_MP4_DBGI_TAG },
     { AV_CODEC_ID_ITUT_T35, MKTAG('i', 't', '3', '5') },
     { AV_CODEC_ID_NONE, 0 },
 };
