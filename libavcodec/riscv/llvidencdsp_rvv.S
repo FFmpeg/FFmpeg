@@ -22,6 +22,7 @@
 
 func ff_llvidenc_diff_bytes_rvv, zve32x
         lpad    0
+        blez    a3, 2f
 1:
         vsetvli t0, a3, e8, m8, ta, ma
         vle8.v  v0, (a1)
@@ -33,7 +34,7 @@ func ff_llvidenc_diff_bytes_rvv, zve32x
         vse8.v  v8, (a0)
         add     a0, t0, a0
         bnez    a3, 1b
-
+2:
         ret
 endfunc
 
