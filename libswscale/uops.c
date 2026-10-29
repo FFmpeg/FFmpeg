@@ -198,6 +198,16 @@ void ff_sws_uop_list_remove_at(SwsUOpList *uops, int index, int count)
     uops->num_ops = end;
 }
 
+void ff_sws_uop_list_print(void *log, int lev, const SwsUOpList *uops)
+{
+    av_log(log, lev, "Compiled micro-ops:\n");
+    for (int i = 0; i < uops->num_ops; i++) {
+        char name[SWS_UOP_NAME_MAX];
+        ff_sws_uop_name(&uops->ops[i], name);
+        av_log(log, lev, "    %s\n", name);
+    }
+}
+
 int ff_sws_dither_height(const SwsDitherUOp *dither)
 {
     int max_offset = 0;

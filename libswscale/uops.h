@@ -349,6 +349,11 @@ int ff_sws_uop_list_append(SwsUOpList *uops, SwsUOp *uop);
 int ff_sws_uop_list_optimize(SwsContext *ctx, SwsUOpFlags flags, SwsUOpList *uops);
 
 /**
+ * Print the micro-ops of a compiled list at the given log level.
+ */
+void ff_sws_uop_list_print(void *log_ctx, int log_level, const SwsUOpList *uops);
+
+/**
  * Translate a list of operations down to micro-ops, which can be further
  * optimized and then directly executed by backends.
  *

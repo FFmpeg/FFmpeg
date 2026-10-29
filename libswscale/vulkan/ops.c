@@ -1317,12 +1317,7 @@ static int compile_ops_spirv(SwsContext *sws, const SwsOpList *ops,
         .free        = spirv_free,
     };
 
-    av_log(sws, AV_LOG_DEBUG, "Compiled micro-ops:\n");
-    for (int i = 0; i < uops->num_ops; i++) {
-        char name[SWS_UOP_NAME_MAX];
-        ff_sws_uop_name(&uops->ops[i], name);
-        av_log(sws, AV_LOG_DEBUG, "    %s\n", name);
-    }
+    ff_sws_uop_list_print(sws, AV_LOG_DEBUG, uops);
 
     ff_sws_uop_list_free(&uops);
     return 0;

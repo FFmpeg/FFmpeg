@@ -165,12 +165,7 @@ static int compile_uops_c(SwsContext *ctx, const SwsUOpList *uops, SwsCompiledOp
     memcpy(out->over_read,  chain->over_read,  sizeof(out->over_read));
     memcpy(out->over_write, chain->over_write, sizeof(out->over_write));
 
-    av_log(ctx, AV_LOG_DEBUG, "Compiled micro-ops:\n");
-    for (int i = 0; i < uops->num_ops; i++) {
-        char name[SWS_UOP_NAME_MAX];
-        ff_sws_uop_name(&uops->ops[i], name);
-        av_log(ctx, AV_LOG_DEBUG, "    %s\n", name);
-    }
+    ff_sws_uop_list_print(ctx, AV_LOG_DEBUG, uops);
 
     return 0;
 
