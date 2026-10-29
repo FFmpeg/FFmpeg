@@ -22392,6 +22392,146 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@section scale_d3d12
+
+Scale (resize) and convert the pixel format of the input video using
+Direct3D 12 hardware-accelerated video processing
+(@code{ID3D12VideoProcessor}). It requires the input to be in @code{d3d12}
+hardware pixel format.
+
+Setting the output width and height works in the same way as for the
+@ref{scale} filter. @code{sample_aspect_ratio} is recalculated for the new
+dimensions the same way @ref{scale} does it, and side data whose values
+are expressed in pixel coordinates of the old size (motion vectors,
+detection bounding boxes, ROI, ...) is removed when the size actually
+changes, also the same way @ref{scale} does it.
+
+Which input/output pixel format and color space combinations are actually
+supported depends on the GPU and driver. The filter first rejects color
+descriptions it cannot represent using DXGI. For representable
+combinations, support is queried from the GPU and driver. If that
+capability query reports the conversion unsupported, @code{-v debug}
+prints a probe of alternative output combinations.
+
+The filter accepts the following options:
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input
+dimension.
+
+Allows for the same expressions as the @ref{scale} filter.
+
+@item format
+Controls the output pixel format. By default, or if none is specified, the
+input pixel format is used.
+
+Besides converting between the semi-planar YUV formats @code{nv12},
+@code{p010} and @code{p012}, this filter can also convert to the packed
+RGB formats @code{bgra}, @code{rgba}, @code{x2bgr10} and @code{rgbaf16},
+when supported by the hardware.
+
+@item out_color_matrix
+Set the output colorspace matrix. This only affects YUV output formats
+and accepts the same values as the @option{space} option of the
+@code{colorspace} filter, e.g. @code{smpte170m}, @code{bt709},
+@code{bt2020nc}; only those exact names are recognized, not other
+common aliases (e.g. @code{bt2020nc}, not @code{bt2020ncl}). If
+@option{out_color_matrix} is not specified and @option{out_color_primaries}
+is explicitly set, the output matrix is derived from the requested
+primaries. Otherwise, the input matrix is inherited; if it is
+unspecified, the matrix is derived from the input primaries.
+
+@item out_range
+Set the output color range. It accepts the following values:
+
+@table @samp
+@item tv, mpeg, limited
+Limited range.
+
+@item pc, jpeg, full
+Full range.
+@end table
+
+If not specified, it defaults to the input range, except that a
+@option{out_color_transfer} of @code{linear} (explicit or defaulted,
+see below) always selects @code{full} range. If the range is still
+unspecified at that point, it defaults to @code{limited} for YUV
+output and @code{full} for RGB output.
+
+@item out_color_primaries
+Set the output color primaries. It accepts the same values as the
+@option{primaries} option of the @code{colorspace} filter, e.g.
+@code{bt709}, @code{bt2020}. If not specified, it defaults to the input
+primaries.
+
+@item out_color_transfer
+Set the output color transfer characteristics. It accepts the same
+values as the @option{trc} option of the @code{colorspace} filter, e.g.
+@code{bt709}, @code{smpte2084}, @code{arib-std-b67}; only those exact
+names are recognized, not other common aliases (e.g.
+@code{iec61966-2-1}, not @code{srgb}; @code{bt470bg}, not
+@code{gamma28}). If not specified, it defaults to the input transfer
+characteristics, except that @code{rgbaf16} output defaults to
+@code{linear} when both this option and the input transfer
+characteristics are unspecified.
+
+@end table
+
+The video processor and output color properties are configured from
+the first frame and reused for subsequent frames. Changes in frame
+dimensions require filter-graph reinitialization.
+
+If this filter changes the output color primaries and/or transfer
+characteristics relative to the input, side data describing those
+properties (mastering display metadata, HDR10+/Dolby Vision metadata,
+ICC profile, ...) is removed from the output frame.
+
+Alpha is preserved for RGB formats that have it (@code{bgra},
+@code{rgba}, @code{rgbaf16}); other formats, and devices that cannot
+pass alpha through, produce opaque alpha instead. A premultiplied-alpha
+input is rejected if the requested conversion cannot preserve it
+correctly (e.g. it also changes color space); unpremultiply the input
+first in that case.
+
+YUV output is retagged with the chroma sample location the selected
+output color space actually uses, which depends on the matrix, range
+and transfer characteristic (e.g. @code{topleft} for HLG, @code{left}
+for BT.601/BT.709); RGB output is always tagged @code{unspecified}. An
+input chroma siting the chosen input color space cannot represent is
+rejected.
+
+@subsection Examples
+
+@itemize
+@item
+Scale a @code{d3d12} NV12 surface to 1280x720, keeping the pixel format:
+@example
+scale_d3d12=w=1280:h=720
+@end example
+
+@item
+Convert a @code{d3d12} NV12 surface to BGRA, so it can be downloaded and
+encoded or displayed without a software pixel format conversion:
+@example
+scale_d3d12=format=bgra
+@end example
+
+@item
+Convert a 10-bit HDR10 (P010) surface to 10-bit RGB, without altering
+its HDR color properties:
+@example
+scale_d3d12=format=x2bgr10
+@end example
+
+@item
+Scale and convert to full-range BGRA, for example before @code{hwdownload}
+feeds a renderer that expects full-range RGB:
+@example
+scale_d3d12=format=bgra:out_range=full
+@end example
+@end itemize
+
 @section scharr
 Apply scharr operator to input video stream.
 
