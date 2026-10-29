@@ -190,12 +190,8 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
         return NULL;
 
     info->system_id = av_mallocz(system_id_size);
-    info->system_id_size = system_id_size;
     info->key_ids = key_id_size ? av_calloc(num_key_ids, sizeof(*info->key_ids)) : NULL;
-    info->num_key_ids = num_key_ids;
-    info->key_id_size = key_id_size;
     info->data = av_mallocz(data_size);
-    info->data_size = data_size;
 
     // Allow pointers to be NULL if the size is 0.
     if ((!info->system_id && system_id_size) || (!info->data && data_size) ||
@@ -203,6 +199,11 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
         av_encryption_init_info_free(info);
         return NULL;
     }
+
+    info->system_id_size = system_id_size;
+    info->num_key_ids = num_key_ids;
+    info->key_id_size = key_id_size;
+    info->data_size = data_size;
 
     if (key_id_size) {
         for (i = 0; i < num_key_ids; i++) {
