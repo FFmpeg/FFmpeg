@@ -1705,11 +1705,24 @@ static int update_frame_props(AVCodecContext *avctx, AVFrame *frame)
         if (ret < 0)
             return ret;
 
+        int enhance = dc->lcevc.width && dc->lcevc.height &&
+                      frame->format == dc->lcevc.base_format;
+        if (enhance) {
+            ret = av_image_check_size2(FFMAX(frame->width,  dc->lcevc.width),
+                                       FFMAX(frame->height, dc->lcevc.height),
+                                       avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx);
+            if (ret < 0) {
+                dc->lcevc.width = dc->lcevc.height = 0;
+                enhance = 0;
+            }
+        }
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
+
         // force get_buffer2() to allocate the base frame with at least the dimensions
         // of the final enhanced frame, in order to prevent reinitializing the buffer
         // pools unnecessarely
-        if (dc->lcevc.width && dc->lcevc.height &&
-            frame->format == dc->lcevc.base_format) {
+        if (enhance) {
             dc->lcevc.base_width  = frame->width;
             dc->lcevc.base_height = frame->height;
             frame->width  = FFMAX(frame->width,  dc->lcevc.width);
