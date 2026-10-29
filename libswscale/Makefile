@@ -38,9 +38,7 @@ OBJS-$(CONFIG_UNSTABLE) +=                              \
        uops.o                                           \
        uops_backend.o                                   \
 
-ifeq ($(CONFIG_UNSTABLE),yes)
 include $(SRC_PATH)/libswscale/vulkan/Makefile
-endif
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                    += framepool.o log2_tab.o half2float.o
