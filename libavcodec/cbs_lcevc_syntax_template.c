@@ -294,7 +294,7 @@ LCEVC_BLOCK_FUNC(encoded_data, (CodedBitstreamContext *ctx, RWContext *rw,
     int pos = get_bits_count(rw) - start;
     int len = state->payload_size;
 
-    current->header_size = pos / 8;
+    current->data_offset = get_bits_count(rw) / 8;
     current->data_size = len - pos / 8;
     skip_bits_long(rw, current->data_size * 8);
 #else
