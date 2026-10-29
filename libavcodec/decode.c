@@ -1627,11 +1627,21 @@ static int lcevc_parse_frame(AVCodecContext *avctx, DecodeContext *dc, AVFrame *
     ret = ff_lcevc_parse_frame(dc->lcevc.ctx, frame, &dc->lcevc.format,
                                &dc->lcevc.base_format,
                                &dc->lcevc.width, &dc->lcevc.height);
+    int enhance = !ret && dc->lcevc.width && dc->lcevc.height &&
+                  frame->format == dc->lcevc.base_format;
+    if (enhance) {
+        ret = av_image_check_size2(FFMAX(frame->width,  dc->lcevc.width),
+                                   FFMAX(frame->height, dc->lcevc.height),
+                                   avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx);
+        if (ret < 0) {
+            dc->lcevc.width = dc->lcevc.height = 0;
+            enhance = 0;
+        }
+    }
     if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
         return ret;
 
-    if (ret < 0 || !dc->lcevc.width || !dc->lcevc.height ||
-        frame->format != dc->lcevc.base_format) {
+    if (!enhance) {
         dc->lcevc.frame = 0;
         return 0;
     }
