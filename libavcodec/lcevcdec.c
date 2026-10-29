@@ -372,6 +372,7 @@ static void lcevc_free(AVRefStructOpaque unused, void *obj)
     av_freep(&lcevc->frag);
     ff_cbs_close(&lcevc->cbc);
     av_refstruct_pool_uninit(&lcevc->frame_pool);
+    av_opt_free(lcevc);
     memset(lcevc, 0, sizeof(*lcevc));
 }
 
