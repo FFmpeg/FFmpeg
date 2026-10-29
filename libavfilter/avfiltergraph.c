@@ -165,6 +165,23 @@ void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
     fffiltergraph(graph)->disable_auto_convert = flags;
 }
 
+int avfilter_graph_set_max_buffered_frames(AVFilterGraph *graph,
+                                           enum AVMediaType type,
+                                           unsigned frames)
+{
+    FFFilterGraph *graphi = fffiltergraph(graph);
+    if (type < 0 || type >= FF_ARRAY_ELEMS(graphi->frame_queues))
+        return AVERROR(EINVAL);
+
+    FFFrameQueueGlobal *fqg = &graphi->frame_queues[type];
+    size_t max_queued = frames ? frames : SIZE_MAX;
+    if (fqg->queued > max_queued)
+        return AVERROR(EINVAL);
+    fqg->max_queued = max_queued;
+    graphi->max_queued_set[type] = 1;
+    return 0;
+}
+
 AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                              const AVFilter *filter,
                                              const char *name)
@@ -1461,9 +1478,14 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
     FFFilterGraph *graphi = fffiltergraph(graphctx);
     int ret;
 
+    size_t max_queued = graphctx->max_buffered_frames;
+    if (!max_queued)
+        max_queued = SIZE_MAX;
+
     for (int i = 0; i < FF_ARRAY_ELEMS(graphi->frame_queues); i++) {
-        const size_t max_queued = graphctx->max_buffered_frames;
-        if (max_queued)
+        /* only infer the value from graphctx->max_buffered_frames if it was
+         * not already set by avfilter_graph_set_max_buffered_frames() */
+        if (!graphi->max_queued_set[i])
             graphi->frame_queues[i].max_queued = max_queued;
     }
     if ((ret = graph_check_validity(graphctx, log_ctx)))

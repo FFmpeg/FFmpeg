@@ -704,6 +704,23 @@ enum {
 };
 
 /**
+ * Set the maximum number of combined buffered frames of a given media type in
+ * the filtergraph. When set, this overrides the value inherited from
+ * AVFilterGraph.max_buffered_frames for that media type.
+ *
+ * @param graph  the filter graph
+ * @param type   the media type to set the limit for
+ * @param frames the maximum number of buffered frames, or zero to disable
+ * @return >= 0 in case of success, or a negative error
+ *
+ * @note This will return AVERROR(EINVAL) if the requested limit is lower
+ *       than the number of frames already buffered.
+ */
+int avfilter_graph_set_max_buffered_frames(AVFilterGraph *graph,
+                                           enum AVMediaType type,
+                                           unsigned frames);
+
+/**
  * Check validity and configure all the links and formats in the graph.
  *
  * @param graphctx the filter graph
