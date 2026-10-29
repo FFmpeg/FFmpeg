@@ -216,9 +216,9 @@ static inline int is_space(char c)
 static inline int scale_double(void *log, double d, double m, int *r)
 {
     m *= d * SBG_SCALE;
-    if (m < INT_MIN || m >= INT_MAX) {
+    if (isnan(m) || m < INT_MIN || m >= INT_MAX) {
         if (log)
-            av_log(log, AV_LOG_ERROR, "%g is too large\n", d);
+            av_log(log, AV_LOG_ERROR, "%g is %s\n", d, isnan(m) ? "not a valid number" : "too large");
         return AVERROR(EDOM);
     }
     *r = m;
