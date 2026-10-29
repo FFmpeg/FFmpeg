@@ -749,6 +749,10 @@ enum AVColorSpace {
  *   - 'n' is the output bit depth.
  *   - For additional definitions such as rounding and clipping to valid n
  *     bit unsigned integer range, please refer to BT.2100 (Table 9).
+ *
+ * These definitions only apply to integer representations. Floating point
+ * representations hold 'E' directly, without any scaling or offset, and are
+ * not limited to its nominal range.
  */
 enum AVColorRange {
     AVCOL_RANGE_UNSPECIFIED = 0,

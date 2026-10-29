@@ -678,6 +678,9 @@ typedef struct AVCodecContext {
      *   output format.
      * - decoding: Set by libavcodec, can be set by the user to propagate the
      *   color range to components reading from the decoder context.
+     *
+     * @note This field is ignored for floating point pixel formats, which
+     *       are always full range. See AVColorRange.
      */
     enum AVColorRange color_range;
 

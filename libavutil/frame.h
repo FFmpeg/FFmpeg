@@ -726,6 +726,9 @@ typedef struct AVFrame {
      * MPEG vs JPEG YUV range.
      * - encoding: Set by user
      * - decoding: Set by libavcodec
+     *
+     * @note This field is ignored for floating point pixel formats, which
+     *       are always full range. See AVColorRange.
      */
     enum AVColorRange color_range;
 
