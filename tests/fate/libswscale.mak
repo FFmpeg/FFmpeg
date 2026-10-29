@@ -54,7 +54,6 @@ fate-sws-monow-ed-tail: CMD = framecrc -lavfi color=black:s=100x8:r=1,scale=flag
 fate-sws-monob-ed-tail-bilinear: CMD = framecrc -lavfi color=white:s=102x8:r=1,scale=102:16:flags=bilinear+bitexact:sws_dither=ed,format=monob -frames:v 1
 fate-sws-monow-ed-tail-bilinear: CMD = framecrc -lavfi color=black:s=102x8:r=1,scale=102:16:flags=bilinear+bitexact:sws_dither=ed,format=monow -frames:v 1
 
-ifeq ($(CONFIG_UNSTABLE),yes)
 SWS_UNSTABLE_BACKENDS-yes                            += c memcpy
 ifeq ($(ARCH_X86_64),yes)
 SWS_UNSTABLE_BACKENDS-$(HAVE_X86ASM)                 += x86
@@ -96,13 +95,12 @@ $(FATE_SWS_FLIPPED): REF = /dev/null
 fate-sws-flipped: $(FATE_SWS_FLIPPED)
 
 FATE_LIBSWSCALE += $(FATE_SWS_UNSCALED) $(FATE_SWS_UNSTABLE) $(FATE_SWS_UNPADDED) $(FATE_SWS_FLIPPED)
-endif
 
 ifneq ($(HAVE_BIGENDIAN),yes)
 
 # Disable on big endian because big endian platforms generate different op
 # lists for le vs be formats; this breaks the checksum otherwise
-FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
+FATE_LIBSWSCALE += fate-sws-ops-list
 fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)
 fate-sws-ops-list: CMD = run libswscale/tests/sws_ops$(EXESUF) | do_md5sum | cut -d" " -f1
 
@@ -112,7 +110,7 @@ FATE_SWS_UOPS_MACROS = fate-sws-uops-macros-c                          \
 
 ifeq ($(HAVE_INT128),yes)
 # Disable by default without int128 because it is too slow (several minutes)
-FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += $(FATE_SWS_UOPS_MACROS)
+FATE_LIBSWSCALE += $(FATE_SWS_UOPS_MACROS)
 endif
 
 # Disable on bigendian because it would result in a different iteration order
@@ -135,12 +133,12 @@ fate-sws-uops-macros: $(FATE_SWS_UOPS_MACROS)
 
 endif
 
-FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-rational64
+FATE_LIBSWSCALE += fate-sws-rational64
 fate-sws-rational64: libswscale/tests/rational64$(EXESUF)
 fate-sws-rational64: CMD = run libswscale/tests/rational64$(EXESUF)
 fate-sws-rational64: CMP = null
 
-FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-entries-aarch64
+FATE_LIBSWSCALE += fate-sws-ops-entries-aarch64
 fate-sws-ops-entries-aarch64: libswscale/tests/sws_ops_aarch64$(EXESUF)
 fate-sws-ops-entries-aarch64: REF = $(SRC_PATH)/libswscale/aarch64/ops_entries.c
 fate-sws-ops-entries-aarch64: CMD = run libswscale/tests/sws_ops_aarch64$(EXESUF)
