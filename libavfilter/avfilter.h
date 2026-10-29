@@ -620,14 +620,19 @@ typedef struct AVFilterGraph {
 
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
 
+#if FF_API_MAX_BUFFERED_FRAMES
     /**
      * Sets the maximum number of combined buffered frames of each media type
      * in the filtergraph.
      *
      * Zero means no limit. This field must be set before calling
      * avfilter_graph_config().
+     *
+     * @deprecated use avfilter_graph_set_max_buffered_frames() instead
      */
+    attribute_deprecated
     unsigned max_buffered_frames;
+#endif
 } AVFilterGraph;
 
 /**

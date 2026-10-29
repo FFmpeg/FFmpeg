@@ -35,4 +35,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#define FF_API_MAX_BUFFERED_FRAMES      (LIBAVFILTER_VERSION_MAJOR < 13)
+
 #endif /* AVFILTER_VERSION_MAJOR_H */

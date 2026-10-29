@@ -45,6 +45,7 @@
 #define F AV_OPT_FLAG_FILTERING_PARAM
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define A AV_OPT_FLAG_AUDIO_PARAM
+FF_DISABLE_DEPRECATION_WARNINGS
 static const AVOption filtergraph_options[] = {
     { "thread_type", "Allowed thread types", OFFSET(thread_type), AV_OPT_TYPE_FLAGS,
         { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, F|V|A, .unit = "thread_type" },
@@ -56,10 +57,13 @@ static const AVOption filtergraph_options[] = {
         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|V },
     {"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,
         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|A },
+#if FF_API_MAX_BUFFERED_FRAMES
     {"max_buffered_frames"  , "maximum number of buffered frames allowed", OFFSET(max_buffered_frames),
-        AV_OPT_TYPE_UINT,   {.i64 = 0}, 0, UINT_MAX, F|V|A },
+        AV_OPT_TYPE_UINT,   {.i64 = 0}, 0, UINT_MAX, F|V|A|AV_OPT_FLAG_DEPRECATED },
+#endif
     { NULL },
 };
+FF_ENABLE_DEPRECATION_WARNINGS
 
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",
@@ -1478,9 +1482,13 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
     FFFilterGraph *graphi = fffiltergraph(graphctx);
     int ret;
 
-    size_t max_queued = graphctx->max_buffered_frames;
-    if (!max_queued)
-        max_queued = SIZE_MAX;
+    size_t max_queued = SIZE_MAX;
+#if FF_API_MAX_BUFFERED_FRAMES
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (graphctx->max_buffered_frames)
+        max_queued = graphctx->max_buffered_frames;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     for (int i = 0; i < FF_ARRAY_ELEMS(graphi->frame_queues); i++) {
         /* only infer the value from graphctx->max_buffered_frames if it was

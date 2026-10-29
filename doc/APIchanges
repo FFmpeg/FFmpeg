@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-10-xx - xxxxxxxxxx - lavfi 12.12.100 - avfilter.h
+  Deprecate AVFilterGraph.max_buffered_frames in favor of
+  avfilter_graph_set_max_buffered_frames().
+
 2026-10-xx - xxxxxxxxxx - lavfi 12.11.100 - avfilter.h
   Add avfilter_graph_set_max_buffered_frames().
 
