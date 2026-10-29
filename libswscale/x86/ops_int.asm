@@ -200,10 +200,10 @@ IF Y,   movu [out1q + mmsize], my2
 IF Z,   movu [out2q + mmsize], mz2
 IF W,   movu [out3q + mmsize], mw2
 %endif
-IF X,   add out0q, BLOCK_WIDTH
-IF Y,   add out1q, BLOCK_WIDTH
-IF Z,   add out2q, BLOCK_WIDTH
-IF W,   add out3q, BLOCK_WIDTH
+IF X,   add out0q, BLOCK_SIZE
+IF Y,   add out1q, BLOCK_SIZE
+IF Z,   add out2q, BLOCK_SIZE
+IF W,   add out3q, BLOCK_SIZE
         RET
 %endmacro
 
