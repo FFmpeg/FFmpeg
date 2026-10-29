@@ -437,15 +437,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         /* nothing to do */
         break;
     case EXR_RLE:
-        encode_scanline_rle(s, frame);
+        ret = encode_scanline_rle(s, frame);
         break;
     case EXR_ZIP16:
     case EXR_ZIP1:
-        encode_scanline_zip(s, frame);
+        ret = encode_scanline_zip(s, frame);
         break;
     default:
         av_assert0(0);
     }
+    if (ret < 0)
+        return ret;
 
     switch (s->compression) {
     case EXR_RAW:
