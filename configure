@@ -3354,7 +3354,7 @@ vulkan_deps="threads"
 vulkan_deps_any="libdl LoadLibrary"
 spirv_headers_spirv_h_deps="vulkan"
 spirv_unified1_spirv_h_deps="vulkan"
-swscale_vulkan_deps="vulkan"
+swscale_vulkan_deps="vulkan unstable"
 swscale_vulkan_if_any="spirv_headers_spirv_h spirv_unified1_spirv_h"
 
 apv_vulkan_hwaccel_deps="vulkan spirv_compiler"
