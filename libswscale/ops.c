@@ -1051,6 +1051,7 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
     }
 
     av_bprint_init(bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    lev_extra = FFMAX(lev_extra, lev);
 
     for (int n = 0; n < ops->num_ops; n++) {
         const SwsOp *op = &ops->ops[n];
