@@ -568,6 +568,12 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     }
 
     if (flags & VORBIS_FLAG_COMMENT) {
+        if (!priv->packet[0]) {
+            av_log(s, AV_LOG_WARNING,
+                   "Comment header without identification header, ignoring it\n");
+            return 1;
+        }
+
         ret = vorbis_update_metadata(s, idx);
         if (ret < 0)
             return ret;
