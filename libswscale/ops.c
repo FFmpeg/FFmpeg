@@ -1042,6 +1042,9 @@ void ff_sws_op_list_print(void *log, int lev, int lev_extra,
                           const SwsOpList *ops)
 {
     AVBPrint bpc, *bp = &bpc;
+    if (av_log_get_level() < lev)
+        return;
+
     if (!ops->num_ops) {
         av_log(log, lev, "  (empty)\n");
         return;
