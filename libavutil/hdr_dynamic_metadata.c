@@ -244,6 +244,41 @@ int av_dynamic_hdr_plus_to_t35(const AVDynamicHDRPlus *s, uint8_t **data, size_t
         return AVERROR(EINVAL);
     if ((!data || *data) && !size)
        return AVERROR(EINVAL);
+    /* The caps put the payload at exactly 907 bytes; the assert cannot fire. */
+    if (s->num_windows > FF_ARRAY_ELEMS(s->params))
+        return AVERROR(EINVAL);
+
+    for (int w = 0; w < s->num_windows; w++) {
+        const AVHDRPlusColorTransformParams *p = &s->params[w];
+
+        if (p->num_distribution_maxrgb_percentiles >
+            FF_ARRAY_ELEMS(p->distribution_maxrgb))
+            return AVERROR(EINVAL);
+
+        /* The anchors are only read while tone mapping is enabled. */
+        if (p->tone_mapping_flag &&
+            p->num_bezier_curve_anchors >
+            FF_ARRAY_ELEMS(p->bezier_curve_anchors))
+            return AVERROR(EINVAL);
+    }
+
+    /* The peak-luminance pairs use a row count and a column count, and are
+     * only read when their flag is set, so check them the same way. */
+    if (s->targeted_system_display_actual_peak_luminance_flag) {
+        if (s->num_rows_targeted_system_display_actual_peak_luminance >
+            FF_ARRAY_ELEMS(s->targeted_system_display_actual_peak_luminance) ||
+            s->num_cols_targeted_system_display_actual_peak_luminance >
+            FF_ARRAY_ELEMS(s->targeted_system_display_actual_peak_luminance[0]))
+            return AVERROR(EINVAL);
+    }
+
+    if (s->mastering_display_actual_peak_luminance_flag) {
+        if (s->num_rows_mastering_display_actual_peak_luminance >
+            FF_ARRAY_ELEMS(s->mastering_display_actual_peak_luminance) ||
+            s->num_cols_mastering_display_actual_peak_luminance >
+            FF_ARRAY_ELEMS(s->mastering_display_actual_peak_luminance[0]))
+            return AVERROR(EINVAL);
+    }
 
     /**
      * Buffer size per CTA-861-H p.253-254:
