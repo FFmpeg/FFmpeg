@@ -93,7 +93,8 @@ AVFilterGraph *avfilter_graph_alloc(void)
     ret = &graph->p;
     ret->av_class = &filtergraph_class;
     av_opt_set_defaults(ret);
-    ff_framequeue_global_init(&graph->frame_queues);
+    for (int i = 0; i < FF_ARRAY_ELEMS(graph->frame_queues); i++)
+        ff_framequeue_global_init(&graph->frame_queues[i]);
 
     return ret;
 }
@@ -1457,10 +1458,14 @@ static int graph_config_pointers(AVFilterGraph *graph, void *log_ctx)
 
 int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
+    FFFilterGraph *graphi = fffiltergraph(graphctx);
     int ret;
 
-    if (graphctx->max_buffered_frames)
-        fffiltergraph(graphctx)->frame_queues.max_queued = graphctx->max_buffered_frames;
+    for (int i = 0; i < FF_ARRAY_ELEMS(graphi->frame_queues); i++) {
+        const size_t max_queued = graphctx->max_buffered_frames;
+        if (max_queued)
+            graphi->frame_queues[i].max_queued = max_queued;
+    }
     if ((ret = graph_check_validity(graphctx, log_ctx)))
         return ret;
     if ((ret = graph_config_formats(graphctx, log_ctx)))

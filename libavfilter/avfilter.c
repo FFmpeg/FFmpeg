@@ -149,12 +149,14 @@ int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p)
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad)
 {
+    FFFilterGraph *graphi;
     FilterLinkInternal *li;
     AVFilterLink *link;
 
     av_assert0(src->graph);
     av_assert0(dst->graph);
     av_assert0(src->graph == dst->graph);
+    graphi = fffiltergraph(src->graph);
 
     if (src->nb_outputs <= srcpad || dst->nb_inputs <= dstpad ||
         src->outputs[srcpad]      || dst->inputs[dstpad])
@@ -190,7 +192,8 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     av_assert0(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
     link->colorspace = AVCOL_SPC_UNSPECIFIED;
-    ff_framequeue_init(&li->fifo, &fffiltergraph(src->graph)->frame_queues);
+    av_assert1(link->type >= 0 && link->type < FF_ARRAY_ELEMS(graphi->frame_queues));
+    ff_framequeue_init(&li->fifo, &graphi->frame_queues[link->type]);
 
     return 0;
 }
