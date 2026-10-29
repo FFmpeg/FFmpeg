@@ -39,7 +39,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t pixdepth, bpp, bpad, ncolors = 0, lsize, vclass, be = 0;
     uint32_t rgb[3] = { 0 }, bitorder = 0;
     uint32_t header_size;
-    int i, out_size, ret;
+    int i, out_size, ret, row_bytes;
     const uint8_t *ptr;
     uint8_t *buf;
     uint32_t pal[256];
@@ -144,6 +144,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return AVERROR(EINVAL);
     }
 
+    row_bytes   = (bpp * avctx->width + 7) / 8;
     lsize       = FFALIGN(bpp * avctx->width, bpad) / 8;
     header_size = XWD_HEADER_SIZE + WINDOW_NAME_SIZE;
     out_size    = header_size + ncolors * XWD_CMAP_SIZE + avctx->height * lsize;
@@ -204,7 +205,9 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     ptr = p->data[0];
     for (i = 0; i < avctx->height; i++) {
-        bytestream_put_buffer(&buf, ptr, lsize);
+        bytestream_put_buffer(&buf, ptr, row_bytes);
+        memset(buf, 0, lsize - row_bytes);
+        buf += lsize - row_bytes;
         ptr += p->linesize[0];
     }
 
