@@ -100,8 +100,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     PutByteContext pbc;
     uint8_t *encode_buf;
     int x, y, z, length, tablesize, ret, i;
-    unsigned int width, height, depth, dimension;
-    unsigned int bytes_per_channel, pixmax, put_be;
+    int width, height, depth, dimension;
+    int bytes_per_channel, pixmax, put_be;
 
     width  = avctx->width;
     height = avctx->height;
@@ -160,7 +160,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     else // assume sgi_rle_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
 
-    if ((ret = ff_alloc_packet(avctx, pkt, bytes_per_channel * length)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, (int64_t)bytes_per_channel * length)) < 0)
         return ret;
 
     bytestream2_init_writer(&pbc, pkt->data, pkt->size);
@@ -205,7 +205,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR(ENOMEM);
 
         for (z = 0; z < depth; z++) {
-            const uint8_t *in_buf = p->data[0] + p->linesize[0] * (height - 1) + z * bytes_per_channel;
+            const uint8_t *in_buf = p->data[0] + (ptrdiff_t)p->linesize[0] * (height - 1) + z * bytes_per_channel;
 
             for (y = 0; y < height; y++) {
                 bytestream2_put_be32(&taboff_pcb, bytestream2_tell_p(&pbc));
@@ -236,7 +236,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_free(encode_buf);
     } else {
         for (z = 0; z < depth; z++) {
-            const uint8_t *in_buf = p->data[0] + p->linesize[0] * (height - 1) + z * bytes_per_channel;
+            const uint8_t *in_buf = p->data[0] + (ptrdiff_t)p->linesize[0] * (height - 1) + z * bytes_per_channel;
 
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width * depth; x += depth)
