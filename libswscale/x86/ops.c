@@ -622,22 +622,10 @@ do {                                                                            
     return 0;
 }
 
-/* Expand pixel value to 32-bits by repeating as necessary */
-static uint32_t expand32(const SwsPixelType type, const SwsPixel value)
-{
-    switch (type) {
-    case SWS_PIXEL_U8:  return value.u8  * 0x01010101u;
-    case SWS_PIXEL_U16: return value.u16 * 0x00010001u;
-    case SWS_PIXEL_U32: return value.u32;
-    case SWS_PIXEL_F32: return value.u32; /* reinterpret */
-    default: return 0;
-    }
-}
-
 static void normalize_clear(SwsUOp *uop)
 {
     for (int i = 0; i < 4; i++)
-        uop->data.vec4[i].u32 = expand32(uop->type, uop->data.vec4[i]);
+        uop->data.vec4[i] = ff_sws_pixel_expand32(uop->type, uop->data.vec4[i]);
 }
 
 static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiledOp *out)

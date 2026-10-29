@@ -101,6 +101,17 @@ static inline SwsPixel ff_sws_pixel_from_q64(SwsPixelType type, AVRational64 val
     return (SwsPixel) {0};
 }
 
+/* Expand pixel value to 32-bits by repeating as necessary */
+static inline SwsPixel ff_sws_pixel_expand32(SwsPixelType type, SwsPixel val)
+{
+    switch (type) {
+    case SWS_PIXEL_U8:  val.u32 = val.u8  * 0x01010101u; break;
+    case SWS_PIXEL_U16: val.u32 = val.u16 * 0x00010001u; break;
+    default: break;
+    }
+    return val;
+}
+
 static inline bool ff_sws_pixel_is_1s(SwsPixelType type, SwsPixel val)
 {
     switch (ff_sws_pixel_type_size(type)) {
