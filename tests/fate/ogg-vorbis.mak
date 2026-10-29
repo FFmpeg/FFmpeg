@@ -16,6 +16,24 @@ fate-ogg-vorbis-chained-large-comment: CMD = \
         -c copy -t 0.5 -fflags +bitexact -serial_offset 1 -f ogg -; } | \
     framecrc -i - -c copy
 
+# Splice pages of a single-chain sample: comment and setup headers without
+# identification header, then an identification header followed by audio,
+# then the complete sample again to check recovery.
+# The byte ranges are page boundaries of the sample.
+MOOG_SMALL_PAGES = ffmpeg -f data -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -map 0 -c copy -f data - | \
+    dd bs=1 skip=$(1) count=$$(($(2) - $(1))) 2>/dev/null
+FATE_OGG_VORBIS_FFMPEG_FFPROBE-$(call DEMDEC, OGG DATA, VORBIS, DATA_MUXER PIPE_PROTOCOL) += fate-ogg-vorbis-chained-misplaced-headers
+fate-ogg-vorbis-chained-misplaced-headers: CMD = \
+    { $(call MOOG_SMALL_PAGES,0,33991) && \
+      $(call MOOG_SMALL_PAGES,58,12762) && \
+      $(call MOOG_SMALL_PAGES,0,58) && \
+      $(call MOOG_SMALL_PAGES,12762,33991) && \
+      $(call MOOG_SMALL_PAGES,58,12762) && \
+      $(call MOOG_SMALL_PAGES,12762,33991) && \
+      $(call MOOG_SMALL_PAGES,0,12762) && \
+      $(call MOOG_SMALL_PAGES,12762,33991); } | \
+    probe -show_entries packet=pts:packet_tags:packet_side_data=side_data_type -of compact pipe:
+
 FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS) += fate-ogg-vorbis-initial-padding-chained
 fate-ogg-vorbis-initial-padding-chained: CMD = ffprobe_demux -of default -show_entries stream=codec_name,initial_padding $(TARGET_SAMPLES)/ogg-vorbis/chained-meta.ogg
 
@@ -52,4 +70,6 @@ FATE_SAMPLES_FFPROBE += $(FATE_OGG_VORBIS_PROBE-yes)
 
 FATE_FFMPEG_FFPROBE += $(FATE_OGG_VORBIS_ENCODE_PROBE-yes)
 
-fate-ogg-vorbis: $(FATE_OGG_VORBIS-yes) $(FATE_OGG_COPY_VORBIS-yes) $(FATE_OGG_VORBIS_PROBE-yes) $(FATE_OGG_VORBIS_ENCODE_PROBE-yes)
+FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_OGG_VORBIS_FFMPEG_FFPROBE-yes)
+
+fate-ogg-vorbis: $(FATE_OGG_VORBIS-yes) $(FATE_OGG_COPY_VORBIS-yes) $(FATE_OGG_VORBIS_PROBE-yes) $(FATE_OGG_VORBIS_ENCODE_PROBE-yes) $(FATE_OGG_VORBIS_FFMPEG_FFPROBE-yes)
