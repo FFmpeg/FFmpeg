@@ -453,7 +453,7 @@ static int cbs_lcevc_read_nal_unit(CodedBitstreamContext *ctx,
                 slice->data_ref = av_buffer_ref(unit->data_ref);
                 if (!slice->data_ref)
                      return AVERROR(ENOMEM);
-                slice->data = unit->data + slice->header_size;
+                slice->data = unit->data + slice->data_offset;
             }
         }
         break;
