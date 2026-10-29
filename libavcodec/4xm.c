@@ -469,7 +469,8 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
                           bitstream_size);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) (buf + extra),
+    memcpy(f->bitstream_buffer, buf + extra, bitstream_size);
+    f->bbdsp.bswap_buf(f->bitstream_buffer, f->bitstream_buffer,
                        bitstream_size / 4);
     init_get_bits(&f->gb, f->bitstream_buffer, 8 * bitstream_size);
 
@@ -813,7 +814,8 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
                           prestream_size);
     if (!f->bitstream_buffer)
         return AVERROR(ENOMEM);
-    f->bbdsp.bswap_buf(f->bitstream_buffer, (const uint32_t *) prestream,
+    memcpy(f->bitstream_buffer, prestream, prestream_size);
+    f->bbdsp.bswap_buf(f->bitstream_buffer, f->bitstream_buffer,
                        prestream_size / 4);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8 * prestream_size);
 
