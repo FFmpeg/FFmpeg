@@ -60,6 +60,16 @@ decoded:
 Testing error paths
 to_t35 NULL s: ret==AVERROR(EINVAL)=yes
 to_t35 no data no size: ret==AVERROR(EINVAL)=yes
+to_t35 num_windows>3: ret==AVERROR(EINVAL)=yes
+to_t35 percentiles>15: ret==AVERROR(EINVAL)=yes
+to_t35 anchors>15: ret==AVERROR(EINVAL)=yes
+to_t35 targeted rows>25: ret==AVERROR(EINVAL)=yes
+to_t35 targeted cols>25: ret==AVERROR(EINVAL)=yes
+to_t35 mastering rows>25: ret==AVERROR(EINVAL)=yes
+to_t35 mastering cols>25: ret==AVERROR(EINVAL)=yes
+to_t35 rows>25 with flag clear: ret==0=yes
+to_t35 mastering rows>25 with flag clear: ret==0=yes
+to_t35 anchors>15 with flag clear: ret==0=yes
 from_t35 NULL s: ret==AVERROR(EINVAL)=yes
 from_t35 oversized: ret==AVERROR(EINVAL)=yes
 

@@ -486,6 +486,98 @@ static void test_hdr_plus(void)
     printf("to_t35 no data no size: ret==AVERROR(EINVAL)=%s\n",
            ret == AVERROR(EINVAL) ? "yes" : "no");
 
+    /* A num_windows above the params[] length must be refused. */
+    hdr->num_windows = FF_ARRAY_ELEMS(hdr->params) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 num_windows>3: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->num_windows = 2;
+
+    uint8_t pct  = hdr->params[0].num_distribution_maxrgb_percentiles;
+    uint8_t anch = hdr->params[0].num_bezier_curve_anchors;
+    uint8_t trow = hdr->num_rows_targeted_system_display_actual_peak_luminance;
+    uint8_t tcol = hdr->num_cols_targeted_system_display_actual_peak_luminance;
+    uint8_t mrow = hdr->num_rows_mastering_display_actual_peak_luminance;
+    uint8_t mcol = hdr->num_cols_mastering_display_actual_peak_luminance;
+
+    hdr->params[0].num_distribution_maxrgb_percentiles =
+        FF_ARRAY_ELEMS(hdr->params[0].distribution_maxrgb) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 percentiles>15: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->params[0].num_distribution_maxrgb_percentiles = pct;
+
+    hdr->params[0].num_bezier_curve_anchors =
+        FF_ARRAY_ELEMS(hdr->params[0].bezier_curve_anchors) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 anchors>15: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->params[0].num_bezier_curve_anchors = anch;
+
+    /* The peak-luminance pairs are only checked when their flags are set. */
+    hdr->num_rows_targeted_system_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->targeted_system_display_actual_peak_luminance) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 targeted rows>25: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->num_rows_targeted_system_display_actual_peak_luminance = trow;
+
+    hdr->num_cols_targeted_system_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->targeted_system_display_actual_peak_luminance[0]) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 targeted cols>25: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->num_cols_targeted_system_display_actual_peak_luminance = tcol;
+
+    hdr->num_rows_mastering_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->mastering_display_actual_peak_luminance) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 mastering rows>25: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->num_rows_mastering_display_actual_peak_luminance = mrow;
+
+    hdr->num_cols_mastering_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->mastering_display_actual_peak_luminance[0]) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 mastering cols>25: ret==AVERROR(EINVAL)=%s\n",
+           ret == AVERROR(EINVAL) ? "yes" : "no");
+    hdr->num_cols_mastering_display_actual_peak_luminance = mcol;
+
+    /* With the flags clear, oversized counts must still serialize. */
+    hdr->targeted_system_display_actual_peak_luminance_flag = 0;
+    hdr->mastering_display_actual_peak_luminance_flag       = 0;
+    hdr->num_rows_targeted_system_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->targeted_system_display_actual_peak_luminance) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 rows>25 with flag clear: ret==0=%s\n",
+           ret == 0 ? "yes" : "no");
+    hdr->num_rows_targeted_system_display_actual_peak_luminance = trow;
+
+    hdr->num_rows_mastering_display_actual_peak_luminance =
+        FF_ARRAY_ELEMS(hdr->mastering_display_actual_peak_luminance) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 mastering rows>25 with flag clear: ret==0=%s\n",
+           ret == 0 ? "yes" : "no");
+    hdr->num_rows_mastering_display_actual_peak_luminance = mrow;
+
+    hdr->params[0].tone_mapping_flag = 0;
+    hdr->params[0].num_bezier_curve_anchors =
+        FF_ARRAY_ELEMS(hdr->params[0].bezier_curve_anchors) + 1;
+    size = 0;
+    ret = av_dynamic_hdr_plus_to_t35(hdr, NULL, &size);
+    printf("to_t35 anchors>15 with flag clear: ret==0=%s\n",
+           ret == 0 ? "yes" : "no");
+    hdr->params[0].num_bezier_curve_anchors = anch;
+
     ret = av_dynamic_hdr_plus_from_t35(NULL, (const uint8_t *)"", 0);
     printf("from_t35 NULL s: ret==AVERROR(EINVAL)=%s\n",
            ret == AVERROR(EINVAL) ? "yes" : "no");
