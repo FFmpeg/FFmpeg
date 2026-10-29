@@ -68,8 +68,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
         break;
     case AV_PIX_FMT_RGB48LE:
     case AV_PIX_FMT_RGB48BE:
-        if (avctx->bits_per_raw_sample)
-            s->bits_per_component = avctx->bits_per_raw_sample;
+        if (avctx->bits_per_raw_sample == 10) {
+            s->bits_per_component = 10;
+        } else if (avctx->bits_per_raw_sample && avctx->bits_per_raw_sample != 16) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
+            return AVERROR(EINVAL);
+        }
         break;
     }
 
