@@ -21,6 +21,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/hdr_dynamic_metadata.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/refstruct.h"
 
@@ -28,10 +29,6 @@
 #include "csputils.h"
 #include "ops_internal.h"
 #include "config_components.h"
-
-#if CONFIG_UNSTABLE
-#include "libavutil/hwcontext.h"
-#endif
 
 #define RET(x)                                                                 \
     do {                                                                       \
@@ -350,7 +347,6 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
     enum AVPixelFormat format = frame->format;
     enum AVPixelFormat hw_format = AV_PIX_FMT_NONE;
 
-#if CONFIG_UNSTABLE
     const AVPixFmtDescriptor *hw_desc = av_pix_fmt_desc_get(frame->format);
     av_assert0(hw_desc);
 
@@ -361,7 +357,6 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
         hw_format = frame->format;
         format = hwfc->sw_format;
     }
-#endif
 
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
 
@@ -742,8 +737,6 @@ void ff_sws_frame_from_avframe(SwsFrame *dst, const AVFrame *src)
         dst->linesize[i] = src->linesize[i];
     }
 }
-
-#if CONFIG_UNSTABLE
 
 /**
  * Returns the underlying descriptor for fake formats like PAL8 whose
@@ -1851,12 +1844,3 @@ fail:
     ff_sws_op_list_free(&ops);
     return ret;
 }
-
-#else /* !CONFIG_UNSTABLE */
-
-static int test_format_ops(enum AVPixelFormat format, int output)
-{
-    return 0;
-}
-
-#endif

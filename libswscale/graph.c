@@ -698,7 +698,6 @@ static int add_ops_convert_pass(SwsGraph *graph, const SwsFormat *src,
                                 const SwsFormat *dst, const SwsLut3D *lut3d,
                                 SwsPass *input, SwsPass **output)
 {
-#if CONFIG_UNSTABLE
     SwsContext *ctx = graph->ctx;
 
     /* Preemptively skip the ops list generation if the backend was
@@ -723,9 +722,6 @@ static int add_ops_convert_pass(SwsGraph *graph, const SwsFormat *src,
 
     const int flags = SWS_OP_FLAG_OPTIMIZE | SWS_OP_FLAG_SPLIT_MEMCPY;
     return ff_sws_compile_pass(graph, NULL, &ops, flags, input, output);
-#else
-    return AVERROR(ENOTSUP);
-#endif
 }
 
 static bool prefer_ops_backend(SwsContext *ctx, const SwsFormat *src, const SwsFormat *dst)

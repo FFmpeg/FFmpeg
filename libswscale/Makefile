@@ -28,7 +28,7 @@ OBJS = alphablend.o                                     \
        yuv2rgb.o                                        \
        vscale.o                                         \
 
-OBJS-$(CONFIG_UNSTABLE) +=                              \
+OBJS +=                                                 \
        ops.o                                            \
        ops_chain.o                                      \
        ops_dispatch.o                                   \
