@@ -126,7 +126,7 @@ static int hdr_decode_frame(AVCodecContext *avctx, AVFrame *p,
         ;
     }
 
-    if (bytestream2_get_bytes_left(&gb) < height * 4)
+    if (bytestream2_get_bytes_left(&gb) < height * 4LL)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
