@@ -59,8 +59,8 @@ gray16be            483c6e570d97fbed9e51a61212910632
 gray16le            65d76c53eef28ba6e74990760c57f98a
 gray9be             cd524d242f2ac6ea39ef4bb85c9691f3
 gray9le             8a3264fc4192fcd9ca2008ca4782a451
-grayf32be           c1ba5943a0d24d70e6a280f37e4f4593
-grayf32le           8e6c048a5b3b8b26d3a5ddfce255f3f6
+grayf32be           982544dfa8cfab9e0911cdf9fa652173
+grayf32le           41c495aeb4d2e2c8c8e36cc46f07097e
 monob               7810c4857822ccfc844d78f5e803269a
 monow               90a947bfcd5f2261e83b577f48ec57b1
 nv12                261ebe585ae2aa4e70d39a10c1679294
