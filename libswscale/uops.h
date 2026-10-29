@@ -94,7 +94,7 @@ static inline SwsPixel ff_sws_pixel_from_q64(SwsPixelType type, AVRational64 val
     case SWS_PIXEL_U8:  return (SwsPixel) { .u8  = val.num / val.den };
     case SWS_PIXEL_U16: return (SwsPixel) { .u16 = val.num / val.den };
     case SWS_PIXEL_U32: return (SwsPixel) { .u32 = val.num / val.den };
-    case SWS_PIXEL_F32: return (SwsPixel) { .f32 = (float) val.num / val.den };
+    case SWS_PIXEL_F32: return (SwsPixel) { .f32 = (float) val.num / (float) val.den };
     case SWS_PIXEL_NONE:
     case SWS_PIXEL_TYPE_NB: break;
     }

@@ -61,6 +61,9 @@
 #  error Invalid BIT_DEPTH
 #endif
 
+/* Every intermediate float result is cast to pixel_t, which rounds away the
+ * excess precision of x87 math for the same results as everywhere else */
+
 /*********************************
  * Generic read/write operations *
  *********************************/
@@ -285,10 +288,10 @@ DECL_READ(read_planar_fv, const SwsCompMask mask, const SwsPixelType type)
 
         SWS_LOOP
         for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-            if (X) xs.f32[i] += weight * in0[i];
-            if (Y) ys.f32[i] += weight * in1[i];
-            if (Z) zs.f32[i] += weight * in2[i];
-            if (W) ws.f32[i] += weight * in3[i];
+            if (X) xs.f32[i] += (float) (weight * in0[i]);
+            if (Y) ys.f32[i] += (float) (weight * in1[i]);
+            if (Z) zs.f32[i] += (float) (weight * in2[i]);
+            if (W) ws.f32[i] += (float) (weight * in3[i]);
         }
 
         if (X) in0 = bump_ptr(in0, exec->in_stride[0]);
@@ -355,10 +358,10 @@ DECL_READ(read_planar_fh, const SwsCompMask mask, const SwsPixelType type)
         inter_t sx = 0, sy = 0, sz = 0, sw = 0;
         for (int j = 0; j < filter_size; j++) {
             const int weight = weights[j];
-            if (X) sx += weight * start0[j];
-            if (Y) sy += weight * start1[j];
-            if (Z) sz += weight * start2[j];
-            if (W) sw += weight * start3[j];
+            if (X) sx += (inter_t) (weight * start0[j]);
+            if (Y) sy += (inter_t) (weight * start1[j]);
+            if (Z) sz += (inter_t) (weight * start2[j]);
+            if (W) sw += (inter_t) (weight * start3[j]);
         }
 
         if (X) xs.f32[i] = (float) sx * scale;
@@ -838,7 +841,7 @@ DECL_FUNC(linear, const SwsCompMask mask, const uint32_t one, const uint32_t zer
         const pixel_t ww = w[i];
 
 #define LIN_VAL(I, J, val) \
-    ((one & SWS_MASK(I, J)) ? (val) : (uinter_t) c.m[I][J] * (val))
+    ((one & SWS_MASK(I, J)) ? (val) : (pixel_t) ((uinter_t) c.m[I][J] * (val)))
 
 #define LIN_ROW(I, var) do {                                    \
     pixel_t tmp = (zero & SWS_MASK(I, 4)) ? 0 : c.k[I];         \
@@ -879,7 +882,18 @@ av_always_inline static vec3_t fn(vec3)(v3u16_t v)
     return (vec3_t) { v.x, v.y, v.z };
 }
 
-#define lerp(a, b, w) ((a) + (w) * ((pixel_t) (b) - (a)))
+#define lerp(a, b, w) ((pixel_t) ((a) + (pixel_t) ((w) * (pixel_t) ((pixel_t) (b) - (a)))))
+
+av_always_inline static
+pixel_t fn(sum4)(pixel_t w0, pixel_t a, pixel_t w1, pixel_t b,
+                 pixel_t w2, pixel_t c, pixel_t w3, pixel_t d)
+{
+    pixel_t sum = (pixel_t) (w0 * a);
+    sum += (pixel_t) (w1 * b);
+    sum += (pixel_t) (w2 * c);
+    sum += (pixel_t) (w3 * d);
+    return sum;
+}
 
 av_always_inline static
 vec3_t fn(lerp3)(vec3_t a, vec3_t b, pixel_t w)
@@ -932,16 +946,16 @@ vec3_t fn(lut3d_static)(const SwsLut3D *restrict lut3d, vec3_t rgb)
     const vec3_t v3 = fn(vec3)(base[off0 + off1 + off2]);
 
     return (vec3_t) {
-        w0 * v0.x + w1 * v1.x + w2 * v2.x + w3 * v3.x,
-        w0 * v0.y + w1 * v1.y + w2 * v2.y + w3 * v3.y,
-        w0 * v0.z + w1 * v1.z + w2 * v2.z + w3 * v3.z,
+        fn(sum4)(w0, v0.x, w1, v1.x, w2, v2.x, w3, v3.x),
+        fn(sum4)(w0, v0.y, w1, v1.y, w2, v2.y, w3, v3.y),
+        fn(sum4)(w0, v0.z, w1, v1.z, w2, v2.z, w3, v3.z),
     };
 }
 
 av_always_inline static
 vec3_t fn(lut3d_dynamic)(const SwsLut3D *restrict lut3d, vec3_t rgb)
 {
-    rgb.x *= (TONE_LUT_SIZE - 1) / (pixel_t) UINT16_MAX;
+    rgb.x *= (pixel_t) ((TONE_LUT_SIZE - 1) / (pixel_t) UINT16_MAX);
 
     /* Linear interpolation */
     const int     Ix = (int) rgb.x;
@@ -955,13 +969,13 @@ vec3_t fn(lut3d_dynamic)(const SwsLut3D *restrict lut3d, vec3_t rgb)
     const pixel_t scale = k / (pixel_t) (1 << 15);
 
     rgb.x = lerp(a.x, b.x, If);
-    rgb.y = bias + scale * rgb.y;
-    rgb.z = bias + scale * rgb.z;
+    rgb.y = bias + (pixel_t) (scale * rgb.y);
+    rgb.z = bias + (pixel_t) (scale * rgb.z);
 
     /* Re-scale to output LUT size */
-    rgb.x *= (OUTPUT_LUT_SIZE_I  - 1) / (pixel_t) UINT16_MAX;
-    rgb.y *= (OUTPUT_LUT_SIZE_PT - 1) / (pixel_t) UINT16_MAX;
-    rgb.z *= (OUTPUT_LUT_SIZE_PT - 1) / (pixel_t) UINT16_MAX;
+    rgb.x *= (pixel_t) ((OUTPUT_LUT_SIZE_I  - 1) / (pixel_t) UINT16_MAX);
+    rgb.y *= (pixel_t) ((OUTPUT_LUT_SIZE_PT - 1) / (pixel_t) UINT16_MAX);
+    rgb.z *= (pixel_t) ((OUTPUT_LUT_SIZE_PT - 1) / (pixel_t) UINT16_MAX);
 
     /* Trilinear interpolation */
     const int lo0 = (int) rgb.x;
