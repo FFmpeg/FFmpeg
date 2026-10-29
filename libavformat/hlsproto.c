@@ -223,6 +223,18 @@ static int hls_open(URLContext *h, const char *uri, int flags)
            "To use the demuxer, simply use %s as url.\n",
            s->playlisturl);
 
+    if (!h->protocol_whitelist) {
+        const char *playlist_proto = avio_find_protocol_name(s->playlisturl);
+        h->protocol_whitelist =
+            av_strdup(playlist_proto && !strcmp(playlist_proto, "file") ?
+                      "file,crypto,data" :
+                      "http,https,tls,rtp,tcp,udp,crypto,httpproxy,data");
+        if (!h->protocol_whitelist) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     if ((ret = parse_playlist(h, s->playlisturl)) < 0)
         goto fail;
 
