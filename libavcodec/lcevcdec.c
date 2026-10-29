@@ -606,11 +606,12 @@ int ff_lcevc_alloc(FFLCEVCContext **plcevc, AVDictionary **options, int loglevel
 
     ret = av_opt_set_dict2(lcevc, options, 0);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if (t = av_dict_iterate(*options, NULL)) {
         av_log(NULL, AV_LOG_FATAL, "liblcevc-dec option %s not found.\n", t->key);
-        return AVERROR_OPTION_NOT_FOUND;
+        ret = AVERROR_OPTION_NOT_FOUND;
+        goto fail;
     }
 
     lcevc->frag = av_mallocz(sizeof(*lcevc->frag));
