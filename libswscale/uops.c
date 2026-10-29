@@ -200,6 +200,9 @@ void ff_sws_uop_list_remove_at(SwsUOpList *uops, int index, int count)
 
 void ff_sws_uop_list_print(void *log, int lev, const SwsUOpList *uops)
 {
+    if (av_log_get_level() < lev)
+        return;
+
     av_log(log, lev, "Compiled micro-ops:\n");
     for (int i = 0; i < uops->num_ops; i++) {
         char name[SWS_UOP_NAME_MAX];
