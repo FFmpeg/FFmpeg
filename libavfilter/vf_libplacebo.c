@@ -993,15 +993,17 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
 {
     int err, changed = 0;
 
-    if ((err = av_frame_copy_props(out, ref)) < 0)
-        return err;
+    if (ref) {
+        if ((err = av_frame_copy_props(out, ref)) < 0)
+            return err;
 
-    if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
-        /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
-         * output colorspace defaults */
-        out->color_primaries = AVCOL_PRI_BT2020;
-        out->color_trc = AVCOL_TRC_SMPTE2084;
-        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+        if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
+            /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
+             * output colorspace defaults */
+            out->color_primaries = AVCOL_PRI_BT2020;
+            out->color_trc = AVCOL_TRC_SMPTE2084;
+            changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+        }
     }
 
     out->width = outlink->w;
@@ -1016,6 +1018,9 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
         out->color_trc = s->color_trc;
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
+
+    if (!ref)
+        return 0;
 
     /* Strip side data if no longer relevant */
     if (out->width != ref->width || out->height != ref->height)
