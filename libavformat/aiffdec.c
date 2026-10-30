@@ -265,6 +265,7 @@ static int aiff_read_header(AVFormatContext *s)
         if (size < 0)
             return size;
 
+        const int padding = size & 1;
         filesize -= size + 8;
 
         switch (tag) {
@@ -394,7 +395,7 @@ static int aiff_read_header(AVFormatContext *s)
         }
 
         /* Skip required padding byte for odd-sized chunks. */
-        if (size & 1) {
+        if (padding) {
             filesize--;
             avio_skip(pb, 1);
         }
