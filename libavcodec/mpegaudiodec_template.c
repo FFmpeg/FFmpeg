@@ -1475,7 +1475,9 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
     int i, nb_frames, ch, ret;
     OUT_INT *samples_ptr;
 
-    init_get_bits(&s->gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE) * 8);
+    ret = init_get_bits8(&s->gb, buf + HEADER_SIZE, buf_size - HEADER_SIZE);
+    if (ret < 0)
+        return ret;
     if (s->hdr.error_protection)
         s->crc = get_bits(&s->gb, 16);
 
