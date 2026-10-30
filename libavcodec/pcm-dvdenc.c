@@ -123,6 +123,9 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     PutByteContext pb;
     int ret;
 
+    if (!blocks)
+        return 0;
+
     if ((ret = ff_get_encode_buffer(avctx, avpkt, pkt_size, 0)) < 0)
         return ret;
 
