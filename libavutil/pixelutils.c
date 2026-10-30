@@ -30,7 +30,7 @@
 
 #if ARCH_AARCH64 && HAVE_NEON
 #include "aarch64/pixelutils.h"
-#elif ARCH_ARM && HAVE_ARMV6
+#elif ARCH_ARM
 #include "arm/pixelutils.h"
 #elif ARCH_MIPS && HAVE_MSA
 #include "mips/pixelutils.h"
