@@ -142,6 +142,7 @@ typedef struct THOptions {
 typedef struct ONNXOptions {
     const AVClass *clazz;
     int num_threads;
+    char *ep_library;
 } ONNXOptions;
 #endif
 

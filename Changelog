@@ -10,6 +10,7 @@ version <next>:
 - Super Audio CD (SACD) demuxer
 - DSS variable rate SP (format 1) support
 - Added the ability to derive an AMF hwdevice from a Vulkan hwdevice
+- MIGraphX execution provider support for the ONNX Runtime DNN backend
 
 version 9.1:
 - ASTC image encoding and decoding via libastcenc, with .astc and KTX 1.0 muxers and demuxers

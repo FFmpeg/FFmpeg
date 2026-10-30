@@ -12379,6 +12379,15 @@ through the model. The output frames are D3D12 hardware frames, so they
 must either be consumed by a D3D12 encoder or downloaded explicitly with
 @code{hwdownload,format=nv12}.
 
+The @code{migraphx} device only accepts software frames: input and output
+tensors are passed to ONNX Runtime in host memory, and MIGraphX copies them
+to and from the GPU on every run. D3D12 hardware-frame input is not
+supported with @code{migraphx} and fails during configuration; use
+@option{device=dml} for the D3D12 zero-copy path. The @code{migraphx}
+device requires either ONNX Runtime 1.23 or later built with the MIGraphX
+execution provider, or a MIGraphX plugin execution provider library set
+with @option{ep_library}, such as the one Windows ML installs on Windows.
+
 @end table
 
 @item model
@@ -12424,16 +12433,25 @@ and Torch backends.
 @item device
 Set the device to run the model. For the ONNX Runtime backend this selects the
 execution provider: @code{cpu} (default), @code{cuda} (NVIDIA GPU),
-@code{dml} (DirectML, Windows only) or @code{vitisai} (AMD Ryzen AI NPU).
+@code{dml} (DirectML, Windows only), @code{vitisai} (AMD Ryzen AI NPU) or
+@code{migraphx} (AMD GPU via MIGraphX).
 
 @item device_id
-Set the device index used by GPU execution providers (e.g. @code{cuda} or
-@code{dml}) for the ONNX Runtime backend. Default is 0.
+Set the device index used by GPU execution providers (e.g. @code{cuda},
+@code{dml} or @code{migraphx}) for the ONNX Runtime backend. Default is 0.
 
 @item threads_per_operation
 ONNX Runtime backend only. Set the number of CPU threads used per ONNX
 Runtime operator when running with @code{device=cpu}. Default is 0 (let
 ONNX Runtime choose automatically). Has no effect for GPU/NPU providers.
+
+@item ep_library
+ONNX Runtime backend only, used with @code{device=migraphx}. Set the path of
+a plugin execution provider library to register with ONNX Runtime, for
+example the @file{amdgpu-ep.dll} that Windows ML installs for AMD GPUs.
+Requires FFmpeg to be built against ONNX Runtime 1.22 or later. Native
+plugin execution requires ONNX Runtime 1.23 or later at run time; the
+selected plugin may require a newer runtime still.
 
 @end table
 
@@ -12492,6 +12510,16 @@ inference so that a software encoder can be used:
 ./ffmpeg -hwaccel d3d12va -hwaccel_output_format d3d12 -i input.mp4 \
   -vf dnn_processing=dnn_backend=onnx:model=sr_model.onnx:device=dml,hwdownload,format=nv12 \
   -y output.mp4
+@end example
+
+@item
+Run the same model on an AMD GPU with the MIGraphX execution provider
+that Windows ML installs. The package folder name depends on the installed
+version, and the @samp{:} of the drive letter has to be escaped:
+@example
+./ffmpeg -i input.mp4 -vf "format=grayf32,dnn_processing=dnn_backend=onnx:model=sr_model.onnx:device=migraphx\
+:ep_library='C\:/Program Files/WindowsApps/MicrosoftCorporationII.WinML.AMD.GPU.EP.1.8_1.8.65.0_x64__8wekyb3d8bbwe/ExecutionProvider/amdgpu-ep.dll'" \
+  -f null -
 @end example
 
 @item
