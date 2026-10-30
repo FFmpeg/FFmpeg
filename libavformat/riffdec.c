@@ -59,17 +59,17 @@ enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
  * an openended structure.
  */
 
-static void parse_waveformatex(void *logctx, AVIOContext *pb, AVCodecParameters *par)
+static void parse_waveformatex(void *logctx, AVIOContext *pb, AVCodecParameters *par, int big_endian)
 {
     ff_asf_guid subformat;
     int bps;
     uint64_t mask;
 
-    bps = avio_rl16(pb);
+    bps = big_endian ? avio_rb16(pb) :  avio_rl16(pb);
     if (bps)
         par->bits_per_coded_sample = bps;
 
-    mask = avio_rl32(pb); /* dwChannelMask */
+    mask = big_endian ? avio_rb32(pb) : avio_rl32(pb); /* dwChannelMask */
     av_channel_layout_from_mask(&par->ch_layout, mask);
 
     ff_get_guid(pb, &subformat);
@@ -79,7 +79,7 @@ static void parse_waveformatex(void *logctx, AVIOContext *pb, AVCodecParameters 
                 (const uint8_t[]){ FF_BROKEN_BASE_GUID }, 12) ||
         !memcmp(subformat + 4,
                 (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
-        par->codec_tag = AV_RL32(subformat);
+        par->codec_tag = big_endian ? AV_RB16(subformat) : AV_RL32(subformat);
         par->codec_id  = ff_wav_codec_get_id(par->codec_tag,
                                              par->bits_per_coded_sample);
     } else {
@@ -184,18 +184,18 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                                              par->bits_per_coded_sample);
     }
     if (size >= 18 && id != 0x0165) {  /* We're obviously dealing with WAVEFORMATEX */
-        int cbSize = avio_rl16(pb); /* cbSize */
-        if (big_endian) {
-            avpriv_report_missing_feature(s, "WAVEFORMATEX support for RIFX files");
-            return AVERROR_PATCHWELCOME;
-        }
+        int cbSize = big_endian ? avio_rb16(pb) : avio_rl16(pb); /* cbSize */
         size  -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            parse_waveformatex(s, pb, par);
+            parse_waveformatex(s, pb, par, big_endian);
             cbSize -= 22;
             size   -= 22;
         } else if (cbSize >= 12 && id == 0x1610) { /* HEAACWAVEFORMAT */
+            if (big_endian) {
+                avpriv_report_missing_feature(s, "HEAACWAVEFORMAT support for RIFX files");
+                return AVERROR_PATCHWELCOME;
+            }
             int wPayloadType = avio_rl16(pb);
             if (wPayloadType == 3)
                 par->codec_id = AV_CODEC_ID_AAC_LATM;
@@ -272,6 +272,18 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                " (expected %"PRId64"), overriding.\n",
                par->bit_rate / 8, expected_bitrate / 8);
         par->bit_rate = expected_bitrate;
+    }
+
+    if (big_endian) { /* RIFX */
+        switch (par->codec_id) {
+        case AV_CODEC_ID_PCM_S16LE: par->codec_id = AV_CODEC_ID_PCM_S16BE; break;
+        case AV_CODEC_ID_PCM_S24LE: par->codec_id = AV_CODEC_ID_PCM_S24BE; break;
+        case AV_CODEC_ID_PCM_S32LE: par->codec_id = AV_CODEC_ID_PCM_S32BE; break;
+        case AV_CODEC_ID_PCM_S64LE: par->codec_id = AV_CODEC_ID_PCM_S64BE; break;
+        case AV_CODEC_ID_PCM_F32LE: par->codec_id = AV_CODEC_ID_PCM_F32BE; break;
+        case AV_CODEC_ID_PCM_F64LE: par->codec_id = AV_CODEC_ID_PCM_F64BE; break;
+        default: break;
+        }
     }
 
     return 0;
