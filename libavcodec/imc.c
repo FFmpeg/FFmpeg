@@ -439,6 +439,9 @@ static int bit_allocation(IMCContext *q, IMCChannel *chctx,
     int flg;
     int found_indx = 0;
 
+    if (freebits < 0)
+        return AVERROR_INVALIDDATA;
+
     for (i = 0; i < BANDS; i++)
         highest = FFMAX(highest, chctx->flcoeffs1[i]);
 
