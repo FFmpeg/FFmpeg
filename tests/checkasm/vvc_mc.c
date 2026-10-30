@@ -339,7 +339,7 @@ static av_noinline void check_dmvr(void)
     LOCAL_ALIGNED_32(uint16_t, dst1, [DST_BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t,  src0, [SRC_BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t,  src1, [SRC_BUF_SIZE]);
-    const int dst_stride = MAX_PB_SIZE * sizeof(int16_t);
+    const int dst_stride = MAX_PB_SIZE;
 
     VVCDSPContext c;
     declare_func(void, int16_t *dst, const uint8_t *src, ptrdiff_t src_stride, int height,
