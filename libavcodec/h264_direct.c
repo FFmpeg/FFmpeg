@@ -212,6 +212,7 @@ static void pred_spatial_direct_motion(const H264Context *const h, H264SliceCont
     int b4_stride = h->b_stride;
     int mb_xy = sl->mb_xy, mb_y = sl->mb_y;
     int mb_type_col[2];
+    int col_field = 0;
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
     const int is_b8x8 = IS_8X8(*mb_type);
@@ -303,6 +304,9 @@ static void pred_spatial_direct_motion(const H264Context *const h, H264SliceCont
             mb_y  += sl->col_fieldoff;
             mb_xy += h->mb_stride * sl->col_fieldoff; // non-zero for FL -> FL & differ parity
         }
+        // Undecoded macroblocks of a broken field picture lack the flag, the
+        // colocated type has to agree with the branch taken here.
+        col_field = MB_TYPE_INTERLACED;
         goto single_col;
     } else {                                             // AFL/AFR/FR/FL -> AFR/FR
         if (IS_INTERLACED(*mb_type)) {                   // AFL       /FL -> AFR/FR
@@ -329,7 +333,7 @@ static void pred_spatial_direct_motion(const H264Context *const h, H264SliceCont
         } else {                                         //     AFR/FR    -> AFR/FR
 single_col:
             mb_type_col[0] =
-            mb_type_col[1] = sl->ref_list[1][0].parent->mb_type[mb_xy];
+            mb_type_col[1] = sl->ref_list[1][0].parent->mb_type[mb_xy] | col_field;
 
             sub_mb_type |= MB_TYPE_16x16 | MB_TYPE_DIRECT2; /* B_SUB_8x8 */
             if (!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)) {
@@ -500,6 +504,7 @@ static void pred_temp_direct_motion(const H264Context *const h, H264SliceContext
     int b4_stride = h->b_stride;
     int mb_xy = sl->mb_xy, mb_y = sl->mb_y;
     int mb_type_col[2];
+    int col_field = 0;
     const int16_t (*l1mv0)[2], (*l1mv1)[2];
     const int8_t *l1ref0, *l1ref1;
     const int is_b8x8 = IS_8X8(*mb_type);
@@ -522,6 +527,9 @@ static void pred_temp_direct_motion(const H264Context *const h, H264SliceContext
             mb_y  += sl->col_fieldoff;
             mb_xy += h->mb_stride * sl->col_fieldoff; // non-zero for FL -> FL & differ parity
         }
+        // Undecoded macroblocks of a broken field picture lack the flag, the
+        // colocated type has to agree with the branch taken here.
+        col_field = MB_TYPE_INTERLACED;
         goto single_col;
     } else {                                        // AFL/AFR/FR/FL -> AFR/FR
         if (IS_INTERLACED(*mb_type)) {              // AFL       /FL -> AFR/FR
@@ -551,7 +559,7 @@ static void pred_temp_direct_motion(const H264Context *const h, H264SliceContext
         } else {                                    //     AFR/FR    -> AFR/FR
 single_col:
             mb_type_col[0]     =
-                mb_type_col[1] = sl->ref_list[1][0].parent->mb_type[mb_xy];
+                mb_type_col[1] = sl->ref_list[1][0].parent->mb_type[mb_xy] | col_field;
 
             sub_mb_type = MB_TYPE_16x16 | MB_TYPE_P0L0 | MB_TYPE_P0L1 |
                           MB_TYPE_DIRECT2;                  /* B_SUB_8x8 */
