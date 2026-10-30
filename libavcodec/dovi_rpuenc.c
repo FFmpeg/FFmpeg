@@ -303,6 +303,7 @@ static int cmp_dm_level0(const AVDOVIColorMetadata *dm1,
 /* Tries to reuse the static ext blocks. May reorder `ext->dm_static` */
 static int try_reuse_ext(DOVIExt *ext, const AVDOVIMetadata *metadata)
 {
+    const int num_static = ext ? ext->num_static : 0;
     int i, j, idx = 0;
 
     for (i = 0; i < metadata->num_ext_blocks; i++) {
@@ -311,7 +312,7 @@ static int try_reuse_ext(DOVIExt *ext, const AVDOVIMetadata *metadata)
             continue;
 
         /* Find the first matching ext block and move it to [idx] */
-        for (j = idx; j < ext->num_static; j++) {
+        for (j = idx; j < num_static; j++) {
             if (!memcmp(&ext->dm_static[j], dm, sizeof(*dm))) {
                 if (j != idx)
                     FFSWAP(AVDOVIDmData, ext->dm_static[j], ext->dm_static[idx]);
@@ -320,15 +321,15 @@ static int try_reuse_ext(DOVIExt *ext, const AVDOVIMetadata *metadata)
             }
         }
 
-        if (j == ext->num_static) {
+        if (j == num_static) {
             /* Found no matching ext block */
             return 0;
         }
     }
 
-    /* If idx is less than ext->num_static, then there are extra unmatched
+    /* If idx is less than num_static, then there are extra unmatched
      * ext blocks inside ext->dm_static */
-    return idx == ext->num_static;
+    return idx == num_static;
 }
 
 static inline void put_ue_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr,
@@ -737,7 +738,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     }
 
     dm_compression = 0;
-    if (dv_md_compression != AV_DOVI_COMPRESSION_NONE) {
+    if (vdr_dm_metadata_present && dv_md_compression != AV_DOVI_COMPRESSION_NONE) {
         if (s->dm && !cmp_dm_level0(s->dm, color) && try_reuse_ext(s->ext_blocks, metadata))
             dm_compression = 1;
     }
