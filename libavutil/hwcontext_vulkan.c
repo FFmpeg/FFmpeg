@@ -4019,7 +4019,6 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
-    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     VulkanFramesPriv *fp = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
@@ -4097,9 +4096,11 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
     return err = prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
+    /* Commands queued before the failure may still use the image, and the
+     * frame stays usable, so return it the way a successful transfer does. */
+    CHECK_CU(cu->cuStreamSynchronize(cuda_dev->stream));
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-    vulkan_free_internal(p, dst_f);
-    av_buffer_unref(&dst->buf[0]);
+    prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
     return err;
 }
 #endif
@@ -4913,7 +4914,6 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
-    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     VulkanFramesPriv *fp = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
@@ -4993,9 +4993,11 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     return prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
 fail:
+    /* Commands queued before the failure may still use the image, and the
+     * frame stays usable, so return it the way a successful transfer does. */
+    CHECK_CU(cu->cuStreamSynchronize(cuda_dev->stream));
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-    vulkan_free_internal(p, dst_f);
-    av_buffer_unref(&dst->buf[0]);
+    prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
     return err;
 }
 #endif
