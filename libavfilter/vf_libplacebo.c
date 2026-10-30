@@ -995,14 +995,6 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
 
     if ((err = av_frame_copy_props(out, ref)) < 0)
         return err;
-    out->width = outlink->w;
-    out->height = outlink->h;
-    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
-    out->colorspace = outlink->colorspace;
-    out->color_range = outlink->color_range;
-    out->alpha_mode = outlink->alpha_mode;
-    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
-        out->chroma_location = outlink->chroma_location;
 
     if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
@@ -1012,6 +1004,14 @@ static int set_output_props(LibplaceboContext *s, const AVFilterLink *outlink,
         changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
     }
 
+    out->width = outlink->w;
+    out->height = outlink->h;
+    out->sample_aspect_ratio = outlink->sample_aspect_ratio;
+    out->colorspace = outlink->colorspace;
+    out->color_range = outlink->color_range;
+    out->alpha_mode = outlink->alpha_mode;
+    if (outlink->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        out->chroma_location = outlink->chroma_location;
     if (s->color_trc >= 0)
         out->color_trc = s->color_trc;
     if (s->color_primaries >= 0)
