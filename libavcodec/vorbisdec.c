@@ -1057,25 +1057,14 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
 // Process the extradata using the functions above (identification header, setup header)
 
-static av_cold int vorbis_decode_init(AVCodecContext *avctx)
+static int vorbis_parse_headers(AVCodecContext *avctx,
+                                const uint8_t *headers, int headers_len)
 {
     vorbis_context *vc = avctx->priv_data;
-    uint8_t *headers   = avctx->extradata;
-    int headers_len    = avctx->extradata_size;
     const uint8_t *header_start[3];
     int header_len[3];
     GetBitContext *gb = &vc->gb;
     int hdr_type, ret;
-
-    vc->avctx = avctx;
-    ff_vorbisdsp_init(&vc->dsp);
-
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-
-    if (!headers_len) {
-        av_log(avctx, AV_LOG_ERROR, "Extradata missing.\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     if ((ret = avpriv_split_xiph_headers(headers, headers_len, 30, header_start, header_len)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Extradata corrupt.\n");
@@ -1118,6 +1107,23 @@ static av_cold int vorbis_decode_init(AVCodecContext *avctx)
     avctx->sample_rate = vc->audio_samplerate;
 
     return 0;
+}
+
+static av_cold int vorbis_decode_init(AVCodecContext *avctx)
+{
+    vorbis_context *vc = avctx->priv_data;
+
+    vc->avctx = avctx;
+    ff_vorbisdsp_init(&vc->dsp);
+
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+
+    if (!avctx->extradata_size) {
+        av_log(avctx, AV_LOG_ERROR, "Extradata missing.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return vorbis_parse_headers(avctx, avctx->extradata, avctx->extradata_size);
 }
 
 // Decode audiopackets -------------------------------------------------
