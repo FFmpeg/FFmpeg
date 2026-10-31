@@ -599,9 +599,9 @@ static inline int decode_subframe(FLACContext *s, int channel)
     return 0;
 }
 
-static int decode_frame(FLACContext *s)
+static int decode_frame_header(FLACContext *s)
 {
-    int i, ret;
+    int ret;
     GetBitContext *gb = &s->gb;
     FLACFrameInfo fi;
 
@@ -669,6 +669,14 @@ static int decode_frame(FLACContext *s)
                     s->stream_info.channels);
 
 //    dump_headers(s->avctx, &s->stream_info);
+
+    return 0;
+}
+
+static int decode_subframes(FLACContext *s)
+{
+    int i, ret;
+    GetBitContext *gb = &s->gb;
 
     /* subframes */
     for (i = 0; i < s->stream_info.channels; i++) {
@@ -743,7 +751,17 @@ static int flac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* decode frame */
     if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
         return ret;
-    if ((ret = decode_frame(s)) < 0) {
+    if ((ret = decode_frame_header(s)) < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
+        return ret;
+    }
+
+    /* get output buffer */
+    frame->nb_samples = s->blocksize;
+    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+
+    if ((ret = decode_subframes(s)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
         return ret;
     }
@@ -756,11 +774,6 @@ static int flac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (s->avctx->err_recognition & AV_EF_EXPLODE)
             return AVERROR_INVALIDDATA;
     }
-
-    /* get output buffer */
-    frame->nb_samples = s->blocksize;
-    if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
 
     if (s->stream_info.bps == 32 && s->ch_mode > 0) {
         decorrelate_33bps(s->ch_mode, s->decoded, s->decoded_33bps, s->blocksize);
