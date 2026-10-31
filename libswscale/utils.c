@@ -836,6 +836,15 @@ static int handle_jpeg(/* enum AVPixelFormat */ int *format)
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_YA16BE:
     case AV_PIX_FMT_YA16LE:
+    /* Floating point formats */
+    case AV_PIX_FMT_GRAYF16BE:
+    case AV_PIX_FMT_GRAYF16LE:
+    case AV_PIX_FMT_GRAYF32BE:
+    case AV_PIX_FMT_GRAYF32LE:
+    case AV_PIX_FMT_YAF16BE:
+    case AV_PIX_FMT_YAF16LE:
+    case AV_PIX_FMT_YAF32BE:
+    case AV_PIX_FMT_YAF32LE:
         return 1;
     default:
         return 0;
