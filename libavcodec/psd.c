@@ -444,6 +444,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     }
 
     s->uncompressed_size = s->line_size * s->height * s->channel_count;
+    if (s->uncompressed_size > INT_MAX)
+        return AVERROR_INVALIDDATA;
 
     /* decode picture if need */
     if (s->compression == PSD_RLE) {
