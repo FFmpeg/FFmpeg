@@ -7,8 +7,7 @@ Stream ID: 0, packet PTS: 576, packet DTS: 576
 Stream ID: 0, frame PTS: 576, metadata: N/A
 Stream ID: 0, packet PTS: 1600, packet DTS: 1600
 Stream ID: 0, new metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
-Stream ID: 0, frame PTS: 1600, metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
 Stream ID: 0, packet PTS: 1728, packet DTS: 1728
-Stream ID: 0, frame PTS: 1728, metadata: N/A
+Stream ID: 0, frame PTS: 1728, metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
 Stream ID: 0, packet PTS: 2304, packet DTS: 2304
 Stream ID: 0, frame PTS: 2304, metadata: N/A

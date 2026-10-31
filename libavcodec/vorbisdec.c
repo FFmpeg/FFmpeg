@@ -1797,9 +1797,22 @@ static int vorbis_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     vorbis_context *vc = avctx->priv_data;
     GetBitContext *gb = &vc->gb;
     float *channel_ptrs[255];
+    const uint8_t *new_headers;
+    size_t new_headers_size;
     int i, len, ret;
 
     ff_dlog(NULL, "packet length %d \n", buf_size);
+
+    new_headers = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                          &new_headers_size);
+    if (new_headers) {
+        if (new_headers_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
+        vorbis_free(vc);
+        vc->first_frame = 0;
+        if ((ret = vorbis_parse_headers(avctx, new_headers, new_headers_size)) < 0)
+            return ret;
+    }
 
     if (*buf == 1 && buf_size > 7) {
         if ((ret = init_get_bits8(gb, buf + 1, buf_size - 1)) < 0)
