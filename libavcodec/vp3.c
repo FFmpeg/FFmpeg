@@ -2520,6 +2520,14 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     const Vp3DecodeContext *s1 = src->priv_data;
     int qps_changed = 0;
 
+#if CONFIG_THEORA_DECODER
+    /* A thread before this one took up the headers of a new logical stream;
+     * if they fail, data packets are rejected until a packet of this thread
+     * brings new ones. */
+    if (s1->headers && s->headers != s1->headers)
+        theora_reinit(dst, s1->headers, s1->headers_size);
+#endif
+
     // copy previous frame data
     ref_frames(s, s1);
 
@@ -3181,8 +3189,11 @@ static int theora_reinit(AVCodecContext *avctx, uint8_t *headers,
     av_refstruct_replace(&s->headers, headers);
     s->headers_size = headers_size;
     ret = theora_init_from_headers(avctx, s->headers, s->headers_size);
-    if (ret < 0)
+    if (ret < 0) {
         vp3_decode_end(avctx);
+        /* Kept, so that the next frame thread rejects this stream too. */
+        av_refstruct_replace(&s->headers, headers);
+    }
 
     return ret;
 }
