@@ -95,10 +95,25 @@ static void flac_set_bps(FLACContext *s)
     }
 }
 
+static int apply_streaminfo(FLACContext *s, const uint8_t *streaminfo)
+{
+    int ret = ff_flac_parse_streaminfo(s->avctx, &s->stream_info, streaminfo);
+    if (ret < 0)
+        return ret;
+    ret = allocate_buffers(s);
+    if (ret < 0)
+        return ret;
+    flac_set_bps(s);
+    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt,
+                    s->stream_info.channels);
+    s->got_streaminfo = 1;
+
+    return 0;
+}
+
 static av_cold int flac_decode_init(AVCodecContext *avctx)
 {
     uint8_t *streaminfo;
-    int ret;
     FLACContext *s = avctx->priv_data;
     s->avctx = avctx;
 
@@ -111,18 +126,7 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
     /* initialize based on the demuxer-supplied streamdata header */
-    ret = ff_flac_parse_streaminfo(avctx, &s->stream_info, streaminfo);
-    if (ret < 0)
-        return ret;
-    ret = allocate_buffers(s);
-    if (ret < 0)
-        return ret;
-    flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, avctx->sample_fmt,
-                    s->stream_info.channels);
-    s->got_streaminfo = 1;
-
-    return 0;
+    return apply_streaminfo(s, streaminfo);
 }
 
 static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
@@ -186,7 +190,7 @@ static int allocate_buffers(FLACContext *s)
  */
 static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
 {
-    int metadata_type, metadata_size, ret;
+    int metadata_type, metadata_size;
 
     if (buf_size < FLAC_STREAMINFO_SIZE+8) {
         /* need more data */
@@ -197,18 +201,7 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
         metadata_size != FLAC_STREAMINFO_SIZE) {
         return AVERROR_INVALIDDATA;
     }
-    ret = ff_flac_parse_streaminfo(s->avctx, &s->stream_info, &buf[8]);
-    if (ret < 0)
-        return ret;
-    ret = allocate_buffers(s);
-    if (ret < 0)
-        return ret;
-    flac_set_bps(s);
-    ff_flacdsp_init(&s->dsp, s->avctx->sample_fmt,
-                    s->stream_info.channels);
-    s->got_streaminfo = 1;
-
-    return 0;
+    return apply_streaminfo(s, &buf[8]);
 }
 
 /**
