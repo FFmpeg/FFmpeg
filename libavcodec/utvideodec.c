@@ -30,6 +30,7 @@
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -1057,7 +1058,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    c->buffer = av_calloc(avctx->width + 8, c->pro?2:1);
+    /* add_left_pred reads whole vectors. */
+    c->buffer = av_calloc(avctx->width + av_cpu_max_align(), c->pro ? 2 : 1);
     if (!c->buffer)
         return AVERROR(ENOMEM);
 
