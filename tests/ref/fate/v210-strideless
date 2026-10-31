@@ -1,0 +1,8 @@
+8d5042aab12f215c7f338ec9efe7447b *tests/data/fate/v210-strideless.avi
+6264 tests/data/fate/v210-strideless.avi
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 48x4
+#sar 0: 1/1
+0,          0,          0,        1,      768, 0x709abefc

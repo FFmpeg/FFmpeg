@@ -476,6 +476,10 @@ FATE_VCODEC_SCALE-$(call ENCDEC, R210, AVI)   += r210
 FATE_VCODEC_SCALE-$(call ENCDEC, V210, AVI)   += v210 v210-10
 fate-vsynth%-v210-10:            ENCOPTS = -pix_fmt yuv422p10
 
+FATE_FFMPEG-$(call TRANSCODE, V210, AVI, LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER FORMAT_FILTER SCALE_FILTER) += fate-v210-strideless
+fate-v210-strideless: CMD = transcode lavfi "testsrc2=size=48x4:rate=1,format=yuv422p10le" avi \
+    "-vf scale -pix_fmt yuv422p10 -c:v v210 -frames:v 1" "-vf scale -pix_fmt yuv422p10le" "" "" "-custom_stride -1 -threads 1"
+
 FATE_VCODEC_SCALE-$(call ENCDEC, RAWVIDEO, AVI) += v308
 fate-vsynth%-v308:               ENCOPTS = -pix_fmt vyu444 -sws_flags neighbor+bitexact
 fate-vsynth%-v308:               DECOPTS = -sws_flags neighbor+bitexact
