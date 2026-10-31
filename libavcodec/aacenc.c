@@ -1358,6 +1358,12 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 wi[ch] = s->psy.model->window(&s->psy, samples2, la, s->cur_channel,
                                               ics->window_sequence[0]);
             }
+            if (wi[ch].num_windows != 1 && wi[ch].num_windows != 8) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Psychoacoustic model returned invalid window count %d\n",
+                       wi[ch].num_windows);
+                return AVERROR_BUG;
+            }
             ics->window_sequence[1] = ics->window_sequence[0];
             ics->window_sequence[0] = wi[ch].window_type[0];
             ics->use_kb_window[1]   = ics->use_kb_window[0];
