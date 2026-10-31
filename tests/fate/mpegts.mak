@@ -65,6 +65,28 @@ fate-mpegts-lcevc-vvc-dual-track: CMD = stream_demux mpegts $(TARGET_SAMPLES)/lc
   "" "-c:v copy -map 0:1" \
   "-show_entries stream_group=index,id,nb_streams,type:stream=index,id,codec_name"
 
+# The subtitling descriptor must keep the type of a stream for the hard of
+# hearing (0x2x) when the encoder supplies the type itself, and must not
+# touch the types of a record holding several subtitle services.
+FATE_MPEGTS_FFMPEG_FFPROBE-$(call FRAMECRC, MPEGTS, DVBSUB, DVBSUB_ENCODER DVBSUB_PARSER MPEGTS_MUXER) += fate-mpegts-dvbsub-hearing-impaired
+fate-mpegts-dvbsub-hearing-impaired: CMD = transcode mpegts $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts mpegts \
+  "-map 0:s -c dvbsub -disposition:s:0 hearing_impaired" "-map 0:s -c copy" \
+  "-show_entries stream_disposition=hearing_impaired -of default=nw=1:nk=1"
+
+FATE_MPEGTS_FFMPEG_FFPROBE-$(call ALLYES, MPEGTS_MUXER MPEGTS_DEMUXER DVBSUB_DECODER DVBSUB_PARSER FILE_PROTOCOL) += fate-mpegts-dvbsub-multi-service
+fate-mpegts-dvbsub-multi-service: CMD = \
+  cleanfiles="$${cleanfiles} $$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts) \
+  $$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)"; \
+  ffmpeg -i $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts -map 0:s -c copy \
+  -metadata:s:0 language=eng,deu -bitexact -f mpegts -y \
+  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts)" && \
+  ffmpeg -i "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts)" \
+  -map 0:s -c copy -disposition:s:0 hearing_impaired -bitexact -f mpegts -y \
+  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)" && \
+  probe -show_entries stream_disposition=hearing_impaired -of default=nw=1:nk=1 \
+  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)"; \
+  test $$? -eq 0
+
 FATE_SAMPLES_FFPROBE += $(FATE_MPEGTS_PROBE-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MPEGTS_FFMPEG_FFPROBE-yes)
 
