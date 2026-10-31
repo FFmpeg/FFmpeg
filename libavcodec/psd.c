@@ -469,8 +469,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
         ptr_data = s->gb.buffer;
     }
 
-    if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
+    if ((ret = ff_get_buffer(avctx, picture, 0)) < 0) {
+        av_freep(&s->tmp);
         return ret;
+    }
 
     /* Store data */
     if ((avctx->pix_fmt == AV_PIX_FMT_YA8)||(avctx->pix_fmt == AV_PIX_FMT_YA16BE)){/* Interleaved */
