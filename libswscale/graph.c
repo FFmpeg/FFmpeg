@@ -612,8 +612,10 @@ static int add_legacy_sws_pass(SwsGraph *graph, const SwsFormat *src,
     ff_sws_chroma_pos(src, &graph->incomplete, &sws->src_h_chr_pos, &sws->src_v_chr_pos);
     ff_sws_chroma_pos(dst, &graph->incomplete, &sws->dst_h_chr_pos, &sws->dst_v_chr_pos);
 
-    graph->incomplete |= src->range == AVCOL_RANGE_UNSPECIFIED;
-    graph->incomplete |= dst->range == AVCOL_RANGE_UNSPECIFIED;
+    if (!isFloat(src->format))
+        graph->incomplete |= src->range == AVCOL_RANGE_UNSPECIFIED;
+    if (!isFloat(dst->format))
+        graph->incomplete |= dst->range == AVCOL_RANGE_UNSPECIFIED;
 
     /* Allow overriding chroma position with the legacy API */
     legacy_chr_pos(graph, &sws->src_h_chr_pos, ctx->src_h_chr_pos, &warned);
