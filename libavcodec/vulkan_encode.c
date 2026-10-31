@@ -461,6 +461,19 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
     /* End encoding */
     vk->CmdEndVideoCodingKHR(cmd_buf, &encode_end);
 
+    /* For the host to read the output */
+    vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pMemoryBarriers = &(VkMemoryBarrier2) {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_VIDEO_ENCODE_BIT_KHR,
+            .srcAccessMask = VK_ACCESS_2_VIDEO_ENCODE_WRITE_BIT_KHR,
+            .dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT,
+            .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
+        },
+        .memoryBarrierCount = 1,
+    });
+
     /* End recording and submit for execution */
     err = ff_vk_exec_submit(&ctx->s, vp->exec);
     if (err < 0)
