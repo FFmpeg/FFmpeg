@@ -120,7 +120,9 @@ av_cold void ff_llviddsp_init(LLVidDSPContext *c)
     c->add_left_pred_int16        = add_left_pred_int16_c;
     c->add_gradient_pred          = add_gradient_pred_c;
 
-#if ARCH_PPC
+#if ARCH_AARCH64
+    ff_llviddsp_init_aarch64(c);
+#elif ARCH_PPC
     ff_llviddsp_init_ppc(c);
 #elif ARCH_RISCV
     ff_llviddsp_init_riscv(c);
