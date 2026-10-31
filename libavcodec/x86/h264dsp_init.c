@@ -80,11 +80,11 @@ void ff_h264_luma_dc_dequant_idct_sse2(int16_t *output, int16_t *input, int qmul
 /***********************************/
 /* deblocking */
 
-void ff_h264_loop_filter_strength_mmxext(int16_t bS[2][4][4], uint8_t nnz[40],
-                                         int8_t ref[2][40],
-                                         int16_t mv[2][40][2],
-                                         int bidir, int edges, int step,
-                                         int mask_mv0, int mask_mv1, int field);
+void ff_h264_loop_filter_strength_sse2(int16_t bS[2][4][4], uint8_t nnz[40],
+                                       int8_t ref[2][40],
+                                       int16_t mv[2][40][2],
+                                       int bidir, int edges, int step,
+                                       int mask_mv0, int mask_mv1, int field);
 
 #define LF_FUNC(DIR, TYPE, DEPTH, OPT)                                        \
 void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT(uint8_t *pix,  \
@@ -182,8 +182,8 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_MMXEXT(cpu_flags) && chroma_format_idc <= 1)
-        c->loop_filter_strength = ff_h264_loop_filter_strength_mmxext;
+    if (EXTERNAL_SSE2(cpu_flags) && chroma_format_idc <= 1)
+        c->loop_filter_strength = ff_h264_loop_filter_strength_sse2;
 
     if (bit_depth == 8) {
         if (EXTERNAL_SSE2(cpu_flags)) {

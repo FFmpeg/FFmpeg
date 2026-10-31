@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* MMX/SSE2/AVX-optimized H.264 deblocking code
+;* SSE2/AVX-optimized H.264 deblocking code
 ;*****************************************************************************
 ;* Copyright (C) 2005-2011 x264 project
 ;*
@@ -29,7 +29,7 @@
 SECTION_RODATA
 
 pb_A1: times 16 db 0xA1
-pb_3_1: times 4 db 3, 1
+pb_3_1: times 8 db 3, 1
 
 SECTION .text
 
@@ -1008,62 +1008,55 @@ DEBLOCK_CHROMA_XMM avx
     jnz %%.skip_loop_iter                       ; if (!(b_idx & mask_mv))
 %if bidir == 1
     movd             m2, [refq+b_idxq+d_idx+12] ; { ref0[bn] }
-    punpckldq        m2, [refq+b_idxq+d_idx+52] ; { ref0[bn], ref1[bn] }
-    pshufw           m0, [refq+b_idxq+12], 0x44 ; { ref0[b],  ref0[b]  }
-    pshufw           m1, [refq+b_idxq+52], 0x44 ; { ref1[b],  ref1[b]  }
-    pshufw           m3, m2, 0x4E               ; { ref1[bn], ref0[bn] }
+    movd             m3, [refq+b_idxq+d_idx+52] ; { ref1[bn] }
+    punpckldq        m2, m3                     ; { ref0[bn], ref1[bn] }
+    movd             m0, [refq+b_idxq+12]
+    pshuflw          m0, m0, q1010              ; { ref0[b],  ref0[b]  }
+    movd             m1, [refq+b_idxq+52]
+    pshuflw          m1, m1, q1010              ; { ref1[b],  ref1[b]  }
+    pshuflw          m3, m2, q1032              ; { ref1[bn], ref0[bn] }
     psubb            m0, m2                     ; { ref0[b] != ref0[bn],
                                                 ;   ref0[b] != ref1[bn] }
     psubb            m1, m3                     ; { ref1[b] != ref1[bn],
                                                 ;   ref1[b] != ref0[bn] }
 
     por              m0, m1
-    mova             m1, [mvq+b_idxq*4+(d_idx+12)*4]
-    mova             m2, [mvq+b_idxq*4+(d_idx+12)*4+mmsize]
+    movu             m1, [mvq+b_idxq*4+(d_idx+12)*4]
+    movu             m2, [mvq+b_idxq*4+12*4]
     mova             m3, m1
-    mova             m4, m2
-    psubw            m1, [mvq+b_idxq*4+12*4]
-    psubw            m2, [mvq+b_idxq*4+12*4+mmsize]
-    psubw            m3, [mvq+b_idxq*4+52*4]
-    psubw            m4, [mvq+b_idxq*4+52*4+mmsize]
-    packsswb         m1, m2
-    packsswb         m3, m4
-    paddb            m1, m6
-    paddb            m3, m6
-    psubusb          m1, m5 ; abs(mv[b] - mv[bn]) >= limit
-    psubusb          m3, m5
+    psubw            m1, m2
+    movu             m2, [mvq+b_idxq*4+52*4]
+    psubw            m3, m2
     packsswb         m1, m3
+    paddb            m1, m6
+    psubusb          m1, m5 ; abs(mv[b] - mv[bn]) >= limit
+    packsswb         m1, m1
 
     por              m0, m1
-    mova             m1, [mvq+b_idxq*4+(d_idx+52)*4]
-    mova             m2, [mvq+b_idxq*4+(d_idx+52)*4+mmsize]
+    movu             m1, [mvq+b_idxq*4+(d_idx+52)*4]
+    movu             m2, [mvq+b_idxq*4+12*4]
     mova             m3, m1
-    mova             m4, m2
-    psubw            m1, [mvq+b_idxq*4+12*4]
-    psubw            m2, [mvq+b_idxq*4+12*4+mmsize]
-    psubw            m3, [mvq+b_idxq*4+52*4]
-    psubw            m4, [mvq+b_idxq*4+52*4+mmsize]
-    packsswb         m1, m2
-    packsswb         m3, m4
-    paddb            m1, m6
-    paddb            m3, m6
-    psubusb          m1, m5 ; abs(mv[b] - mv[bn]) >= limit
-    psubusb          m3, m5
+    psubw            m1, m2
+    movu             m2, [mvq+b_idxq*4+52*4]
+    psubw            m3, m2
     packsswb         m1, m3
+    paddb            m1, m6
+    psubusb          m1, m5 ; abs(mv[b] - mv[bn]) >= limit
+    packsswb         m1, m1
 
-    pshufw           m1, m1, 0x4E
+    pshuflw          m1, m1, q1032
     por              m0, m1
-    pshufw           m1, m0, 0x4E
+    pshuflw          m1, m0, q1032
     pminub           m0, m1
 %else ; bidir == 0
     movd             m0, [refq+b_idxq+12]
-    psubb            m0, [refq+b_idxq+d_idx+12] ; ref[b] != ref[bn]
+    movq             m2, [refq+b_idxq+d_idx+12] ; ref[bn]
+    psubb            m0, m2                     ; ref[b] != ref[bn]
 
-    mova             m1, [mvq+b_idxq*4+12*4]
-    mova             m2, [mvq+b_idxq*4+12*4+mmsize]
-    psubw            m1, [mvq+b_idxq*4+(d_idx+12)*4]
-    psubw            m2, [mvq+b_idxq*4+(d_idx+12)*4+mmsize]
-    packsswb         m1, m2
+    movu             m1, [mvq+b_idxq*4+12*4]
+    movu             m2, [mvq+b_idxq*4+(d_idx+12)*4]
+    psubw            m1, m2
+    packsswb         m1, m1
     paddb            m1, m6
     psubusb          m1, m5 ; abs(mv[b] - mv[bn]) >= limit
     packsswb         m1, m1
@@ -1072,10 +1065,11 @@ DEBLOCK_CHROMA_XMM avx
 
 %%.skip_loop_iter:
     movd             m1, [nnzq+b_idxq+12]
-    por              m1, [nnzq+b_idxq+d_idx+12] ; nnz[b] || nnz[bn]
+    movq             m2, [nnzq+b_idxq+d_idx+12] ; nnz[bn]
+    por              m1, m2                     ; nnz[b] || nnz[bn]
 
-    pminub           m1, m7
-    pminub           m0, m7
+    pminub           m1, m4
+    pminub           m0, m4
     psllw            m1, 1
     pxor             m2, m2
     pmaxub           m1, m0
@@ -1087,13 +1081,28 @@ DEBLOCK_CHROMA_XMM avx
     jl %%.b_idx_loop
 %endmacro
 
-INIT_MMX mmxext
-cglobal h264_loop_filter_strength, 9, 9, 0, bs, nnz, ref, mv, bidir, edges, \
+%macro TRANSPOSE_BS 0
+    ; store-forwarding from loop_filter_strength_iteration needs 8-byte load
+    movq             m0, [bsq]
+    movq             m1, [bsq+8]
+    movq             m2, [bsq+16]
+    movq             m3, [bsq+24]
+    punpcklwd        m0, m1
+    punpcklwd        m2, m3
+    mova             m1, m0
+    punpckldq        m0, m2
+    punpckhdq        m1, m2
+    movu          [bsq], m0
+    movu       [bsq+16], m1
+%endmacro
+
+INIT_XMM sse2
+cglobal h264_loop_filter_strength, 9, 9, 7, bs, nnz, ref, mv, bidir, edges, \
                                             step, mask_mv0, mask_mv1, field
 %define b_idxq bidirq
 %define b_idxd bidird
     cmp    dword fieldm, 0
-    mova             m7, [pb_1]
+    mova             m4, [pb_1]
     mova             m5, [pb_3]
     je .nofield
     mova             m5, [pb_3_1]
@@ -1115,28 +1124,12 @@ cglobal h264_loop_filter_strength, 9, 9, 0, bs, nnz, ref, mv, bidir, edges, \
     loop_filter_strength_iteration edgesd, stepd, mask_mv1d, 1, -8,  0, 0
     loop_filter_strength_iteration     32,     8, mask_mv0d, 0, -1, -1, 0
 
-    mova             m0, [bsq+mmsize*0]
-    mova             m1, [bsq+mmsize*1]
-    mova             m2, [bsq+mmsize*2]
-    mova             m3, [bsq+mmsize*3]
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
-    mova  [bsq+mmsize*0], m0
-    mova  [bsq+mmsize*1], m1
-    mova  [bsq+mmsize*2], m2
-    mova  [bsq+mmsize*3], m3
+    TRANSPOSE_BS
     RET
 
 .bidir:
     loop_filter_strength_iteration edgesd, stepd, mask_mv1d, 1, -8,  0, 1
     loop_filter_strength_iteration     32,     8, mask_mv0d, 0, -1, -1, 1
 
-    mova             m0, [bsq+mmsize*0]
-    mova             m1, [bsq+mmsize*1]
-    mova             m2, [bsq+mmsize*2]
-    mova             m3, [bsq+mmsize*3]
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
-    mova  [bsq+mmsize*0], m0
-    mova  [bsq+mmsize*1], m1
-    mova  [bsq+mmsize*2], m2
-    mova  [bsq+mmsize*3], m3
+    TRANSPOSE_BS
     RET
