@@ -284,19 +284,20 @@ static int channel_reorder_unknown(int nb_channels, int channel_idx)
 }
 
 av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
-                                    OpusParseContext *s)
+                                    OpusParseContext *s,
+                                    const uint8_t *header, int header_size)
 {
     static const uint8_t default_channel_map[2] = { 0, 1 };
 
     int (*channel_reorder)(int, int) = channel_reorder_unknown;
     int channels = avctx->ch_layout.nb_channels;
 
-    const uint8_t *extradata, *channel_map;
-    int extradata_size;
+    const uint8_t *extradata = header, *channel_map;
+    int extradata_size = header_size;
     int version, map_type, streams, stereo_streams, i, j, ret;
     AVChannelLayout layout = { 0 };
 
-    if (!avctx->extradata) {
+    if (!header) {
         if (channels > 2) {
             av_log(avctx, AV_LOG_ERROR,
                    "Multichannel configuration without extradata.\n");
@@ -304,9 +305,6 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         }
         extradata      = opus_default_extradata;
         extradata_size = sizeof(opus_default_extradata);
-    } else {
-        extradata = avctx->extradata;
-        extradata_size = avctx->extradata_size;
     }
 
     if (extradata_size < 19) {
@@ -323,7 +321,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
 
     avctx->delay = AV_RL16(extradata + 10);
 
-    channels = avctx->extradata ? extradata[9] : (channels == 1) ? 1 : 2;
+    channels = header ? extradata[9] : (channels == 1) ? 1 : 2;
     if (!channels) {
         av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extradata\n");
         return AVERROR_INVALIDDATA;

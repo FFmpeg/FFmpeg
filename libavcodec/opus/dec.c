@@ -694,7 +694,8 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     /* find out the channel configuration */
-    ret = ff_opus_parse_extradata(avctx, &c->p);
+    ret = ff_opus_parse_extradata(avctx, &c->p, avctx->extradata,
+                                  avctx->extradata_size);
     if (ret < 0)
         return ret;
     if (c->p.gain_i)

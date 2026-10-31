@@ -72,6 +72,7 @@ typedef struct OpusParseContext {
 int ff_opus_parse_packet(OpusPacket *pkt, const uint8_t *buf, int buf_size,
                          int self_delimited);
 
-int ff_opus_parse_extradata(AVCodecContext *avctx, OpusParseContext *s);
+int ff_opus_parse_extradata(AVCodecContext *avctx, OpusParseContext *s,
+                            const uint8_t *header, int header_size);
 
 #endif /* AVCODEC_OPUS_PARSE_H */
