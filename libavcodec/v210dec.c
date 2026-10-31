@@ -61,9 +61,12 @@ static void decode_row(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *
                        void (*unpack_frame)(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width))
 {
     uint32_t val;
-    int w = (FFMAX(0, width - 12) / 12) * 12;
+    /* The widest unpacker processes 24 pixels and writes 8 extra luma
+     * samples (4 chroma samples). Leave room for those stores within the row. */
+    int w = (FFMAX(0, width - 8) / 24) * 24;
 
-    unpack_frame(src, y, u, v, w);
+    if (w)
+        unpack_frame(src, y, u, v, w);
 
     y += w;
     u += w >> 1;
