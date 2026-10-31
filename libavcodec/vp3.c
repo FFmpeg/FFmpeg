@@ -3053,7 +3053,9 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
     return 0;
 }
 
-static av_cold int theora_decode_init(AVCodecContext *avctx)
+static av_cold int theora_init_from_headers(AVCodecContext *avctx,
+                                            const uint8_t *headers,
+                                            int headers_size)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
@@ -3066,12 +3068,12 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
 
     s->theora = 1;
 
-    if (!avctx->extradata_size) {
+    if (!headers_size) {
         av_log(avctx, AV_LOG_ERROR, "Missing extradata!\n");
         return -1;
     }
 
-    if (avpriv_split_xiph_headers(avctx->extradata, avctx->extradata_size,
+    if (avpriv_split_xiph_headers(headers, headers_size,
                                   42, header_start, header_len) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Corrupt extradata\n");
         return -1;
@@ -3121,6 +3123,12 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
     }
 
     return vp3_decode_init(avctx);
+}
+
+static av_cold int theora_decode_init(AVCodecContext *avctx)
+{
+    return theora_init_from_headers(avctx, avctx->extradata,
+                                    avctx->extradata_size);
 }
 
 const FFCodec ff_theora_decoder = {
