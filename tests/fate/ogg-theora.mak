@@ -44,6 +44,17 @@ fate-ogg-theora-chained-content: CMP = stddev
 fate-ogg-theora-chained-content: CMP_TARGET = 0
 fate-ogg-theora-chained-content: FUZZ = 0
 
+OGG_THEORA_CHAINED_CONTENT_FT_LINKS = tests/data/fate/ogg-theora-chained-content-frame-threads.links
+FATE_OGG_THEORA_CONTENT-$(call TRANSCODE, LIBTHEORA THEORA, OGG, $(OGG_THEORA_CHAINED_CONTENT_DEPS)) += fate-ogg-theora-chained-content-frame-threads
+fate-ogg-theora-chained-content-frame-threads: CMD = $(call OGG_THEORA_CHAINED,$(OGG_THEORA_CHAINED_CONTENT_FT_LINKS))
+fate-ogg-theora-chained-content-frame-threads: REF = $(OGG_THEORA_CHAINED_CONTENT_FT_LINKS).raw
+fate-ogg-theora-chained-content-frame-threads: CLEANFILES = $(addprefix $(OGG_THEORA_CHAINED_CONTENT_FT_LINKS),.1.ogg .2.ogg .raw)
+fate-ogg-theora-chained-content-frame-threads: CMP = stddev
+fate-ogg-theora-chained-content-frame-threads: CMP_TARGET = 0
+fate-ogg-theora-chained-content-frame-threads: FUZZ = 0
+fate-ogg-theora-chained-content-frame-threads: THREADS = 2
+fate-ogg-theora-chained-content-frame-threads: THREAD_TYPE = frame
+
 # The second link's comment header is larger than 64 KiB.
 OGG_THEORA_CHAINED_LARGE_COMMENT_LINKS = tests/data/fate/ogg-theora-chained-large-comment.links
 FATE_OGG_THEORA_CONTENT-$(call TRANSCODE, LIBTHEORA THEORA, OGG, $(OGG_THEORA_CHAINED_CONTENT_DEPS)) += fate-ogg-theora-chained-large-comment

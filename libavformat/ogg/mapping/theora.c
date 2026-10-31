@@ -31,12 +31,21 @@
 #include "libavformat/ogg/mapping.h"
 #include "libavformat/vorbis/comment.h"
 
+enum TheoraPacketType {
+    THEORA_PACKET_DATA,
+    THEORA_PACKET_ID,
+    THEORA_PACKET_COMMENT,
+    THEORA_PACKET_SETUP,
+    THEORA_PACKET_RESERVED,
+};
+
 typedef struct TheoraParams {
     int gpshift;
     int gpmask;
     unsigned version;
     uint8_t *packet[3];                 ///< headers of the link, until all three are in
     int len[3];
+    enum TheoraPacketType last_packet;  ///< type of the last packet seen by theora_packet()
 } TheoraParams;
 
 /**
@@ -209,11 +218,101 @@ static uint64_t theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp,
     return iframe + pframe;
 }
 
+static enum TheoraPacketType theora_packet_type(const struct ogg_stream *os)
+{
+    uint8_t type = os->psize > 0 ? os->buf[os->pstart] : 0;
+
+    if (!(type & 0x80))
+        return THEORA_PACKET_DATA;
+    return type <= 0x82 ? THEORA_PACKET_ID + (type & 0x7f) : THEORA_PACKET_RESERVED;
+}
+
+static int theora_check_packet_order(AVFormatContext *s, TheoraParams *thp,
+                                     enum TheoraPacketType type)
+{
+    enum TheoraPacketType last = thp->last_packet;
+    const char *error = NULL;
+
+    switch (type) {
+    case THEORA_PACKET_RESERVED:
+        return 0;
+    case THEORA_PACKET_DATA:
+        if (last == THEORA_PACKET_ID || last == THEORA_PACKET_COMMENT)
+            error = "data packet before the setup header";
+        break;
+    case THEORA_PACKET_ID:
+        if (last == THEORA_PACKET_ID || last == THEORA_PACKET_COMMENT)
+            error = "identification header before the setup header";
+        break;
+    case THEORA_PACKET_COMMENT:
+        if (last != THEORA_PACKET_ID)
+            error = "comment header without identification header";
+        break;
+    case THEORA_PACKET_SETUP:
+        if (last != THEORA_PACKET_COMMENT)
+            error = "setup header without comment header";
+        break;
+    }
+
+    if (error)
+        av_log(s, AV_LOG_WARNING,
+               "Invalid chained stream headers: %s, discarding them\n", error);
+
+    if (error || type == THEORA_PACKET_ID)
+        for (int i = 0; i < 3; i++)
+            av_freep(&thp->packet[i]);
+
+    thp->last_packet = error && type != THEORA_PACKET_ID ? THEORA_PACKET_DATA : type;
+    return error ? AVERROR_INVALIDDATA : 0;
+}
+
 static int theora_packet(AVFormatContext *s, int idx)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
-    int duration;
+    TheoraParams *thp = os->private;
+    enum TheoraPacketType type = theora_packet_type(os);
+    int duration, ret;
+
+    /* A later link's headers are skipped and attached as extradata to the
+     * first data packet that follows. That packet keeps its timestamp, which
+     * ogg_read_packet() would clear after a stream replacement. */
+    if (type != THEORA_PACKET_DATA && type != THEORA_PACKET_RESERVED) {
+        int i = type - THEORA_PACKET_ID;
+
+        os->replace = 0;
+
+        if (theora_check_packet_order(s, thp, type) < 0 && type != THEORA_PACKET_ID)
+            return 1;
+
+        ret = av_reallocp(&thp->packet[i], os->psize);
+        if (ret < 0)
+            return ret;
+        memcpy(thp->packet[i], os->buf + os->pstart, os->psize);
+        thp->len[i] = os->psize;
+
+        if (type == THEORA_PACKET_COMMENT && os->psize > 7) {
+            ret = ff_vorbis_update_metadata(s, s->streams[idx],
+                                            os->buf + os->pstart + 7, os->psize - 7);
+            if (ret == AVERROR_INVALIDDATA)
+                av_log(s, AV_LOG_WARNING, "Invalid Theora comment header, metadata ignored\n");
+            else if (ret < 0)
+                return ret;
+        }
+
+        if (thp->packet[0] && thp->packet[1] && thp->packet[2]) {
+            av_freep(&os->new_extradata);
+            ret = theora_pack_headers(thp, &os->new_extradata);
+            if (ret < 0) {
+                os->new_extradata_size = 0;
+                return ret;
+            }
+            os->new_extradata_size = ret;
+        }
+
+        return 1;
+    }
+    theora_check_packet_order(s, thp, type);
 
     /* first packet handling
        here we parse the duration of each packet in the first page and compare
