@@ -23,7 +23,13 @@
 #include "codec_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
+
+/* Every display set produced by this encoder uses this single page, i.e.
+ * the composition page id and the ancillary page id are both 1. */
+#define DVB_SUB_PAGE_ID 1
 
 typedef struct DVBSubtitleContext {
     AVClass * class;
@@ -274,6 +280,30 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
     return len;
 }
 
+static av_cold int dvbsub_encode_init(AVCodecContext *avctx)
+{
+    /* Muxers use this FFmpeg/Matroska extradata layout: composition page
+     * id, ancillary page id, then subtitling type. MPEG-TS writes the
+     * type before the page ids in its subtitling descriptor. The decoder
+     * reads the page ids. Type 0x10 denotes normal subtitles with no
+     * monitor aspect ratio criticality. */
+    uint8_t *extradata = av_mallocz(5 + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!extradata)
+        return AVERROR(ENOMEM);
+
+    AV_WB16(extradata,     DVB_SUB_PAGE_ID);
+    AV_WB16(extradata + 2, DVB_SUB_PAGE_ID);
+    extradata[4]           = 0x10;
+
+    /* Extradata of the input stream has been copied into the context; it is
+     * of no use here, the page ids are always the ones above. */
+    av_freep(&avctx->extradata);
+    avctx->extradata      = extradata;
+    avctx->extradata_size = 5;
+
+    return 0;
+}
+
 static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
                          const AVSubtitle *h)
 {
@@ -284,7 +314,7 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
 
     q = outbuf;
 
-    page_id = 1;
+    page_id = DVB_SUB_PAGE_ID;
 
     switch(s->min_bpp) {
     case 2:
@@ -555,6 +585,7 @@ const FFCodec ff_dvbsub_encoder = {
     .p.type         = AVMEDIA_TYPE_SUBTITLE,
     .p.id           = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
+    .init           = dvbsub_encode_init,
     FF_CODEC_ENCODE_SUB_CB(dvbsub_encode),
     .p.priv_class   = &dvbsubenc_class,
 };

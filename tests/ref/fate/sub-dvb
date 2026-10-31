@@ -1,3 +1,4 @@
+#extradata 0:        5, 0x00160012
 #tb 0: 1/1000000
 #media_type 0: subtitle
 #codec_id 0: dvb_subtitle
