@@ -97,9 +97,12 @@ static void flac_set_bps(FLACContext *s)
 
 static int apply_streaminfo(FLACContext *s, const uint8_t *streaminfo)
 {
-    int ret = ff_flac_parse_streaminfo(s->avctx, &s->stream_info, streaminfo);
+    FLACStreaminfo stream_info;
+    int ret = ff_flac_parse_streaminfo(s->avctx, &stream_info, streaminfo);
     if (ret < 0)
         return ret;
+    s->stream_info    = stream_info;
+    s->got_streaminfo = 0;
     ret = allocate_buffers(s);
     if (ret < 0)
         return ret;
@@ -718,10 +721,24 @@ static int flac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
+    const uint8_t *streaminfo;
+    size_t streaminfo_size;
     int bytes_read = 0;
     int ret;
 
     *got_frame_ptr = 0;
+
+    streaminfo = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                         &streaminfo_size);
+    if (streaminfo) {
+        if (streaminfo_size >= 8 + FLAC_STREAMINFO_SIZE &&
+            AV_RB32(streaminfo) == MKBETAG('f','L','a','C'))
+            streaminfo += 8;
+        else if (streaminfo_size != FLAC_STREAMINFO_SIZE)
+            return AVERROR_INVALIDDATA;
+        if ((ret = apply_streaminfo(s, streaminfo)) < 0)
+            return ret;
+    }
 
     if (buf_size > 5 && !memcmp(buf, "\177FLAC", 5)) {
         av_log(s->avctx, AV_LOG_DEBUG, "skipping flac header packet 1\n");
