@@ -705,9 +705,8 @@ static int read_sbr_grid(AACDecContext *ac, SpectralBandReplication *sbr,
         ch_data->t_env[0]                   = 0;
         ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
-        for (i = 0; i < num_rel_trail; i++)
-            ch_data->t_env[ch_data->bs_num_env - 1 - i] =
-                ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
+        for (i = num_rel_trail; i > 0; i--)
+            ch_data->t_env[i] = ch_data->t_env[i + 1] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
@@ -740,15 +739,17 @@ static int read_sbr_grid(AACDecContext *ac, SpectralBandReplication *sbr,
                    bs_num_env);
             return -1;
         }
+        /* Make the bounds implied by the two-bit counts explicit for GCC. */
+        if (bs_num_env < 1 || num_rel_trail < 0 || num_rel_trail >= bs_num_env)
+            return AVERROR_INVALIDDATA;
         ch_data->bs_num_env = bs_num_env;
 
         ch_data->t_env[ch_data->bs_num_env] = abs_bord_trail;
 
         for (i = 0; i < num_rel_lead; i++)
             ch_data->t_env[i + 1] = ch_data->t_env[i] + 2 * get_bits(gb, 2) + 2;
-        for (i = 0; i < num_rel_trail; i++)
-            ch_data->t_env[ch_data->bs_num_env - 1 - i] =
-                ch_data->t_env[ch_data->bs_num_env - i] - 2 * get_bits(gb, 2) - 2;
+        for (i = bs_num_env - 1; i >= bs_num_env - num_rel_trail; i--)
+            ch_data->t_env[i] = ch_data->t_env[i + 1] - 2 * get_bits(gb, 2) - 2;
 
         bs_pointer = get_bits(gb, ceil_log2[ch_data->bs_num_env]);
 
