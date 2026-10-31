@@ -94,6 +94,8 @@ typedef struct Vp3Fragment {
 
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb);
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb);
+static int theora_reinit(AVCodecContext *avctx, uint8_t *headers,
+                         int headers_size);
 
 
 /* There are 6 preset schemes, plus a free-form scheme */
@@ -302,6 +304,13 @@ typedef struct Vp3DecodeContext {
      */
     CoeffVLCs *coeff_vlc;
 
+    /**
+     * Headers taken from packet side data, NULL while the codec extradata
+     * applies; a RefStruct reference, padded for the bit reader.
+     */
+    uint8_t *headers;
+    int headers_size;
+
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
     DECLARE_ALIGNED(16, int16_t, qmat)[3][2][3][64];     ///< qmat[qpi][is_inter][plane]
@@ -369,6 +378,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     vp3_decode_flush(avctx);
 
     av_refstruct_unref(&s->coeff_vlc);
+    av_refstruct_unref(&s->headers);
 
     return 0;
 }
@@ -2453,7 +2463,9 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
         }
     }
 
-    if (ff_thread_sync_ref(avctx, offsetof(Vp3DecodeContext, coeff_vlc)) != FF_THREAD_IS_COPY) {
+    /* The first thread's tables may be another link's than these headers'. */
+    if (s->headers ||
+        ff_thread_sync_ref(avctx, offsetof(Vp3DecodeContext, coeff_vlc)) != FF_THREAD_IS_COPY) {
         CoeffVLCs *vlcs = av_refstruct_alloc_ext(sizeof(*s->coeff_vlc), 0,
                                                  NULL, free_vlc_tables);
         if (!vlcs)
@@ -2541,6 +2553,30 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
     int ret;
+
+#if CONFIG_THEORA_DECODER
+    if (s->theora) {
+        size_t new_headers_size;
+        const uint8_t *new_headers = av_packet_get_side_data(avpkt,
+                                                             AV_PKT_DATA_NEW_EXTRADATA,
+                                                             &new_headers_size);
+        if (new_headers) {
+            uint8_t *headers;
+
+            if (new_headers_size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+                return AVERROR_INVALIDDATA;
+            headers = av_refstruct_allocz(new_headers_size +
+                                          AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!headers)
+                return AVERROR(ENOMEM);
+            memcpy(headers, new_headers, new_headers_size);
+            ret = theora_reinit(avctx, headers, new_headers_size);
+            av_refstruct_unref(&headers);
+            if (ret < 0)
+                return ret;
+        }
+    }
+#endif
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
         return ret;
@@ -3129,6 +3165,26 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
 {
     return theora_init_from_headers(avctx, avctx->extradata,
                                     avctx->extradata_size);
+}
+
+/**
+ * Set the decoder up again from the headers of a new logical stream, taking
+ * a reference to them.
+ */
+static int theora_reinit(AVCodecContext *avctx, uint8_t *headers,
+                         int headers_size)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+    int ret;
+
+    vp3_decode_end(avctx);
+    av_refstruct_replace(&s->headers, headers);
+    s->headers_size = headers_size;
+    ret = theora_init_from_headers(avctx, s->headers, s->headers_size);
+    if (ret < 0)
+        vp3_decode_end(avctx);
+
+    return ret;
 }
 
 const FFCodec ff_theora_decoder = {
