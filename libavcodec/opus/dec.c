@@ -626,7 +626,25 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
     int coded_samples   = 0;
     int decoded_samples = INT_MAX;
     int delayed_samples = 0;
+    const uint8_t *new_header;
+    size_t new_header_size;
     int i, ret;
+
+    /* A new header starts a new logical stream, decoded from a fresh state. */
+    new_header = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                         &new_header_size);
+    if (new_header) {
+        if (new_header_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
+        opus_free_streams(c);
+        ret = opus_init_streams(avctx, new_header, new_header_size);
+        if (ret < 0) {
+            opus_free_streams(c);
+            return ret;
+        }
+    }
+    if (!c->streams)
+        return AVERROR_INVALIDDATA;
 
     /* calculate the number of delayed samples */
     for (int i = 0; i < c->p.nb_streams; i++) {
