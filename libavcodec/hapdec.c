@@ -187,6 +187,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
     ctx->tex_size = 0;
     for (i = 0; i < ctx->chunk_count; i++) {
         HapChunk *chunk = &ctx->chunks[i];
+        int64_t uncompressed_size;
 
         /* Check the compressed buffer is valid */
         if (chunk->compressed_offset + (uint64_t)chunk->compressed_size > bytestream2_get_bytes_left(gbc))
@@ -199,20 +200,21 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
         /* Fill out uncompressed size */
         if (chunk->compressor == HAP_COMP_SNAPPY) {
             GetByteContext gbc_tmp;
-            int64_t uncompressed_size;
             bytestream2_init(&gbc_tmp, gbc->buffer + chunk->compressed_offset,
                              chunk->compressed_size);
             uncompressed_size = ff_snappy_peek_uncompressed_length(&gbc_tmp);
             if (uncompressed_size < 0) {
                 return uncompressed_size;
             }
-            chunk->uncompressed_size = uncompressed_size;
         } else if (chunk->compressor == HAP_COMP_NONE) {
-            chunk->uncompressed_size = chunk->compressed_size;
+            uncompressed_size = chunk->compressed_size;
         } else {
             return AVERROR_INVALIDDATA;
         }
-        ctx->tex_size += chunk->uncompressed_size;
+        if (uncompressed_size > INT_MAX - ctx->tex_size)
+            return AVERROR_INVALIDDATA;
+        chunk->uncompressed_size = uncompressed_size;
+        ctx->tex_size += uncompressed_size;
     }
 
     av_log(avctx, AV_LOG_DEBUG, "%s compressor\n", compressorstr);
