@@ -39,18 +39,18 @@ static int bitpacked_decode_uyvy422(AVCodecContext *avctx, AVFrame *frame,
 {
     int ret;
 
+    ret = av_image_fill_arrays(frame->data, frame->linesize, avpkt->data,
+                               avctx->pix_fmt, avctx->width, avctx->height, 1);
+    if (ret < 0)
+        return ret;
+    if (ret > avpkt->size)
+        return AVERROR_INVALIDDATA;
+
     /* there is no need to copy as the data already match
      * a known pixel format */
     frame->buf[0] = av_buffer_ref(avpkt->buf);
     if (!frame->buf[0]) {
         return AVERROR(ENOMEM);
-    }
-
-    ret = av_image_fill_arrays(frame->data, frame->linesize, avpkt->data,
-                               avctx->pix_fmt, avctx->width, avctx->height, 1);
-    if (ret < 0) {
-        av_buffer_unref(&frame->buf[0]);
-        return ret;
     }
 
     return 0;
