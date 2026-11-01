@@ -121,8 +121,6 @@ typedef struct MorphoContext {
     int got_structure[4];
 
     AVFrame *temp;
-
-    int64_t *plane_f, *plane_g;
 } MorphoContext;
 
 #define OFFSET(x) offsetof(MorphoContext, x)
@@ -1024,11 +1022,6 @@ static int config_output(AVFilterLink *outlink)
     if (!s->temp)
         return AVERROR(ENOMEM);
 
-    s->plane_f = av_calloc(outlink->w * outlink->h, sizeof(*s->plane_f));
-    s->plane_g = av_calloc(outlink->w * outlink->h, sizeof(*s->plane_g));
-    if (!s->plane_f || !s->plane_g)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -1051,8 +1044,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_framesync_uninit(&s->fs);
 
     av_frame_free(&s->temp);
-    av_freep(&s->plane_f);
-    av_freep(&s->plane_g);
 }
 
 static const AVFilterPad morpho_inputs[] = {
