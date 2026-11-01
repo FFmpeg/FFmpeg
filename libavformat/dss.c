@@ -58,8 +58,8 @@ typedef struct DSSDemuxContext {
     int64_t block_pos;      /* offset of the current audio block header */
     int frames_left;        /* frames still to come from that block */
     int dss_sp_swap_byte;
+    int64_t frames_read;    /* index of the next frame */
 
-    int packet_size;
     int dss_header_size;
 } DSSDemuxContext;
 
@@ -379,6 +379,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     pkt->duration     = 264;
+    pkt->pts          = ctx->frames_read++ * 264;
     pkt->pos = pos;
     pkt->stream_index = 0;
 
@@ -438,7 +439,6 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = frame_size[byte & 3];
 
-    ctx->packet_size = size;
     ctx->counter--;
 
     ret = av_new_packet(pkt, size);
@@ -449,6 +449,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[0]  = byte;
     offset        = 1;
     pkt->duration = 240;
+    pkt->pts      = ctx->frames_read++ * 240;
     s->bit_rate = 8LL * size-- * st->codecpar->sample_rate * 512 / (506 * pkt->duration);
 
     pkt->stream_index = 0;
@@ -487,45 +488,34 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
     DSSDemuxContext *ctx = s->priv_data;
-    int64_t ret, seekto;
+    int samples = ctx->audio_codec == DSS_ACODEC_G723_1 ? 240 : 264;
+    int64_t ret, seekto, target = timestamp / samples, frames = 0;
     uint8_t header[DSS_AUDIO_BLOCK_HEADER_SIZE];
-    int offset;
+    int count, offset;
 
-    if (ctx->audio_codec == DSS_ACODEC_DSS_SP_VR) {
-        /* Frame sizes vary, so find the block from the per-block frame
-         * counts, taken as in dss_sp_next_block(). */
-        int64_t target = timestamp / 264, frames = 0;
-        int count;
-
-        for (seekto = 0; ; seekto += DSS_BLOCK_SIZE) {
-            ret = avio_seek(s->pb, ctx->dss_header_size + seekto, SEEK_SET);
-            if (ret < 0)
-                return ret;
+    /* Frame sizes vary, and a block can hold fewer frames than would fit, so
+     * find the block from the per-block frame counts, taken as in
+     * dss_sp_next_block(). */
+    for (seekto = ctx->dss_header_size; ; seekto += DSS_BLOCK_SIZE) {
+        ret = avio_seek(s->pb, seekto, SEEK_SET);
+        if (ret >= 0)
             ret = ffio_read_size(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
-            if (ret < 0)
+        if (ret < 0) {
+            /* Past the end: scan again for the block with the last frame. */
+            if (!frames)
                 return ret;
-            count = header[2] || header[5] == 0xff ? header[2] : header[5];
-            if (frames + count > target)
-                break;
-            frames += count;
+            target = frames - 1;
+            frames = 0;
+            seekto = ctx->dss_header_size - DSS_BLOCK_SIZE;
+            continue;
         }
-    } else if (ctx->audio_codec != DSS_ACODEC_G723_1)
-        seekto = timestamp / 264 * 41 / 506 * 512;
-    else
-        seekto = timestamp / 240 * ctx->packet_size / 506 * 512;
+        count = dss_block_frames(header);
+        if (frames + count > target)
+            break;
+        frames += count;
+    }
 
-    if (seekto < 0)
-        seekto = 0;
-
-    seekto += ctx->dss_header_size;
-
-    ret = avio_seek(s->pb, seekto, SEEK_SET);
-    if (ret < 0)
-        return ret;
-
-    ret = ffio_read_size(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
-    if (ret < 0)
-        return ret;
+    ctx->frames_read = frames;
     ctx->swap        = !!(header[0] & 0x80);
     ctx->frames_left = 0;
     ctx->block_pos   = seekto - DSS_BLOCK_SIZE;
@@ -553,6 +543,7 @@ const FFInputFormat ff_dss_demuxer = {
     .p.name         = "dss",
     .p.long_name    = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
     .p.extensions   = "dss",
+    .p.flags        = AVFMT_NO_BYTE_SEEK,
     .priv_data_size = sizeof(DSSDemuxContext),
     .read_probe     = dss_probe,
     .read_header    = dss_read_header,
