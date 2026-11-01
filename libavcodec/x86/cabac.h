@@ -224,12 +224,11 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
                              AV_STRINGIFY(H264_MLPS_STATE_OFFSET),
                              "%8")
-        : "=&r"(bit), "=&r"(c->low), "=&r"(c->range), "=&q"(tmp)
+        : "=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
         : "r"(state), "r"(c),
           "i"(offsetof(CABACContext, bytestream)),
           "i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
-          ,"1"(c->low), "2"(c->range)
         : "%"FF_REG_c, "memory"
     );
     return bit & 1;
