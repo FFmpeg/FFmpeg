@@ -674,6 +674,15 @@ typedef struct AVPacket {
  * be discarded by the decoder.  I.e. Non-reference frames.
  */
 #define AV_PKT_FLAG_DISPOSABLE 0x0010
+/**
+ * The packet ends a sequence: the next packet, if any, does not continue
+ * its decoder state.
+ *
+ * A decoder can do whatever ending a sequence requires when it decodes
+ * this packet. More packets may follow on the same stream, and a sequence
+ * may end without this flag when the input does not mark it.
+ */
+#define AV_PKT_FLAG_EOS        0x0020
 
 enum AVSideDataParamChangeFlags {
     AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE    = 0x0004,
