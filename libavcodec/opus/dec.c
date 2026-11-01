@@ -474,10 +474,8 @@ finish:
     return output_samples;
 }
 
-static av_cold int opus_decode_close(AVCodecContext *avctx)
+static av_cold void opus_free_streams(OpusContext *c)
 {
-    OpusContext *c = avctx->priv_data;
-
     for (int i = 0; i < c->p.nb_streams; i++) {
         OpusStreamContext *s = &c->streams[i];
 
@@ -497,27 +495,26 @@ static av_cold int opus_decode_close(AVCodecContext *avctx)
     c->p.nb_streams = 0;
 
     av_freep(&c->p.channel_maps);
+}
+
+static av_cold int opus_decode_close(AVCodecContext *avctx)
+{
+    OpusContext *c = avctx->priv_data;
+
+    opus_free_streams(c);
     av_freep(&c->fdsp);
 
     return 0;
 }
 
-static av_cold int opus_decode_init(AVCodecContext *avctx)
+static av_cold int opus_init_streams(AVCodecContext *avctx,
+                                     const uint8_t *header, int header_size)
 {
     OpusContext *c = avctx->priv_data;
     int ret;
 
-    avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
-    if (!avctx->sample_rate)
-        avctx->sample_rate = 48000;
-
-    c->fdsp = avpriv_float_dsp_alloc(0);
-    if (!c->fdsp)
-        return AVERROR(ENOMEM);
-
     /* find out the channel configuration */
-    ret = ff_opus_parse_extradata(avctx, &c->p, avctx->extradata,
-                                  avctx->extradata_size);
+    ret = ff_opus_parse_extradata(avctx, &c->p, header, header_size);
     if (ret < 0)
         return ret;
     if (c->p.gain_i)
@@ -579,6 +576,21 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
     }
 
     return 0;
+}
+
+static av_cold int opus_decode_init(AVCodecContext *avctx)
+{
+    OpusContext *c = avctx->priv_data;
+
+    avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 48000;
+
+    c->fdsp = avpriv_float_dsp_alloc(0);
+    if (!c->fdsp)
+        return AVERROR(ENOMEM);
+
+    return opus_init_streams(avctx, avctx->extradata, avctx->extradata_size);
 }
 
 static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
