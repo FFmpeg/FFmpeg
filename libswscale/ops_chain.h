@@ -21,6 +21,7 @@
 #ifndef SWSCALE_OPS_CHAIN_H
 #define SWSCALE_OPS_CHAIN_H
 
+#include "libavutil/avconfig.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 
@@ -44,7 +45,7 @@ typedef struct SwsUOpTable SwsUOpTable;
  * Private data for each kernel.
  */
 typedef union SwsOpPriv {
-    DECLARE_ALIGNED_16(char, data)[16];
+    char data[16];
 
     /* Common types */
     void *ptr;
@@ -70,12 +71,14 @@ static_assert(sizeof(SwsOpPriv) == 16, "SwsOpPriv size mismatch");
  */
 typedef void (*SwsFuncPtr)(void);
 typedef struct SwsOpImpl {
-    SwsFuncPtr cont; /* [offset =  0] Continuation for this operation. */
-    SwsOpPriv  priv; /* [offset = 16] Private data for this operation. */
+    SwsFuncPtr cont; /* Continuation for this operation. */
+    SwsOpPriv  priv; /* Private data for this operation. */
 } SwsOpImpl;
 
-static_assert(sizeof(SwsOpImpl) == 32,         "SwsOpImpl layout mismatch");
-static_assert(offsetof(SwsOpImpl, priv) == 16, "SwsOpImpl layout mismatch");
+#if ARCH_X86_64 || ARCH_AARCH64
+static_assert(sizeof(SwsOpImpl) == 24,        "SwsOpImpl layout mismatch");
+static_assert(offsetof(SwsOpImpl, priv) == 8, "SwsOpImpl layout mismatch");
+#endif
 
 /**
  * Compiled "chain" of operations, which can be dispatched efficiently.

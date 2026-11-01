@@ -134,7 +134,7 @@ struc SwsOpExec
 endstruc
 
 struc SwsOpImpl
-    .cont resb 16
+    .cont resq 1
     .priv resb 16
     .next resb 0
 endstruc
