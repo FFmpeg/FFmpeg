@@ -20,9 +20,8 @@ fate-ogg-vorbis-chained-large-comment: CMD = \
 # identification header, then an identification header followed by audio,
 # then the complete sample again to check recovery.
 # The byte ranges are page boundaries of the sample.
-MOOG_SMALL_PAGES = ffmpeg -f data -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -map 0 -c copy -f data - | \
-    dd bs=1 skip=$(1) count=$$(($(2) - $(1))) 2>/dev/null
-FATE_OGG_VORBIS_FFMPEG_FFPROBE-$(call DEMDEC, OGG DATA, VORBIS, DATA_MUXER PIPE_PROTOCOL) += fate-ogg-vorbis-chained-misplaced-headers
+MOOG_SMALL_PAGES = dd if=$(SAMPLES)/vorbis/moog_small.ogg bs=1 skip=$(1) count=$$(($(2) - $(1))) 2>/dev/null
+FATE_OGG_VORBIS_PROBE-$(call DEMDEC, OGG, VORBIS, PIPE_PROTOCOL) += fate-ogg-vorbis-chained-misplaced-headers
 fate-ogg-vorbis-chained-misplaced-headers: CMD = \
     { $(call MOOG_SMALL_PAGES,0,33991) && \
       $(call MOOG_SMALL_PAGES,58,12762) && \
@@ -70,6 +69,4 @@ FATE_SAMPLES_FFPROBE += $(FATE_OGG_VORBIS_PROBE-yes)
 
 FATE_FFMPEG_FFPROBE += $(FATE_OGG_VORBIS_ENCODE_PROBE-yes)
 
-FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_OGG_VORBIS_FFMPEG_FFPROBE-yes)
-
-fate-ogg-vorbis: $(FATE_OGG_VORBIS-yes) $(FATE_OGG_COPY_VORBIS-yes) $(FATE_OGG_VORBIS_PROBE-yes) $(FATE_OGG_VORBIS_ENCODE_PROBE-yes) $(FATE_OGG_VORBIS_FFMPEG_FFPROBE-yes)
+fate-ogg-vorbis: $(FATE_OGG_VORBIS-yes) $(FATE_OGG_COPY_VORBIS-yes) $(FATE_OGG_VORBIS_PROBE-yes) $(FATE_OGG_VORBIS_ENCODE_PROBE-yes)
