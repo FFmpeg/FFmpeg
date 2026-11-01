@@ -503,6 +503,25 @@ static int amf_attach_hdr_metadata(AVCodecContext *avctx, AMFSurface *surface, A
     return ret;
 }
 
+static void amf_init_dimensions(AVCodecContext *avctx)
+{
+    AMFDecoderContext *ctx = avctx->priv_data;
+    AMFVariantStruct size_var = {0};
+    AMF_RESULT res = AMF_OK;
+
+    res = ctx->decoder->pVtbl->GetProperty(ctx->decoder, AMF_VIDEO_DECODER_CURRENT_SIZE, &size_var);
+    if (res == AMF_OK && size_var.sizeValue.width > 0 && size_var.sizeValue.height > 0) {
+        avctx->width        = size_var.sizeValue.width;
+        avctx->height       = size_var.sizeValue.height;
+        avctx->coded_width  = size_var.sizeValue.width;
+        avctx->coded_height = size_var.sizeValue.height;
+
+        ctx->dimensions_initialized = 1;
+
+        av_log(avctx, AV_LOG_DEBUG, "AMF: detected initial decoder size %dx%d\n", avctx->width, avctx->height);
+    }
+}
+
 static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface, AVFrame *frame)
 {
     AMFVariantStruct    var = {0};
@@ -510,6 +529,9 @@ static int amf_amfsurface_to_avframe(AVCodecContext *avctx, AMFSurface* surface,
     int                 i;
     int                 ret;
     int                 format_amf;
+
+    if (!((AMFDecoderContext *)avctx->priv_data)->dimensions_initialized)
+        amf_init_dimensions(avctx);
 
     if (avctx->hw_device_ctx && ((AVHWDeviceContext*)avctx->hw_device_ctx->data)->type == AV_HWDEVICE_TYPE_AMF) {
         AVHWFramesContext *frames_ctx;
@@ -673,25 +695,6 @@ static AMF_RESULT amf_buffer_from_packet(AVCodecContext *avctx, const AVPacket* 
     return amf_update_buffer_properties(avctx, buf, pkt);
 }
 
-static void amf_init_dimensions(AVCodecContext *avctx)
-{
-    AMFDecoderContext *ctx = avctx->priv_data;
-    AMFVariantStruct size_var = {0};
-    AMF_RESULT res = AMF_OK;
-
-    res = ctx->decoder->pVtbl->GetProperty(ctx->decoder, AMF_VIDEO_DECODER_CURRENT_SIZE, &size_var);
-    if (res == AMF_OK && size_var.sizeValue.width > 0 && size_var.sizeValue.height > 0) {
-        avctx->width        = size_var.sizeValue.width;
-        avctx->height       = size_var.sizeValue.height;
-        avctx->coded_width  = size_var.sizeValue.width;
-        avctx->coded_height = size_var.sizeValue.height;
-
-        ctx->dimensions_initialized = 1;
-
-        av_log(avctx, AV_LOG_DEBUG, "AMF: detected initial decoder size %dx%d\n", avctx->width, avctx->height);
-    }
-}
-
 static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
 {
     AMFDecoderContext *ctx = avctx->priv_data;
@@ -753,11 +756,9 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
     }
 
     res = amf_receive_frame(avctx, frame);
-    if (res == AMF_OK) {
+    if (res == AMF_OK)
         got_frame = 1;
-        if (!ctx->dimensions_initialized)
-            amf_init_dimensions(avctx);
-    } else if (res == AMF_REPEAT)
+    else if (res == AMF_REPEAT)
         // decoder has no output yet
         res = AMF_OK;
     else if (res == AMF_EOF) {
