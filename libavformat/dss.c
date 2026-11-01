@@ -247,7 +247,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     dss_sp_byte_swap(ctx, pkt->data);
 
     if (ctx->dss_sp_swap_byte < 0) {
-        return AVERROR(EAGAIN);
+        return FFERROR_REDO;
     }
 
     return 0;
