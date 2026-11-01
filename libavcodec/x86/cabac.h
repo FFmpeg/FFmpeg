@@ -133,7 +133,6 @@
 
 #else /* BROKEN_RELOCATIONS */
 #define TABLES_ARG NAMED_CONSTRAINTS_ARRAY_ADD(ff_h264_cabac_tables)
-#define RIP_ARG
 
 #if HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, low, range, tmp)\
