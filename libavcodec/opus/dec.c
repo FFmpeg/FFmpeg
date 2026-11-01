@@ -474,6 +474,30 @@ finish:
     return output_samples;
 }
 
+/**
+ * Append the samples the resampler holds back to the output of the
+ * sub-packet that just decoded, leaving the stream's output state as it was.
+ */
+static int opus_drain_subpacket(OpusStreamContext *s, int decoded_samples)
+{
+    float *out[2] = { s->out[0], s->out[1] };
+    int out_size  = s->out_size;
+    int ret;
+
+    for (int i = 0; i < 2; i++)
+        if (s->out[i])
+            s->out[i] += decoded_samples;
+    s->out_size -= decoded_samples * sizeof(float);
+
+    ret = opus_decode_subpacket(s, NULL);
+
+    s->out[0]   = out[0];
+    s->out[1]   = out[1];
+    s->out_size = out_size;
+
+    return ret < 0 ? ret : decoded_samples + ret;
+}
+
 static av_cold void opus_free_streams(OpusContext *c)
 {
     for (int i = 0; i < c->p.nb_streams; i++) {
@@ -699,6 +723,8 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
         }
 
         ret = opus_decode_subpacket(&c->streams[i], buf);
+        if (ret >= 0 && buf && (avpkt->flags & AV_PKT_FLAG_EOS))
+            ret = opus_drain_subpacket(s, ret);
         if (ret < 0)
             return ret;
         s->decoded_samples = ret;
