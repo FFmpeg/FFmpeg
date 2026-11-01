@@ -163,7 +163,7 @@ void ff_opus_rc_put_raw(OpusRangeCoder *rc, uint32_t val, uint32_t count)
     const int to_write = FFMIN(32 - rc->rb.cachelen, count);
 
     rc->total_bits += count;
-    rc->rb.cacheval |= av_zero_extend(val, to_write) << rc->rb.cachelen;
+    rc->rb.cacheval |= (to_write < 32 ? av_zero_extend(val, to_write) : val) << rc->rb.cachelen;
     rc->rb.cachelen = (rc->rb.cachelen + to_write) % 32;
 
     if (!rc->rb.cachelen && count) {
@@ -171,7 +171,7 @@ void ff_opus_rc_put_raw(OpusRangeCoder *rc, uint32_t val, uint32_t count)
         rc->rb.bytes    += 4;
         rc->rb.position -= 4;
         rc->rb.cachelen = count - to_write;
-        rc->rb.cacheval = av_zero_extend(val >> to_write, rc->rb.cachelen);
+        rc->rb.cacheval = to_write < 32 ? av_zero_extend(val >> to_write, rc->rb.cachelen) : 0;
         av_assert0(rc->rng_cur < rc->rb.position);
     }
 }
