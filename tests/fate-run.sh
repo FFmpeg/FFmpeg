@@ -789,6 +789,9 @@ null(){
 # must be kept verbatim
 set -f
 
+# A pipeline fails when any of its commands fails, if the shell supports it
+(set -o pipefail) 2>/dev/null && set -o pipefail
+
 exec 3>&2
 eval $command >"$outfile" 2>$errfile
 err=$?
