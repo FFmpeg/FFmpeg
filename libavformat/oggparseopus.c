@@ -150,6 +150,13 @@ static int opus_packet(AVFormatContext *avf, int idx)
         if (ret < 0)
             return ret;
 
+        /* A later link's header: the decoder is still set up for the previous one. */
+        av_freep(&os->new_extradata);
+        os->new_extradata = av_memdup(packet, os->psize);
+        if (!os->new_extradata)
+            return AVERROR(ENOMEM);
+        os->new_extradata_size = os->psize;
+
         return 1;
     }
 

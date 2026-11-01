@@ -34,8 +34,8 @@ fate-ogg-opus-chained-reset: CMD = $(call OGG_OPUS_CHAINED,$(OGG_OPUS_CHAINED_RE
 fate-ogg-opus-chained-reset: REF = $(OGG_OPUS_CHAINED_RESET_LINKS).pcm
 fate-ogg-opus-chained-reset: CLEANFILES = $(addprefix $(OGG_OPUS_CHAINED_RESET_LINKS),.1.ogg .2.ogg .pcm)
 fate-ogg-opus-chained-reset: CMP = stddev
-fate-ogg-opus-chained-reset: CMP_TARGET = 95
-fate-ogg-opus-chained-reset: FUZZ = 5
+fate-ogg-opus-chained-reset: CMP_TARGET = 0
+fate-ogg-opus-chained-reset: FUZZ = 0
 
 # The second link sets an output gain of -6 dB, which the first one does not.
 OGG_OPUS_CHAINED_GAIN_LINKS = tests/data/fate/ogg-opus-chained-gain.links
@@ -44,8 +44,8 @@ fate-ogg-opus-chained-gain: CMD = $(call OGG_OPUS_CHAINED,$(OGG_OPUS_CHAINED_GAI
 fate-ogg-opus-chained-gain: REF = $(OGG_OPUS_CHAINED_GAIN_LINKS).pcm
 fate-ogg-opus-chained-gain: CLEANFILES = $(addprefix $(OGG_OPUS_CHAINED_GAIN_LINKS),.1.ogg .2.ogg .pcm)
 fate-ogg-opus-chained-gain: CMP = stddev
-fate-ogg-opus-chained-gain: CMP_TARGET = 1040
-fate-ogg-opus-chained-gain: FUZZ = 10
+fate-ogg-opus-chained-gain: CMP_TARGET = 0
+fate-ogg-opus-chained-gain: FUZZ = 0
 
 # Two SILK test vectors chained: the first link ends with samples still
 # buffered in the decoder.
@@ -60,7 +60,7 @@ fate-ogg-opus-chained-silk: REF = $(OGG_OPUS_CHAINED_SILK_LINKS).pcm
 fate-ogg-opus-chained-silk: CLEANFILES = $(addprefix $(OGG_OPUS_CHAINED_SILK_LINKS),.1.ogg .2.ogg .pcm)
 fate-ogg-opus-chained-silk: CMP = stddev
 fate-ogg-opus-chained-silk: CMP_TARGET = 0
-fate-ogg-opus-chained-silk: FUZZ = 1
+fate-ogg-opus-chained-silk: FUZZ = 0
 
 FATE_OGG_OPUS-$(call DEMDEC, OGG, OPUS) += $(FATE_OGG_OPUS)
 
