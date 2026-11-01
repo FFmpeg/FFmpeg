@@ -529,6 +529,10 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
             (codec->capabilities & AV_CODEC_CAP_DELAY)) {
             ret = update_context_from_thread(p->avctx, prev_thread->avctx, 0);
             if (ret) {
+                /* No packet was submitted and the thread indices did not advance,
+                 * so retrying the drain packet can repeat this error forever. */
+                if (user_avctx->internal->draining)
+                    user_avctx->internal->draining_done = 1;
                 pthread_mutex_unlock(&p->mutex);
                 return ret;
             }
@@ -561,6 +565,11 @@ int ff_thread_receive_frame(AVCodecContext *avctx, AVFrame *frame, unsigned flag
     /* release the async lock, permitting blocked hwaccel threads to
      * go forward while we are in this function */
     async_unlock(fctx);
+
+    if (avctx->internal->draining_done) {
+        ret = AVERROR_EOF;
+        goto finish;
+    }
 
     /* submit packets to threads while there are no buffered results to return */
     while (!fctx->df.nb_f && !fctx->result) {
