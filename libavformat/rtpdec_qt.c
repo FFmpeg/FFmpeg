@@ -146,6 +146,8 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
                 if (!mc)
                     return AVERROR(ENOMEM);
                 mc->fc = s;
+                mc->cur_item_id = -1;
+                mc->trak_index  = st->index;
                 st->priv_data = msc = av_mallocz(sizeof(MOVStreamContext));
                 if (!msc) {
                     av_free(mc);
