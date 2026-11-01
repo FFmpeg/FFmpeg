@@ -291,7 +291,13 @@ static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
 {
     DssSpContext *p = avctx->priv_data;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
-    avctx->sample_rate    = 11025;
+    /* The codec synthesises at 12000 Hz and dss_sp_update_state resamples by
+     * 11/12 -- 288 samples in, 264 out -- so a frame is exactly 24 ms and the
+     * output rate is 12000 * 11 / 12 = 11000 Hz. Declaring 11025 plays every
+     * DSS SP file 0.23% fast, which is a three second drift over a 23 minute
+     * recording. The 264 samples per frame already in this decoder only add up
+     * to 24 ms at 11000 Hz. */
+    avctx->sample_rate    = 11000;
     av_channel_layout_uninit(&avctx->ch_layout);
     avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 

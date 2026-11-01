@@ -146,7 +146,10 @@ static int dss_read_header(AVFormatContext *s)
 
     if (ctx->audio_codec == DSS_ACODEC_DSS_SP) {
         st->codecpar->codec_id    = AV_CODEC_ID_DSS_SP;
-        st->codecpar->sample_rate = 11025;
+        /* See libavcodec/dss_sp.c: the decoder runs at 12000 Hz and
+         * decimates 11:12, so the output rate is 11000 Hz, not 11025. This
+         * also sets the packet time base just below. */
+        st->codecpar->sample_rate = 11000;
         s->bit_rate = 8 * (DSS_FRAME_SIZE - 1) * st->codecpar->sample_rate
                         * 512 / (506 * 264);
     } else if (ctx->audio_codec == DSS_ACODEC_G723_1) {
