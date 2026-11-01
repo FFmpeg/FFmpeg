@@ -126,7 +126,7 @@ static void g723_1_reset(AVCodecContext *avctx)
         memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
 
         p->cng_random_seed = CNG_RANDOM_SEED;
-        p->past_frame_type = SID_FRAME;
+        p->past_frame_type = ACTIVE_FRAME;
     }
 }
 
