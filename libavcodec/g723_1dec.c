@@ -32,7 +32,6 @@
 #define BITSTREAM_READER_LE
 #include "acelp_vectors.h"
 #include "avcodec.h"
-#include "celp_filters.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
@@ -931,6 +930,20 @@ static void generate_noise(G723_1_ChannelContext *p)
            PITCH_MAX * sizeof(*p->excitation));
 }
 
+static void lp_synthesis_filter(int16_t *out, const int16_t *lpc,
+                                const int16_t *in)
+{
+    for (int n = 0; n < SUBFRAME_LEN; n++) {
+        int sum = in[n] * (1 << 13);
+
+        for (int i = 0; i < LPC_ORDER; i++)
+            sum = av_sat_dsub32(sum, lpc[i] * out[n - 1 - i]);
+
+        sum    = av_clipl_int32((int64_t)sum * 4);
+        out[n] = av_sat_add32(sum, 1 << 15) >> 16;
+    }
+}
+
 static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -1087,9 +1100,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
         memcpy(p->audio, p->synth_mem, LPC_ORDER * sizeof(*p->audio));
         for (i = LPC_ORDER, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-            ff_celp_lp_synthesis_filter(p->audio + i, &lpc[j * LPC_ORDER],
-                                        audio + i, SUBFRAME_LEN, LPC_ORDER,
-                                        0, 1, 1 << 12);
+            lp_synthesis_filter(p->audio + i, &lpc[j * LPC_ORDER], audio + i);
         memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
         if (s->postfilter) {
