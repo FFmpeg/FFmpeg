@@ -112,16 +112,11 @@ static const int cng_filt[4] = { 273, 998, 499, 333 };
 
 static const int cng_bseg[3] = { 2048, 18432, 231233 };
 
-static av_cold int g723_1_decode_init(AVCodecContext *avctx)
+static void g723_1_reset(AVCodecContext *avctx)
 {
     G723_1_Context *s = avctx->priv_data;
 
-    avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
-    if (avctx->ch_layout.nb_channels < 1 || avctx->ch_layout.nb_channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo are supported (requested channels: %d).\n",
-               avctx->ch_layout.nb_channels);
-        return AVERROR(EINVAL);
-    }
+    memset(s->ch, 0, sizeof(s->ch));
     for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
         G723_1_ChannelContext *p = &s->ch[ch];
 
@@ -133,6 +128,18 @@ static av_cold int g723_1_decode_init(AVCodecContext *avctx)
         p->cng_random_seed = CNG_RANDOM_SEED;
         p->past_frame_type = SID_FRAME;
     }
+}
+
+static av_cold int g723_1_decode_init(AVCodecContext *avctx)
+{
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
+    if (avctx->ch_layout.nb_channels < 1 || avctx->ch_layout.nb_channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo are supported (requested channels: %d).\n",
+               avctx->ch_layout.nb_channels);
+        return AVERROR(EINVAL);
+    }
+
+    g723_1_reset(avctx);
 
     return 0;
 }
@@ -1118,6 +1125,7 @@ const FFCodec ff_g723_1_decoder = {
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_decode_init,
     FF_CODEC_DECODE_CB(g723_1_decode_frame),
+    .flush          = g723_1_reset,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.priv_class   = &g723_1dec_class,
 };
