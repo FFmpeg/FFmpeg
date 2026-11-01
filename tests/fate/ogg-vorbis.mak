@@ -14,7 +14,7 @@ fate-ogg-vorbis-chained-large-comment: CMD = \
     { ffmpeg -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c copy -t 0.5 -fflags +bitexact -f ogg - && \
       printf "comment=%070000d" 0 | ffmpeg -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -/metadata pipe: \
         -c copy -t 0.5 -fflags +bitexact -serial_offset 1 -f ogg -; } | \
-    framecrc -i - -c copy
+    framecrc -i pipe: -c copy
 
 # Splice pages of a single-chain sample: comment and setup headers without
 # identification header, then an identification header followed by audio,
