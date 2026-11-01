@@ -1056,8 +1056,12 @@ static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                     p->interp_gain, &p->random_seed);
 
                     /* Save the excitation for the next frame */
-                    memcpy(p->prev_excitation, buf + (FRAME_LEN - PITCH_MAX),
-                           PITCH_MAX * sizeof(*p->excitation));
+                    if (p->interp_index)
+                        memcpy(p->prev_excitation, buf + (FRAME_LEN - PITCH_MAX),
+                               PITCH_MAX * sizeof(*p->excitation));
+                    else
+                        memset(p->prev_excitation, 0,
+                               PITCH_MAX * sizeof(*p->excitation));
                 }
             }
             p->cng_random_seed = CNG_RANDOM_SEED;
