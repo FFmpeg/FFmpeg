@@ -1243,9 +1243,11 @@ static void lsp2lpc(int16_t *lpc)
         int64_t ff1 = f1[i + 1] + f1[i];
         int64_t ff2 = f2[i + 1] - f2[i];
 
-        lpc[i] = av_clipl_int32(((ff1 + ff2) * 8) + (1 << 15)) >> 16;
-        lpc[LPC_ORDER - i - 1] = av_clipl_int32(((ff1 - ff2) * 8) +
-                                                (1 << 15)) >> 16;
+        lpc[i] = FFMAX(av_clipl_int32(((ff1 + ff2) * 8) + (1 << 15)) >> 16,
+                       -INT16_MAX);
+        lpc[LPC_ORDER - i - 1] = FFMAX(av_clipl_int32(((ff1 - ff2) * 8) +
+                                                      (1 << 15)) >> 16,
+                                       -INT16_MAX);
     }
 }
 
