@@ -377,8 +377,9 @@ static const int8_t* inter_filter_scaled(const int scale, const int is_chroma, c
 #define INTER_FILTER_SCALED(scale) inter_filter_scaled(scale, is_chroma, is_affine)
 
 #define SCALED_CHROMA_ADDIN(scale, collocated_flag) (is_chroma ? (collocated_flag ? 0 : 8 * (scale - (1 << 14))) : 0)
-#define SCALED_REF_SB(off, scaling_off, ref_mv, scale, add, shift) ((((off - (scaling_off << shift)) << (4 + shift)) + ref_mv) * scale + add)
-#define SCALED_REF(ref_sb, offset, shift) (FFSIGN(ref_sb) * ((FFABS(ref_sb) + (128 << is_chroma)) >> (8 + is_chroma)) + (offset << (10 - shift)) + (32 >> is_chroma))
+// Window offsets are in luma samples; block positions are in component samples.
+#define SCALED_REF_SB(off, scaling_off, ref_mv, scale, add, shift) (((((int64_t)(off) << (4 + shift)) - (scaling_off) * (1 << 4)) + ref_mv) * scale + add)
+#define SCALED_REF(ref_sb, offset, shift) (FFSIGN(ref_sb) * ((FFABS(ref_sb) + (128 << shift)) >> (8 + shift)) + (offset * (1 << (10 - shift))) + (32 >> is_chroma))
 #define SCALED_STEP(scale) ((scale + 8) >> 4)
 
 static void scaled_ref_pos_and_step(const VVCLocalContext *lc, const VVCRefPic *refp, const Mv *mv, const int x_off, const int y_off, const int c_idx,
@@ -393,11 +394,11 @@ static void scaled_ref_pos_and_step(const VVCLocalContext *lc, const VVCRefPic *
     const int top_offset      = fc->ref->scaling_win.top_offset;
     const int addx            = SCALED_CHROMA_ADDIN(refp->scale[0], sps->r->sps_chroma_horizontal_collocated_flag);
     const int addy            = SCALED_CHROMA_ADDIN(refp->scale[1], sps->r->sps_chroma_vertical_collocated_flag);
-    const int refx_sb         = SCALED_REF_SB(x_off, left_offset, mv->x, refp->scale[0], addx, hs);
-    const int refy_sb         = SCALED_REF_SB(y_off, top_offset,  mv->y, refp->scale[1], addy, vs);
+    const int64_t refx_sb     = SCALED_REF_SB(x_off, left_offset, mv->x, refp->scale[0], addx, hs);
+    const int64_t refy_sb     = SCALED_REF_SB(y_off, top_offset,  mv->y, refp->scale[1], addy, vs);
 
-    *x  = SCALED_REF(refx_sb, left_offset, hs);
-    *y  = SCALED_REF(refy_sb, top_offset, vs);
+    *x  = SCALED_REF(refx_sb, refp->ref->scaling_win.left_offset, hs);
+    *y  = SCALED_REF(refy_sb, refp->ref->scaling_win.top_offset, vs);
     *dx = SCALED_STEP(refp->scale[0]);
     *dy = SCALED_STEP(refp->scale[1]);
 }
