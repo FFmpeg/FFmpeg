@@ -215,7 +215,7 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
 #ifdef BROKEN_RELOCATIONS
     void *tables;
 
-    __asm__ volatile(
+    __asm__(
         "lea    "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
         : NAMED_CONSTRAINTS_ARRAY(ff_h264_cabac_tables)

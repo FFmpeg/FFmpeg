@@ -56,7 +56,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 #ifdef BROKEN_RELOCATIONS
     void *tables;
 
-    __asm__ volatile(
+    __asm__(
         "lea   "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
         : NAMED_CONSTRAINTS_ARRAY(ff_h264_cabac_tables)
@@ -136,7 +136,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
 #ifdef BROKEN_RELOCATIONS
     void *tables;
 
-    __asm__ volatile(
+    __asm__(
         "lea    "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
         : NAMED_CONSTRAINTS_ARRAY(ff_h264_cabac_tables)
