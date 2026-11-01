@@ -186,7 +186,7 @@ static int init_input(AVFormatContext *s, const char *filename,
                                   s, 0, s->format_probesize);
 }
 
-static int codec_close(FFStream *sti);
+static int codec_close(AVFormatContext *s, FFStream *sti);
 
 static int update_stream_avctx(AVFormatContext *s)
 {
@@ -200,7 +200,7 @@ static int update_stream_avctx(AVFormatContext *s)
 
         if (avcodec_is_open(sti->avctx)) {
             av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
-            ret = codec_close(sti);
+            ret = codec_close(s, sti);
             sti->info->found_decoder = 0;
             if (ret < 0)
                 return ret;
@@ -1360,7 +1360,7 @@ static int64_t ts_to_samples(AVStream *st, int64_t ts)
     return av_rescale(ts, st->time_base.num * st->codecpar->sample_rate, st->time_base.den);
 }
 
-static int codec_close(FFStream *sti)
+static int codec_close(AVFormatContext *s, FFStream *sti)
 {
     AVCodecContext *avctx_new = NULL;
     AVCodecParameters *par_tmp = NULL;
@@ -1369,7 +1369,7 @@ static int codec_close(FFStream *sti)
 
     new_codec =
       (sti->avctx->codec_id != sti->pub.codecpar->codec_id) ?
-      avcodec_find_decoder(sti->pub.codecpar->codec_id) :
+      find_probe_decoder(s, &sti->pub, sti->pub.codecpar->codec_id) :
       sti->avctx->codec;
 
     avctx_new = avcodec_alloc_context3(new_codec);
@@ -1451,7 +1451,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (sti->need_context_update) {
             if (avcodec_is_open(sti->avctx)) {
                 av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
-                ret = codec_close(sti);
+                ret = codec_close(s, sti);
                 sti->info->found_decoder = 0;
                 if (ret < 0)
                     return ret;
@@ -3274,7 +3274,7 @@ find_stream_info_err:
         }
 
         if (avcodec_is_open(sti->avctx)) {
-            err = codec_close(sti);
+            err = codec_close(ic, sti);
             if (err < 0 && ret >= 0)
                 ret = err;
         }
