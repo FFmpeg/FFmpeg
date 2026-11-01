@@ -303,9 +303,19 @@ static const int32_t dss_sp_sinc[67] = {
       139,   269,   336,   356,   348,   323,   293,   262,
 };
 
-static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
+/* Bring the context back to what a newly opened decoder starts with. */
+static void dss_sp_reset(AVCodecContext *avctx)
 {
     DssSpContext *p = avctx->priv_data;
+
+    memset(p, 0, sizeof(*p));
+    p->pulse_dec_mode = 1;
+    p->avctx          = avctx;
+    p->variable_rate  = avctx->extradata_size >= 1 && avctx->extradata[0] == DSS_ACODEC_DSS_SP_VR;
+}
+
+static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
+{
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
     /* The codec synthesises at 12000 Hz and dss_sp_update_state resamples by
      * 11/12 -- 288 samples in, 264 out -- so a frame is exactly 24 ms and the
@@ -317,9 +327,7 @@ static av_cold int dss_sp_decode_init(AVCodecContext *avctx)
     av_channel_layout_uninit(&avctx->ch_layout);
     avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
-    p->pulse_dec_mode = 1;
-    p->avctx          = avctx;
-    p->variable_rate  = avctx->extradata_size >= 1 && avctx->extradata[0] == DSS_ACODEC_DSS_SP_VR;
+    dss_sp_reset(avctx);
 
     return 0;
 }
@@ -830,5 +838,6 @@ const FFCodec ff_dss_sp_decoder = {
     .priv_data_size = sizeof(DssSpContext),
     .init           = dss_sp_decode_init,
     FF_CODEC_DECODE_CB(dss_sp_decode_frame),
+    .flush          = dss_sp_reset,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 };
