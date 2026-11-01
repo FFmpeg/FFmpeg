@@ -126,12 +126,50 @@ static int dss_read_metadata_string(AVFormatContext *s, unsigned int offset,
     return av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
 }
 
+static int dss_read_packet(AVFormatContext *s, AVPacket *pkt);
+
+/* Frames in the file, or 0 if the input cannot seek. Each block header states
+ * how many frames start in the block, but the reader takes them from where the
+ * first one starts, on into the next blocks when the block states more than it
+ * holds, and stops where the file ends or a frame does not parse. So the
+ * frames are counted by reading them all. */
+static int64_t dss_count_frames(AVFormatContext *s)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int64_t frames = 0;
+    int ret;
+    AVPacket *pkt;
+
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
+        return 0;
+
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return AVERROR(ENOMEM);
+
+    /* dss_next_block steps forward first, so start one block short. */
+    ctx->block_pos        = ctx->dss_header_size - DSS_BLOCK_SIZE;
+    ctx->frames_left      = 0;
+    ctx->dss_sp_swap_byte = -1;
+    while ((ret = dss_read_packet(s, pkt)) >= 0 || ret == FFERROR_REDO) {
+        if (ret >= 0)
+            frames++;
+        av_packet_unref(pkt);
+    }
+    av_packet_free(&pkt);
+
+    if (ret != AVERROR_EOF && ret != AVERROR_INVALIDDATA)
+        return ret;
+    return frames;
+}
+
 static int dss_read_header(AVFormatContext *s)
 {
     DSSDemuxContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int64_t ret64;
+    int64_t ret64, frames;
     int ret, version;
 
     st = avformat_new_stream(s, NULL);
@@ -169,8 +207,6 @@ static int dss_read_header(AVFormatContext *s)
          * decimates 11:12, so the output rate is 11000 Hz, not 11025. This
          * also sets the packet time base just below. */
         st->codecpar->sample_rate = 11000;
-        s->bit_rate = 8 * (DSS_FRAME_SIZE - 1) * st->codecpar->sample_rate
-                        * 512 / (506 * 264);
     } else if (ctx->audio_codec == DSS_ACODEC_G723_1) {
         st->codecpar->codec_id    = AV_CODEC_ID_G723_1;
         st->codecpar->sample_rate = 8000;
@@ -186,6 +222,14 @@ static int dss_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     st->start_time = 0;
 
+    frames = dss_count_frames(s);
+    if (frames < 0)
+        return (int)frames;
+    if (frames > 0) {
+        st->nb_frames = frames;
+        st->duration  = frames * (ctx->audio_codec == DSS_ACODEC_G723_1 ? 240 : 264);
+    }
+
     /* Jump over header */
 
     if ((ret64 = avio_seek(pb, ctx->dss_header_size, SEEK_SET)) < 0)
@@ -193,6 +237,7 @@ static int dss_read_header(AVFormatContext *s)
 
     ctx->swap        = 0;
     ctx->frames_left = 0;
+    ctx->frames_read = 0;
     ctx->dss_sp_swap_byte = -1;
     /* dss_next_block steps forward first, so start one block short. */
     ctx->block_pos   = ctx->dss_header_size - DSS_BLOCK_SIZE;
@@ -412,7 +457,6 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
-    AVStream *st = s->streams[0];
     uint8_t byte;
     int size, ret;
     int64_t pos;
@@ -440,7 +484,6 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[0]  = byte;
     pkt->duration = 240;
     pkt->pts      = ctx->frames_read++ * 240;
-    s->bit_rate = 8LL * size * st->codecpar->sample_rate * 512 / (506 * pkt->duration);
 
     pkt->stream_index = 0;
 
