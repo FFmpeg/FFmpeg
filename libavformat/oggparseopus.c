@@ -212,6 +212,8 @@ static int opus_packet(AVFormatContext *avf, int idx)
                    "Last packet was truncated to %d due to end trimming.\n",
                    os->pduration);
         }
+        if (os->segp == os->nsegs)
+            os->pflags |= AV_PKT_FLAG_EOS;
     }
 
     return 0;
