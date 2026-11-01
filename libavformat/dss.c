@@ -37,6 +37,7 @@
 
 #define DSS_HEAD_OFFSET_ACODEC        0x2a4
 #define DSS_ACODEC_DSS_SP             0x0    /* SP mode */
+#define DSS_ACODEC_DSS_SP_VR          0x1    /* SP mode, variable rate */
 #define DSS_ACODEC_G723_1             0x2    /* LP mode */
 
 #define DSS_HEAD_OFFSET_COMMENT       0x31e
@@ -46,6 +47,7 @@
 #define DSS_AUDIO_BLOCK_HEADER_SIZE   6
 #define DSS_BLOCK_KEEP_BEFORE         2
 #define DSS_FRAME_SIZE                42
+#define DSS_SP_SHORT_FRAME_SIZE       9
 
 static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
 
@@ -157,8 +159,13 @@ static int dss_read_header(AVFormatContext *s)
     avio_seek(pb, DSS_HEAD_OFFSET_ACODEC, SEEK_SET);
     ctx->audio_codec = avio_r8(pb);
 
-    if (ctx->audio_codec == DSS_ACODEC_DSS_SP) {
+    if (ctx->audio_codec == DSS_ACODEC_DSS_SP ||
+        ctx->audio_codec == DSS_ACODEC_DSS_SP_VR) {
         st->codecpar->codec_id    = AV_CODEC_ID_DSS_SP;
+        /* The decoder reads the format to tell variable rate SP apart. */
+        if ((ret = ff_alloc_extradata(st->codecpar, 1)) < 0)
+            return ret;
+        st->codecpar->extradata[0] = ctx->audio_codec;
         /* See libavcodec/dss_sp.c: the decoder runs at 12000 Hz and
          * decimates 11:12, so the output rate is 11000 Hz, not 11025. This
          * also sets the packet time base just below. */
@@ -332,30 +339,32 @@ static int64_t dss_frame_pos(AVFormatContext *s)
     return pos;
 }
 
-static void dss_sp_byte_swap(DSSDemuxContext *ctx, uint8_t *data)
+/* size is the frame length in bytes, 41 or 9; both are odd, so the parity
+ * flips after every frame. */
+static void dss_sp_byte_swap(DSSDemuxContext *ctx, uint8_t *data, int size)
 {
     int i;
 
     if (ctx->swap) {
-        for (i = 0; i < DSS_FRAME_SIZE - 2; i += 2)
+        for (i = 0; i < size - 1; i += 2)
             data[i] = data[i + 4];
 
-        /* Zero the padding. */
-        data[DSS_FRAME_SIZE] = 0;
         data[1] = ctx->dss_sp_swap_byte;
     } else {
-        ctx->dss_sp_swap_byte = data[DSS_FRAME_SIZE - 2];
+        ctx->dss_sp_swap_byte = data[size - 1];
     }
 
-    /* make sure byte 40 is always 0 */
-    data[DSS_FRAME_SIZE - 2] = 0;
-    ctx->swap             ^= 1;
+    /* Zero the padding, and make sure the byte past the frame is 0. */
+    memset(data + size + 1, 0, DSS_FRAME_SIZE - size);
+    data[size - 1] = 0;
+    ctx->swap     ^= 1;
 }
 
 static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
-    int read_size, ret, buff_offset = 0;
+    int size = DSS_FRAME_SIZE - 1;
+    int ret, done = 0;
     int64_t pos;
 
     if (ctx->frames_left <= 0) {
@@ -365,12 +374,6 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     pos = dss_frame_pos(s);
 
-    if (ctx->swap) {
-        read_size   = DSS_FRAME_SIZE - 2;
-        buff_offset = 3;
-    } else
-        read_size = DSS_FRAME_SIZE;
-
     ret = av_new_packet(pkt, DSS_FRAME_SIZE);
     if (ret < 0)
         return ret;
@@ -379,14 +382,37 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = pos;
     pkt->stream_index = 0;
 
-    /* This will write one byte into pkt's padding if buff_offset == 3 */
-    ret = dss_sp_read_payload(s, pkt->data + buff_offset, read_size);
+    /* In variable rate SP the top bit of the frame's first byte, in 16-bit
+     * word order, is clear for a short frame. A swapped frame starts with the
+     * byte carried over from the previous frame; otherwise it is the second
+     * byte read. */
+    if (ctx->audio_codec == DSS_ACODEC_DSS_SP_VR) {
+        if (ctx->swap) {
+            if (ctx->dss_sp_swap_byte >= 0 && !(ctx->dss_sp_swap_byte & 0x80))
+                size = DSS_SP_SHORT_FRAME_SIZE;
+        } else {
+            ret = dss_sp_read_payload(s, pkt->data, 2);
+            if (ret < 0)
+                return AVERROR_EOF; /* no whole frame left */
+            done = 2;
+            if (!(pkt->data[1] & 0x80))
+                size = DSS_SP_SHORT_FRAME_SIZE;
+        }
+    }
+
+    /* A swapped frame reads one byte less than its size, starting at offset
+     * 3, which writes one byte into pkt's padding for a long frame; an
+     * unswapped one reads one byte more. */
+    if (ctx->swap)
+        ret = dss_sp_read_payload(s, pkt->data + 3, size - 1);
+    else
+        ret = dss_sp_read_payload(s, pkt->data + done, size + 1 - done);
     if (ret < 0)
         return ret == AVERROR_EOF ? ret : AVERROR_EOF;
 
     ctx->frames_left--;
 
-    dss_sp_byte_swap(ctx, pkt->data);
+    dss_sp_byte_swap(ctx, pkt->data, size);
 
     if (ctx->dss_sp_swap_byte < 0) {
         return FFERROR_REDO;
@@ -451,7 +477,7 @@ static int dss_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DSSDemuxContext *ctx = s->priv_data;
 
-    if (ctx->audio_codec == DSS_ACODEC_DSS_SP)
+    if (ctx->audio_codec != DSS_ACODEC_G723_1)
         return dss_sp_read_packet(s, pkt);
     else
         return dss_723_1_read_packet(s, pkt);
@@ -465,7 +491,25 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
     uint8_t header[DSS_AUDIO_BLOCK_HEADER_SIZE];
     int offset;
 
-    if (ctx->audio_codec == DSS_ACODEC_DSS_SP)
+    if (ctx->audio_codec == DSS_ACODEC_DSS_SP_VR) {
+        /* Frame sizes vary, so find the block from the per-block frame
+         * counts, taken as in dss_sp_next_block(). */
+        int64_t target = timestamp / 264, frames = 0;
+        int count;
+
+        for (seekto = 0; ; seekto += DSS_BLOCK_SIZE) {
+            ret = avio_seek(s->pb, ctx->dss_header_size + seekto, SEEK_SET);
+            if (ret < 0)
+                return ret;
+            ret = ffio_read_size(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
+            if (ret < 0)
+                return ret;
+            count = header[2] || header[5] == 0xff ? header[2] : header[5];
+            if (frames + count > target)
+                break;
+            frames += count;
+        }
+    } else if (ctx->audio_codec != DSS_ACODEC_G723_1)
         seekto = timestamp / 264 * 41 / 506 * 512;
     else
         seekto = timestamp / 240 * ctx->packet_size / 506 * 512;
@@ -485,7 +529,7 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
     ctx->swap        = !!(header[0] & 0x80);
     ctx->frames_left = 0;
     ctx->block_pos   = seekto - DSS_BLOCK_SIZE;
-    if (ctx->audio_codec == DSS_ACODEC_DSS_SP) {
+    if (ctx->audio_codec != DSS_ACODEC_G723_1) {
         ctx->dss_sp_swap_byte = -1;
         return 0;
     }
