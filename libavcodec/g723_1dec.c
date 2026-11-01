@@ -761,7 +761,7 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
         t = (p->sid_gain < 0) ? -1 : 0;
     }else
         t = p->sid_gain >> -shift;
-    x = av_clipl_int32(t * (int64_t)cng_filt[0] >> 16);
+    x = MULL2(t, cng_filt[0]);
 
     if (x >= cng_bseg[2])
         return 0x3F;
@@ -773,14 +773,14 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
         shift = 3;
         seg   = (x >= cng_bseg[0]);
     }
-    seg2 = FFMIN(seg, 3);
+    seg2 = FFMIN(seg + 1, 3);
 
     val     = 1 << shift;
     val_add = val >> 1;
     for (i = 0; i < shift; i++) {
         t = seg * 32 + (val << seg2);
         t *= t;
-        if (x >= t)
+        if (x >= 2 * t)
             val += val_add;
         else
             val -= val_add;
@@ -788,18 +788,18 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
     }
 
     t = seg * 32 + (val << seg2);
-    y = t * t - x;
+    y = 2 * t * t - x;
     if (y <= 0) {
         t = seg * 32 + (val + 1 << seg2);
-        t = t * t - x;
+        t = x - 2 * t * t;
         val = (seg2 - 1) * 16 + val;
-        if (t >= y)
+        if (y <= t)
             val++;
     } else {
         t = seg * 32 + (val - 1 << seg2);
-        t = t * t - x;
+        t = x - 2 * t * t;
         val = (seg2 - 1) * 16 + val;
-        if (t >= y)
+        if (y >= t)
             val--;
     }
 
@@ -1037,6 +1037,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 /* Save the excitation for the next frame */
                 memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
                        PITCH_MAX * sizeof(*p->excitation));
+                memcpy(p->sid_lsp, p->prev_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
             } else {
                 p->interp_gain = (p->interp_gain * 3 + 2) >> 2;
                 if (p->erased_frames == 3) {
@@ -1065,7 +1066,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 p->sid_gain = sid_gain_to_lsp_index(p->subframe[0].amp_index);
                 ff_g723_1_inverse_quant(p->sid_lsp, p->prev_lsp, p->lsp_index, 0);
             } else if (p->past_frame_type == ACTIVE_FRAME) {
-                p->sid_gain = estimate_sid_gain(p);
+                p->sid_gain = sid_gain_to_lsp_index(estimate_sid_gain(p));
             }
 
             if (p->past_frame_type == ACTIVE_FRAME)
