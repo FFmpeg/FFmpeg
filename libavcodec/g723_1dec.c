@@ -690,7 +690,11 @@ static void formant_postfilter(G723_1_ChannelContext *p, int16_t *lpc,
         /* Compute reflection coefficient */
         temp = auto_corr[1] >> 16;
         if (temp) {
-            temp = (auto_corr[0] >> 2) / temp;
+            int r1 = auto_corr[0] >> 1;
+
+            temp = FFMIN(FFABS(r1) / (2 * temp), INT16_MAX);
+            if (r1 < 0)
+                temp = -temp;
         }
         p->reflection_coef = (3 * p->reflection_coef + temp + 2) >> 2;
         temp = -p->reflection_coef >> 1 & ~3;

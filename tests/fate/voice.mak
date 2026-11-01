@@ -53,6 +53,9 @@ fate-g723_1-dec-9: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/cng-
 FATE_G723_1 += fate-g723_1-dec-10
 fate-g723_1-dec-10: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/cng-erasures.tco -af aresample
 
+FATE_G723_1 += fate-g723_1-dec-11
+fate-g723_1-dec-11: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/saturation.tco -af aresample
+
 FATE_G723_1 += fate-g723_1-dec-12
 fate-g723_1-dec-12: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/saturation.tco -af aresample
 
