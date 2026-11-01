@@ -1046,8 +1046,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                            (FRAME_LEN + PITCH_MAX) * sizeof(*p->excitation));
                     memset(p->prev_excitation, 0,
                            PITCH_MAX * sizeof(*p->excitation));
-                    memset(frame->data[0], 0,
-                           (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
+                    memset(p->audio + LPC_ORDER, 0,
+                           FRAME_LEN * sizeof(*p->audio));
                 } else {
                     int16_t *buf = p->audio + LPC_ORDER;
 
