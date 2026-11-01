@@ -50,7 +50,7 @@
 #endif
 
 #ifdef BROKEN_RELOCATIONS
-#define TABLES_ARG , "r"(tables)
+#define TABLES_ARG , [tables]"r"(tables)
 
 #ifdef __LZCNT__
 /* renormalisation shift = lzcnt(range) - 23, refill shift = tzcnt(low) - 16 */
@@ -217,17 +217,17 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
 #endif
 
     __asm__ volatile(
-        BRANCHLESS_GET_CABAC("%0", "%q0", "(%4)", "%1", "%w1",
-                             "%2", "%q2", "%3", "%b3",
-                             "%c6(%5)", "%c7(%5)",
+        BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[state])", "%[low]", "%w[low]",
+                             "%[range]", "%q[range]", "%[tmp]", "%b[tmp]",
+                             "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
                              AV_STRINGIFY(H264_MLPS_STATE_OFFSET),
-                             "%8")
-        : "=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
-        : "r"(state), "r"(c),
-          "i"(offsetof(CABACContext, bytestream)),
-          "i"(offsetof(CABACContext, bytestream_end))
+                             "%[tables]")
+        : [bit]"=&r"(bit), [low]"+&r"(c->low), [range]"+&r"(c->range), [tmp]"=&q"(tmp)
+        : [state]"r"(state), [c]"r"(c),
+          [bs]"i"(offsetof(CABACContext, bytestream)),
+          [bsend]"i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
         : "%"FF_REG_c, "memory"
     );
