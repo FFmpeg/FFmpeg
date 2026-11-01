@@ -583,31 +583,20 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
     }
 }
 
-/**
- * Perform IIR filtering.
- *
- * @param fir_coef FIR coefficients
- * @param iir_coef IIR coefficients
- * @param src      source vector
- * @param dest     destination vector
- * @param width    width of the output, 16 bits(0) / 32 bits(1)
- */
-#define iir_filter(fir_coef, iir_coef, src, dest, width)\
-{\
-    int m, n;\
-    int res_shift = 16 & ~-(width);\
-    int in_shift  = 16 - res_shift;\
-\
-    for (m = 0; m < SUBFRAME_LEN; m++) {\
-        int64_t filter = 0;\
-        for (n = 1; n <= LPC_ORDER; n++) {\
-            filter -= (fir_coef)[n - 1] * (src)[m - n] -\
-                      (iir_coef)[n - 1] * ((dest)[m - n] >> in_shift);\
-        }\
-\
-        (dest)[m] = av_clipl_int32(((src)[m] * 65536) + (filter * 8) +\
-                                   (1 << 15)) >> res_shift;\
-    }\
+static void formant_filter(const int16_t *fir_coef, const int16_t *iir_coef,
+                           const int16_t *src, int *dest)
+{
+    for (int m = 0; m < SUBFRAME_LEN; m++) {
+        int sum = src[m] * (1 << 14);
+
+        for (int n = 1; n <= LPC_ORDER; n++)
+            sum = av_sat_dsub32(sum, fir_coef[n - 1] * src[m - n]);
+        for (int n = 1; n <= LPC_ORDER; n++)
+            sum = av_sat_dadd32(sum, iir_coef[n - 1] *
+                                     (av_sat_add32(dest[m - n], 1 << 15) >> 16));
+
+        dest[m] = av_clipl_int32((int64_t)sum * 4);
+    }
 }
 
 /**
@@ -677,7 +666,7 @@ static void formant_postfilter(G723_1_ChannelContext *p, int16_t *lpc,
             filter_coef[1][k] = (-lpc[k] * postfilter_tbl[1][k] +
                                  (1 << 14)) >> 15;
         }
-        iir_filter(filter_coef[0], filter_coef[1], buf + i, filter_signal + i, 1);
+        formant_filter(filter_coef[0], filter_coef[1], buf + i, filter_signal + i);
         lpc += LPC_ORDER;
     }
 
@@ -708,8 +697,10 @@ static void formant_postfilter(G723_1_ChannelContext *p, int16_t *lpc,
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            dst[j] = av_sat_dadd32(signal_ptr[j],
-                                   (signal_ptr[j - 1] >> 16) * temp) >> 16;
+            int prev = av_sat_add32(signal_ptr[j - 1], 1 << 15) >> 16;
+
+            dst[j] = av_sat_add32(av_sat_dadd32(signal_ptr[j], prev * temp),
+                                  1 << 15) >> 16;
         }
 
         /* Compute normalized signal energy */
