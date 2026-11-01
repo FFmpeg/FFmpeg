@@ -446,11 +446,10 @@ static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
     vseq->ip_period               = base_ctx->b_per_p + 1;
 
     vseq->seq_fields.bits.enable_order_hint = sh->enable_order_hint;
+    vseq->seq_fields.bits.enable_cdef       = sh->enable_cdef = 1;
 
-    if (!(ctx->va_rc_mode & VA_RC_CQP)) {
+    if (!(ctx->va_rc_mode & VA_RC_CQP))
         vseq->bits_per_second = ctx->va_bit_rate;
-        vseq->seq_fields.bits.enable_cdef = sh->enable_cdef = 1;
-    }
 
     ret = vaapi_encode_av1_add_obu(avctx, obu, AV1_OBU_SEQUENCE_HEADER, &priv->sh);
     if (ret < 0)
@@ -463,6 +462,59 @@ static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
 end:
     ff_cbs_fragment_reset(obu);
     return ret;
+}
+
+/**
+ * With VA_RC_CQP the driver does not patch the packed frame header, so
+ * choose the in-loop filter parameters here from base_q_idx and pass the
+ * same values in the picture parameters, keeping the two in sync for
+ * drivers which use the application-provided header. Drivers which
+ * generate the frame header themselves may choose their own values. In
+ * other modes the driver writes them into the header at the bit offsets
+ * we pass.
+ */
+static void vaapi_encode_av1_set_cqp_filters(AV1RawFrameHeader *fh,
+                                             VAEncPictureParameterBufferAV1 *vpic)
+{
+    const int q = fh->base_q_idx;
+    /*
+     * Deblocking thresholds scale with the filter level, and the
+     * blocking to remove scales with the quantizer step size, which
+     * grows faster than linearly with base_q_idx, so use a quadratic
+     * of base_q_idx. It reaches the maximum level 63 at 224.
+     */
+    const int level = q > 32 ? FFMIN((q - 32) * (q - 32) * 7 >> 12, 63) : 0;
+    const int pri   = q >> 5;
+    /*
+     * Four { primary strength, secondary strength code } CDEF candidates;
+     * the hardware picks one per 64x64 block. Put the main candidate
+     * first, and "off" keeps fine texture from being smoothed.
+     */
+    const int cdef[4][2] = {
+        { pri,      1 },
+        { 0,        0 },
+        { pri >> 1, 1 },
+        { pri << 1, 2 },
+    };
+
+    fh->loop_filter_level[0] = vpic->filter_level[0] = level;
+    fh->loop_filter_level[1] = vpic->filter_level[1] = level;
+    fh->loop_filter_level[2] = vpic->filter_level_u  = (level + 1) >> 1;
+    fh->loop_filter_level[3] = vpic->filter_level_v  = (level + 1) >> 1;
+
+    /* low base_q_idx: CDEF gains little, keep strengths at 0 */
+    if (!pri)
+        return;
+
+    fh->cdef_damping_minus_3 = vpic->cdef_damping_minus_3 = q >> 6;
+    fh->cdef_bits            = vpic->cdef_bits            = 2;
+    /* iHD rejects different luma and chroma CDEF strengths on DG2 */
+    for (int i = 0; i < 4; i++) {
+        fh->cdef_y_pri_strength[i] = fh->cdef_uv_pri_strength[i] = cdef[i][0];
+        fh->cdef_y_sec_strength[i] = fh->cdef_uv_sec_strength[i] = cdef[i][1];
+        vpic->cdef_y_strengths[i]  = vpic->cdef_uv_strengths[i]  =
+            (cdef[i][0] << 2) | cdef[i][1];
+    }
 }
 
 static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
@@ -601,6 +653,9 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
 
     if (fh->frame_type == AV1_FRAME_KEY || fh->error_resilient_mode)
         fh->primary_ref_frame = AV1_PRIMARY_REF_NONE;
+
+    if (ctx->va_rc_mode & VA_RC_CQP)
+        vaapi_encode_av1_set_cqp_filters(fh, vpic);
 
     vpic->base_qindex          = fh->base_q_idx;
     vpic->frame_width_minus_1  = fh->frame_width_minus_1;
