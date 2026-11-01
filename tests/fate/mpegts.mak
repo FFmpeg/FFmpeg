@@ -73,19 +73,12 @@ fate-mpegts-dvbsub-hearing-impaired: CMD = transcode mpegts $(TARGET_SAMPLES)/su
   "-map 0:s -c dvbsub -disposition:s:0 hearing_impaired" "-map 0:s -c copy" \
   "-show_entries stream_disposition=hearing_impaired -of default=nw=1:nk=1"
 
-FATE_MPEGTS_FFMPEG_FFPROBE-$(call ALLYES, MPEGTS_MUXER MPEGTS_DEMUXER DVBSUB_DECODER DVBSUB_PARSER FILE_PROTOCOL) += fate-mpegts-dvbsub-multi-service
+FATE_MPEGTS_FFMPEG_FFPROBE-$(call ALLYES, MPEGTS_MUXER MPEGTS_DEMUXER DVBSUB_DECODER DVBSUB_PARSER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mpegts-dvbsub-multi-service
 fate-mpegts-dvbsub-multi-service: CMD = \
-  cleanfiles="$${cleanfiles} $$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts) \
-  $$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)"; \
   ffmpeg -i $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts -map 0:s -c copy \
-  -metadata:s:0 language=eng,deu -bitexact -f mpegts -y \
-  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts)" && \
-  ffmpeg -i "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.src.ts)" \
-  -map 0:s -c copy -disposition:s:0 hearing_impaired -bitexact -f mpegts -y \
-  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)" && \
-  probe -show_entries stream_disposition=hearing_impaired -of default=nw=1:nk=1 \
-  "$$(target_path tests/data/fate/mpegts-dvbsub-multi-service.ts)"; \
-  test $$? -eq 0
+  -metadata:s:0 language=eng,deu -bitexact -f mpegts - | \
+  ffmpeg -i pipe: -map 0:s -c copy -disposition:s:0 hearing_impaired -bitexact -f mpegts - | \
+  probe -count_packets -show_entries stream_disposition=hearing_impaired -of default=nw=1:nk=1 pipe:
 
 FATE_SAMPLES_FFPROBE += $(FATE_MPEGTS_PROBE-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MPEGTS_FFMPEG_FFPROBE-yes)
