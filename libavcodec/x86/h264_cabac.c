@@ -53,7 +53,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     x86_reg coeff_count;
     CABAC_TMP_DECL
 
-#ifdef BROKEN_RELOCATIONS
+#if ARCH_X86_64
     void *tables;
 
     __asm__(
@@ -133,7 +133,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
     x86_reg state;
     CABAC_TMP_DECL
 
-#ifdef BROKEN_RELOCATIONS
+#if ARCH_X86_64
     void *tables;
 
     __asm__(
@@ -164,7 +164,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "test $1, %[bit]                        \n\t"
         " jz 4f                                 \n\t"
 
-#ifdef BROKEN_RELOCATIONS
+#if ARCH_X86_64
         "movzb %c[lastoff](%[tables], %q[state]), %[state]\n\t"
 #else
         "movzb "MANGLE(ff_h264_cabac_tables)"+%c[lastoff](%[state]), %[state]\n\t"

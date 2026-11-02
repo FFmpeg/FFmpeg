@@ -49,7 +49,7 @@
         "jge    1f                                                      \n\t"
 #endif
 
-#ifdef BROKEN_RELOCATIONS
+#if ARCH_X86_64
 #define TABLES_ARG , [tables]"r"(tables)
 #define CABAC_TMP_DECL int cabac_t1, cabac_t2;
 #define CABAC_TMP_OPERANDS , [cabac_t1]"=&r"(cabac_t1), [cabac_t2]"=&r"(cabac_t2)
@@ -116,7 +116,7 @@
         BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables)              \
         "2:                                                             \n\t"
 
-#else /* BROKEN_RELOCATIONS */
+#else /* ARCH_X86_64 */
 #define CABAC_TMP_DECL
 #define CABAC_TMP_OPERANDS
 #define TABLES_ARG NAMED_CONSTRAINTS_ARRAY_ADD(ff_h264_cabac_tables)
@@ -198,7 +198,7 @@
         BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables)              \
         "2:                                                             \n\t"
 
-#endif /* BROKEN_RELOCATIONS */
+#endif /* ARCH_X86_64 */
 
 #if HAVE_X86_7REGS && !BROKEN_COMPILER
 #define get_cabac_inline get_cabac_inline_x86
@@ -212,7 +212,7 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
 {
     int bit, tmp;
     CABAC_TMP_DECL
-#ifdef BROKEN_RELOCATIONS
+#if ARCH_X86_64
     void *tables;
 
     __asm__(
