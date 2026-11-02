@@ -62,6 +62,7 @@
 typedef struct FlashSVContext {
     AVCodecContext *avctx;
     const uint8_t  *previous_frame;
+    int             previous_linesize;
     AVBufferRef    *prev_frame_buf;
     int             image_width, image_height;
     unsigned        packet_size;
@@ -71,14 +72,15 @@ typedef struct FlashSVContext {
 } FlashSVContext;
 
 static int copy_region_enc(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
-                           int h, int w, int stride, const uint8_t *pfptr)
+                           int h, int w, int stride, const uint8_t *pfptr,
+                           int pstride)
 {
     int i, j;
     int diff = 0;
 
     for (i = dx + h; i > dx; i--) {
         const uint8_t *nsptr = sptr + i * stride + dy * 3;
-        const uint8_t *npfptr = pfptr + i * stride + dy * 3;
+        const uint8_t *npfptr = pfptr + i * pstride + dy * 3;
         for (j = 0; j < w * 3; j++) {
             diff    |= npfptr[j] ^ nsptr[j];
             dptr[j]  = nsptr[j];
@@ -132,7 +134,8 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
 static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
                             int buf_size, int block_width, int block_height,
-                            const uint8_t *previous_frame, int *I_frame)
+                            const uint8_t *previous_frame,
+                            int previous_linesize, int *I_frame)
 {
 
     PutBitContext pb;
@@ -172,7 +175,8 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
             res = copy_region_enc(p->data[0], s->tmpblock,
                                   s->image_height - (y_pos + cur_blk_height + 1),
                                   x_pos, cur_blk_height, cur_blk_width,
-                                  p->linesize[0], previous_frame);
+                                  p->linesize[0], previous_frame,
+                                  previous_linesize);
 
             if (res || *I_frame) {
                 unsigned long zsize = 3 * block_width * block_height + 12;
@@ -209,6 +213,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     FlashSVContext * const s = avctx->priv_data;
     const uint8_t *prev_frame = s->previous_frame;
+    int prev_linesize = s->previous_linesize;
     int res;
     int I_frame = 0;
     int opt_w = 4, opt_h = 4;
@@ -216,6 +221,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* First frame needs to be a keyframe */
     if (!s->previous_frame) {
         prev_frame = pict->data[0];
+        prev_linesize = pict->linesize[0];
         I_frame = 1;
     }
 
@@ -231,7 +237,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     pkt->size = encode_bitstream(s, pict, pkt->data, pkt->size,
                                  opt_w * 16, opt_h * 16,
-                                 prev_frame, &I_frame);
+                                 prev_frame, prev_linesize, &I_frame);
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
@@ -248,6 +254,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (res < 0)
         return res;
     s->previous_frame = pict->data[0];
+    s->previous_linesize = pict->linesize[0];
 
     return 0;
 }
