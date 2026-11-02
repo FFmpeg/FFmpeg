@@ -86,10 +86,10 @@
 
 #define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
+        "lea    ("tables", "retq"), %%rcx                               \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
-        "lea    ("ret", "range", 2), %%ecx                              \n\t"\
-        "movzbl "lps_off"("tables", %%rcx), "range"                     \n\t"\
+        "movzbl "lps_off"(%%rcx, "rangeq", 2), "range"                  \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
