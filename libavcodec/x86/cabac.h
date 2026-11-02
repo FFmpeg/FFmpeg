@@ -51,14 +51,11 @@
 
 #ifdef BROKEN_RELOCATIONS
 #define TABLES_ARG , [tables]"r"(tables)
-#define CABAC_TMP_DECL int cabac_t1;
-#define CABAC_TMP_OPERANDS , [cabac_t1]"=&r"(cabac_t1)
+#define CABAC_TMP_DECL int cabac_t1, cabac_t2;
+#define CABAC_TMP_OPERANDS , [cabac_t1]"=&r"(cabac_t1), [cabac_t2]"=&r"(cabac_t2)
 
 #ifdef __LZCNT__
-/* renormalisation shift = lzcnt(range) - 23, refill shift = tzcnt(low) - 16 */
-#define BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables) \
-        "lzcnt  "range"     , %%ecx                                     \n\t"\
-        "sub    $23         , %%ecx                                     \n\t"
+/* refill shift = tzcnt(low) - 16 */
 #define BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables) \
         "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "tzcnt  "low"       , %%ecx                                     \n\t"\
@@ -69,8 +66,6 @@
         "shl    %%cl        , "tmp"                                     \n\t"\
         "add    "tmp"       , "low"                                     \n\t"
 #else /* __LZCNT__ */
-#define BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables) \
-        "movzbl "norm_off"("tables", "rangeq"), %%ecx                   \n\t"
 #define BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables) \
         "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
@@ -86,7 +81,7 @@
         "add    "tmp"       , "low"                                     \n\t"
 #endif /* __LZCNT__ */
 
-#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, byte, end, norm_off, lps_off, mlps_off, tables) \
+#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, t2, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "low"       , "t1"                                      \n\t"\
         "lea    ("tables", "retq"), %%rcx                               \n\t"\
@@ -96,14 +91,18 @@
         "add    $1          , "t1"                                      \n\t"\
         "movzbl "lps_off"(%%rcx, "rangeq", 2), "range"                  \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
+        "movzbl "norm_off"("tables", "rangeq"), %%ecx                   \n\t"\
+        "mov    "tmp"       , "t2"                                      \n\t"\
+        "shr    $8          , "t2"                                      \n\t"\
+        "xor    $1          , "t2"                                      \n\t"\
         "cmp    "t1"        , "tmp"                                     \n\t"\
         "cmovae "tmp"       , "range"                                   \n\t"\
+        "cmovae "t2"        , %%ecx                                     \n\t"\
         "sbb    "t1q"       , "t1q"                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
         "and    "t1"        , "tmp"                                     \n\t"\
         "xor    "t1q"       , "retq"                                    \n\t"\
         "sub    "tmp"       , "low"                                     \n\t"\
-        BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables)         \
         "shl    %%cl        , "range"                                   \n\t"\
         "movzbl "mlps_off"+128("tables", "retq"), "tmp"                 \n\t"\
         "shl    %%cl        , "low"                                     \n\t"\
@@ -178,7 +177,7 @@
         "add    "tmp"       , "low"                                     \n\t"
 #endif /* __LZCNT__ */
 
-#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, byte, end, norm_off, lps_off, mlps_off, tables) \
+#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, t2, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
@@ -226,7 +225,7 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
     __asm__ volatile(
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[state])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%[tmp]", "%b[tmp]",
-                             "%[cabac_t1]", "%q[cabac_t1]",
+                             "%[cabac_t1]", "%q[cabac_t1]", "%[cabac_t2]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
