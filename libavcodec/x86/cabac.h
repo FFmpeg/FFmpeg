@@ -52,29 +52,6 @@
 #ifdef BROKEN_RELOCATIONS
 #define TABLES_ARG , "r"(tables)
 
-#if HAVE_FAST_CMOV
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
-        "cmp    "low"       , "tmp"                        \n\t"\
-        "cmova  %%ecx       , "range"                      \n\t"\
-        "sbb    %%rcx       , %%rcx                        \n\t"\
-        "and    %%ecx       , "tmp"                        \n\t"\
-        "xor    %%rcx       , "retq"                       \n\t"\
-        "sub    "tmp"       , "low"                        \n\t"
-#else /* HAVE_FAST_CMOV */
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
-/* P4 Prescott has crappy cmov,sbb,64-bit shift so avoid them */ \
-        "sub    "low"       , "tmp"                        \n\t"\
-        "sar    $31         , "tmp"                        \n\t"\
-        "sub    %%ecx       , "range"                      \n\t"\
-        "and    "tmp"       , "range"                      \n\t"\
-        "add    %%ecx       , "range"                      \n\t"\
-        "shl    $17         , %%ecx                        \n\t"\
-        "and    "tmp"       , %%ecx                        \n\t"\
-        "sub    %%ecx       , "low"                        \n\t"\
-        "xor    "tmp"       , "ret"                        \n\t"\
-        "movslq "ret"       , "retq"                       \n\t"
-#endif /* HAVE_FAST_CMOV */
-
 #ifdef __LZCNT__
 /* renormalisation shift = lzcnt(range) - 23, refill shift = tzcnt(low) - 16 */
 #define BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables) \
@@ -116,7 +93,12 @@
         "sub    "range"     , "tmp"                                     \n\t"\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
-        BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp)              \
+        "cmp    "low"       , "tmp"                                     \n\t"\
+        "cmova  %%ecx       , "range"                                   \n\t"\
+        "sbb    %%rcx       , %%rcx                                     \n\t"\
+        "and    %%ecx       , "tmp"                                     \n\t"\
+        "xor    %%rcx       , "retq"                                    \n\t"\
+        "sub    "tmp"       , "low"                                     \n\t"\
         BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables)         \
         "shl    %%cl        , "range"                                   \n\t"\
         "movzbl "mlps_off"+128("tables", "retq"), "tmp"                 \n\t"\
