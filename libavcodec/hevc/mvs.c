@@ -371,8 +371,8 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
     }
 
     // above right spatial merge candidate
-    is_available_b0 = AVAILABLE(cand_up_right, B0) &&
-                      xB0 < sps->width &&
+    is_available_b0 = xB0 < sps->width &&
+                      AVAILABLE(cand_up_right, B0) &&
                       PRED_BLOCK_AVAILABLE(B0) &&
                       !is_diff_mer(pps, xB0, yB0, x0, y0);
 
@@ -690,8 +690,8 @@ b_candidates:
     xB0    = x0 + nPbW;
     yB0    = y0 - 1;
 
-    is_available_b0 =  AVAILABLE(cand_up_right, B0) &&
-                       xB0 < sps->width &&
+    is_available_b0 =  xB0 < sps->width &&
+                       AVAILABLE(cand_up_right, B0) &&
                        PRED_BLOCK_AVAILABLE(B0);
 
     // above spatial merge candidate
