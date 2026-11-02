@@ -524,7 +524,7 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
 
         if (!(desc && desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
             (src->format != avctx->pix_fmt ||
-             src->width  < avctx->width  || src->height < avctx->height)) {
+             src->width != avctx->width || src->height != avctx->height)) {
             av_log(avctx, AV_LOG_ERROR, "Frame size or pixel format does not match the encoder\n");
             return AVERROR(EINVAL);
         }
