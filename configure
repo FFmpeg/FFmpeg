@@ -5764,7 +5764,6 @@ elif enabled mips; then
                 enable fast_64bit
                 enable fast_clz
                 enable fast_unaligned
-                disable aligned_stack
                 # When gcc version less than 5.3.0, add -fno-expensive-optimizations flag.
                 if test "$cc_type" = "gcc"; then
                     case $gcc_basever in
