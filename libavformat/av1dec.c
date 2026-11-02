@@ -48,7 +48,7 @@ static int get_score(int type, int *seq)
         return -1;
     case AV1_OBU_FRAME:
     case AV1_OBU_FRAME_HEADER:
-        return *seq ? AVPROBE_SCORE_EXTENSION + 1 : 0;
+        return *seq ? AVPROBE_SCORE_EXTENSION + 2 : 0;
     case AV1_OBU_METADATA:
     case AV1_OBU_PADDING:
         return -1;
@@ -368,6 +368,8 @@ static int obu_probe(const AVProbeData *p)
         ret = get_score(type, &seq);
         if (ret >= 0)
             return ret;
+        if (p->buf_size == cnt)
+            return AVERROR(EAGAIN);
     }
     return 0;
 }
