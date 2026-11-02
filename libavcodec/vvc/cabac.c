@@ -876,11 +876,7 @@ static void vvc_refill2(CABACContext* c) {
 
     x = -CABAC_MASK;
 
-#if CABAC_BITS == 16
     x += (c->bytestream[0] << 9) + (c->bytestream[1] << 1);
-#else
-    x += c->bytestream[0] << 1;
-#endif
 
     c->low += x << i;
 #if !UNCHECKED_BITSTREAM_READER

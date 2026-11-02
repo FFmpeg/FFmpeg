@@ -62,11 +62,7 @@ static const uint8_t * const ff_h264_last_coeff_flag_offset_8x8 = ff_h264_cabac_
 
 #if !defined(get_cabac_bypass) || !defined(get_cabac_terminate)
 static void refill(CABACContext *c){
-#if CABAC_BITS == 16
-        c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
-#else
-        c->low+= c->bytestream[0]<<1;
-#endif
+    c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
     c->low -= CABAC_MASK;
 #if !UNCHECKED_BITSTREAM_READER
     if (c->bytestream < c->bytestream_end)
@@ -98,11 +94,7 @@ static void refill2(CABACContext *c){
 
     x= -CABAC_MASK;
 
-#if CABAC_BITS == 16
-        x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
-#else
-        x+= c->bytestream[0]<<1;
-#endif
+    x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
 
     c->low += x<<i;
 #if !UNCHECKED_BITSTREAM_READER
@@ -205,10 +197,8 @@ av_unused static const uint8_t* skip_bytes(CABACContext *c, int n) {
 
     if (c->low & 0x1)
         ptr--;
-#if CABAC_BITS == 16
     if (c->low & 0x1FF)
         ptr--;
-#endif
     if ((int) (c->bytestream_end - ptr) < n)
         return NULL;
     if (ff_init_cabac_decoder(c, ptr + n, c->bytestream_end - ptr - n) < 0)

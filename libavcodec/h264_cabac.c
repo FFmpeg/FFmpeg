@@ -2041,9 +2041,7 @@ decode_intra_mb:
         // decode, I think it should be done by a function in cabac.h (or cabac.c).
         ptr= sl->cabac.bytestream;
         if(sl->cabac.low&0x1) ptr--;
-        if(CABAC_BITS==16){
-            if(sl->cabac.low&0x1FF) ptr--;
-        }
+        if(sl->cabac.low&0x1FF) ptr--;
 
         // The pixels are stored in the same order as levels in h->mb array.
         if ((int) (sl->cabac.bytestream_end - ptr) < mb_size)
