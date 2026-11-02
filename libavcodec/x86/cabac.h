@@ -51,6 +51,8 @@
 
 #ifdef BROKEN_RELOCATIONS
 #define TABLES_ARG , [tables]"r"(tables)
+#define CABAC_TMP_DECL int cabac_t1;
+#define CABAC_TMP_OPERANDS , [cabac_t1]"=&r"(cabac_t1)
 
 #ifdef __LZCNT__
 /* renormalisation shift = lzcnt(range) - 23, refill shift = tzcnt(low) - 16 */
@@ -84,20 +86,22 @@
         "add    "tmp"       , "low"                                     \n\t"
 #endif /* __LZCNT__ */
 
-#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, byte, end, norm_off, lps_off, mlps_off, tables) \
+#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
+        "mov    "low"       , "t1"                                      \n\t"\
         "lea    ("tables", "retq"), %%rcx                               \n\t"\
+        "shr    $17         , "t1"                                      \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
+        "add    $1          , "t1"                                      \n\t"\
         "movzbl "lps_off"(%%rcx, "rangeq", 2), "range"                  \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
-        "mov    "tmp"       , %%ecx                                     \n\t"\
+        "cmp    "t1"        , "tmp"                                     \n\t"\
+        "cmovae "tmp"       , "range"                                   \n\t"\
+        "sbb    "t1q"       , "t1q"                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
-        "cmp    "low"       , "tmp"                                     \n\t"\
-        "cmova  %%ecx       , "range"                                   \n\t"\
-        "sbb    %%rcx       , %%rcx                                     \n\t"\
-        "and    %%ecx       , "tmp"                                     \n\t"\
-        "xor    %%rcx       , "retq"                                    \n\t"\
+        "and    "t1"        , "tmp"                                     \n\t"\
+        "xor    "t1q"       , "retq"                                    \n\t"\
         "sub    "tmp"       , "low"                                     \n\t"\
         BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables)         \
         "shl    %%cl        , "range"                                   \n\t"\
@@ -114,6 +118,8 @@
         "2:                                                             \n\t"
 
 #else /* BROKEN_RELOCATIONS */
+#define CABAC_TMP_DECL
+#define CABAC_TMP_OPERANDS
 #define TABLES_ARG NAMED_CONSTRAINTS_ARRAY_ADD(ff_h264_cabac_tables)
 
 #if HAVE_FAST_CMOV
@@ -172,7 +178,7 @@
         "add    "tmp"       , "low"                                     \n\t"
 #endif /* __LZCNT__ */
 
-#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, byte, end, norm_off, lps_off, mlps_off, tables) \
+#define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
@@ -206,6 +212,7 @@ av_always_inline
 int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
 {
     int bit, tmp;
+    CABAC_TMP_DECL
 #ifdef BROKEN_RELOCATIONS
     void *tables;
 
@@ -219,12 +226,14 @@ int get_cabac_inline_x86(CABACContext *c, uint8_t *const state)
     __asm__ volatile(
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[state])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%[tmp]", "%b[tmp]",
+                             "%[cabac_t1]", "%q[cabac_t1]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
                              AV_STRINGIFY(H264_MLPS_STATE_OFFSET),
                              "%[tables]")
         : [bit]"=&r"(bit), [low]"+&r"(c->low), [range]"+&r"(c->range), [tmp]"=&q"(tmp)
+          CABAC_TMP_OPERANDS
         : [state]"r"(state), [c]"r"(c),
           [bs]"i"(offsetof(CABACContext, bytestream)),
           [bsend]"i"(offsetof(CABACContext, bytestream_end))

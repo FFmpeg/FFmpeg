@@ -51,6 +51,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
+    CABAC_TMP_DECL
 
 #ifdef BROKEN_RELOCATIONS
     void *tables;
@@ -67,6 +68,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[ctx])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%k[cnt]", "%b[cnt]",
+                             "%[cabac_t1]", "%q[cabac_t1]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
@@ -79,6 +81,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[ctx])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%k[cnt]", "%b[cnt]",
+                             "%[cabac_t1]", "%q[cabac_t1]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
@@ -109,6 +112,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "shr $2, %k[cnt]                        \n\t"
         : [cnt]"=&q"(coeff_count), [ctx]"+r"(significant_coeff_ctx_base), [index]"+m"(index),
           [low]"+&r"(c->low), [bit]"=&r"(bit), [range]"+&r"(c->range)
+          CABAC_TMP_OPERANDS
         : [c]"r"(c), [minusstart]"m"(minusstart), [end]"m"(end), [minusindex]"m"(minusindex), [last_off]"m"(last_off),
           [bs]"i"(offsetof(CABACContext, bytestream)),
           [bsend]"i"(offsetof(CABACContext, bytestream_end))
@@ -127,6 +131,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
     x86_reg coeff_count;
     x86_reg last=0;
     x86_reg state;
+    CABAC_TMP_DECL
 
 #ifdef BROKEN_RELOCATIONS
     void *tables;
@@ -148,6 +153,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
 
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[state])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%k[cnt]", "%b[cnt]",
+                             "%[cabac_t1]", "%q[cabac_t1]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
@@ -167,6 +173,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
 
         BRANCHLESS_GET_CABAC("%[bit]", "%q[bit]", "(%[state])", "%[low]", "%w[low]",
                              "%[range]", "%q[range]", "%k[cnt]", "%b[cnt]",
+                             "%[cabac_t1]", "%q[cabac_t1]",
                              "%c[bs](%[c])", "%c[bsend](%[c])",
                              AV_STRINGIFY(H264_NORM_SHIFT_OFFSET),
                              AV_STRINGIFY(H264_LPS_RANGE_OFFSET),
@@ -194,6 +201,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "shr $2, %k[cnt]                        \n\t"
         : [cnt]"=&q"(coeff_count), [last]"+"REG64(last), [index]"+"REG64(index), [low]"+&r"(c->low),
           [bit]"=&r"(bit), [range]"+&r"(c->range), [state]"=&r"(state)
+          CABAC_TMP_OPERANDS
         : [c]"r"(c), [minusindex]"m"(minusindex), [sig_base]"m"(significant_coeff_ctx_base),
           [sig_off]REG64(sig_off), [last_base]REG64(last_coeff_ctx_base),
           [bs]"i"(offsetof(CABACContext, bytestream)),
