@@ -673,6 +673,7 @@ static void compute_default_clut(DVBSubContext *ctx, uint8_t *clut, AVSubtitleRe
     uint8_t list[256] = {0};
     uint8_t list_inv[256];
     int counttab[256] = {0};
+    int scoretab[256];
     int (*counttab2)[256] = ctx->clut_count2;
     int count, i, x, y;
     ptrdiff_t stride = rect->linesize[0];
@@ -699,18 +700,15 @@ static void compute_default_clut(DVBSubContext *ctx, uint8_t *clut, AVSubtitleRe
     for (i = 0; i<256; i++) {
         counttab2[i+1][i] = 0;
     }
+    memcpy(scoretab, counttab2[0], sizeof(scoretab));
     for (i = 0; i<256; i++) {
         int bestscore = 0;
         int bestv = 0;
 
         for (x = 0; x < 256; x++) {
-            int scorev = 0;
+            int scorev = scoretab[x];
             if (list[x])
                 continue;
-            scorev += counttab2[0][x];
-            for (y = 0; y < 256; y++) {
-                scorev += list[y] * counttab2[y+1][x];
-            }
 
             if (scorev) {
                 int score = 1024LL*scorev / counttab[x];
@@ -724,6 +722,8 @@ static void compute_default_clut(DVBSubContext *ctx, uint8_t *clut, AVSubtitleRe
             break;
         list    [ bestv ] = 1;
         list_inv[     i ] = bestv;
+        for (x = 0; x < 256; x++)
+            scoretab[x] += counttab2[bestv+1][x];
     }
 
     count = FFMAX(i - 1, 1);
