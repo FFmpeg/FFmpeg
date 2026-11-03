@@ -4,6 +4,22 @@ fate-gapless-mp3: CMD = gapless $(TARGET_SAMPLES)/gapless/gapless.mp3 "-c:a mp3"
 FATE_GAPLESSINFO_PROBE-$(call ALLYES, MP3_DEMUXER MP3FLOAT_DECODER FILE_PROTOCOL) += fate-gapless-mp3-side-data
 fate-gapless-mp3-side-data: CMD = ffprobe_demux $(TARGET_SAMPLES)/gapless/gapless.mp3
 
+# gapless.mp3 with a 32 KiB APE tag inserted before its ID3v1 tag, at byte
+# 250136: the tags exceed 1/16 of the Info tag byte count. That is not a
+# concatenated file: the duration still comes from the Info tag's frame count,
+# and the Info tag CRC, which the tail scan must not break, still validates
+# (encoder tag).
+tests/data/gapless-trailing-ape.mp3: TAG = GEN
+tests/data/gapless-trailing-ape.mp3: $(SAMPLES)/gapless/gapless.mp3 | tests/data
+	$(M){ dd if=$< bs=250136 count=1 && \
+	  printf '\000\200\000\000\000\000\000\000Comment\000%032768d' 0 && \
+	  printf 'APETAGEX\320\007\000\000\060\200\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000' && \
+	  dd if=$< bs=1 skip=250136; } 2>/dev/null > $@
+
+FATE_GAPLESSINFO_PROBE-$(call ALLYES, MP3_DEMUXER MP3FLOAT_DECODER FILE_PROTOCOL) += fate-gapless-mp3-trailing-ape
+fate-gapless-mp3-trailing-ape: tests/data/gapless-trailing-ape.mp3
+fate-gapless-mp3-trailing-ape: CMD = probe -show_entries stream=start_time,duration_ts,duration:stream_tags=encoder:format=duration $(TARGET_PATH)/tests/data/gapless-trailing-ape.mp3
+
 # The trailing padding of this sample spans two packets. The duration of the
 # remuxed file has to stay the one fate-gapless-mp3-side-data reports.
 FATE_GAPLESSENC_PROBE-$(call ALLYES, MP3_DEMUXER MP3_MUXER NULL_MUXER) += fate-gapless-mp3-remux
