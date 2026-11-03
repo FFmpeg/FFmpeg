@@ -450,6 +450,7 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 /* jret set by the last iteration of the loop */
                 if (ctx->jret == JXL_DEC_NEED_MORE_INPUT && !ctx->frame_complete) {
                     av_log(avctx, AV_LOG_ERROR, "Unexpected end of JXL codestream\n");
+                    ctx->jret = JXL_DEC_ERROR;
                     return AVERROR_INVALIDDATA;
                 } else if (ctx->frame_complete) {
                     ctx->jret = JXL_DEC_SUCCESS;
