@@ -1427,7 +1427,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     else
         script.sample_rate = sbg->sample_rate;
     if (!sbg->frame_size)
-        sbg->frame_size = FFMAX(1, sbg->sample_rate / 10);
+        sbg->frame_size = av_clip(sbg->sample_rate / 10, 1, 19200);
     if (script.opt_mix)
         av_log(avf, AV_LOG_WARNING, "Mix feature not implemented: "
                "-m is ignored and mix channels will be silent.\n");
