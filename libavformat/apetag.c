@@ -107,19 +107,29 @@ static int ape_tag_read_field(AVFormatContext *s)
     return 0;
 }
 
-int64_t ff_ape_parse_tag(AVFormatContext *s)
+/**
+ * Parse the footer of the APE tag that ends at end.
+ *
+ * @param[out] fields number of items in the tag
+ * @param[out] flags  flags of the footer
+ * @return the footer's tag size (items and footer, not the header), 0 if
+ *         there is no usable APE tag footer there, or a negative AVERROR code
+ *         if seeking failed
+ */
+static int64_t ape_parse_footer(AVFormatContext *s, int64_t end,
+                                uint32_t *fields, uint32_t *flags)
 {
     AVIOContext *pb = s->pb;
-    int64_t file_size = avio_size(pb);
-    uint32_t val, fields, tag_bytes;
+    uint32_t val, tag_bytes;
     uint8_t buf[8];
-    int64_t tag_start;
-    int i;
+    int64_t ret;
 
-    if (file_size < APE_TAG_FOOTER_BYTES)
+    if (end < APE_TAG_FOOTER_BYTES)
         return 0;
 
-    avio_seek(pb, file_size - APE_TAG_FOOTER_BYTES, SEEK_SET);
+    ret = avio_seek(pb, end - APE_TAG_FOOTER_BYTES, SEEK_SET);
+    if (ret < 0)
+        return ret;
 
     if(avio_read(pb, buf, 8) != 8)     /* APETAGEX */
         return 0;
@@ -139,26 +149,41 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         return 0;
     }
 
-    if (tag_bytes > file_size - APE_TAG_FOOTER_BYTES) {
+    if (tag_bytes > end - APE_TAG_FOOTER_BYTES) {
         av_log(s, AV_LOG_ERROR, "Invalid tag size %"PRIu32".\n", tag_bytes);
         return 0;
     }
 
-    fields = avio_rl32(pb);    /* number of fields */
-    if (fields > 65536) {
-        av_log(s, AV_LOG_ERROR, "Too many tag fields (%"PRIu32")\n", fields);
+    *fields = avio_rl32(pb);   /* number of fields */
+    if (*fields > 65536) {
+        av_log(s, AV_LOG_ERROR, "Too many tag fields (%"PRIu32")\n", *fields);
         return 0;
     }
 
-    val = avio_rl32(pb);       /* flags */
-    if (val & APE_TAG_FLAG_IS_HEADER) {
+    *flags = avio_rl32(pb);    /* flags */
+    if (*flags & APE_TAG_FLAG_IS_HEADER) {
         av_log(s, AV_LOG_ERROR, "APE Tag is a header\n");
         return 0;
     }
 
+    return tag_bytes;
+}
+
+int64_t ff_ape_parse_tag(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+    int64_t file_size = avio_size(pb);
+    int64_t tag_bytes, tag_start;
+    uint32_t fields, flags;
+    int i;
+
+    tag_bytes = ape_parse_footer(s, file_size, &fields, &flags);
+    if (tag_bytes <= 0)
+        return 0;
+
     avio_seek(pb, file_size - tag_bytes, SEEK_SET);
 
-    if (val & APE_TAG_FLAG_CONTAINS_HEADER)
+    if (flags & APE_TAG_FLAG_CONTAINS_HEADER)
         tag_bytes += APE_TAG_HEADER_BYTES;
 
     tag_start = file_size - tag_bytes;
@@ -167,6 +192,18 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         if (ape_tag_read_field(s) < 0) break;
 
     return tag_start;
+}
+
+int64_t ff_ape_tag_size(AVFormatContext *s, int64_t end)
+{
+    uint32_t fields, flags;
+    int64_t tag_bytes = ape_parse_footer(s, end, &fields, &flags);
+
+    if (tag_bytes <= 0)
+        return tag_bytes;
+    if (flags & APE_TAG_FLAG_CONTAINS_HEADER)
+        tag_bytes += APE_TAG_HEADER_BYTES;
+    return tag_bytes <= end ? tag_bytes : 0;
 }
 
 static int string_is_ascii(const uint8_t *str)

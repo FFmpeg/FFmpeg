@@ -38,6 +38,15 @@
 int64_t ff_ape_parse_tag(AVFormatContext *s);
 
 /**
+ * Get the size of the APE tag that ends at end, without reading its items.
+ * Moves the read position.
+ *
+ * @return the size of the tag including its header and footer, 0 if there
+ *         is no valid APE tag ending at end, or a negative AVERROR code
+ */
+int64_t ff_ape_tag_size(AVFormatContext *s, int64_t end);
+
+/**
  * Write an APE tag into a file.
  */
 int ff_ape_write_tag(AVFormatContext *s);
