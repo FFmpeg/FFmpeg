@@ -1260,7 +1260,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     BinkContext * const c = avctx->priv_data;
     GetBitContext gb;
     int plane, plane_idx, ret;
-    int bits_count = pkt->size << 3;
 
     if (c->version > 'b') {
         if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
@@ -1272,7 +1271,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return ret;
     }
 
-    init_get_bits(&gb, pkt->data, bits_count);
+    if ((ret = init_get_bits8(&gb, pkt->data, pkt->size)) < 0)
+        return ret;
     if (c->has_alpha) {
         if (c->version >= 'i')
             skip_bits_long(&gb, 32);
@@ -1295,7 +1295,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                           c->frame_num == 1, !!plane)) < 0)
                 return ret;
         }
-        if (get_bits_count(&gb) >= bits_count)
+        if (get_bits_left(&gb) <= 0)
             break;
     }
 
