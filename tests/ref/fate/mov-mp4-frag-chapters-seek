@@ -19,16 +19,6 @@
 1,       3072,       3072,     1024,     2048, 0x487e06b5
 0,       1024,       1024,      512,      829, 0x46b18019, F=0x0
 1,       4096,       4096,     1024,     2048, 0xb0abfcca
-packet|stream_index=0|pts=86016|dts=86016|pos=770777
-packet|stream_index=0|pts=88064|dts=86528|pos=771287
-packet|stream_index=0|pts=87040|dts=87040|pos=772624
-packet|stream_index=0|pts=87552|dts=87552|pos=773343
-packet|stream_index=0|pts=89600|dts=88064|pos=774048
-packet|stream_index=0|pts=88576|dts=88576|pos=775481
-packet|stream_index=0|pts=89088|dts=89088|pos=776166
-packet|stream_index=0|pts=91136|dts=89600|pos=776721
-packet|stream_index=0|pts=90112|dts=90112|pos=778386
-packet|stream_index=0|pts=90624|dts=90624|pos=779165
 packet|stream_index=1|pts=313060|dts=313060|pos=812468
 packet|stream_index=0|pts=92672|dts=91136|pos=814920
 packet|stream_index=0|pts=91648|dts=91648|pos=817387
@@ -59,3 +49,13 @@ packet|stream_index=1|pts=314084|dts=314084|pos=841267
 packet|stream_index=1|pts=315108|dts=315108|pos=843315
 packet|stream_index=1|pts=316132|dts=316132|pos=845363
 packet|stream_index=1|pts=317156|dts=317156|pos=847411
+packet|stream_index=1|pts=318180|dts=318180|pos=849459
+packet|stream_index=1|pts=319204|dts=319204|pos=851507
+packet|stream_index=1|pts=320228|dts=320228|pos=853555
+packet|stream_index=1|pts=321252|dts=321252|pos=855603
+packet|stream_index=1|pts=322276|dts=322276|pos=857651
+packet|stream_index=1|pts=323300|dts=323300|pos=859699
+packet|stream_index=1|pts=324324|dts=324324|pos=861747
+packet|stream_index=1|pts=325348|dts=325348|pos=863795
+packet|stream_index=1|pts=326372|dts=326372|pos=865843
+packet|stream_index=1|pts=327396|dts=327396|pos=867891
