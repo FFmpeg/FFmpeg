@@ -96,6 +96,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->cols  = 1 << s->level;
     s->wrapbuf_len = 2 * s->cols - 2;
     s->block_len = s->rows * s->cols;
+    if (s->block_len > 1024 * 1024) {
+        av_log(avctx, AV_LOG_ERROR, "Block of %d samples is too large\n", s->block_len);
+        return AVERROR_INVALIDDATA;
+    }
     s->max_framesize = s->block_len;
 
     s->block   = av_calloc(s->block_len, sizeof(int));
