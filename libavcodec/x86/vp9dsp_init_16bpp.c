@@ -44,7 +44,7 @@ decl_fpel_func(avg,  64, _16, avx2);
 decl_fpel_func(avg, 128, _16, avx2);
 
 decl_ipred_fns(v,       16, sse,    sse);
-decl_ipred_fns(h,       16, mmxext, sse2);
+decl_ipred_fns(h,       16, sse2,   sse2);
 decl_ipred_fns(dc,      16, mmxext, sse2);
 decl_ipred_fns(dc_top,  16, mmxext, sse2);
 decl_ipred_fns(dc_left, 16, mmxext, sse2);
@@ -72,7 +72,6 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        init_ipred_func(h, HOR, 4, 16, mmxext);
         init_ipred_func(dc, DC, 4, 16, mmxext);
         init_ipred_func(dc_top,  TOP_DC,  4, 16, mmxext);
         init_ipred_func(dc_left, LEFT_DC, 4, 16, mmxext);
@@ -94,7 +93,7 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_fpel_func(2, 1,  32, avg, _16, sse2);
         init_fpel_func(1, 1,  64, avg, _16, sse2);
         init_fpel_func(0, 1, 128, avg, _16, sse2);
-        init_8_16_32_ipred_funcs(h, HOR, 16, sse2);
+        init_ipred_funcs(h, HOR, 16, sse2);
         init_8_16_32_ipred_funcs(dc, DC, 16, sse2);
         init_8_16_32_ipred_funcs(dc_top,  TOP_DC,  16, sse2);
         init_8_16_32_ipred_funcs(dc_left, LEFT_DC, 16, sse2);

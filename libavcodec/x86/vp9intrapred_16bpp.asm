@@ -157,19 +157,19 @@ cglobal vp9_ipred_v_32x32_16, 2, 4, 4, dst, stride, l, a
     jg .loop
     RET
 
-INIT_MMX mmxext
+INIT_XMM sse2
 cglobal vp9_ipred_h_4x4_16, 3, 3, 4, dst, stride, l, a
-    mova                    m3, [lq]
+    movq                    m3, [lq]
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
-    pshufw                  m0, m3, q3333
-    pshufw                  m1, m3, q2222
-    pshufw                  m2, m3, q1111
-    pshufw                  m3, m3, q0000
-    mova      [dstq+strideq*0], m0
-    mova      [dstq+strideq*1], m1
-    mova      [dstq+strideq*2], m2
-    mova      [dstq+stride3q ], m3
+    pshuflw                 m0, m3, q3333
+    pshuflw                 m1, m3, q2222
+    pshuflw                 m2, m3, q1111
+    pshuflw                 m3, m3, q0000
+    movq      [dstq+strideq*0], m0
+    movq      [dstq+strideq*1], m1
+    movq      [dstq+strideq*2], m2
+    movq      [dstq+stride3q ], m3
     RET
 
 INIT_XMM sse2
