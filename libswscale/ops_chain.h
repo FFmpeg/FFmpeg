@@ -85,11 +85,14 @@ static_assert(offsetof(SwsOpImpl, priv) == 16, "SwsOpImpl layout mismatch");
 typedef struct SwsOpChain {
 #define SWS_MAX_OPS 16
     SwsOpImpl impl[SWS_MAX_OPS + 1]; /* reserve extra space for the entrypoint */
-    void (*free[SWS_MAX_OPS + 1])(SwsOpPriv *);
     int num_impl;
     int cpu_flags;      /* set of all used CPU flags */
     int over_read[4];   /* chain over-reads input by this many bytes */
     int over_write[4];  /* chain over-writes output by this many bytes */
+
+    /* Extra references owned by each kernel */
+    const void *ref[16];
+    int num_ref;
 } SwsOpChain;
 
 SwsOpChain *ff_sws_op_chain_alloc(void);
@@ -100,8 +103,8 @@ static inline void ff_sws_op_chain_free(SwsOpChain *chain)
 }
 
 /* Returns 0 on success, or a negative error code. */
-int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
-                           void (*free)(SwsOpPriv *), const SwsOpPriv *priv);
+int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func, const void *ref,
+                           const SwsOpPriv *priv);
 
 /**
  * Attach a SwsOpChain and all metadata to a SwsCompiledOp (as out->priv).
@@ -120,9 +123,9 @@ typedef struct SwsImplParams {
 typedef struct SwsImplResult {
     SwsFuncPtr func; /* overrides `SwsUOpEntry.func` if non-NULL */
     SwsOpPriv priv; /* private data for this implementation instance */
-    void (*free)(SwsOpPriv *priv); /* free function for `priv` */
     int over_read[4];  /* implementation over-reads input by this many bytes */
     int over_write[4]; /* implementation over-writes output by this many bytes */
+    const void *ref; /* external data backing `priv`, ownership passes to caller */
 } SwsImplResult;
 
 typedef struct SwsUOpEntry {

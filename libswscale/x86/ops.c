@@ -57,9 +57,8 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
     for (int i = 0; i < filter->num_weights; i++)
         weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
 
-    out->priv.ptr = weights;
+    out->ref = out->priv.ptr = weights;
     out->priv.uptr[1] = filter->filter_size;
-    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -150,9 +149,8 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
         }
     }
 
-    out->priv.ptr = weights.ptr;
+    out->ref = out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size;
-    out->free = ff_op_priv_unref;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))
@@ -237,9 +235,8 @@ static int setup_filter_h_4x4(const SwsImplParams *params, SwsImplResult *out)
         }
     }
 
-    out->priv.ptr = weights.ptr;
+    out->ref = out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size * sizeof_weights;
-    out->free = ff_op_priv_unref;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))
@@ -272,8 +269,7 @@ static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
 
 static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 {
-    out->priv.ptr = av_refstruct_ref(params->uop->data.ptr);
-    out->free = ff_op_priv_unref;
+    out->ref = out->priv.ptr = av_refstruct_ref(params->uop->data.ptr);
     return 0;
 }
 
@@ -298,19 +294,17 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     if (uop->type == SWS_PIXEL_F32) {
-        out->priv.ptr = av_refstruct_allocz(sizeof(uop->data.mat4x5));
+        out->ref = out->priv.ptr = av_refstruct_allocz(sizeof(uop->data.mat4x5));
         if (!out->priv.ptr)
             return AVERROR(ENOMEM);
         memcpy(out->priv.ptr, uop->data.mat4x5, sizeof(uop->data.mat4x5));
-        out->free = ff_op_priv_unref;
         return 0;
     }
 
     uint8_t *mat = av_refstruct_allocz(4 * 5 * 16); /* one lane per component */
     if (!mat)
         return AVERROR(ENOMEM);
-    out->priv.ptr = mat;
-    out->free = ff_op_priv_unref;
+    out->ref = out->priv.ptr = mat;
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {

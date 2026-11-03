@@ -262,9 +262,8 @@ DECL_SETUP(setup_filter_v, params, out)
     for (int i = 0; i < filter->num_weights; i++)
         weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
 
-    out->priv.ptr = weights;
+    out->ref = out->priv.ptr = weights;
     out->priv.i32[2] = filter->filter_size;
-    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -317,9 +316,8 @@ DECL_SETUP(setup_filter_h, params, out)
     static_assert(SWS_FILTER_PAD_ROWS >= SWS_BLOCK_SIZE,
                   "filter weights contain sufficient padding for block over-read");
 
-    out->priv.ptr = av_refstruct_ref(filter->weights);
+    out->ref = out->priv.ptr = av_refstruct_ref(filter->weights);
     out->priv.i32[2] = filter->filter_size;
-    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -726,8 +724,7 @@ DECL_SETUP(setup_dither, params, out)
     const int size = 1 << dither->size_log2;
     if (size >= SWS_BLOCK_SIZE) {
         /* No extra padding needed */
-        out->priv.ptr = av_refstruct_ref(uop->data.ptr);
-        out->free = ff_op_priv_unref;
+        out->ref = out->priv.ptr = av_refstruct_ref(uop->data.ptr);
         return 0;
     }
 
@@ -736,8 +733,7 @@ DECL_SETUP(setup_dither, params, out)
     pixel_t *matrix = ff_refstruct_calloc(height, sizeof(pixel_t) * stride);
     if (!matrix)
         return AVERROR(ENOMEM);
-    out->priv.ptr = matrix;
-    out->free = ff_op_priv_unref;
+    out->ref = out->priv.ptr = matrix;
 
     /* Pad to multiple of block size. We don't need extra padding for the
      * height because ff_sws_dither_height() already includes any padding
@@ -805,11 +801,10 @@ DECL_SETUP(setup_linear, params, out)
         c.k[i] = uop->data.mat4x5[i][4].px;
     }
 
-    out->priv.ptr = av_refstruct_allocz(sizeof(c));
+    out->ref = out->priv.ptr = av_refstruct_allocz(sizeof(c));
     if (!out->priv.ptr)
         return AVERROR(ENOMEM);
     memcpy(out->priv.ptr, &c, sizeof(c));
-    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -861,8 +856,7 @@ SWS_FOR_STRUCT(PX, LINEAR, DECL_ENTRY, .setup = fn(setup_linear) )
 DECL_SETUP(setup_lut3d, params, out)
 {
     const SwsLut3D *lut = params->uop->data.lut3d;
-    out->priv.ptr = (void *) av_refstruct_ref_c(lut);
-    out->free = ff_op_priv_unref;
+    out->ref = out->priv.ptr = (void *) av_refstruct_ref_c(lut);
     return 0;
 }
 

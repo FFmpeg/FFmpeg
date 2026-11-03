@@ -98,17 +98,14 @@ static int aarch64_setup_linear(const SwsAArch64OpImplParams *p,
         }
     }
 
-    res->priv.ptr = coeffs;
-    res->free = ff_op_priv_unref;
-
+    res->ref = res->priv.ptr = coeffs;
     return 0;
 }
 
 /*********************************************************************/
 static int aarch64_setup_dither(const SwsUOp *uop, SwsImplResult *res)
 {
-    res->priv.ptr = av_refstruct_ref(uop->data.ptr);
-    res->free = ff_op_priv_unref;
+    res->ref = res->priv.ptr = av_refstruct_ref(uop->data.ptr);
     return 0;
 }
 
@@ -186,7 +183,8 @@ static int compile_uops_aarch64(SwsContext *ctx, const SwsUOpList *uops,
         ret = aarch64_setup(&uops->ops[i], &params, &res);
         if (ret < 0)
             goto error;
-        ret = ff_sws_op_chain_append(chain, func, res.free, &res.priv);
+        ret = ff_sws_op_chain_append(chain, func, res.ref, &res.priv);
+        av_refstruct_unref(&res.ref);
         if (ret < 0)
             goto error;
     }

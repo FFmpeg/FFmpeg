@@ -20,6 +20,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
 
 #include "ops_chain.h"
 
@@ -34,26 +35,27 @@ void ff_sws_op_chain_free_cb(void *ptr)
         return;
 
     SwsOpChain *chain = ptr;
-    for (int i = 0; i < chain->num_impl + 1; i++) {
-        if (chain->free[i])
-            chain->free[i](&chain->impl[i].priv);
-    }
+    for (int i = 0; i < chain->num_ref; i++)
+        av_refstruct_unref(&chain->ref[i]);
 
     av_free(chain);
 }
 
-int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
-                           void (*free)(SwsOpPriv *), const SwsOpPriv *priv)
+int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func, const void *ref,
+                           const SwsOpPriv *priv)
 {
     const int idx = chain->num_impl;
     if (idx == SWS_MAX_OPS)
+        return AVERROR(EINVAL);
+    if (ref && chain->num_ref >= FF_ARRAY_ELEMS(chain->ref))
         return AVERROR(EINVAL);
 
     av_assert1(func);
     chain->impl[idx].cont = func;
     chain->impl[idx + 1].priv = *priv;
-    chain->free[idx + 1] = free;
     chain->num_impl++;
+    if (ref)
+        chain->ref[chain->num_ref++] = av_refstruct_ref_c(ref);
     return 0;
 }
 
@@ -120,12 +122,10 @@ int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
     }
 
     ret = ff_sws_op_chain_append(chain, res.func ? res.func : match->func,
-                                 res.free, &res.priv);
-    if (ret < 0) {
-        if (res.free)
-            res.free(&res.priv);
+                                 res.ref, &res.priv);
+    av_refstruct_unref(&res.ref);
+    if (ret < 0)
         return ret;
-    }
 
     for (int i = 0; i < 4; i++) {
         chain->over_read[i]  = FFMAX(chain->over_read[i],  res.over_read[i]);
