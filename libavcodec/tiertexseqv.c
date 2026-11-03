@@ -72,6 +72,8 @@ static const unsigned char *seq_unpack_rle_block(const unsigned char *src,
         dst += len;
         dst_size -= len;
     }
+    if (dst_size > 0)
+        return NULL;
     return src;
 }
 
