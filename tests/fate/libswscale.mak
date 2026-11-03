@@ -54,6 +54,18 @@ fate-sws-monow-ed-tail: CMD = framecrc -lavfi color=black:s=100x8:r=1,scale=flag
 fate-sws-monob-ed-tail-bilinear: CMD = framecrc -lavfi color=white:s=102x8:r=1,scale=102:16:flags=bilinear+bitexact:sws_dither=ed,format=monob -frames:v 1
 fate-sws-monow-ed-tail-bilinear: CMD = framecrc -lavfi color=black:s=102x8:r=1,scale=102:16:flags=bilinear+bitexact:sws_dither=ed,format=monow -frames:v 1
 
+# Odd width tails of the unscaled yuv2rgb C converters. These output formats
+# have no SIMD version, so the output is the same on all architectures.
+FATE_SWS_YUV2RGB_ODD = fate-sws-yuv2rgb-odd-yuv420p-rgb4    \
+                       fate-sws-yuv2rgb-odd-yuv422p-rgb4    \
+                       fate-sws-yuv2rgb-odd-yuv420p-bgr48le \
+                       fate-sws-yuv2rgb-odd-yuv422p-rgb48le
+FATE_LIBSWSCALE_FFMPEG-$(call FILTERFRAMECRC, TESTSRC2 CROP SCALE FORMAT) += $(FATE_SWS_YUV2RGB_ODD)
+$(FATE_SWS_YUV2RGB_ODD): SRC_FMT = $(word 5,$(subst -, ,$(@)))
+$(FATE_SWS_YUV2RGB_ODD): DST_FMT = $(word 6,$(subst -, ,$(@)))
+$(FATE_SWS_YUV2RGB_ODD): CMD = framecrc -lavfi testsrc2=s=40x8:r=1,format=$(SRC_FMT),crop=39:8:0:0:exact=1,scale,format=$(DST_FMT) -frames:v 1
+fate-sws-yuv2rgb-odd: $(FATE_SWS_YUV2RGB_ODD)
+
 SWS_UNSTABLE_BACKENDS-yes                            += c memcpy
 ifeq ($(ARCH_X86_64),yes)
 SWS_UNSTABLE_BACKENDS-$(HAVE_X86ASM)                 += x86
