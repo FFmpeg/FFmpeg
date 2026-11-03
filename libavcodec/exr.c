@@ -2090,7 +2090,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     int i, y, ret, ymax;
     int planes;
     int out_line_size;
-    int nb_blocks;   /* nb scanline or nb tile */
+    int64_t nb_blocks;   /* nb scanline or nb tile */
     uint64_t start_offset_table;
     uint64_t start_next_scanline;
 
@@ -2217,7 +2217,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
         if (s->tile_attr.ySize <= 0 || s->tile_attr.xSize <= 0)
             return AVERROR_INVALIDDATA;
         nb_blocks = ((s->xdelta + s->tile_attr.xSize - 1) / s->tile_attr.xSize) *
-        ((s->ydelta + s->tile_attr.ySize - 1) / s->tile_attr.ySize);
+        (int64_t)((s->ydelta + s->tile_attr.ySize - 1) / s->tile_attr.ySize);
     } else { /* scanline */
         nb_blocks = (s->ydelta + s->scan_lines_per_block - 1) /
         s->scan_lines_per_block;
