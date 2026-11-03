@@ -43,11 +43,18 @@ static int setup_rw_packed(const SwsImplParams *params, SwsImplResult *out)
     return 0;
 }
 
+/* Private data for the filter kernels; layout hard-coded in ops_float.asm */
+typedef struct FilterPriv {
+    void *weights;
+    size_t filter_size;
+} FilterPriv;
+
+static_assert(offsetof(FilterPriv, filter_size) == sizeof(void *),
+              "FilterPriv layout mismatch");
+
 static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsFilterWeights *filter = params->uop->data.kernel;
-    static_assert(sizeof(out->priv.ptr) <= sizeof(int32_t[2]),
-                  ">8 byte pointers not supported");
 
     /* Pre-convert weights to float */
     float *weights = ff_refstruct_calloc(filter->num_weights, sizeof(float));
@@ -57,8 +64,13 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
     for (int i = 0; i < filter->num_weights; i++)
         weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
 
-    out->ref = out->priv.ptr = weights;
-    out->priv.uptr[1] = filter->filter_size;
+    const FilterPriv priv = {
+        .weights     = weights,
+        .filter_size = filter->filter_size,
+    };
+
+    SWS_OP_PRIV_PACK(out, priv);
+    out->ref = priv.weights;
     return 0;
 }
 
@@ -149,8 +161,13 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
         }
     }
 
-    out->ref = out->priv.ptr = weights.ptr;
-    out->priv.uptr[1] = aligned_size;
+    const FilterPriv priv = {
+        .weights     = weights.ptr,
+        .filter_size = aligned_size,
+    };
+
+    SWS_OP_PRIV_PACK(out, priv);
+    out->ref = priv.weights;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))
@@ -235,8 +252,13 @@ static int setup_filter_h_4x4(const SwsImplParams *params, SwsImplResult *out)
         }
     }
 
-    out->ref = out->priv.ptr = weights.ptr;
-    out->priv.uptr[1] = aligned_size * sizeof_weights;
+    const FilterPriv priv = {
+        .weights     = weights.ptr,
+        .filter_size = aligned_size * sizeof_weights,
+    };
+
+    SWS_OP_PRIV_PACK(out, priv);
+    out->ref = priv.weights;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))

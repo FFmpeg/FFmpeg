@@ -93,8 +93,8 @@ IF W,   %1 mw2, m11, m12
 assert_idn FILTER_TYPE, SWS_PIXEL_F32
 %assign SIZEOF_WEIGHT 4
 
-        mov weights, [implq + SwsOpImpl.priv]     ; float *weights
-        mov fltsize, [implq + SwsOpImpl.priv + 8] ; size_t filter_size
+        mov weights, [implq + SwsOpImpl.priv]           ; float *weights
+        mov fltsize, [implq + SwsOpImpl.priv + gprsize] ; size_t filter_size
         ; weights += filter_size * y * sizeof(float)
         mov tmp2q, fltsize
         imul tmp2q, yq
@@ -216,7 +216,7 @@ assert_idn FILTER_TYPE, SWS_PIXEL_F32
 %endif
 
         mov tmp0q,   [execq + SwsOpExec.in_offset_x]
-        mov fltsize, [implq + SwsOpImpl.priv + 8] ; size_t filter_size
+        mov fltsize, [implq + SwsOpImpl.priv + gprsize] ; size_t filter_size
         mov tmp2d, bxd
         shl_log2 tmp2q, FILTER_WIDTH   ; x := bx * FILTER_WIDTH
         movu m14, [tmp0q + 4 * tmp2q]  ; &exec->in_offset_x[x]
@@ -428,9 +428,9 @@ assert_idn FILTER_TYPE, SWS_PIXEL_F32
         push offset2q
         push offset3q
         shl_log2 bxq, FILTER_WIDTH ; x := bx * FILTER_WIDTH
-        mov weights, [implq + SwsOpImpl.priv]        ; int16_t *weights
-        mov tmp1d,   [implq + SwsOpImpl.priv + 8]    ; size_t filter_size
-        mov offsets, [execq + SwsOpExec.in_offset_x] ; int32_t *offsets
+        mov weights, [implq + SwsOpImpl.priv]           ; int16_t *weights
+        mov tmp1d,   [implq + SwsOpImpl.priv + gprsize] ; size_t filter_size
+        mov offsets, [execq + SwsOpExec.in_offset_x]    ; int32_t *offsets
         lea offsets, [offsets + 4 * bxq] ; offsets += x * sizeof(int32_t)
         imul bxq, fltsize
         add weights, bxq ; weights += x * filter_size
