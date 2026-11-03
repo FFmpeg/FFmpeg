@@ -166,7 +166,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
         if (video_type == 0 || video_type == 1) {
             GetBitContext gb;
-            init_get_bits(&gb, buf, 8 * video_size);
+            if ((ret = init_get_bits8(&gb, buf, video_size)) < 0)
+                return ret;
 
             if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
                 return ret;
