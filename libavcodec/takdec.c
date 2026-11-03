@@ -835,6 +835,10 @@ static int tak_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
                     ch_mask |= 1 << nbit;
                 }
+                if (ch_mask != (1 << avctx->ch_layout.nb_channels) - 1) {
+                    avpriv_request_sample(avctx, "Channel list not covering all channels");
+                    return AVERROR_PATCHWELCOME;
+                }
             } else {
                 chan = avctx->ch_layout.nb_channels;
                 for (i = 0; i < chan; i++) {
