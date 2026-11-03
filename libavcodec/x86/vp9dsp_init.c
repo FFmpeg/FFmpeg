@@ -153,8 +153,6 @@ lpf_funcs(88, 16, avx);
 void ff_vp9_ipred_##type##_##size##x##size##_##opt(uint8_t *dst, ptrdiff_t stride, \
                                                    const uint8_t *l, const uint8_t *a)
 
-ipred_func(4, hd, mmxext);
-ipred_func(4, vl, mmxext);
 ipred_func(8, v, sse);
 
 #define ipred_dc_funcs(size, opt) \
@@ -191,8 +189,15 @@ ipred_func(4, h, sse2);
 ipred_dc_funcs(size, opt); \
 ipred_dir_tm_h_funcs(size, opt)
 
-// FIXME hd/vl_4x4_ssse3 does not exist
-ipred_all_funcs(4, ssse3);
+ipred_dc_funcs(4, ssse3);
+ipred_func(4, tm, ssse3);
+ipred_func(4, dl, ssse3);
+ipred_func(4, dr, ssse3);
+ipred_func(4, hd, sse2);
+ipred_func(4, hu, ssse3);
+ipred_func(4, vl, sse2);
+ipred_func(4, vr, ssse3);
+ipred_func(4, h, ssse3);
 ipred_all_funcs(8, ssse3);
 ipred_all_funcs(16, ssse3);
 ipred_all_funcs(32, ssse3);
@@ -239,8 +244,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
 #define init_ipred(sz, opt, t, e) \
     dsp->intra_pred[TX_##sz##X##sz][e##_PRED] = ff_vp9_ipred_##t##_##sz##x##sz##_##opt
 
-#define ff_vp9_ipred_hd_4x4_ssse3 ff_vp9_ipred_hd_4x4_mmxext
-#define ff_vp9_ipred_vl_4x4_ssse3 ff_vp9_ipred_vl_4x4_mmxext
 #define init_dir_tm_ipred(sz, opt) do { \
     init_ipred(sz, opt, dl, DIAG_DOWN_LEFT); \
     init_ipred(sz, opt, dr, DIAG_DOWN_RIGHT); \
@@ -278,8 +281,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_mmxext;
         dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_mmxext;
         dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_mmxext;
-        dsp->intra_pred[TX_4X4][HOR_DOWN_PRED] = ff_vp9_ipred_hd_4x4_mmxext;
-        dsp->intra_pred[TX_4X4][VERT_LEFT_PRED] = ff_vp9_ipred_vl_4x4_mmxext;
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
@@ -323,6 +324,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_dir_tm_h_ipred(16, sse2);
         init_dir_tm_h_ipred(32, sse2);
         init_ipred(4, sse2, h, HOR);
+        init_ipred(4, sse2, vl, VERT_LEFT);
+        init_ipred(4, sse2, hd, HOR_DOWN);
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
@@ -345,7 +348,13 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->itxfm_add[TX_32X32][DCT_ADST] =
         dsp->itxfm_add[TX_32X32][DCT_DCT] = ff_vp9_idct_idct_32x32_add_ssse3;
         init_lpf(ssse3);
-        init_all_ipred(4, ssse3);
+        init_dc_ipred(4, ssse3);
+        init_ipred(4, ssse3, dl, DIAG_DOWN_LEFT);
+        init_ipred(4, ssse3, dr, DIAG_DOWN_RIGHT);
+        init_ipred(4, ssse3, hu, HOR_UP);
+        init_ipred(4, ssse3, tm, TM_VP8);
+        init_ipred(4, ssse3, vr, VERT_RIGHT);
+        init_ipred(4, ssse3, h, HOR);
         init_all_ipred(8, ssse3);
         init_all_ipred(16, ssse3);
         init_all_ipred(32, ssse3);

@@ -733,15 +733,15 @@ TM_XMM_FUNCS
     pavgb                  m%1, m%2
 %endmacro
 
-INIT_MMX ssse3
-cglobal vp9_ipred_dl_4x4, 4, 4, 0, dst, stride, l, a
+INIT_XMM ssse3
+cglobal vp9_ipred_dl_4x4, 4, 4, 4, dst, stride, l, a
     movq                    m1, [aq]
     pshufb                  m0, m1, [pb_0to5_2x7]
     pshufb                  m2, m1, [pb_2to6_3x7]
     psrlq                   m1, 8
     LOWPASS                  0, 1, 2, 3
 
-    pshufw                  m1, m0, q3321
+    pshuflw                 m1, m0, q3321
     movd      [dstq+strideq*0], m0
     movd      [dstq+strideq*2], m1
     psrlq                   m0, 8
@@ -1025,8 +1025,8 @@ DR_XMM_FUNCS
 
 ; vl
 
-INIT_MMX mmxext
-cglobal vp9_ipred_vl_4x4, 4, 4, 0, dst, stride, l, a
+INIT_XMM sse2
+cglobal vp9_ipred_vl_4x4, 4, 4, 4, dst, stride, l, a
     movq                    m0, [aq]
     psrlq                   m1, m0, 8
     psrlq                   m2, m1, 8
@@ -1390,10 +1390,11 @@ VR_XMM_FUNCS 6
 
 ; hd
 
-INIT_MMX mmxext
-cglobal vp9_ipred_hd_4x4, 4, 4, 0, dst, stride, l, a
+INIT_XMM sse2
+cglobal vp9_ipred_hd_4x4, 4, 4, 4, dst, stride, l, a
     movd                    m0, [lq]
-    punpckldq               m0, [aq-1]
+    movq                    m3, [aq-1]
+    punpckldq               m0, m3
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
     psrlq                   m1, m0, 8
@@ -1407,7 +1408,8 @@ cglobal vp9_ipred_hd_4x4, 4, 4, 0, dst, stride, l, a
     ; AEBF  | m2 contains EFGHIJxx
 
     punpcklbw               m1, m2
-    punpckhdq               m0, m1, m2
+    punpckldq               m0, m1, m2
+    psrldq                  m0, 8
 
     ; m1 contains AEBFCGDH
     ; m0 contains CGDHIJxx
