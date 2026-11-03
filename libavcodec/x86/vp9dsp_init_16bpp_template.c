@@ -119,7 +119,7 @@ lpf_mix2_wrappers_set(BPC, sse2)
 lpf_mix2_wrappers_set(BPC, ssse3)
 lpf_mix2_wrappers_set(BPC, avx)
 
-decl_ipred_fns(tm, BPC, mmxext, sse2);
+decl_ipred_fns(tm, BPC, sse2, sse2);
 
 decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
 #if BPC == 10
@@ -180,7 +180,6 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
     init_itx_func(idx, ADST_ADST, iadst, iadst, size, bpp, opt); \
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
         if (!bitexact) {
             init_itx_func_one(4 /* lossless */, iwht, iwht, 4, BPC, mmxext);
         }
@@ -190,7 +189,7 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
         init_subpel3(0, put, BPC, sse2);
         init_subpel3(1, avg, BPC, sse2);
         init_lpf_funcs(BPC, sse2);
-        init_8_16_32_ipred_funcs(tm, TM_VP8, BPC, sse2);
+        init_ipred_funcs(tm, TM_VP8, BPC, sse2);
 #if BPC == 10
         if (!bitexact) {
             init_itx_func(TX_4X4, ADST_DCT,  idct,  iadst, 4, 10, sse2);

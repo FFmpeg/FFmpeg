@@ -56,8 +56,8 @@ static void check_ipred(void)
     LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
     VP9DSPContext dsp;
     int tx, mode, bit_depth;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride,
-                      const uint8_t *left, const uint8_t *top);
+    declare_func(void, uint8_t *dst, ptrdiff_t stride,
+                 const uint8_t *left, const uint8_t *top);
     static const char *const mode_names[N_INTRA_PRED_MODES] = {
         [VERT_PRED] = "vert",
         [HOR_PRED] = "hor",

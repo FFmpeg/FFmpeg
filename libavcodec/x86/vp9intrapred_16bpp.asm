@@ -475,21 +475,21 @@ cglobal vp9_ipred_dc_%1_32x32_16, 4, 4, 2, dst, stride, l, a
 DC_1D_FNS top,  aq
 DC_1D_FNS left, lq
 
-INIT_MMX mmxext
+INIT_XMM sse2
 cglobal vp9_ipred_tm_4x4_10, 4, 4, 6, dst, stride, l, a
     mova                    m5, [pw_1023]
 .body:
-    mova                    m4, [aq]
-    mova                    m3, [lq]
+    movq                    m4, [aq]
+    movq                    m3, [lq]
     movd                    m0, [aq-4]
-    pshufw                  m0, m0, q1111
+    pshuflw                 m0, m0, q1111
     psubw                   m4, m0
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
-    pshufw                  m0, m3, q3333
-    pshufw                  m1, m3, q2222
-    pshufw                  m2, m3, q1111
-    pshufw                  m3, m3, q0000
+    pshuflw                 m0, m3, q3333
+    pshuflw                 m1, m3, q2222
+    pshuflw                 m2, m3, q1111
+    pshuflw                 m3, m3, q0000
     paddw                   m0, m4
     paddw                   m1, m4
     paddw                   m2, m4
@@ -503,10 +503,10 @@ cglobal vp9_ipred_tm_4x4_10, 4, 4, 6, dst, stride, l, a
     pminsw                  m1, m5
     pminsw                  m2, m5
     pminsw                  m3, m5
-    mova      [dstq+strideq*0], m0
-    mova      [dstq+strideq*1], m1
-    mova      [dstq+strideq*2], m2
-    mova      [dstq+stride3q ], m3
+    movq      [dstq+strideq*0], m0
+    movq      [dstq+strideq*1], m1
+    movq      [dstq+strideq*2], m2
+    movq      [dstq+stride3q ], m3
     RET
 
 cglobal vp9_ipred_tm_4x4_12, 4, 4, 6, dst, stride, l, a
