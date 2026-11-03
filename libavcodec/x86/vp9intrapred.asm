@@ -93,10 +93,11 @@ SECTION .text
 
 ; dc_NxN(uint8_t *dst, ptrdiff_t stride, const uint8_t *l, const uint8_t *a)
 
-INIT_MMX ssse3
-cglobal vp9_ipred_dc_4x4, 4, 4, 0, dst, stride, l, a
+INIT_XMM ssse3
+cglobal vp9_ipred_dc_4x4, 4, 4, 2, dst, stride, l, a
     movd                    m0, [lq]
-    punpckldq               m0, [aq]
+    movq                    m1, [aq]
+    punpckldq               m0, m1
     pxor                    m1, m1
     psadbw                  m0, m1
     pmulhrsw                m0, [pw_4096]
@@ -108,7 +109,7 @@ cglobal vp9_ipred_dc_4x4, 4, 4, 0, dst, stride, l, a
     movd      [dstq+strideq*1], m0
     RET
 
-cglobal vp9_ipred_dc_8x8, 4, 4, 0, dst, stride, l, a
+cglobal vp9_ipred_dc_8x8, 4, 4, 3, dst, stride, l, a
     movq                    m0, [lq]
     movq                    m1, [aq]
     DEFINE_ARGS dst, stride, stride3
@@ -215,7 +216,7 @@ DC_16to32_FUNCS
 ; dc_top/left_NxN(uint8_t *dst, ptrdiff_t stride, const uint8_t *l, const uint8_t *a)
 
 %macro DC_1D_4to8_FUNCS 2 ; dir (top or left), arg (a or l)
-cglobal vp9_ipred_dc_%1_4x4, 4, 4, 0, dst, stride, l, a
+cglobal vp9_ipred_dc_%1_4x4, 4, 4, 2, dst, stride, l, a
     movd                    m0, [%2q]
     pxor                    m1, m1
     psadbw                  m0, m1
@@ -228,7 +229,7 @@ cglobal vp9_ipred_dc_%1_4x4, 4, 4, 0, dst, stride, l, a
     movd      [dstq+strideq*1], m0
     RET
 
-cglobal vp9_ipred_dc_%1_8x8, 4, 4, 0, dst, stride, l, a
+cglobal vp9_ipred_dc_%1_8x8, 4, 4, 2, dst, stride, l, a
     movq                    m0, [%2q]
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
@@ -248,7 +249,7 @@ cglobal vp9_ipred_dc_%1_8x8, 4, 4, 0, dst, stride, l, a
     RET
 %endmacro
 
-INIT_MMX ssse3
+INIT_XMM ssse3
 DC_1D_4to8_FUNCS top,  a
 DC_1D_4to8_FUNCS left, l
 
