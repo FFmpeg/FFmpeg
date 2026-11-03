@@ -37,6 +37,7 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/slicethread.h"
 #include "libavutil/half2float.h"
 
@@ -73,6 +74,13 @@
 #endif
 
 #define RETCODE_USE_CASCADE -12345
+
+static inline void *ff_refstruct_calloc(size_t n, size_t size)
+{
+    if (size && n > SIZE_MAX / size)
+        return NULL;
+    return av_refstruct_allocz(n * size);
+}
 
 typedef struct SwsInternal SwsInternal;
 
