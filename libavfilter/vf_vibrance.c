@@ -85,9 +85,9 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
     const ptrdiff_t bslinesize = in->linesize[1];
     const ptrdiff_t rslinesize = in->linesize[2];
     const ptrdiff_t aslinesize = in->linesize[3];
-    const uint8_t *gsrc = in->data[0] + slice_start * glinesize;
-    const uint8_t *bsrc = in->data[1] + slice_start * blinesize;
-    const uint8_t *rsrc = in->data[2] + slice_start * rlinesize;
+    const uint8_t *gsrc = in->data[0] + slice_start * gslinesize;
+    const uint8_t *bsrc = in->data[1] + slice_start * bslinesize;
+    const uint8_t *rsrc = in->data[2] + slice_start * rslinesize;
     uint8_t *gptr = frame->data[0] + slice_start * glinesize;
     uint8_t *bptr = frame->data[1] + slice_start * blinesize;
     uint8_t *rptr = frame->data[2] + slice_start * rlinesize;
