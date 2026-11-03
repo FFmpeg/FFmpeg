@@ -25,6 +25,7 @@ version 9.1:
 - Panasonic RW2 decoder
 - xHE-AAC encoding via libfdk-xhe-aac
 - jpegapp bitstream filter
+- LCEVC track muxing support in MPEG-TS muxer
 - Infinity IMM6 video decoder
 - Remove the asf_o demuxer
 - D3D12 DirectML zero-copy inference for the ONNX Runtime DNN backend
