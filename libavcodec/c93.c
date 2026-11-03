@@ -195,7 +195,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 break;
 
             case C93_8X8_2COLOR:
-                bytestream2_get_buffer(&gb, cols, 2);
+                if (bytestream2_get_buffer(&gb, cols, 2) != 2)
+                    return AVERROR_INVALIDDATA;
                 for (i = 0; i < 8; i++) {
                     draw_n_color(out + i*stride, stride, 8, 1, 1, cols,
                                      NULL, bytestream2_get_byte(&gb));
@@ -209,15 +210,18 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 for (int j = 0; j < 8; j += 4) {
                     for (i = 0; i < 8; i += 4) {
                         if (block_type == C93_4X4_2COLOR) {
-                            bytestream2_get_buffer(&gb, cols, 2);
+                            if (bytestream2_get_buffer(&gb, cols, 2) != 2)
+                                return AVERROR_INVALIDDATA;
                             draw_n_color(out + i + j*stride, stride, 4, 4,
                                     1, cols, NULL, bytestream2_get_le16(&gb));
                         } else if (block_type == C93_4X4_4COLOR) {
-                            bytestream2_get_buffer(&gb, cols, 4);
+                            if (bytestream2_get_buffer(&gb, cols, 4) != 4)
+                                return AVERROR_INVALIDDATA;
                             draw_n_color(out + i + j*stride, stride, 4, 4,
                                     2, cols, NULL, bytestream2_get_le32(&gb));
                         } else {
-                            bytestream2_get_buffer(&gb, grps, 4);
+                            if (bytestream2_get_buffer(&gb, grps, 4) != 4)
+                                return AVERROR_INVALIDDATA;
                             draw_n_color(out + i + j*stride, stride, 4, 4,
                                     1, cols, grps, bytestream2_get_le16(&gb));
                         }
