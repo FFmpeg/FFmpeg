@@ -51,7 +51,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
 
     for (y = 0; y < avctx->height; y++) {
         uint8_t *luma = &p->data[0][y * p->linesize[0]];
