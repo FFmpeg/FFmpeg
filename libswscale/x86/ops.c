@@ -269,12 +269,16 @@ static int setup_filter_h_4x4(const SwsImplParams *params, SwsImplResult *out)
 
 static int setup_scale(const SwsImplParams *params, SwsImplResult *out)
 {
-    const SwsUOp *uop = params->uop;
-    switch (uop->type) {
-    case SWS_PIXEL_U8:  out->priv.u32[0] = uop->data.scalar.u8;  break; /* for movd */
-    case SWS_PIXEL_U16: out->priv.u16[0] = uop->data.scalar.u16; break;
-    case SWS_PIXEL_U32: out->priv.u32[0] = uop->data.scalar.u32; break;
-    case SWS_PIXEL_F32: out->priv.f32[0] = uop->data.scalar.f32; break;
+    const SwsPixel scalar = params->uop->data.scalar;
+    switch (params->uop->type) {
+    case SWS_PIXEL_U8: {
+        const uint32_t u32 = scalar.u8; /* for movd */
+        SWS_OP_PRIV_PACK(out, u32);
+        break;
+    }
+    case SWS_PIXEL_U16: SWS_OP_PRIV_PACK(out, scalar.u16); break;
+    case SWS_PIXEL_U32: SWS_OP_PRIV_PACK(out, scalar.u32); break;
+    case SWS_PIXEL_F32: SWS_OP_PRIV_PACK(out, scalar.f32); break;
     default: return AVERROR(EINVAL);
     }
 
@@ -285,13 +289,13 @@ static int setup_clear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     for (int i = 0; i < 4; i++)
-        out->priv.u32[i] = uop->data.vec4[i].u32;
+        SWS_OP_PRIV_PACK(out, uop->data.vec4[i].u32);
     return 0;
 }
 
 static int setup_dither(const SwsImplParams *params, SwsImplResult *out)
 {
-    out->ref = out->priv.ptr = av_refstruct_ref(params->uop->data.ptr);
+    ff_sws_op_priv_pack_refptr(out, av_refstruct_ref(params->uop->data.ptr));
     return 0;
 }
 
@@ -316,17 +320,18 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     if (uop->type == SWS_PIXEL_F32) {
-        out->ref = out->priv.ptr = av_refstruct_allocz(sizeof(uop->data.mat4x5));
-        if (!out->priv.ptr)
+        float *mat = av_refstruct_allocz(sizeof(uop->data.mat4x5));
+        if (!mat)
             return AVERROR(ENOMEM);
-        memcpy(out->priv.ptr, uop->data.mat4x5, sizeof(uop->data.mat4x5));
+        memcpy(mat, uop->data.mat4x5, sizeof(uop->data.mat4x5));
+        ff_sws_op_priv_pack_refptr(out, mat);
         return 0;
     }
 
     uint8_t *mat = av_refstruct_allocz(4 * 5 * 16); /* one lane per component */
     if (!mat)
         return AVERROR(ENOMEM);
-    out->ref = out->priv.ptr = mat;
+    ff_sws_op_priv_pack_refptr(out, mat);
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
