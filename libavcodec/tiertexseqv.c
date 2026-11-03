@@ -92,6 +92,8 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq,
         switch (len & 3) {
         case 1:
             src = seq_unpack_rle_block(src, src_end, block, sizeof(block));
+            if (!src)
+                return NULL;
             for (b = 0; b < 8; b++) {
                 memcpy(dst, &block[b * 8], 8);
                 dst += seq->frame->linesize[0];
@@ -99,6 +101,8 @@ static const unsigned char *seq_decode_op1(SeqVideoContext *seq,
             break;
         case 2:
             src = seq_unpack_rle_block(src, src_end, block, sizeof(block));
+            if (!src)
+                return NULL;
             for (i = 0; i < 8; i++) {
                 for (b = 0; b < 8; b++)
                     dst[b * seq->frame->linesize[0]] = block[i * 8 + b];
