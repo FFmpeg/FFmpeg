@@ -39,6 +39,7 @@ enum {
      */
     SWS_FILTER_SCALE    = (1 << 14),
     SWS_FILTER_SIZE_MAX = 256,
+    SWS_FILTER_PAD_ROWS = 32, /* extra zero rows past `weights` */
 };
 
 /* Parameters for filter generation. */

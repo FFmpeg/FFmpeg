@@ -282,7 +282,9 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
            filter->name, filter->filter_size, radius);
 
     filter->num_weights = (size_t) params->dst_size * filter->filter_size;
-    filter->weights = av_refstruct_allocz(filter->num_weights * sizeof(*filter->weights));
+    const size_t padded = filter->num_weights +
+                          (size_t) filter->filter_size * SWS_FILTER_PAD_ROWS;
+    filter->weights = av_refstruct_allocz(padded * sizeof(*filter->weights));
     if (!filter->weights) {
         av_refstruct_unref(&filter);
         return AVERROR(ENOMEM);
