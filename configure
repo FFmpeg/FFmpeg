@@ -8237,6 +8237,7 @@ done
 enabled zlib && add_cppflags -DZLIB_CONST
 
 # conditional library dependencies, in any order
+enabled ametadata_filter    && prepend avfilter_deps "avformat"
 enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
 enabled aresample_filter    && prepend avfilter_deps "swresample"
 enabled cover_rect_filter   && prepend avfilter_deps "avformat avcodec"
@@ -8245,6 +8246,7 @@ enabled elbg_filter         && prepend avfilter_deps "avcodec"
 enabled find_rect_filter    && prepend avfilter_deps "avformat avcodec"
 enabled fsync_filter        && prepend avfilter_deps "avformat"
 enabled mcdeint_filter      && prepend avfilter_deps "avcodec"
+enabled metadata_filter     && prepend avfilter_deps "avformat"
 enabled movie_filter        && prepend avfilter_deps "avformat avcodec"
 enabled pan_filter          && prepend avfilter_deps "swresample"
 enabled qrencode_filter     && prepend avfilter_deps "swscale"
