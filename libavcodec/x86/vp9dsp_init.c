@@ -192,7 +192,7 @@ ipred_dir_tm_h_funcs(size, opt)
 ipred_dc_funcs(4, ssse3);
 ipred_func(4, tm, ssse3);
 ipred_func(4, dl, ssse3);
-ipred_func(4, dr, ssse3);
+ipred_func(4, dr, sse2);
 ipred_func(4, hd, sse2);
 ipred_func(4, hu, ssse3);
 ipred_func(4, vl, sse2);
@@ -324,6 +324,7 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_dir_tm_h_ipred(16, sse2);
         init_dir_tm_h_ipred(32, sse2);
         init_ipred(4, sse2, h, HOR);
+        init_ipred(4, sse2, dr, DIAG_DOWN_RIGHT);
         init_ipred(4, sse2, vl, VERT_LEFT);
         init_ipred(4, sse2, hd, HOR_DOWN);
     }
@@ -350,7 +351,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_lpf(ssse3);
         init_dc_ipred(4, ssse3);
         init_ipred(4, ssse3, dl, DIAG_DOWN_LEFT);
-        init_ipred(4, ssse3, dr, DIAG_DOWN_RIGHT);
         init_ipred(4, ssse3, hu, HOR_UP);
         init_ipred(4, ssse3, tm, TM_VP8);
         init_ipred(4, ssse3, vr, VERT_RIGHT);
