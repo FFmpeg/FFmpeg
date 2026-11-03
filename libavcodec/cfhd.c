@@ -289,13 +289,13 @@ static int alloc_buffers(AVCodecContext *avctx)
             s->plane[i].idwt_buf =
                 av_calloc(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_buf));
             s->plane[i].idwt_tmp =
-                av_malloc_array(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_tmp));
+                av_calloc(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_tmp));
         } else {
             s->plane[i].idwt_size = FFALIGN(height, 8) * stride * 2;
             s->plane[i].idwt_buf =
                 av_calloc(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_buf));
             s->plane[i].idwt_tmp =
-                av_malloc_array(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_tmp));
+                av_calloc(s->plane[i].idwt_size, sizeof(*s->plane[i].idwt_tmp));
         }
 
         if (!s->plane[i].idwt_buf || !s->plane[i].idwt_tmp)
