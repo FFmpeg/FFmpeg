@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
+#include "apetag.h"
 #include "demux.h"
 #include "id3v2.h"
 #include "id3v1.h"
@@ -161,8 +162,38 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
         mp3->xing_toc = 1;
 }
 
-static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
-                               MPADecodeHeader2 *c, uint32_t spf)
+/**
+ * Size of the ID3v1 and APEv2 tags at the end of the file. They are not part
+ * of the MPEG stream, so the Xing/Info byte count does not include them.
+ * The read position is restored.
+ *
+ * @return the size in bytes, or a negative AVERROR code if seeking failed
+ */
+static int64_t mp3_trailing_tags_size(AVFormatContext *s, int64_t end)
+{
+    AVIOContext *pb = s->pb;
+    int64_t pos = avio_tell(pb), size = 0, ret = 0;
+    uint8_t buf[3];
+
+    if (end > ID3v1_TAG_SIZE) {
+        ret = avio_seek(pb, end - ID3v1_TAG_SIZE, SEEK_SET);
+        if (ret >= 0 && avio_read(pb, buf, 3) == 3 && !memcmp(buf, "TAG", 3))
+            size = ID3v1_TAG_SIZE;
+    }
+    if (ret >= 0) {
+        ret = ff_ape_tag_size(s, end - size);
+        if (ret > 0)
+            size += ret;
+    }
+
+    pos = avio_seek(pb, pos, SEEK_SET);
+    if (ret < 0)
+        return ret;
+    return pos < 0 ? pos : size;
+}
+
+static int mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
+                              MPADecodeHeader2 *c, uint32_t spf)
 {
 #define LAST_BITS(k, n) ((k) & ((1 << (n)) - 1))
 #define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m) + 1))
@@ -187,7 +218,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     v = avio_rb32(s->pb);
     mp3->is_cbr = v == MKBETAG('I', 'n', 'f', 'o');
     if (v != MKBETAG('X', 'i', 'n', 'g') && !mp3->is_cbr)
-        return;
+        return 0;
 
     v = avio_rb32(s->pb);
     if (v & XING_FLAG_FRAMES)
@@ -196,6 +227,24 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
         mp3->header_filesize = avio_rb32(s->pb);
     if (fsize && mp3->header_filesize) {
         uint64_t min, delta;
+
+        /* Avoid seeking to the end unless trailing tags could make us
+         * incorrectly reject the frame count. Preserve the Info tag CRC
+         * across the seek. */
+        if (fsize > mp3->header_filesize &&
+            fsize - mp3->header_filesize > mp3->header_filesize >> 4 &&
+            (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+            unsigned long checksum = ffio_get_checksum(s->pb);
+            int64_t trailing_tags_size = mp3_trailing_tags_size(s, mp3->filesize);
+
+            if (trailing_tags_size < 0) {
+                av_log(s, AV_LOG_ERROR, "Failed to read the trailing tags\n");
+                return trailing_tags_size;
+            }
+            ffio_init_checksum(s->pb, ff_crcA001_update, checksum);
+            fsize -= FFMIN(fsize, trailing_tags_size);
+        }
+
         min = FFMIN(fsize, mp3->header_filesize);
         delta = FFMAX(fsize, mp3->header_filesize) - min;
         if (fsize > mp3->header_filesize && delta > min >> 4) {
@@ -295,6 +344,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
         ff_replaygain_export_raw(st, r_gain, peak, a_gain, 0);
         av_dict_set(&st->metadata, "encoder", version, 0);
     }
+    return 0;
 }
 
 static void mp3_parse_vbri_tag(AVFormatContext *s, AVStream *st, int64_t base)
@@ -411,7 +461,12 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     mp3->header_filesize   = 0;
     mp3->frame_duration = av_rescale_q(spf, (AVRational){1, c->sample_rate}, st->time_base);
 
-    mp3_parse_info_tag(s, st, c, spf);
+    ret = mp3_parse_info_tag(s, st, c, spf);
+    if (ret < 0) {
+        mp3->frames = 0;
+        mp3->header_filesize = 0;
+        goto end;
+    }
     mp3_parse_vbri_tag(s, st, base);
     mp3_parse_itunes_smpb(s, st, c, spf);
 
