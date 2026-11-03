@@ -251,8 +251,6 @@ DECL_SETUP(setup_filter_v, params, out)
         return AVERROR(ENOTSUP);
 
     const SwsFilterWeights *filter = params->uop->data.kernel;
-    static_assert(sizeof(out->priv.ptr) <= sizeof(int32_t[2]),
-                  ">8 byte pointers not supported");
 
     /* Pre-convert weights to float */
     float *weights = ff_refstruct_calloc(filter->num_weights, sizeof(float));
@@ -262,8 +260,13 @@ DECL_SETUP(setup_filter_v, params, out)
     for (int i = 0; i < filter->num_weights; i++)
         weights[i] = (float) filter->weights[i] / SWS_FILTER_SCALE;
 
-    out->ref = out->priv.ptr = weights;
-    out->priv.i32[2] = filter->filter_size;
+    const SwsFilterPriv priv = {
+        .weights     = weights,
+        .filter_size = filter->filter_size,
+    };
+
+    SWS_OP_PRIV_PACK(out, priv);
+    out->ref = priv.weights;
     return 0;
 }
 
@@ -272,8 +275,9 @@ DECL_READ(read_planar_fv, const SwsCompMask mask, const SwsPixelType type)
 {
     av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
-    const float *restrict weights = impl->priv.ptr;
-    const int filter_size = impl->priv.i32[2];
+    const SwsFilterPriv *priv = (const SwsFilterPriv *) impl->priv.data;
+    const float *restrict weights = priv->weights;
+    const int filter_size = priv->filter_size;
     weights += filter_size * iter->y;
 
     block_t xs, ys, zs, ws;
@@ -316,8 +320,13 @@ DECL_SETUP(setup_filter_h, params, out)
     static_assert(SWS_FILTER_PAD_ROWS >= SWS_BLOCK_SIZE,
                   "filter weights contain sufficient padding for block over-read");
 
-    out->ref = out->priv.ptr = av_refstruct_ref(filter->weights);
-    out->priv.i32[2] = filter->filter_size;
+    const SwsFilterPriv priv = {
+        .weights     = av_refstruct_ref(filter->weights),
+        .filter_size = filter->filter_size,
+    };
+
+    SWS_OP_PRIV_PACK(out, priv);
+    out->ref = priv.weights;
     return 0;
 }
 
@@ -326,8 +335,9 @@ DECL_READ(read_planar_fh, const SwsCompMask mask, const SwsPixelType type)
 {
     av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
-    const int *restrict weights = impl->priv.ptr;
-    const int filter_size = impl->priv.i32[2];
+    const SwsFilterPriv *priv = (const SwsFilterPriv *) impl->priv.data;
+    const int *restrict weights = priv->weights;
+    const int filter_size = priv->filter_size;
     const float scale = 1.0f / SWS_FILTER_SCALE;
     const int xpos = iter->x;
     weights += filter_size * iter->x;

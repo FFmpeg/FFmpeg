@@ -63,6 +63,15 @@ typedef struct SwsOpIter {
     const SwsOpExec *exec;
 } SwsOpIter;
 
+/* Private data for filtered reads */
+typedef struct SwsFilterPriv {
+    void *weights;
+    int filter_size;
+} SwsFilterPriv;
+
+static_assert(alignof(SwsFilterPriv) <= alignof(SwsOpPriv),
+              "SwsFilterPriv alignment exceeds SwsOpPriv");
+
 /* UBSan checks inside the loop body defeat the vectorizer, so do not ask
  * for it in those builds. Clang warns for every loop otherwise. */
 #if HAVE_UBSAN
