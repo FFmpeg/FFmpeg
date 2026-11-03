@@ -69,6 +69,7 @@ static const unsigned char *seq_unpack_rle_block(const unsigned char *src,
             memcpy(dst, src, FFMIN(len, dst_size));
             src += len;
         }
+        len = FFMIN(len, dst_size);
         dst += len;
         dst_size -= len;
     }
