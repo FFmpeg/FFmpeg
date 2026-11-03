@@ -1079,19 +1079,16 @@ static int is_start_code_offset(AVSContext *h, int offset)
 }
 
 /**
- * Position the reader on the start code that ends an AEC slice: the first
- * one at or after the slice's own payload. The reader position is not
- * reliable: the arithmetic decoder's look ahead has run past it.
+ * Position the reader on the first start code prefix at or after @p offset,
+ * or near the end of the buffer when there is none.
+ * @return 1 if a start code prefix was found
  */
-static void aec_end_of_slice(AVSContext *h)
+static int seek_to_start_code(AVSContext *h, int offset)
 {
     GetBitContext *gb = &h->gb;
     const uint8_t *buf = gb->buffer;
     int size = gb->size_in_bits >> 3;
-    int i    = h->aec_start;
-
-    /* release gb; check_for_slice() waits for this */
-    h->aec.gb = NULL;
+    int i    = offset;
 
     for (; i + 2 < size; i++)
         if (!buf[i] && !buf[i + 1] && buf[i + 2] == 1 &&
@@ -1099,6 +1096,20 @@ static void aec_end_of_slice(AVSContext *h)
             break;
     if (init_get_bits8(gb, buf, size) >= 0)
         skip_bits_long(gb, i * 8);
+    return i + 2 < size;
+}
+
+/**
+ * Position the reader on the start code that ends an AEC slice: the first
+ * one at or after the slice's own payload. The reader position is not
+ * reliable: the arithmetic decoder's look ahead has run past it.
+ */
+static void aec_end_of_slice(AVSContext *h)
+{
+    /* release gb; check_for_slice() waits for this */
+    h->aec.gb = NULL;
+
+    seek_to_start_code(h, h->aec_start);
 }
 
 /**
@@ -1715,23 +1726,37 @@ static inline int check_for_slice(AVSContext *h)
     /* an AEC slice ends with its stuffing bit, not at a start code (7.2.4) */
     if (h->aec_enable && h->aec.gb)
         return 0;
-    align = (-get_bits_count(gb)) & 7;
-    /* check for stuffing byte */
-    if (!align && (show_bits(gb, 8) == 0x80))
-        align = 8;
-    if ((show_bits_long(gb, 24 + align) & 0xFFFFFF) == 0x000001) {
+    for (;;) {
         GetBitContext peek;
         int stc;
 
+        align = (-get_bits_count(gb)) & 7;
+        /* check for stuffing byte */
+        if (!align && (show_bits(gb, 8) == 0x80))
+            align = 8;
+        if ((show_bits_long(gb, 24 + align) & 0xFFFFFF) != 0x000001)
+            return 0;
         if (!is_start_code_offset(h, (get_bits_count(gb) + align) >> 3))
             return 0;
         peek = *gb;
         skip_bits_long(&peek, 24 + align);
         stc = get_bits(&peek, 8);
-        /* any other unit ends the picture's data; leave it to the caller */
         if (stc > (SLICE_MAX_START_CODE & 0xFF)) {
-            h->pic_data_end = 1;
-            return 0;
+            /* video_sequence() places extension_and_user_data(1) between
+             * the picture header and picture_data() (table 13)
+             */
+            if (stc != (USER_START_CODE & 0xFF) &&
+                stc != (EXT_START_CODE  & 0xFF)) {
+                /* any other unit ends the picture's data; leave it to the
+                 * caller */
+                h->pic_data_end = 1;
+                return 0;
+            }
+            if (!seek_to_start_code(h, get_bits_count(&peek) >> 3)) {
+                h->pic_data_end = 1;
+                return 0;
+            }
+            continue;
         }
         *gb    = peek;
         h->stc = stc;
@@ -1747,7 +1772,6 @@ static inline int check_for_slice(AVSContext *h)
         }
         return 1;
     }
-    return 0;
 }
 
 /*****************************************************************************
