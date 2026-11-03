@@ -91,6 +91,7 @@ IF W,   %1 mw2, m11, m12
 %xdefine fltsize tmp1q
 
 assert_idn FILTER_TYPE, SWS_PIXEL_F32
+%assign PRIV_SIZE     2 * gprsize
 %assign SIZEOF_WEIGHT 4
 
         mov weights, [implq + SwsOpImpl.priv]           ; float *weights
@@ -209,6 +210,7 @@ IF X,   add in0q, FILTER_SIZE
 %xdefine FILTER_H_PX FILTER_H_ %+ TYPE
 
 assert_idn FILTER_TYPE, SWS_PIXEL_F32
+%assign PRIV_SIZE 2 * gprsize
 %ifidn TYPE, SWS_PIXEL_F32
     %assign SIZEOF_WEIGHT 4 ; F32
 %else
@@ -415,6 +417,7 @@ IF W,   vcvtdq2ps mw%2, mw%2
 %xdefine ILOAD_PX ILOAD_ %+ TYPE
 
 assert_idn FILTER_TYPE, SWS_PIXEL_F32
+%assign PRIV_SIZE 2 * gprsize
 %ifidn TYPE, SWS_PIXEL_F32
     %assign SIZEOF_WEIGHT 4 ; F32
 %else
@@ -467,6 +470,7 @@ IF W,   mulps mw2, m10
 ; Arithmetic operations
 
 %macro SCALE 0
+%assign PRIV_SIZE BYTES
         vbroadcastss m8, [implq + SwsOpImpl.priv]
         LOAD_CONT tmp0q
 IF X,   mulps mx, m8
@@ -481,6 +485,7 @@ IF W,   mulps mw2, m8
 %endmacro
 
 %macro ADD 0
+%assign PRIV_SIZE 4 * BYTES
 IF X,   vbroadcastss m8,  [implq + SwsOpImpl.priv + 0 * BYTES]
 IF Y,   vbroadcastss m9,  [implq + SwsOpImpl.priv + 1 * BYTES]
 IF Z,   vbroadcastss m10, [implq + SwsOpImpl.priv + 2 * BYTES]
@@ -498,6 +503,7 @@ IF W,   addps mw2, m11
 %endmacro
 
 %macro MIN 0
+%assign PRIV_SIZE 4 * BYTES
 IF X,   vbroadcastss m8,  [implq + SwsOpImpl.priv + 0 * BYTES]
 IF Y,   vbroadcastss m9,  [implq + SwsOpImpl.priv + 1 * BYTES]
 IF Z,   vbroadcastss m10, [implq + SwsOpImpl.priv + 2 * BYTES]
@@ -515,6 +521,7 @@ IF W,   minps mw2, m11
 %endmacro
 
 %macro MAX 0
+%assign PRIV_SIZE 4 * BYTES
 IF X,   vbroadcastss m8,  [implq + SwsOpImpl.priv + 0 * BYTES]
 IF Y,   vbroadcastss m9,  [implq + SwsOpImpl.priv + 1 * BYTES]
 IF Z,   vbroadcastss m10, [implq + SwsOpImpl.priv + 2 * BYTES]
@@ -576,6 +583,7 @@ IF NEED(3), linear_muladdps %1, mw%4, LOAD(3), m15, FMA(3)
 %endmacro
 
 %macro LINEAR_FMA 3
+%assign PRIV_SIZE  gprsize
 %assign ONE_MASK   %1
 %assign ZERO_MASK  %2
 %assign EXACT_MASK %3
@@ -621,6 +629,7 @@ IF W,   mova mw2, m11
 %endmacro
 
 %macro DITHER 5 ; x_off, y_off, z_off, w_off, size_log2
+%assign PRIV_SIZE gprsize
 %assign SIZE_LOG2 %5
 %assign SIZE      (1 << SIZE_LOG2)
 %assign STRIDE    (SIZE * BYTES)

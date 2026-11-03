@@ -598,6 +598,7 @@ IF V2,  mova %3, %2
 %endmacro
 
 %macro CLEAR 2
+%assign PRIV_SIZE 4 * 4
 %assign ONE_MASK  %1
 %assign ZERO_MASK %2
 IF1 X,  clear 0, mx, mx2
@@ -734,6 +735,12 @@ IF W,   packuswb %4, m11
 %endmacro
 
 %macro SCALE 0
+%if BITS == 8
+    %assign PRIV_SIZE 4 ; packed as dword
+%else
+    %assign PRIV_SIZE BYTES
+%endif
+
         LOAD_CONT tmp0q
 %if BITS == 8
 %if cpuflag(avx2)
@@ -870,6 +877,7 @@ IF W,   mova IN3, m11
 %endmacro
 
 %macro LINEAR 2
+%assign PRIV_SIZE  gprsize
 %assign ONE_MASK   %1
 %assign ZERO_MASK  %2
 

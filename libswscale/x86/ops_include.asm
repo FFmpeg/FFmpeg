@@ -182,6 +182,10 @@ endstruc
     %endif
     %assign BITS (BYTES * 8)
 
+    ; Initialize the size of this kernel's private data. This will be
+    ; overridden by the kernel itself on demand.
+    %assign PRIV_SIZE 0
+
     ; Calculate block size helpers
     %ifdef V2
         %assign BLOCK_SIZE (mmsize * (1 + V2))
@@ -215,6 +219,7 @@ endstruc
     %undef COMPS
     %undef BYTES
     %undef BITS
+    %undef PRIV_SIZE
     %undef BLOCK_SIZE
     %undef BLOCK_WIDTH
     %undef ADD_MUL
