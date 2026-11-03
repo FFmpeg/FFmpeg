@@ -136,7 +136,8 @@ static int vble_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     if (version != 1)
         av_log(avctx, AV_LOG_WARNING, "Unsupported VBLE Version: %d\n", version);
 
-    init_get_bits(&gb, src + 4, (avpkt->size - 4) * 8);
+    if ((ret = init_get_bits8(&gb, src + 4, avpkt->size - 4)) < 0)
+        return ret;
 
     /* Unpack */
     if (vble_unpack(ctx, &gb) < 0) {
