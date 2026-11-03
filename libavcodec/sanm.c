@@ -797,6 +797,7 @@ static int old_codec23(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
         if (bytestream2_get_bytes_left(gb) < 256)
             return AVERROR_INVALIDDATA;
         bytestream2_get_bufferu(gb, ctx->c23lut, 256);
+        memcpy(lut, ctx->c23lut, 256);
     } else if (param2 < 256) {
         for (i = 0; i < 256; i++)
             lut[i] = (i + param2) & 0xff;
