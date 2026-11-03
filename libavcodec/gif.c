@@ -501,8 +501,10 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    gif_image_write_image(avctx, &outbuf_ptr, end, palette,
-                          pict->data[0], pict->linesize[0], pkt);
+    ret = gif_image_write_image(avctx, &outbuf_ptr, end, palette,
+                                pict->data[0], pict->linesize[0], pkt);
+    if (ret < 0)
+        return ret;
     if (!s->last_frame && !s->image) {
         s->last_frame = av_frame_alloc();
         if (!s->last_frame)
