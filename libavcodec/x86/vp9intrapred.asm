@@ -327,20 +327,21 @@ INIT_XMM ssse3
 DC_1D_16to32_FUNCS top,  a
 DC_1D_16to32_FUNCS left, l
 
-INIT_MMX mmx
-cglobal vp9_ipred_v_8x8, 4, 4, 0, dst, stride, l, a
-    movq                    m0, [aq]
+INIT_XMM sse
+cglobal vp9_ipred_v_8x8, 4, 4, 1, dst, stride, l, a
+    xorps                   m0, m0
+    movlps                  m0, [aq]
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
-    movq      [dstq+strideq*0], m0
-    movq      [dstq+strideq*1], m0
-    movq      [dstq+strideq*2], m0
-    movq      [dstq+stride3q ], m0
+    movlps    [dstq+strideq*0], m0
+    movlps    [dstq+strideq*1], m0
+    movlps    [dstq+strideq*2], m0
+    movlps    [dstq+stride3q ], m0
     lea                   dstq, [dstq+strideq*4]
-    movq      [dstq+strideq*0], m0
-    movq      [dstq+strideq*1], m0
-    movq      [dstq+strideq*2], m0
-    movq      [dstq+stride3q ], m0
+    movlps    [dstq+strideq*0], m0
+    movlps    [dstq+strideq*1], m0
+    movlps    [dstq+strideq*2], m0
+    movlps    [dstq+stride3q ], m0
     RET
 
 INIT_XMM sse
@@ -513,8 +514,8 @@ H_XMM_FUNCS 4, 8
 INIT_XMM avx
 H_XMM_FUNCS 4, 8
 
-INIT_MMX ssse3
-cglobal vp9_ipred_tm_4x4, 4, 4, 0, dst, stride, l, a
+INIT_XMM ssse3
+cglobal vp9_ipred_tm_4x4, 4, 4, 5, dst, stride, l, a
     pxor                    m1, m1
     movd                    m0, [aq]
     pinsrw                  m2, [aq-1], 0

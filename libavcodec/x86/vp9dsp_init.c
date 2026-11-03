@@ -155,7 +155,7 @@ void ff_vp9_ipred_##type##_##size##x##size##_##opt(uint8_t *dst, ptrdiff_t strid
 
 ipred_func(4, hd, mmxext);
 ipred_func(4, vl, mmxext);
-ipred_func(8, v, mmx);
+ipred_func(8, v, sse);
 
 #define ipred_dc_funcs(size, opt) \
 ipred_func(size, dc, opt); \
@@ -271,7 +271,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
             dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
             dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_mmx;
         }
-        init_ipred(8, mmx, v, VERT);
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -287,6 +286,7 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_fpel_func(2, 0, 16, put, , sse);
         init_fpel_func(1, 0, 32, put, , sse);
         init_fpel_func(0, 0, 64, put, , sse);
+        init_ipred(8, sse, v, VERT);
         init_ipred(16, sse, v, VERT);
         init_ipred(32, sse, v, VERT);
     }
