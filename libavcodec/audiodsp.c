@@ -68,7 +68,9 @@ av_cold void ff_audiodsp_init(AudioDSPContext *c)
     c->vector_clip_int32   = vector_clip_int32_c;
     c->vector_clipf        = vector_clipf_c;
 
-#if ARCH_ARM
+#if ARCH_AARCH64
+    ff_audiodsp_init_aarch64(c);
+#elif ARCH_ARM
     ff_audiodsp_init_arm(c);
 #elif ARCH_PPC
     ff_audiodsp_init_ppc(c);
