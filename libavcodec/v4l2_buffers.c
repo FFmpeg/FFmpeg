@@ -471,9 +471,44 @@ static int v4l2_buffer_swframe_to_single_buffer(const AVFrame *frame,
     return 0;
 }
 
+static int v4l2_buffer_swframe_to_planes(const AVFrame *frame, V4L2Buffer *out)
+{
+    const struct v4l2_pix_format_mplane *pix_mp = &out->context->format.fmt.pix_mp;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    int height = pix_mp->height;
+    int bytewidths[4];
+    int ret;
+
+    if (!desc || !V4L2_TYPE_IS_MULTIPLANAR(out->buf.type) ||
+        out->num_planes > av_pix_fmt_count_planes(frame->format) ||
+        frame->width > pix_mp->width || frame->height > height)
+        return AVERROR(EINVAL);
+
+    ret = av_image_fill_linesizes(bytewidths, frame->format, frame->width);
+    if (ret < 0)
+        return ret;
+
+    for (int i = 0; i < out->num_planes; i++) {
+        int shift = i == 1 || i == 2 ? desc->log2_chroma_h : 0;
+        size_t stride = pix_mp->plane_fmt[i].bytesperline;
+        size_t size = stride * AV_CEIL_RSHIFT(height, shift);
+
+        if (!frame->data[i] || stride < bytewidths[i] ||
+            size > out->plane_info[i].length)
+            return AVERROR(EINVAL);
+
+        av_image_copy_plane(out->plane_info[i].mm_addr, stride,
+                            frame->data[i], frame->linesize[i], bytewidths[i],
+                            AV_CEIL_RSHIFT(frame->height, shift));
+        out->planes[i].bytesused = size;
+        out->planes[i].length = out->plane_info[i].length;
+    }
+
+    return 0;
+}
+
 static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 {
-    int i, ret;
     struct v4l2_format fmt = out->context->format;
     int pixel_format = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
                        fmt.fmt.pix_mp.pixelformat : fmt.fmt.pix.pixelformat;
@@ -521,13 +556,7 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
                                                     height, bytesperline,
                                                     sizeimage);
 
-    for (i = 0; i < out->num_planes; i++) {
-        ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, 0);
-        if (ret)
-            return ret;
-    }
-
-    return 0;
+    return v4l2_buffer_swframe_to_planes(frame, out);
 }
 
 /******************************************************************************
