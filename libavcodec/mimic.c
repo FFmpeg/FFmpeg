@@ -385,6 +385,17 @@ static int mimic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return AVERROR_INVALIDDATA;
     }
 
+    av_fast_padded_malloc(&ctx->swap_buf, &ctx->swap_buf_size, swap_buf_size);
+    if (!ctx->swap_buf)
+        return AVERROR(ENOMEM);
+
+    ctx->bbdsp.bswap_buf(ctx->swap_buf,
+                         (const uint32_t *) (buf + MIMIC_HEADER_SIZE),
+                         swap_buf_size >> 2);
+    res = init_get_bits8(&ctx->gb, ctx->swap_buf, swap_buf_size);
+    if (res < 0)
+        return res;
+
     ff_progress_frame_unref(&ctx->frames[ctx->cur_index]);
     res = ff_progress_frame_get_buffer(avctx, &ctx->frames[ctx->cur_index],
                                        AV_GET_BUFFER_FLAG_REF);
@@ -397,17 +408,6 @@ static int mimic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     ctx->next_cur_index  = (ctx->cur_index - 1) & 15;
 
     ff_thread_finish_setup(avctx);
-
-    av_fast_padded_malloc(&ctx->swap_buf, &ctx->swap_buf_size, swap_buf_size);
-    if (!ctx->swap_buf)
-        return AVERROR(ENOMEM);
-
-    ctx->bbdsp.bswap_buf(ctx->swap_buf,
-                         (const uint32_t *) (buf + MIMIC_HEADER_SIZE),
-                         swap_buf_size >> 2);
-    res = init_get_bits8(&ctx->gb, ctx->swap_buf, swap_buf_size);
-    if (res < 0)
-        return res;
 
     res = decode(ctx, quality, num_coeffs, !is_pframe);
     ff_progress_frame_report(&ctx->frames[ctx->cur_index], INT_MAX);
