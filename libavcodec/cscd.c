@@ -149,7 +149,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->height = avctx->height;
     stride = FFALIGN(c->linelen, 4);
     c->decomp_size = c->height * stride;
-    c->decomp_buf = av_malloc(c->decomp_size + AV_LZO_OUTPUT_PADDING);
+    c->decomp_buf = av_mallocz(c->decomp_size + AV_LZO_OUTPUT_PADDING);
     if (!c->decomp_buf) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
         return AVERROR(ENOMEM);
