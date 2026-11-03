@@ -607,11 +607,14 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
         mvP->ref_idx = 0;
     if (mvC->ref == NOT_AVAIL || (nP == MV_FWD_X3) || (nP == MV_BWD_X3 ))
         mvC = &h->mv[nP - 5];  // set to top-left (mvD)
+    /* the zero-vector cases of 9.9.1 a) 2) and 3), against this block's
+     * own reference
+     */
     if (mode == MV_PRED_PSKIP &&
         (mvA->ref == NOT_AVAIL ||
          mvB->ref == NOT_AVAIL ||
-         (mvA->x | mvA->y | mvA->ref) == 0 ||
-         (mvB->x | mvB->y | mvB->ref) == 0)) {
+         ((mvA->x | mvA->y) == 0 && mvA->ref == ref) ||
+         ((mvB->x | mvB->y) == 0 && mvB->ref == ref))) {
         mvP2 = &un_mv;
     /* if there is only one suitable candidate, take it */
     } else if (mvA->ref >= 0 && mvB->ref < 0  && mvC->ref < 0) {

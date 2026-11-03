@@ -1397,7 +1397,11 @@ static int decode_mb_p(AVSContext *h, enum cavs_mb mb_type)
     set_inter_mb_ctx(h, mb_type, mb_type == P_SKIP);
     switch (mb_type) {
     case P_SKIP:
-        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16, h->ref_base[0]);
+        /* PFieldSkip predicts from the reference marked 1, the same
+         * parity field of the previous frame (9.9.1 a) 1))
+         */
+        MV(MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP,  BLK_16X16,
+           h->ref_base[0] + h->p_field_skip);
         break;
     case P_16X16:
         REF(ref[0], 0, MV_FWD_X0);
@@ -1992,14 +1996,11 @@ static int decode_pic(AVSContext *h)
     }
 
     /* in a frame picture the field derivations reduce to the frame ones
-     * (9.9.1 b) 3)); PFieldSkip of 9.9.1 a) 1) is not implemented */
+     * (9.9.1 b) 3)) */
     h->b_field_enhanced = pb_field_enhanced_flag && !h->pic_structure &&
                           h->cur.f->pict_type == AV_PICTURE_TYPE_B;
-    if (pb_field_enhanced_flag && !h->pic_structure &&
-        h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
-        avpriv_request_sample(h->avctx, "Enhanced field coded P picture");
-        return AVERROR_PATCHWELCOME;
-    }
+    h->p_field_skip     = pb_field_enhanced_flag && !h->pic_structure &&
+                          h->cur.f->pict_type == AV_PICTURE_TYPE_P;
 
     if (!h->progressive) {
         h->cur.f->flags |= AV_FRAME_FLAG_INTERLACED;
