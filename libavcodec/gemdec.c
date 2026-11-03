@@ -259,6 +259,7 @@ static int gem_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (ret < 0)
         return ret;
     row = avctx->priv_data;
+    memset(row, 0, planes * row_width);
 
     memset(p->data[0], 0, avctx->height * p->linesize[0]);
     b = buf + header_size * 2;
