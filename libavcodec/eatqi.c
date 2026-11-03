@@ -151,7 +151,9 @@ static int tqi_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR(ENOMEM);
     t->bsdsp.bswap_buf(t->bitstream_buf, (const uint32_t *) buf,
                        (buf_end - buf) / 4);
-    init_get_bits(&t->gb, t->bitstream_buf, 8 * (buf_end - buf));
+    ret = init_get_bits8(&t->gb, t->bitstream_buf, buf_end - buf);
+    if (ret < 0)
+        return ret;
 
     t->last_dc[0] =
     t->last_dc[1] =
