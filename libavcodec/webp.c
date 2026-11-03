@@ -1257,6 +1257,8 @@ static int vp8_lossy_decode_alpha(AVCodecContext *avctx, AVFrame *p,
     if (s->alpha_compression == ALPHA_COMPRESSION_NONE) {
         GetByteContext gb;
 
+        if (data_size < s->width * s->height)
+            return AVERROR_INVALIDDATA;
         bytestream2_init(&gb, data_start, data_size);
         for (y = 0; y < s->height; y++)
             bytestream2_get_buffer(&gb, p->data[3] + p->linesize[3] * y,
@@ -1335,8 +1337,10 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (s->has_alpha) {
         ret = vp8_lossy_decode_alpha(avctx, p, s->alpha_data,
                                      s->alpha_data_size);
-        if (ret < 0)
+        if (ret < 0) {
+            *got_frame = 0;
             return ret;
+        }
     }
     return ret;
 }
