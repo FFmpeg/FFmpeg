@@ -70,6 +70,7 @@ typedef struct VmncContext {
     int cur_hx, cur_hy;
     uint8_t *curbits, *curmask;
     uint8_t *screendta;
+    int cursor_painted;
 } VmncContext;
 
 /* read pixel value from stream */
@@ -344,7 +345,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     c->pic->pict_type = AV_PICTURE_TYPE_P;
 
     // restore screen after cursor
-    if (c->screendta) {
+    if (c->cursor_painted) {
         int i;
         w = c->cur_w;
         if (c->width < c->cur_x + w)
@@ -370,6 +371,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 outptr += c->pic->linesize[0];
             }
         }
+        c->cursor_painted = 0;
     }
 
     while (chunks--) {
@@ -512,6 +514,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             }
             outptr = c->pic->data[0];
             put_cursor(outptr, c->pic->linesize[0], c, c->cur_x, c->cur_y);
+            c->cursor_painted = 1;
         }
     }
     *got_frame = 1;
