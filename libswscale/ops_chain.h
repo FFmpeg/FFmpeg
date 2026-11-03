@@ -165,6 +165,13 @@ static inline void ff_sws_op_priv_pack(SwsImplResult *out, const void *data, siz
     out->priv_size += size;
 }
 
+static inline void ff_sws_op_priv_pack_refptr(SwsImplResult *out, const void *data)
+{
+    ff_sws_op_priv_pack(out, &data, sizeof(data));
+    av_assert0(!out->ref);
+    out->ref = data;
+}
+
 struct SwsUOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */
     int block_size;       /* fixed block size of this table */

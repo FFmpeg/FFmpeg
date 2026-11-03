@@ -724,7 +724,7 @@ DECL_SETUP(setup_dither, params, out)
     const int size = 1 << dither->size_log2;
     if (size >= SWS_BLOCK_SIZE) {
         /* No extra padding needed */
-        out->ref = out->priv.ptr = av_refstruct_ref(uop->data.ptr);
+        ff_sws_op_priv_pack_refptr(out, av_refstruct_ref(uop->data.ptr));
         return 0;
     }
 
@@ -733,7 +733,7 @@ DECL_SETUP(setup_dither, params, out)
     pixel_t *matrix = ff_refstruct_calloc(height, sizeof(pixel_t) * stride);
     if (!matrix)
         return AVERROR(ENOMEM);
-    out->ref = out->priv.ptr = matrix;
+    ff_sws_op_priv_pack_refptr(out, matrix);
 
     /* Pad to multiple of block size. We don't need extra padding for the
      * height because ff_sws_dither_height() already includes any padding
@@ -801,10 +801,11 @@ DECL_SETUP(setup_linear, params, out)
         c.k[i] = uop->data.mat4x5[i][4].px;
     }
 
-    out->ref = out->priv.ptr = av_refstruct_allocz(sizeof(c));
-    if (!out->priv.ptr)
+    fn(LinCoeffs) *data = av_refstruct_allocz(sizeof(c));
+    if (!data)
         return AVERROR(ENOMEM);
-    memcpy(out->priv.ptr, &c, sizeof(c));
+    memcpy(data, &c, sizeof(c));
+    ff_sws_op_priv_pack_refptr(out, data);
     return 0;
 }
 
@@ -856,7 +857,7 @@ SWS_FOR_STRUCT(PX, LINEAR, DECL_ENTRY, .setup = fn(setup_linear) )
 DECL_SETUP(setup_lut3d, params, out)
 {
     const SwsLut3D *lut = params->uop->data.lut3d;
-    out->ref = out->priv.ptr = (void *) av_refstruct_ref_c(lut);
+    ff_sws_op_priv_pack_refptr(out, av_refstruct_ref_c(lut));
     return 0;
 }
 
