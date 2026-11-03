@@ -78,6 +78,10 @@ const int *sws_getCoefficients(int colorspace)
     Y                  = py_##l[2 * i + 1];         \
     dst_##l[2 * i + 1] = r[Y] + g[Y] + b[Y];
 
+#define PUTRGB_ODD(l, i, abase)                     \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y] + g[Y] + b[Y];
+
 #define PUTRGB24(l, i, abase)                       \
     Y                  = py_##l[2 * i];             \
     dst_##l[6 * i + 0] = r[Y];                      \
@@ -87,6 +91,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[6 * i + 3] = r[Y];                      \
     dst_##l[6 * i + 4] = g[Y];                      \
     dst_##l[6 * i + 5] = b[Y];
+
+#define PUTRGB24_ODD(l, i, abase)                   \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[6 * i + 0] = r[Y];                      \
+    dst_##l[6 * i + 1] = g[Y];                      \
+    dst_##l[6 * i + 2] = b[Y];
 
 #define PUTBGR24(l, i, abase)                       \
     Y                  = py_##l[2 * i];             \
@@ -98,11 +108,21 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[6 * i + 4] = g[Y];                      \
     dst_##l[6 * i + 5] = r[Y];
 
+#define PUTBGR24_ODD(l, i, abase)                   \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[6 * i + 0] = b[Y];                      \
+    dst_##l[6 * i + 1] = g[Y];                      \
+    dst_##l[6 * i + 2] = r[Y];
+
 #define PUTRGBA(l, i, abase)                        \
     Y                  = py_##l[2 * i];             \
     dst_##l[2 * i]     = r[Y] + g[Y] + b[Y] + ((uint32_t)(pa_##l[2 * i])     << abase); \
     Y                  = py_##l[2 * i + 1];         \
     dst_##l[2 * i + 1] = r[Y] + g[Y] + b[Y] + ((uint32_t)(pa_##l[2 * i + 1]) << abase);
+
+#define PUTRGBA_ODD(l, i, abase)                    \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y] + g[Y] + b[Y] + ((uint32_t)(pa_##l[2 * i])     << abase);
 
 #define PUTRGB48(l, i, abase)                       \
     Y                    = py_##l[ 2 * i];          \
@@ -114,6 +134,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[12 * i +  8] = dst_##l[12 * i +  9] = g[Y]; \
     dst_##l[12 * i + 10] = dst_##l[12 * i + 11] = b[Y];
 
+#define PUTRGB48_ODD(l, i, abase)                   \
+    Y                    = py_##l[ 2 * i];          \
+    dst_##l[12 * i +  0] = dst_##l[12 * i +  1] = r[Y]; \
+    dst_##l[12 * i +  2] = dst_##l[12 * i +  3] = g[Y]; \
+    dst_##l[12 * i +  4] = dst_##l[12 * i +  5] = b[Y];
+
 #define PUTBGR48(l, i, abase)                       \
     Y                    = py_##l[2 * i];           \
     dst_##l[12 * i +  0] = dst_##l[12 * i +  1] = b[Y]; \
@@ -124,6 +150,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[12 * i +  8] = dst_##l[12 * i +  9] = g[Y]; \
     dst_##l[12 * i + 10] = dst_##l[12 * i + 11] = r[Y];
 
+#define PUTBGR48_ODD(l, i, abase)                   \
+    Y                    = py_##l[2 * i];           \
+    dst_##l[12 * i +  0] = dst_##l[12 * i +  1] = b[Y]; \
+    dst_##l[12 * i +  2] = dst_##l[12 * i +  3] = g[Y]; \
+    dst_##l[12 * i +  4] = dst_##l[12 * i +  5] = r[Y];
+
 #define PUTGBRP(l, i, abase)                        \
     Y                   = py_##l[2 * i];            \
     dst_##l [2 * i + 0] = g[Y];                     \
@@ -133,6 +165,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l [2 * i + 1] = g[Y];                     \
     dst1_##l[2 * i + 1] = b[Y];                     \
     dst2_##l[2 * i + 1] = r[Y];
+
+#define PUTGBRP_ODD(l, i, abase)                    \
+    Y                   = py_##l[2 * i];            \
+    dst_##l [2 * i + 0] = g[Y];                     \
+    dst1_##l[2 * i + 0] = b[Y];                     \
+    dst2_##l[2 * i + 0] = r[Y];
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha, yuv422, nb_dst_planes)      \
     static int func_name(SwsInternal *c, const uint8_t *const src[],         \
@@ -233,6 +271,10 @@ const int *sws_getCoefficients(int colorspace)
         LOADCHROMA(1, 0);                                               \
         PUTFUNC(1, 0, abase);                                           \
         PUTFUNC(2, 0, abase);                                           \
+    ENDYUV2RGBLINE(dst_delta, 2, alpha, 0, nb_dst_planes)               \
+        LOADCHROMA(1, 0);                                               \
+        PUTFUNC##_ODD(1, 0, abase);                                     \
+        PUTFUNC##_ODD(2, 0, abase);                                     \
     ENDYUV2RGBFUNC()
 
 #define YUV422FUNC(func_name, dst_type, alpha, abase, PUTFUNC, dst_delta, nb_dst_planes) \
@@ -278,6 +320,12 @@ const int *sws_getCoefficients(int colorspace)
                                                                         \
         LOADCHROMA(2, 0);                                               \
         PUTFUNC(2, 0, abase);                                           \
+    ENDYUV2RGBLINE(dst_delta, 2, alpha, 1, nb_dst_planes)               \
+        LOADCHROMA(1, 0);                                               \
+        PUTFUNC##_ODD(1, 0, abase);                                     \
+                                                                        \
+        LOADCHROMA(2, 0);                                               \
+        PUTFUNC##_ODD(2, 0, abase);                                     \
     ENDYUV2RGBFUNC()
 
 #define YUV420FUNC_DITHER(func_name, dst_type, LOADDITHER, PUTFUNC, dst_delta) \
@@ -315,6 +363,12 @@ const int *sws_getCoefficients(int colorspace)
         LOADCHROMA(1, 0);                                               \
         PUTFUNC(1, 0, 0);                                               \
         PUTFUNC(2, 0, 0 + 8);                                           \
+    ENDYUV2RGBLINE(dst_delta, 2, 0, 0, 1)                               \
+        LOADDITHER                                                      \
+                                                                        \
+        LOADCHROMA(1, 0);                                               \
+        PUTFUNC##_ODD(1, 0, (c->opts.dst_w & 6));                       \
+        PUTFUNC##_ODD(2, 0, ((c->opts.dst_w & 6) + 8));                 \
     ENDYUV2RGBFUNC()
 
 #define YUV422FUNC_DITHER(func_name, dst_type, LOADDITHER, PUTFUNC, dst_delta) \
@@ -366,6 +420,14 @@ const int *sws_getCoefficients(int colorspace)
                                                                         \
         LOADCHROMA(2, 0);                                               \
         PUTFUNC(2, 0, 0 + 8);                                           \
+    ENDYUV2RGBLINE(dst_delta, 2, 0, 1, 1)                               \
+        LOADDITHER                                                      \
+                                                                        \
+        LOADCHROMA(1, 0);                                               \
+        PUTFUNC##_ODD(1, 0, (c->opts.dst_w & 6));                       \
+                                                                        \
+        LOADCHROMA(2, 0);                                               \
+        PUTFUNC##_ODD(2, 0, ((c->opts.dst_w & 6) + 8));                 \
     ENDYUV2RGBFUNC()
 
 #define LOADDITHER16                                    \
@@ -383,6 +445,12 @@ const int *sws_getCoefficients(int colorspace)
                          g[Y + e16[1 + o]] +        \
                          b[Y + f16[1 + o]];
 
+#define PUTRGB16_ODD(l, i, o)                       \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y + d16[0 + o]] +        \
+                         g[Y + e16[0 + o]] +        \
+                         b[Y + f16[0 + o]];
+
 #define LOADDITHER15                                    \
     const uint8_t *d16 = ff_dither_2x2_8[y & 1];        \
     const uint8_t *e16 = ff_dither_2x2_8[(y & 1)^1];
@@ -397,6 +465,12 @@ const int *sws_getCoefficients(int colorspace)
                          g[Y + d16[0 + o]] +        \
                          b[Y + e16[1 + o]];
 
+#define PUTRGB15_ODD(l, i, o)                       \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y + d16[0 + o]] +        \
+                         g[Y + d16[1 + o]] +        \
+                         b[Y + e16[0 + o]];
+
 #define LOADDITHER12                                    \
     const uint8_t *d16 = ff_dither_4x4_16[y & 3];
 
@@ -409,6 +483,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[2 * i + 1] = r[Y + d16[1 + o]] +        \
                          g[Y + d16[1 + o]] +        \
                          b[Y + d16[1 + o]];
+
+#define PUTRGB12_ODD(l, i, o)                       \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y + d16[0 + o]] +        \
+                         g[Y + d16[0 + o]] +        \
+                         b[Y + d16[0 + o]];
 
 #define LOADDITHER8                                     \
     const uint8_t *d32 = ff_dither_8x8_32[yd & 7];      \
@@ -423,6 +503,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[2 * i + 1] = r[Y + d32[1 + o]] +        \
                          g[Y + d32[1 + o]] +        \
                          b[Y + d64[1 + o]];
+
+#define PUTRGB8_ODD(l, i, o)                        \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y + d32[0 + o]] +        \
+                         g[Y + d32[0 + o]] +        \
+                         b[Y + d64[0 + o]];
 
 #define LOADDITHER4D                                    \
     const uint8_t * d64 = ff_dither_8x8_73[yd & 7];     \
@@ -440,6 +526,13 @@ const int *sws_getCoefficients(int colorspace)
               b[Y + d128[1 + o]]) << 4;             \
     dst_##l[i] = acc;
 
+#define PUTRGB4D_ODD(l, i, o)                       \
+    Y      = py_##l[2 * i];                         \
+    acc    = r[Y + d128[0 + o]] +                   \
+             g[Y +  d64[0 + o]] +                   \
+             b[Y + d128[0 + o]];                    \
+    dst_##l[i] = acc << 4;
+
 #define LOADDITHER4DB                                   \
     const uint8_t *d64  = ff_dither_8x8_73[yd & 7];     \
     const uint8_t *d128 = ff_dither_8x8_220[yd & 7];
@@ -453,6 +546,12 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[2 * i + 1] = r[Y + d128[1 + o]] +       \
                          g[Y +  d64[1 + o]] +       \
                          b[Y + d128[1 + o]];
+
+#define PUTRGB4DB_ODD(l, i, o)                      \
+    Y                  = py_##l[2 * i];             \
+    dst_##l[2 * i]     = r[Y + d128[0 + o]] +       \
+                         g[Y +  d64[0 + o]] +       \
+                         b[Y + d128[0 + o]];
 
 YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0, 0, 1)
     const uint8_t *d128 = ff_dither_8x8_220[yd & 7];
