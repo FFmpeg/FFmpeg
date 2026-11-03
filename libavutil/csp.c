@@ -308,7 +308,7 @@ static double trc_bt1361(double Lc)
     const double a = BT709_alpha;
     const double b = BT709_beta;
 
-    return (-0.0045 >= Lc) ? -(a * pow(-4.0 * Lc, 0.45) + (a - 1.0)) / 4.0
+    return (-0.0045 >= Lc) ? -(a * pow(-4.0 * Lc, 0.45) - (a - 1.0)) / 4.0
          : ( b >  Lc) ? 4.500 * Lc
          :               a * pow( Lc, 0.45) - (a - 1.0);
 }
@@ -318,7 +318,7 @@ static double trc_bt1361_inv(double E)
     const double a = BT709_alpha;
     const double b = 4.500 * BT709_beta;
 
-    return (-0.02025 >= E) ? -pow((-4.0 * E - (a - 1.0)) / a, 1.0 / 0.45) / 4.0
+    return (-0.02025 >= E) ? -pow((-4.0 * E + (a - 1.0)) / a, 1.0 / 0.45) / 4.0
          : ( b       >  E) ? E / 4.500
          :                    pow(( E + (a - 1.0)) / a, 1.0 / 0.45);
 }

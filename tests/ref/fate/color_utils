@@ -169,9 +169,9 @@ trc=iec61966-2-4 calling func(15123.456700) expected=83.452916 roundtrip=15123.4
 trc=iec61966-2-4 calling func(19845.889230) expected=94.321297 roundtrip=19845.889230
 trc=iec61966-2-4 calling func(98678.423100) expected=194.219568 roundtrip=98678.423100
 trc=iec61966-2-4 calling func(99999.899998) expected=195.386306 roundtrip=99999.899998
-trc=bt1361e calling func(-0.100000) expected=-0.206787 roundtrip=-0.100000
-trc=bt1361e calling func(-0.018054) expected=-0.109049 roundtrip=-0.018054
-trc=bt1361e calling func(-0.010000) expected=-0.089387 roundtrip=-0.010000
+trc=bt1361e calling func(-0.100000) expected=-0.157138 roundtrip=-0.100000
+trc=bt1361e calling func(-0.018054) expected=-0.059401 roundtrip=-0.018054
+trc=bt1361e calling func(-0.010000) expected=-0.039739 roundtrip=-0.010000
 trc=bt1361e calling func(-0.004490) expected=-0.020205 roundtrip=-0.004490
 trc=bt1361e calling func(0.000000) expected=0.000000 roundtrip=0.000000
 trc=bt1361e calling func(0.003162) expected=0.014230 roundtrip=0.003162
