@@ -50,7 +50,7 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
                   ">8 byte pointers not supported");
 
     /* Pre-convert weights to float */
-    float *weights = av_calloc(filter->num_weights, sizeof(float));
+    float *weights = ff_refstruct_calloc(filter->num_weights, sizeof(float));
     if (!weights)
         return AVERROR(ENOMEM);
 
@@ -59,7 +59,7 @@ static int setup_filter_v(const SwsImplParams *params, SwsImplResult *out)
 
     out->priv.ptr = weights;
     out->priv.uptr[1] = filter->filter_size;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -100,7 +100,7 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
     } weights;
 
     const int sizeof_weight = hscale_sizeof_weight(uop);
-    weights.ptr = av_calloc(line_size, sizeof_weight * aligned_size);
+    weights.ptr = ff_refstruct_calloc(line_size, sizeof_weight * aligned_size);
     if (!weights.ptr)
         return AVERROR(ENOMEM);
 
@@ -152,7 +152,7 @@ static int setup_filter_h(const SwsImplParams *params, SwsImplResult *out)
 
     out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))
@@ -205,7 +205,7 @@ static int setup_filter_h_4x4(const SwsImplParams *params, SwsImplResult *out)
         float *f32;
     } weights;
 
-    weights.ptr = av_calloc(line_size, aligned_size * sizeof_weights);
+    weights.ptr = ff_refstruct_calloc(line_size, aligned_size * sizeof_weights);
     if (!weights.ptr)
         return AVERROR(ENOMEM);
 
@@ -239,7 +239,7 @@ static int setup_filter_h_4x4(const SwsImplParams *params, SwsImplResult *out)
 
     out->priv.ptr = weights.ptr;
     out->priv.uptr[1] = aligned_size * sizeof_weights;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
 
     for (int i = 0; i < 4; i++) {
         if (uop->mask & SWS_COMP(i))
@@ -298,16 +298,19 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     if (uop->type == SWS_PIXEL_F32) {
-        out->priv.ptr = av_memdup(uop->data.mat4x5, sizeof(uop->data.mat4x5));
-        out->free = ff_op_priv_free;
-        return out->priv.ptr ? 0 : AVERROR(ENOMEM);
+        out->priv.ptr = av_refstruct_allocz(sizeof(uop->data.mat4x5));
+        if (!out->priv.ptr)
+            return AVERROR(ENOMEM);
+        memcpy(out->priv.ptr, uop->data.mat4x5, sizeof(uop->data.mat4x5));
+        out->free = ff_op_priv_unref;
+        return 0;
     }
 
-    uint8_t *mat = av_malloc(4 * 5 * 16); /* one lane per component */
+    uint8_t *mat = av_refstruct_allocz(4 * 5 * 16); /* one lane per component */
     if (!mat)
         return AVERROR(ENOMEM);
     out->priv.ptr = mat;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {

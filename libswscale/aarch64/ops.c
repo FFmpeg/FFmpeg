@@ -74,7 +74,7 @@ static int aarch64_setup_linear(const SwsAArch64OpImplParams *p,
      */
     const int num_vregs = linear_num_vregs(p);
     av_assert0(num_vregs <= 4);
-    void *coeffs = av_malloc(num_vregs * 16);
+    void *coeffs = av_refstruct_allocz(num_vregs * 16);
     if (!coeffs)
         return AVERROR(ENOMEM);
 
@@ -99,7 +99,7 @@ static int aarch64_setup_linear(const SwsAArch64OpImplParams *p,
     }
 
     res->priv.ptr = coeffs;
-    res->free = ff_op_priv_free;
+    res->free = ff_op_priv_unref;
 
     return 0;
 }

@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 
 #include "ops_internal.h"
+#include "swscale_internal.h"
 
 /**
  * Helpers for SIMD implementations based on chained kernels, using a

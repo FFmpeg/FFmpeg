@@ -255,7 +255,7 @@ DECL_SETUP(setup_filter_v, params, out)
                   ">8 byte pointers not supported");
 
     /* Pre-convert weights to float */
-    float *weights = av_calloc(filter->num_weights, sizeof(float));
+    float *weights = ff_refstruct_calloc(filter->num_weights, sizeof(float));
     if (!weights)
         return AVERROR(ENOMEM);
 
@@ -264,7 +264,7 @@ DECL_SETUP(setup_filter_v, params, out)
 
     out->priv.ptr = weights;
     out->priv.i32[2] = filter->filter_size;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
     return 0;
 }
 
@@ -733,11 +733,11 @@ DECL_SETUP(setup_dither, params, out)
 
     const int stride = FFMAX(size, SWS_BLOCK_SIZE);
     const int height = ff_sws_dither_height(dither);
-    pixel_t *matrix = av_malloc(sizeof(pixel_t) * height * stride);
+    pixel_t *matrix = ff_refstruct_calloc(height, sizeof(pixel_t) * stride);
     if (!matrix)
         return AVERROR(ENOMEM);
     out->priv.ptr = matrix;
-    out->free = ff_op_priv_free;
+    out->free = ff_op_priv_unref;
 
     /* Pad to multiple of block size. We don't need extra padding for the
      * height because ff_sws_dither_height() already includes any padding
@@ -805,9 +805,12 @@ DECL_SETUP(setup_linear, params, out)
         c.k[i] = uop->data.mat4x5[i][4].px;
     }
 
-    out->priv.ptr = av_memdup(&c, sizeof(c));
-    out->free = ff_op_priv_free;
-    return out->priv.ptr ? 0 : AVERROR(ENOMEM);
+    out->priv.ptr = av_refstruct_allocz(sizeof(c));
+    if (!out->priv.ptr)
+        return AVERROR(ENOMEM);
+    memcpy(out->priv.ptr, &c, sizeof(c));
+    out->free = ff_op_priv_unref;
+    return 0;
 }
 
 /**
