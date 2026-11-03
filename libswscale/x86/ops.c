@@ -271,7 +271,7 @@ static int setup_scale(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     switch (uop->type) {
-    case SWS_PIXEL_U8:  out->priv.u16[0] = uop->data.scalar.u8;  break; /* for pmullw */
+    case SWS_PIXEL_U8:  out->priv.u32[0] = uop->data.scalar.u8;  break; /* for movd */
     case SWS_PIXEL_U16: out->priv.u16[0] = uop->data.scalar.u16; break;
     case SWS_PIXEL_U32: out->priv.u32[0] = uop->data.scalar.u32; break;
     case SWS_PIXEL_F32: out->priv.f32[0] = uop->data.scalar.f32; break;
