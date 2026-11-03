@@ -99,6 +99,7 @@ static inline int aarch64_priv_size(const SwsAArch64OpImplParams *params)
         return ff_sws_pixel_type_size(params->type);
     case SWS_UOP_LINEAR:
     case SWS_UOP_LINEAR_FMA:
+        return 16 * linear_num_vregs(params); /* packed coefficients */
     case SWS_UOP_DITHER:
         return 8; /* pointer */
     default:

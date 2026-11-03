@@ -304,7 +304,7 @@ static void asmgen_setup_linear(SwsAArch64Context *s, const SwsAArch64OpImplPara
     case 3: coeff_veclist = vv_3(vc[0], vc[1], vc[2]);        break;
     case 4: coeff_veclist = vv_4(vc[0], vc[1], vc[2], vc[3]); break;
     }
-    i_ldr(r, ptr, IMPL_PRIV(s));                            CMT("v128 *vcoeff_ptr = impl->priv.ptr;");
+    i_add(r, ptr, s->impl, IMM(offsetof_impl_priv));        CMT("v128 *vcoeff_ptr = &impl->priv;");
     asmgen_set_load_cont_node(s);
     i_ld1(r, coeff_veclist, a64op_base(ptr));               CMT("coeff_veclist = *vcoeff_ptr;");
 
