@@ -299,7 +299,8 @@ static int mp_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                        buf_size / 4);
     if (buf_size & 3)
         memcpy(mp->bswapbuf + (buf_size & ~3), buf + (buf_size & ~3), buf_size & 3);
-    init_get_bits(&gb, mp->bswapbuf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, mp->bswapbuf, buf_size)) < 0)
+        return ret;
 
     memset(mp->changes_map, 0, avctx->width * avctx->height);
     for (i = !(avctx->extradata[1] & 2); i < 2; ++i) {
