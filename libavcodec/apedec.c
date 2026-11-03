@@ -1598,7 +1598,8 @@ static int ape_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 skip_bits_long(&s->gb, offset);
         }
 
-        if (!nblocks || nblocks > INT_MAX / 2 / sizeof(*s->decoded_buffer) - 8) {
+        if (!nblocks || nblocks > INT_MAX / 2 / sizeof(*s->decoded_buffer) - 8 ||
+            (s->fileversion < 3930 && nblocks > 73728)) {
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %"PRIu32".\n",
                    nblocks);
             return AVERROR_INVALIDDATA;
