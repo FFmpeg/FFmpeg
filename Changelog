@@ -12,6 +12,7 @@ version 9.1:
 - APV Vulkan encoder
 - iTerm2 inline image protocol muxer
 - LCEVC payload merging bitstream filter
+- ffmpeg CLI dual track LCEVC handling
 - MVR demuxer
 - latticepal filter
 - DVD-Audio LPCM decoder and demuxing support
