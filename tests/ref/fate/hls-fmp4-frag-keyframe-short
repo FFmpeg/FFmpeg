@@ -1,0 +1,2 @@
+#EXT-X-MAP:URI="hls_fmp4_frag_keyframe_short.mp4",BYTERANGE="814@0"
+#EXT-X-BYTERANGE:32172@814

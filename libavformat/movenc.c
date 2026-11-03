@@ -6931,6 +6931,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             mov_write_identification(s->pb, s);
         if ((ret = mov_write_moov_tag(s->pb, mov, s)) < 0)
             return ret;
+        mov->moov_end = avio_tell(s->pb);
 
         if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
             if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
@@ -9148,6 +9149,7 @@ static int mov_write_header(AVFormatContext *s)
         if ((ret = mov_write_moov_tag(pb, mov, s)) < 0)
             return ret;
         mov->moov_written = 1;
+        mov->moov_end = avio_tell(pb);
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
             mov->reserved_header_pos = avio_tell(pb);
     }

@@ -314,6 +314,29 @@ fate-hls-sched-extaudio: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -thread
     $(TARGET_PATH)/tests/data/hls_sched_extaudio_0.ts
 fate-hls-sched-extaudio: CMP = diff
 
+# Keyframes inside an HLS segment must not become part of EXT-X-MAP.
+# A segment longer than the input exercises initialization in the trailer.
+tests/data/hls_fmp4_frag_keyframe.m3u8 tests/data/hls_fmp4_frag_keyframe_short.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-f lavfi -i "testsrc2=size=128x72:rate=2:d=3" -map 0:v \
+	-c:v mpeg2video -g 1 -bitexact -dct int -f hls \
+	-hls_time $(if $(findstring short,$@),10,2) -hls_list_size 0 \
+	-hls_segment_type fmp4 -hls_flags single_file \
+	-hls_segment_options movflags=+cmaf+frag_keyframe \
+	-hls_segment_filename $(TARGET_PATH)/$(@:.m3u8=.mp4) \
+	$(TARGET_PATH)/$@ 2>/dev/null
+
+FATE_HLSENC_LAVFI-$(call ALLYES, TESTSRC2_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER MPEG2VIDEO_ENCODER HLS_MUXER MP4_MUXER FILE_PROTOCOL) += fate-hls-fmp4-frag-keyframe fate-hls-fmp4-frag-keyframe-short
+fate-hls-fmp4-frag-keyframe: tests/data/hls_fmp4_frag_keyframe.m3u8
+fate-hls-fmp4-frag-keyframe: CLEANFILES = tests/data/hls_fmp4_frag_keyframe.m3u8 tests/data/hls_fmp4_frag_keyframe.mp4
+fate-hls-fmp4-frag-keyframe: CMD = sed -n -e /^\#EXT-X-MAP:/p -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_fmp4_frag_keyframe.m3u8
+fate-hls-fmp4-frag-keyframe: CMP = diff
+
+fate-hls-fmp4-frag-keyframe-short: tests/data/hls_fmp4_frag_keyframe_short.m3u8
+fate-hls-fmp4-frag-keyframe-short: CLEANFILES = tests/data/hls_fmp4_frag_keyframe_short.m3u8 tests/data/hls_fmp4_frag_keyframe_short.mp4
+fate-hls-fmp4-frag-keyframe-short: CMD = sed -n -e /^\#EXT-X-MAP:/p -e /^\#EXT-X-BYTERANGE:/p $(TARGET_PATH)/tests/data/hls_fmp4_frag_keyframe_short.m3u8
+fate-hls-fmp4-frag-keyframe-short: CMP = diff
+
 FATE_HLSENC_LAVFI-yes := $(if $(call FRAMECRC), $(FATE_HLSENC_LAVFI-yes))
 
 FATE_FFMPEG_FFPROBE += $(FATE_HLSENC_FFMPEG_FFPROBE-yes)

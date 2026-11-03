@@ -53,9 +53,7 @@
 #include "hlsplaylist.h"
 #include "internal.h"
 #include "mux.h"
-#if CONFIG_MP4_MUXER
 #include "movenc.h"
-#endif
 #include "os_support.h"
 #include "url.h"
 
@@ -503,6 +501,53 @@ static void reflush_dynbuf(VariantStream *vs, int *range_length)
 {
     // re-open buffer
     avio_write(vs->out, vs->temp_buffer, *range_length);
+}
+
+static int hls_write_init_file(AVFormatContext *s, VariantStream *vs)
+{
+    HLSContext *hls = s->priv_data;
+    AVFormatContext *oc = vs->avf;
+    const MOVMuxContext *mov = oc->priv_data;
+    int64_t init_size = mov->moov_end;
+    AVIOContext *media_pb;
+    uint8_t *buffer, *init_buffer = NULL;
+    int buffer_size, ret;
+
+    buffer_size = avio_get_dyn_buf(oc->pb, &buffer);
+    if (oc->pb->error < 0)
+        return oc->pb->error;
+    if (init_size <= 0 || init_size > buffer_size)
+        return AVERROR_INVALIDDATA;
+
+    /* Automatic fragment cuts may have already written media after moov.
+     * Preserve the original buffer until all split allocations succeed. */
+    if ((ret = avio_open_dyn_buf(&media_pb)) < 0)
+        return ret;
+    avio_write(media_pb, buffer + init_size, buffer_size - init_size);
+    avio_flush(media_pb);
+    if (media_pb->error < 0) {
+        ret = media_pb->error;
+        goto fail;
+    }
+    if (hls->resend_init_file) {
+        init_buffer = av_memdup(buffer, init_size);
+        if (!init_buffer) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+    avio_write(vs->out, buffer, init_size);
+    ffio_free_dyn_buf(&oc->pb);
+    oc->pb = media_pb;
+    vs->init_buffer = init_buffer;
+    vs->init_range_length = init_size;
+    vs->start_pos = init_size;
+    return 0;
+
+fail:
+    ffio_free_dyn_buf(&media_pb);
+    return ret;
 }
 
 static int hls_delete_file(HLSContext *hls, AVFormatContext *avf,
@@ -2540,23 +2585,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         new_start_pos = avio_tell(oc->pb);
         vs->size = new_start_pos - vs->start_pos;
         avio_flush(oc->pb);
-        if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-            if (!vs->init_range_length) {
-                range_length = avio_close_dyn_buf(oc->pb, &vs->init_buffer);
-                oc->pb = NULL;
-                if (range_length <= 0)
-                    return AVERROR(EINVAL);
-                avio_write(vs->out, vs->init_buffer, range_length);
-                if (!hls->resend_init_file)
-                    av_freep(&vs->init_buffer);
-                vs->init_range_length = range_length;
-                avio_open_dyn_buf(&oc->pb);
-                vs->packets_written = 0;
-                vs->start_pos = range_length;
-                if (!byterange_mode) {
-                    hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
-                }
-            }
+        if (hls->segment_type == SEGMENT_TYPE_FMP4 && !vs->init_range_length) {
+            ret = hls_write_init_file(s, vs);
+            if (ret < 0)
+                return ret;
+            if (!byterange_mode)
+                hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
         }
         if (!byterange_mode) {
             if (vs->vtt_avf) {
@@ -2793,23 +2827,16 @@ static int hls_write_trailer(struct AVFormatContext *s)
             return AVERROR(ENOMEM);
         }
 
-        if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-            if (!vs->init_range_length) {
-                uint8_t *buffer = NULL;
-                av_write_frame(oc, NULL); /* Flush any buffered data */
+        if (hls->segment_type == SEGMENT_TYPE_FMP4 && !vs->init_range_length) {
+            av_write_frame(oc, NULL); /* Flush any buffered data */
 
-                int init_range_length = avio_close_dyn_buf(oc->pb, &buffer);
-                avio_write(vs->out, buffer, init_range_length);
-                av_freep(&buffer);
-                vs->init_range_length = init_range_length;
-                avio_open_dyn_buf(&oc->pb);
-                vs->packets_written = 0;
-                vs->start_pos = init_range_length;
-                byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
-                if (!byterange_mode) {
-                    ff_format_io_close(s, &vs->out);
-                    hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
-                }
+            ret = hls_write_init_file(s, vs);
+            if (ret < 0)
+                goto failed;
+            byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+            if (!byterange_mode) {
+                ff_format_io_close(s, &vs->out);
+                hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
             }
         }
         if (!(hls->flags & HLS_SINGLE_FILE)) {

@@ -228,6 +228,7 @@ typedef struct MOVMuxContext {
     int iods_audio_profile;
 
     int moov_written;
+    int64_t moov_end; ///< End of the initial moov atom.
     int fragments;
     int max_fragment_duration;
     int min_fragment_duration;
