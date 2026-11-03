@@ -54,6 +54,7 @@ typedef struct TFModel {
 typedef struct TFInferRequest {
     TF_Output *tf_outputs;
     TF_Tensor **output_tensors;
+    uint32_t nb_output;
     TF_Output *tf_input;
     TF_Tensor *input_tensor;
 } TFInferRequest;
@@ -100,8 +101,7 @@ static void tf_free_request(TFInferRequest *request)
     av_freep(&request->tf_input);
     av_freep(&request->tf_outputs);
     if (request->output_tensors) {
-        int nb_output = sizeof(*request->output_tensors)/sizeof(request->output_tensors[0]);
-        for (uint32_t i = 0; i < nb_output; ++i) {
+        for (uint32_t i = 0; i < request->nb_output; ++i) {
             if (request->output_tensors[i]) {
                 TF_DeleteTensor(request->output_tensors[i]);
                 request->output_tensors[i] = NULL;
@@ -673,6 +673,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
         ret = AVERROR(ENOMEM);
         goto err;
     }
+    infer_request->nb_output = task->nb_output;
 
     for (int i = 0; i < task->nb_output; ++i) {
         infer_request->output_tensors[i] = NULL;
