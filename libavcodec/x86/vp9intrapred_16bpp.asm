@@ -82,16 +82,17 @@ SECTION .text
 %endif
 %endmacro
 
-INIT_MMX mmx
+INIT_XMM sse
 cglobal vp9_ipred_v_4x4_16, 2, 4, 1, dst, stride, l, a
     movifnidn               aq, amp
-    mova                    m0, [aq]
+    xorps                   m0, m0
+    movlps                  m0, [aq]
     DEFINE_ARGS dst, stride, stride3
     lea               stride3q, [strideq*3]
-    mova      [dstq+strideq*0], m0
-    mova      [dstq+strideq*1], m0
-    mova      [dstq+strideq*2], m0
-    mova      [dstq+stride3q ], m0
+    movlps    [dstq+strideq*0], m0
+    movlps    [dstq+strideq*1], m0
+    movlps    [dstq+strideq*2], m0
+    movlps    [dstq+stride3q ], m0
     RET
 
 INIT_XMM sse
