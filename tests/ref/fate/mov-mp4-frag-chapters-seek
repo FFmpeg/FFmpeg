@@ -1,0 +1,61 @@
+76aed9319dda2a96839a9d1fe1ae52cb *tests/data/fate/mov-mp4-frag-chapters-seek.mp4
+1363303 tests/data/fate/mov-mp4-frag-chapters-seek.mp4
+#extradata 0:       31, 0x64c405ed
+#tb 0: 1/12800
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 64x64
+#sar 0: 1/1
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 44100
+#channel_layout_name 1: mono
+0,          0,        512,      512,     2863, 0x2d06080c
+1,          0,          0,     1024,     2048, 0x2096f45b
+1,       1024,       1024,     1024,     2048, 0x2262f6ec
+0,        512,       2048,      512,     1808, 0x88473439, F=0x0
+1,       2048,       2048,     1024,     2048, 0xaa83fe05
+1,       3072,       3072,     1024,     2048, 0x487e06b5
+0,       1024,       1024,      512,      829, 0x46b18019, F=0x0
+1,       4096,       4096,     1024,     2048, 0xb0abfcca
+packet|stream_index=0|pts=25600|dts=25600|pos=236536
+packet|stream_index=0|pts=26112|dts=26112|pos=237272
+packet|stream_index=0|pts=28160|dts=26624|pos=238079
+packet|stream_index=0|pts=27136|dts=27136|pos=239352
+packet|stream_index=0|pts=27648|dts=27648|pos=240188
+packet|stream_index=0|pts=29696|dts=28160|pos=241118
+packet|stream_index=0|pts=28672|dts=28672|pos=242466
+packet|stream_index=0|pts=29184|dts=29184|pos=243607
+packet|stream_index=0|pts=31232|dts=29696|pos=273736
+packet|stream_index=0|pts=30208|dts=30208|pos=276635
+packet|stream_index=0|pts=30720|dts=30720|pos=277656
+packet|stream_index=0|pts=32768|dts=31232|pos=278485
+packet|stream_index=0|pts=31744|dts=31744|pos=279502
+packet|stream_index=0|pts=32256|dts=32256|pos=280107
+packet|stream_index=0|pts=34304|dts=32768|pos=280520
+packet|stream_index=0|pts=33280|dts=33280|pos=281788
+packet|stream_index=0|pts=33792|dts=33792|pos=282441
+packet|stream_index=0|pts=35840|dts=34304|pos=282996
+packet|stream_index=0|pts=34816|dts=34816|pos=284827
+packet|stream_index=0|pts=35328|dts=35328|pos=285896
+packet|stream_index=0|pts=37376|dts=35840|pos=286902
+packet|stream_index=0|pts=36352|dts=36352|pos=288215
+packet|stream_index=0|pts=36864|dts=36864|pos=288973
+packet|stream_index=0|pts=38912|dts=37376|pos=289697
+packet|stream_index=0|pts=37888|dts=37888|pos=290988
+packet|stream_index=0|pts=38400|dts=38400|pos=291953
+packet|stream_index=0|pts=40448|dts=38912|pos=292850
+packet|stream_index=0|pts=39424|dts=39424|pos=294160
+packet|stream_index=0|pts=39936|dts=39936|pos=295139
+packet|stream_index=0|pts=41984|dts=40448|pos=296050
+packet|stream_index=0|pts=40960|dts=40960|pos=297337
+packet|stream_index=0|pts=41472|dts=41472|pos=298167
+packet|stream_index=0|pts=43520|dts=41984|pos=298944
+packet|stream_index=0|pts=42496|dts=42496|pos=388626
+packet|stream_index=0|pts=43008|dts=43008|pos=389534
+packet|stream_index=0|pts=45056|dts=43520|pos=390336
+packet|stream_index=0|pts=44032|dts=44032|pos=391448
+packet|stream_index=0|pts=44544|dts=44544|pos=392241
+packet|stream_index=0|pts=46592|dts=45056|pos=392933
+packet|stream_index=0|pts=45568|dts=45568|pos=394492

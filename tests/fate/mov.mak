@@ -203,6 +203,16 @@ FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, OGG_DEMUXER VORBIS_DECODE
                           += fate-mov-mp4-chapters
 fate-mov-mp4-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg mp4 "-c copy" "-c copy -t 0.1" "-show_chapters"
 
+# Seek in a fragmented file with a chapter track: the chapter track's samples
+# all sit in the first fragment, and its own seek must not send the read
+# position of the seeked video stream back there.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call TRANSCODE, MPEG4, MP4 MOV, OGG_DEMUXER VORBIS_DECODER TESTSRC2_FILTER FORMAT_FILTER SINE_FILTER) \
+                          += fate-mov-mp4-frag-chapters-seek
+fate-mov-mp4-frag-chapters-seek: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapter_extension_demo.ogg mp4 \
+  "-filter_complex testsrc2=size=64x64:rate=25:duration=12,format=yuv420p[v] -filter_complex sine=d=12[a] -map [v] -map [a] -map_chapters 0 -c:v mpeg4 -c:a pcm_s16le -g 60 -bf 2 -movflags frag_keyframe -frag_duration 1000000" \
+  "-c copy -t 0.1" \
+  "-use_mfra_for pts -read_intervals 8%+\#40 -show_entries packet=stream_index,pts,dts,pos -print_format compact"
+
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call TRANSCODE, PNG, MP4 MOV, MJPEG_DECODER SCALE_FILTER) \
                           += fate-mov-cover-image
 fate-mov-cover-image: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a mp4 "-map 0 -map 0:v -c:a copy -c:v:0 copy -filter:v:1 scale -c:v:1 png" "-map 0 -t 0.1 -c copy" "-show_entries stream_disposition=attached_pic:stream=index,codec_name"
