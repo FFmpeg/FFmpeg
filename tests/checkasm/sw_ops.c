@@ -474,12 +474,6 @@ static void check_simple(const char *name, const SwsUOp *uop)
     check_range(name, uop, NULL);
 }
 
-static void check_scalar(const char *name, SwsUOp *uop)
-{
-    uop->data.scalar = rndpx(uop->type);
-    check_simple(name, uop);
-}
-
 static void check_vec4(const char *name, SwsUOp *uop)
 {
     for (int i = 0; i < 4; i++)
@@ -717,7 +711,7 @@ void checkasm_check_sw_ops(void)
     CHECK_FOR(TO_U32,           check_cast);
     CHECK_FOR(TO_F32,           check_cast);
     CHECK_FOR(SCALE,            check_scale);
-    CHECK_FOR(ADD,              check_scalar);
+    CHECK_FOR(ADD,              check_vec4);
     CHECK_FOR(MIN,              check_vec4);
     CHECK_FOR(MAX,              check_vec4);
     CHECK_FOR(UNPACK,           check_unpack);
