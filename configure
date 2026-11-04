@@ -4305,7 +4305,7 @@ xstack_qsv_filter_deps="libmfx"
 xstack_qsv_filter_select="qsvvpp"
 pad_vaapi_filter_deps="vaapi_1"
 drawbox_vaapi_filter_deps="vaapi_1"
-whisper_filter_deps="whisper"
+whisper_filter_deps="avformat whisper"
 
 # examples
 avio_http_serve_files_deps="avformat avutil fork"
@@ -8263,6 +8263,7 @@ enabled spp_filter          && prepend avfilter_deps "avcodec"
 enabled sr_filter           && prepend avfilter_deps "avformat swscale"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
 enabled uspp_filter         && prepend avfilter_deps "avcodec"
+enabled whisper_filter      && prepend avfilter_deps "avformat"
 enabled zoompan_filter      && prepend avfilter_deps "swscale"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
