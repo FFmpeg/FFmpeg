@@ -39,6 +39,7 @@ struct libopus_context {
     AVClass *class;
     OpusMSDecoder *dec;
     int pre_skip;
+    int sample_rate;
 #ifndef OPUS_SET_GAIN
     union { int i; double d; } gain;
 #endif
@@ -53,6 +54,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled, channels;
+    const int sample_rates[5] = { 8000, 12000, 16000, 24000, 48000 };
     uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
 
     channels = avc->extradata_size >= 10 ? avc->extradata[9] : (avc->ch_layout.nb_channels == 1) ? 1 : 2;
@@ -62,7 +64,18 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         channels = 2;
     }
 
-    avc->sample_rate    = 48000;
+    if (!avc->sample_rate)
+        avc->sample_rate = 48000;
+    for (int i = 0; i < FF_ARRAY_ELEMS(sample_rates); i++)
+        if (sample_rates[i] >= avc->sample_rate) {
+            opus->sample_rate = sample_rates[i];
+            break;
+        }
+    if (!opus->sample_rate) {
+        av_log(avc, AV_LOG_WARNING, "Invalid sample rate %d\n", avc->sample_rate);
+        return AVERROR(EINVAL);
+    }
+
     avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
                           AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
     av_channel_layout_uninit(&avc->ch_layout);
@@ -105,7 +118,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         mapping = mapping_arr;
     }
 
-    opus->dec = opus_multistream_decoder_create(avc->sample_rate, channels,
+    opus->dec = opus_multistream_decoder_create(opus->sample_rate, channels,
                                                 nb_streams, nb_coupled,
                                                 mapping, &ret);
     if (!opus->dec) {
@@ -163,6 +176,7 @@ static int libopus_decode(AVCodecContext *avc, AVFrame *frame,
     struct libopus_context *opus = avc->priv_data;
     int ret, nb_samples;
 
+    frame->sample_rate = opus->sample_rate;
     frame->nb_samples = MAX_FRAME_SIZE;
     if ((ret = ff_get_buffer(avc, frame, 0)) < 0)
         return ret;
