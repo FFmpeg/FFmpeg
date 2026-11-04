@@ -1896,14 +1896,11 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     int offset[AV_NUM_DATA_POINTERS];
 
     if (HAVE_THREADS && s->avctx->active_thread_type & FF_THREAD_FRAME) {
-        int y_flipped = s->flipped_image ? s->height - y : y;
-
         /* At the end of the frame, report INT_MAX instead of the height of
          * the frame. This makes the other threads' ff_thread_await_progress()
          * calls cheaper, because they don't have to clip their values. */
         ff_progress_frame_report(&s->current_frame,
-                                 y_flipped == s->height ? INT_MAX
-                                                        : y_flipped - 1);
+                                 y == s->height ? INT_MAX : y - 1);
     }
 
     if (!s->avctx->draw_horiz_band)
