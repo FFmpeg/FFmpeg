@@ -177,7 +177,8 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     ParseContext *pc    = &s->pc;
     int next, header_len = 0;
 
-    avctx->sample_rate = 48000;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 48000;
 
     if (avctx->extradata && !s->extradata_parsed) {
         if (ff_opus_parse_extradata(avctx, &s->ctx) < 0) {
