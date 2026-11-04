@@ -21,6 +21,7 @@
 #ifndef SWSCALE_OPS_CHAIN_H
 #define SWSCALE_OPS_CHAIN_H
 
+#include "libavutil/avassert.h"
 #include "libavutil/avconfig.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
@@ -130,10 +131,13 @@ typedef struct SwsImplParams {
 
 typedef struct SwsImplResult {
     SwsFuncPtr func; /* overrides `SwsUOpEntry.func` if non-NULL */
-    SwsOpPriv priv; /* private data for this implementation instance */
     int over_read[4];  /* implementation over-reads input by this many bytes */
     int over_write[4]; /* implementation over-writes output by this many bytes */
     const void *ref; /* external data backing `priv`, ownership passes to caller */
+
+    /* Private data for this kernel */
+    size_t priv_size;
+    SwsOpPriv priv;
 } SwsImplResult;
 
 typedef struct SwsUOpEntry {
@@ -152,6 +156,14 @@ typedef struct SwsUOpEntry {
 /* Setup helpers for SwsUOp data */
 int ff_sws_setup_scalar(const SwsImplParams *params, SwsImplResult *out);
 int ff_sws_setup_vec4(const SwsImplParams *params, SwsImplResult *out);
+
+#define SWS_OP_PRIV_PACK(out, data) ff_sws_op_priv_pack(out, &data, sizeof(data))
+static inline void ff_sws_op_priv_pack(SwsImplResult *out, const void *data, size_t size)
+{
+    av_assert0(out->priv_size + size <= sizeof(out->priv));
+    memcpy(&out->priv.data[out->priv_size], data, size);
+    out->priv_size += size;
+}
 
 struct SwsUOpTable {
     unsigned cpu_flags;   /* required CPU flags for this table */

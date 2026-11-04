@@ -146,10 +146,10 @@ int ff_sws_setup_scalar(const SwsImplParams *params, SwsImplResult *out)
     const SwsUOp *uop = params->uop;
     const SwsPixel scalar = uop->data.scalar;
     switch (uop->type) {
-    case SWS_PIXEL_U8:  out->priv.u8[0]  = scalar.u8;  break;
-    case SWS_PIXEL_U16: out->priv.u16[0] = scalar.u16; break;
-    case SWS_PIXEL_U32: out->priv.u32[0] = scalar.u32; break;
-    case SWS_PIXEL_F32: out->priv.f32[0] = scalar.f32; break;
+    case SWS_PIXEL_U8:  SWS_OP_PRIV_PACK(out, scalar.u8);  break;
+    case SWS_PIXEL_U16: SWS_OP_PRIV_PACK(out, scalar.u16); break;
+    case SWS_PIXEL_U32: SWS_OP_PRIV_PACK(out, scalar.u32); break;
+    case SWS_PIXEL_F32: SWS_OP_PRIV_PACK(out, scalar.f32); break;
     default: return AVERROR(EINVAL);
     }
 
@@ -162,10 +162,10 @@ int ff_sws_setup_vec4(const SwsImplParams *params, SwsImplResult *out)
     for (int i = 0; i < 4; i++) {
         const SwsPixel vi = uop->data.vec4[i];
         switch (uop->type) {
-        case SWS_PIXEL_U8:  out->priv.u8[i]  = vi.u8;  break;
-        case SWS_PIXEL_U16: out->priv.u16[i] = vi.u16; break;
-        case SWS_PIXEL_U32: out->priv.u32[i] = vi.u32; break;
-        case SWS_PIXEL_F32: out->priv.f32[i] = vi.f32; break;
+        case SWS_PIXEL_U8:  SWS_OP_PRIV_PACK(out, vi.u8);  break;
+        case SWS_PIXEL_U16: SWS_OP_PRIV_PACK(out, vi.u16); break;
+        case SWS_PIXEL_U32: SWS_OP_PRIV_PACK(out, vi.u32); break;
+        case SWS_PIXEL_F32: SWS_OP_PRIV_PACK(out, vi.f32); break;
         default: return AVERROR(EINVAL);
         }
     }
