@@ -327,6 +327,9 @@ FATE_AAC_ENCODE_FFPROBE-$(call TRANSCODE, AAC, ADTS AAC, WAV_DEMUXER PCM_S16LE_D
 
 FATE_AAC_BSF-$(call FRAMECRC, AAC MATROSKA, AAC, AAC_PARSER AAC_ADTSTOASC_BSF MATROSKA_MUXER) += fate-aac-autobsf-adtstoasc
 
+FATE_AAC_PARSER-$(call FRAMECRC, AAC, AAC, AAC_PARSER CONCAT_PROTOCOL) += fate-aac-adts-splice
+fate-aac-adts-splice: CMD = framecrc "-i concat:$(TARGET_SAMPLES)/audiomatch/tones_afconvert_44100_stereo_aac_lc.adts|$(TARGET_SAMPLES)/audiomatch/tones_afconvert_44100_stereo_aac_he.adts|$(TARGET_SAMPLES)/audiomatch/tones_afconvert_44100_stereo_aac_lc.adts -c:a copy"
+
 # The pre-roll a seek needs, by how long a frame is in output samples.
 FATE_AAC_PREROLL-$(call DEMDEC, MOV, AAC) += fate-aac-seek-preroll-sbr \
                                             fate-aac-seek-preroll-sbr-no-doubling \
@@ -345,8 +348,8 @@ fate-aac-seek-landing-frame-length-short: CMD = run ffprobe$(PROGSSUF)$(EXESUF) 
 
 FATE_SAMPLES_FFPROBE += $(FATE_AAC_PREROLL-yes)
 
-FATE_SAMPLES_FFMPEG += $(FATE_AAC_ALL) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_BSF-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_AAC_ALL) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_BSF-yes) $(FATE_AAC_PARSER-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_AAC_ENCODE_FFPROBE-yes)
 
-fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_PREROLL-yes) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_BSF-yes)
+fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_PREROLL-yes) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_BSF-yes) $(FATE_AAC_PARSER-yes)
 fate-aac-latm: $(FATE_AAC_LATM-yes)
