@@ -315,11 +315,11 @@ static void sanitize_fmt(SwsFormat *fmt, const AVPixFmtDescriptor *desc)
         /* Grayscale formats */
         fmt->color.prim = AVCOL_PRI_UNSPECIFIED;
         fmt->csp        = AVCOL_SPC_UNSPECIFIED;
-        if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
-            fmt->range = AVCOL_RANGE_UNSPECIFIED;
-        else
-            fmt->range = AVCOL_RANGE_JPEG; // FIXME: this restriction should be lifted
+        fmt->range      = AVCOL_RANGE_JPEG; // FIXME: this restriction should be lifted
     }
+
+    if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
+        fmt->range = AVCOL_RANGE_UNSPECIFIED;
 
     switch (av_pix_fmt_desc_get_id(desc)) {
     case AV_PIX_FMT_YUVJ420P:
