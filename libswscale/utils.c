@@ -1700,7 +1700,7 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
     /* unscaled special cases */
     if (unscaled && !usesHFilter && !usesVFilter &&
         (sws->src_range == sws->dst_range || isAnyRGB(dstFormat) ||
-         isFloat(srcFormat) || isFloat(dstFormat) || isBayer(srcFormat))){
+         isBayer(srcFormat))){
 
         ff_get_unscaled_swscale(c);
 
