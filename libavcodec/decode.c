@@ -333,9 +333,9 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
     if (side && side->size >= 10) {
         int skip_samples = AV_RL32(side->data);
         if (skip_samples)
-            avci->skip_samples = skip_samples;
+            avci->skip_samples = av_rescale(skip_samples, frame->sample_rate, avctx->sample_rate);
         avci->skip_samples = FFMAX(0, avci->skip_samples);
-        discard_padding = AV_RL32(side->data + 4);
+        discard_padding = av_rescale(AV_RL32(side->data + 4), frame->sample_rate, avctx->sample_rate);
         av_log(avctx, AV_LOG_DEBUG, "skip %d / discard %d samples due to side data\n",
                avci->skip_samples, (int)discard_padding);
         skip_reason = AV_RL8(side->data + 8);
@@ -374,9 +374,9 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
         } else {
             av_samples_copy(frame->extended_data, frame->extended_data, 0, avci->skip_samples,
                             frame->nb_samples - avci->skip_samples, avctx->ch_layout.nb_channels, frame->format);
-            if (avctx->pkt_timebase.num && avctx->sample_rate) {
+            if (avctx->pkt_timebase.num && frame->sample_rate) {
                 int64_t diff_ts = av_rescale_q(avci->skip_samples,
-                                               (AVRational){1, avctx->sample_rate},
+                                               (AVRational){1, frame->sample_rate},
                                                avctx->pkt_timebase);
                 if (diff_ts != AV_NOPTS_VALUE) {
                     if (frame->pts != AV_NOPTS_VALUE)
@@ -411,7 +411,7 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
         } else {
             if (avctx->pkt_timebase.num && avctx->sample_rate) {
                 int64_t diff_ts = av_rescale_q(frame->nb_samples - discard_padding,
-                                               (AVRational){1, avctx->sample_rate},
+                                               (AVRational){1, frame->sample_rate},
                                                avctx->pkt_timebase);
                 frame->duration = diff_ts == AV_NOPTS_VALUE ? 0 : diff_ts;
             } else
