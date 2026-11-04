@@ -26,6 +26,7 @@
 #include <libavutil/mem.h>
 
 #include "filters.h"
+#include "swscale_internal.h"
 
 #ifdef _WIN32
 #  define j1 _j1
@@ -284,13 +285,13 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     filter->num_weights = (size_t) params->dst_size * filter->filter_size;
     const size_t padded = filter->num_weights +
                           (size_t) filter->filter_size * SWS_FILTER_PAD_ROWS;
-    filter->weights = av_refstruct_allocz(padded * sizeof(*filter->weights));
+    filter->weights = ff_refstruct_calloc(padded, sizeof(*filter->weights));
     if (!filter->weights) {
         av_refstruct_unref(&filter);
         return AVERROR(ENOMEM);
     }
 
-    filter->offsets = av_refstruct_allocz(params->dst_size * sizeof(*filter->offsets));
+    filter->offsets = ff_refstruct_calloc(params->dst_size, sizeof(*filter->offsets));
     if (!filter->offsets) {
         av_refstruct_unref(&filter);
         return AVERROR(ENOMEM);
