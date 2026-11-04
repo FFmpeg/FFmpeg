@@ -919,8 +919,12 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
 
     if(range_override_needed(sws->dst_format))
         dstRange = 0;
+    else if (isFloat(sws->dst_format))
+        dstRange = 1; /* float gray formats are always full range */
     if(range_override_needed(sws->src_format))
         srcRange = 0;
+    else if (isFloat(sws->src_format))
+        srcRange = 1;
 
     if (sws->src_range != srcRange ||
         sws->dst_range != dstRange ||
