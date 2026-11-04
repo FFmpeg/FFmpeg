@@ -2912,8 +2912,7 @@ static int mka_parse_audio(MatroskaTrack *track, AVStream *st,
     if (track->codec_delay > 0) {
         par->initial_padding = av_rescale_q(track->codec_delay,
                                             (AVRational){1, 1000000000},
-                                            (AVRational){1, par->codec_id == AV_CODEC_ID_OPUS ?
-                                                            48000 : par->sample_rate});
+                                            (AVRational){1, par->sample_rate});
         sti->skip_samples = par->initial_padding;
     }
     if (track->seek_preroll > 0) {
