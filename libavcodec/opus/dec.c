@@ -507,6 +507,7 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
         c->streams[0].silk_samplerate = get_silk_samplerate(pkt->config);
     }
 
+    frame->sample_rate = 48000;
     frame->nb_samples = coded_samples + delayed_samples;
 
     /* no input or buffered data => nothing to do */
@@ -685,7 +686,8 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
     int ret;
 
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
-    avctx->sample_rate = 48000;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 48000;
 
     c->fdsp = avpriv_float_dsp_alloc(0);
     if (!c->fdsp)
@@ -731,7 +733,7 @@ static av_cold int opus_decode_init(AVCodecContext *avctx)
         av_opt_set_int(s->swr, "out_sample_fmt",     avctx->sample_fmt,  0);
         av_opt_set_chlayout(s->swr, "in_chlayout",   &layout,            0);
         av_opt_set_chlayout(s->swr, "out_chlayout",  &layout,            0);
-        av_opt_set_int(s->swr, "out_sample_rate",    avctx->sample_rate, 0);
+        av_opt_set_int(s->swr, "out_sample_rate",    48000,              0);
         av_opt_set_int(s->swr, "filter_size",        16,                 0);
 
         ret = ff_silk_init(avctx, &s->silk, s->output_channels);
