@@ -29,6 +29,46 @@
 #include "ac3_parser_internal.h"
 #include "adts_header.h"
 
+#if CONFIG_AAC_PARSER
+/// divisible by every ADTS sampling rate
+#define ADTS_RATES_LCM 28224000
+
+/**
+ * Set the duration of an ADTS frame that does not match the probed stream,
+ * as when two streams are spliced together.
+ *
+ * The ratio of the ADTS sample count to the ADTS sample rate is the frame
+ * duration even for HE-AAC, so it is expressed in units of
+ * avctx->sample_rate and the remainder carried to the next frame.
+ */
+static void set_spliced_adts_duration(AVCodecParserContext *s1,
+                                      AVCodecContext *avctx,
+                                      const AACADTSHeaderInfo *hdr)
+{
+    AACAC3ParseContext *s = s1->priv_data;
+
+    if (avctx->frame_size <= 0 || avctx->sample_rate <= 0)
+        return;
+
+    int64_t num  = (int64_t)hdr->samples * avctx->sample_rate;
+    int mismatch = num / hdr->num_aac_frames !=
+                   (int64_t)avctx->frame_size * hdr->sample_rate;
+
+    if (mismatch) {
+        if (!s->spliced)
+            av_log(avctx, AV_LOG_WARNING,
+                   "ADTS frame duration changed mid-stream to "
+                   "%d samples at %d Hz\n", hdr->samples, hdr->sample_rate);
+        num = num * (ADTS_RATES_LCM / hdr->sample_rate) + s->duration_rem;
+        s1->duration    = num / ADTS_RATES_LCM;
+        s->duration_rem = num % ADTS_RATES_LCM;
+    } else {
+        s1->duration = 0;
+    }
+    s->spliced = mismatch;
+}
+#endif
+
 int ff_aac_ac3_parse(AVCodecParserContext *s1,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
@@ -52,6 +92,7 @@ get_next:
             if(s->remaining_size && !s->need_next_header){
                 i= s->remaining_size;
                 s->remaining_size = 0;
+                got_frame = avctx->codec_id == AV_CODEC_ID_AAC;
             }else{ //we need a header first
                 len=0;
                 for(i=s->remaining_size; i<buf_size; i++){
@@ -156,6 +197,7 @@ get_next:
                 avctx->profile = hdr.object_type - 1;
             /* ADTS does not support USAC */
             s1->key_frame = 1;
+            set_spliced_adts_duration(s1, avctx, &hdr);
             bit_rate = hdr.bit_rate;
 #endif
         }

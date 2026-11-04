@@ -39,6 +39,11 @@ typedef struct AACAC3ParseContext {
 
     int need_next_header;
     int frame_number;
+    /// remainder of the spliced ADTS frame durations, in units of
+    /// 1 / 28224000 of an avctx->sample_rate sample
+    int64_t duration_rem;
+    /// whether the last ADTS frame did not match the probed stream
+    int spliced;
 } AACAC3ParseContext;
 
 int ff_aac_ac3_parse(AVCodecParserContext *s1,
