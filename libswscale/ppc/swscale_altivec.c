@@ -27,7 +27,6 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/attributes.h"
-#include "libavutil/intfloat.h"
 #include "yuv2rgb_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
@@ -106,131 +105,11 @@
 
 #endif /* HAVE_BIGENDIAN */
 
-#define SHIFT  3
-
-#define get_pixel(val, bias, signedness) \
-    (bias + av_clip_ ## signedness ## 16(val >> shift))
-
-static void
-yuv2plane1_float_u(const int32_t *src, float *dest, int dstW, int start)
-{
-    static const int shift = 3;
-    static const float float_mult = 1.0f / 65535.0f;
-    int i, val;
-    uint16_t val_uint;
-
-    for (i = start; i < dstW; ++i){
-        val = src[i] + (1 << (shift - 1));
-        val_uint = get_pixel(val, 0, uint);
-        dest[i] = float_mult * (float)val_uint;
-    }
-}
-
-static void
-yuv2plane1_float_bswap_u(const int32_t *src, uint32_t *dest, int dstW, int start)
-{
-    static const int shift = 3;
-    static const float float_mult = 1.0f / 65535.0f;
-    int i, val;
-    uint16_t val_uint;
-
-    for (i = start; i < dstW; ++i){
-        val = src[i] + (1 << (shift - 1));
-        val_uint = get_pixel(val, 0, uint);
-        dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
-    }
-}
-
-static void yuv2plane1_float_altivec(const int32_t *src, float *dest, int dstW)
-{
-    const int dst_u = -(uintptr_t)dest & 3;
-    const int add = (1 << (SHIFT - 1));
-    const int clip = (1 << 16) - 1;
-    const float fmult = 1.0f / 65535.0f;
-    const vec_u32 vadd = (vec_u32) {add, add, add, add};
-    const vec_u32 vshift = (vec_u32) vec_splat_u32(SHIFT);
-    const vec_u32 vlargest = (vec_u32) {clip, clip, clip, clip};
-    const vec_f vmul = (vec_f) {fmult, fmult, fmult, fmult};
-    const vec_f vzero = (vec_f) {0, 0, 0, 0};
-    vec_u32 v;
-    vec_f vd;
-    int i;
-
-    yuv2plane1_float_u(src, dest, dst_u, 0);
-
-    for (i = dst_u; i < dstW - 3; i += 4) {
-        v = vec_ld(0, (const uint32_t *) &src[i]);
-        v = vec_add(v, vadd);
-        v = vec_sr(v, vshift);
-        v = vec_min(v, vlargest);
-
-        vd = vec_ctf(v, 0);
-        vd = vec_madd(vd, vmul, vzero);
-
-        vec_st(vd, 0, &dest[i]);
-    }
-
-    yuv2plane1_float_u(src, dest, dstW, i);
-}
-
-static void yuv2plane1_float_bswap_altivec(const int32_t *src, uint32_t *dest, int dstW)
-{
-    const int dst_u = -(uintptr_t)dest & 3;
-    const int add = (1 << (SHIFT - 1));
-    const int clip = (1 << 16) - 1;
-    const float fmult = 1.0f / 65535.0f;
-    const vec_u32 vadd = (vec_u32) {add, add, add, add};
-    const vec_u32 vshift = (vec_u32) vec_splat_u32(SHIFT);
-    const vec_u32 vlargest = (vec_u32) {clip, clip, clip, clip};
-    const vec_f vmul = (vec_f) {fmult, fmult, fmult, fmult};
-    const vec_f vzero = (vec_f) {0, 0, 0, 0};
-    const vec_u32 vswapbig = (vec_u32) {16, 16, 16, 16};
-    const vec_u16 vswapsmall = vec_splat_u16(8);
-    vec_u32 v;
-    vec_f vd;
-    int i;
-
-    yuv2plane1_float_bswap_u(src, dest, dst_u, 0);
-
-    for (i = dst_u; i < dstW - 3; i += 4) {
-        v = vec_ld(0, (const uint32_t *) &src[i]);
-        v = vec_add(v, vadd);
-        v = vec_sr(v, vshift);
-        v = vec_min(v, vlargest);
-
-        vd = vec_ctf(v, 0);
-        vd = vec_madd(vd, vmul, vzero);
-
-        vd = (vec_f) vec_rl((vec_u32) vd, vswapbig);
-        vd = (vec_f) vec_rl((vec_u16) vd, vswapsmall);
-
-        vec_st(vd, 0, (float *) &dest[i]);
-    }
-
-    yuv2plane1_float_bswap_u(src, dest, dstW, i);
-}
-
-#define yuv2plane1_float(template, dest_type, BE_LE) \
-static void yuv2plane1_float ## BE_LE ## _altivec(const int16_t *src, uint8_t *dest, \
-                                                  int dstW, \
-                                                  const uint8_t *dither, int offset) \
-{ \
-    template((const int32_t *)src, (dest_type *)dest, dstW); \
-}
-
-#if HAVE_BIGENDIAN
-yuv2plane1_float(yuv2plane1_float_altivec,       float,    BE)
-yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, LE)
-#else
-yuv2plane1_float(yuv2plane1_float_altivec,       float,    LE)
-yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, BE)
-#endif
-
 av_cold void ff_sws_init_swscale_altivec(SwsInternal *c)
 {
+#if HAVE_BIGENDIAN
     enum AVPixelFormat dstFormat = c->opts.dst_format;
 
-#if HAVE_BIGENDIAN
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
         c->hyScale = c->hcScale = hScale_real_altivec;
     }
@@ -240,12 +119,6 @@ av_cold void ff_sws_init_swscale_altivec(SwsInternal *c)
         c->yuv2planeX = yuv2planeX_altivec;
     }
 #endif
-
-    if (dstFormat == AV_PIX_FMT_GRAYF32BE) {
-        c->yuv2plane1 = yuv2plane1_floatBE_altivec;
-    } else if (dstFormat == AV_PIX_FMT_GRAYF32LE) {
-        c->yuv2plane1 = yuv2plane1_floatLE_altivec;
-    }
 
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */
