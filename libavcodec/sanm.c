@@ -791,18 +791,18 @@ static int old_codec23(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
 
     if (ctx->subversion < 2) {
         /* Rebel Assault 1: constant offset + 0xd0 */
-        for (i = 0; i < 256; i++)
+        for (i = 0; i < sizeof(lut); i++)
             lut[i] = (i + param + 0xd0) & 0xff;
     } else if (param2 == 256) {
-        if (bytestream2_get_bytes_left(gb) < 256)
+        if (bytestream2_get_bytes_left(gb) < sizeof(ctx->c23lut))
             return AVERROR_INVALIDDATA;
-        bytestream2_get_bufferu(gb, ctx->c23lut, 256);
-        memcpy(lut, ctx->c23lut, 256);
+        bytestream2_get_bufferu(gb, ctx->c23lut, sizeof(ctx->c23lut));
+        memcpy(lut, ctx->c23lut, sizeof(lut));
     } else if (param2 < 256) {
-        for (i = 0; i < 256; i++)
+        for (i = 0; i < sizeof(lut); i++)
             lut[i] = (i + param2) & 0xff;
     } else {
-        memcpy(lut, ctx->c23lut, 256);
+        memcpy(lut, ctx->c23lut, sizeof(lut));
     }
     if (bytestream2_get_bytes_left(gb) < 1)
         return 0;  /* some c23 frames just set up the LUT */
