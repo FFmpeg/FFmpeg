@@ -969,6 +969,10 @@ fate-filter-refcmp-psnr-rgb: CMD = refcmp_metadata psnr rgb24 0.002
 FATE_FILTER_REFCMP_METADATA-$(CONFIG_PSNR_FILTER) += fate-filter-refcmp-psnr-yuv
 fate-filter-refcmp-psnr-yuv: CMD = refcmp_metadata psnr yuv422p 0.0015
 
+FATE_FILTER_REFCMP_METADATA-$(call ALLYES, PSNR_FILTER VIGNETTE_FILTER) += fate-filter-vignette-wavelet fate-filter-vignette-wavelet-decimated
+fate-filter-vignette-wavelet:           CMD = refcmp_metadata psnr yuv420p 0.005 "vignette=angle=PI/2*0.8,vignette=angle=PI/2*0.8:mode=wavelet"
+fate-filter-vignette-wavelet-decimated: CMD = refcmp_metadata psnr yuv420p 0.005 "vignette=angle=PI/2*0.8,vignette=angle=PI/2*0.8:mode=wavelet:decimated=1"
+
 FATE_FILTER_REFCMP_METADATA-$(call ALLYES, SSIM_FILTER SCALE_FILTER) += fate-filter-refcmp-ssim-rgb
 fate-filter-refcmp-ssim-rgb: CMD = refcmp_metadata ssim rgb24 0.015
 

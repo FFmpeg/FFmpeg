@@ -1,0 +1,45 @@
+frame:0    pts:0       pts_time:0
+lavfi.psnr.mse.y=2.880483
+lavfi.psnr.psnr.y=43.536148
+lavfi.psnr.mse.u=6.717533
+lavfi.psnr.psnr.u=39.858704
+lavfi.psnr.mse.v=4.321466
+lavfi.psnr.psnr.v=41.774490
+lavfi.psnr.mse_avg=3.760155
+lavfi.psnr.psnr_avg=42.378746
+frame:1    pts:1       pts_time:1
+lavfi.psnr.mse.y=3.776417
+lavfi.psnr.psnr.y=42.360004
+lavfi.psnr.mse.u=6.281267
+lavfi.psnr.psnr.u=40.150330
+lavfi.psnr.mse.v=8.319067
+lavfi.psnr.psnr.v=38.930058
+lavfi.psnr.mse_avg=4.951000
+lavfi.psnr.psnr_avg=41.183876
+frame:2    pts:2       pts_time:2
+lavfi.psnr.mse.y=3.954583
+lavfi.psnr.psnr.y=42.159798
+lavfi.psnr.mse.u=6.069200
+lavfi.psnr.psnr.u=40.299488
+lavfi.psnr.mse.v=6.192867
+lavfi.psnr.psnr.v=40.211887
+lavfi.psnr.mse_avg=4.680067
+lavfi.psnr.psnr_avg=41.428284
+frame:3    pts:3       pts_time:3
+lavfi.psnr.mse.y=3.155767
+lavfi.psnr.psnr.y=43.139755
+lavfi.psnr.mse.u=7.179934
+lavfi.psnr.psnr.u=39.569599
+lavfi.psnr.mse.v=8.107333
+lavfi.psnr.psnr.v=39.042023
+lavfi.psnr.mse_avg=4.651722
+lavfi.psnr.psnr_avg=41.454666
+frame:4    pts:4       pts_time:4
+lavfi.psnr.mse.y=3.327617
+lavfi.psnr.psnr.y=42.909470
+lavfi.psnr.mse.u=4.326334
+lavfi.psnr.psnr.u=41.769604
+lavfi.psnr.mse.v=6.136133
+lavfi.psnr.psnr.v=40.251854
+lavfi.psnr.mse_avg=3.962156
+lavfi.psnr.psnr_avg=42.151489
