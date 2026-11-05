@@ -144,10 +144,10 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
         else
             block_samples = avctx->sample_rate;
 
-        while (block_samples * avctx->ch_layout.nb_channels > WV_MAX_SAMPLES)
+        while (block_samples * (int64_t)avctx->ch_layout.nb_channels > WV_MAX_SAMPLES)
             block_samples /= 2;
 
-        while (block_samples * avctx->ch_layout.nb_channels < 40000)
+        while (block_samples * (int64_t)avctx->ch_layout.nb_channels < 40000)
             block_samples *= 2;
         avctx->frame_size = block_samples;
     } else if (avctx->frame_size && (avctx->frame_size < 128 ||
