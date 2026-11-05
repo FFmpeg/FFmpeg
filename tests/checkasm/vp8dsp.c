@@ -262,7 +262,7 @@ static void check_mc(VP8DSPContext *d)
     BUF_RECT(uint8_t, dst0, 16, 16);
     BUF_RECT(uint8_t, dst1, 16, 16);
     int type, k, dx, dy;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t,
+    declare_func(void, uint8_t *, ptrdiff_t,
                       const uint8_t *, ptrdiff_t, int, int, int);
 
     for (type = 0; type < 2; type++) {

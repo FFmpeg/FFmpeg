@@ -146,7 +146,8 @@ filter_h6_shuf1: db 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5,  8, 6,  9, 7, 10
 filter_h6_shuf2: db 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6,  9, 7, 10, 8, 11
 filter_h6_shuf3: db 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11, 9, 12
 
-filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7, 7,  8
+filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8
+filter_h2_shuf2: db 0, 1, 1, 2, 2, 3, 3, 4, 8, 9, 9, 10, 10, 11, 11, 12
 
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
@@ -646,6 +647,8 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
 
 %macro FILTER_BILINEAR 1
 %if cpuflag(ssse3)
+%define mov8 movq
+%define mov4 movd
 cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
 %if PIC
@@ -653,10 +656,10 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
 %endif
     pxor      m4, m4
     mova      m3, [bilinear_filter_vb+myq-16]
-    movh      m0, [srcq+srcstrideq*0]
+    mov%1     m0, [srcq+srcstrideq*0]
 .nextrow:
-    movh      m1, [srcq+srcstrideq*1]
-    movh      m2, [srcq+srcstrideq*2]
+    mov%1     m1, [srcq+srcstrideq*1]
+    mov%1     m2, [srcq+srcstrideq*2]
     punpcklbw m0, m1
     punpcklbw m1, m2
     pmaddubsw m0, m3
@@ -666,11 +669,11 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
     psraw     m1, 2
     pavgw     m0, m4
     pavgw     m1, m4
-%if mmsize==8
+%if %1 == 4
     packuswb  m0, m0
     packuswb  m1, m1
-    movh   [dstq+dststrideq*0], m0
-    movh   [dstq+dststrideq*1], m1
+    movd   [dstq+dststrideq*0], m0
+    movd   [dstq+dststrideq*1], m1
 %else
     packuswb  m0, m1
     movh   [dstq+dststrideq*0], m0
@@ -723,9 +726,14 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride
     lea  picregq, [bilinear_filter_vb_m]
 %endif
     pxor      m4, m4
+%if %1 != 4
     mova      m2, [filter_h2_shuf]
+%else
+    mova      m2, [filter_h2_shuf2]
+%endif
     mova      m3, [bilinear_filter_vb+mxq-16]
 .nextrow:
+%if %1 != 4
     movu      m0, [srcq+srcstrideq*0]
     movu      m1, [srcq+srcstrideq*1]
     pshufb    m0, m2
@@ -737,15 +745,21 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride
     psraw     m1, 2
     pavgw     m0, m4
     pavgw     m1, m4
-%if mmsize==8
-    packuswb  m0, m0
-    packuswb  m1, m1
-    movh   [dstq+dststrideq*0], m0
-    movh   [dstq+dststrideq*1], m1
-%else
     packuswb  m0, m1
     movh   [dstq+dststrideq*0], m0
     movhps [dstq+dststrideq*1], m0
+%else
+    movq      m0, [srcq+srcstrideq*0]
+    movhps    m0, [srcq+srcstrideq*1]
+    pshufb    m0, m2
+    pmaddubsw m0, m3
+    lea     srcq, [srcq+srcstrideq*2]
+    psrlw     m0, 2
+    pavgw     m0, m4
+    packuswb  m0, m0
+    movd   [dstq+dststrideq*0], m0
+    psrldq    m0, 4
+    movd   [dstq+dststrideq*1], m0
 %endif
 %else ; cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, height, mx, picreg
@@ -790,9 +804,8 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
 
 INIT_XMM sse2
 FILTER_BILINEAR 8
-INIT_MMX ssse3
-FILTER_BILINEAR 4
 INIT_XMM ssse3
+FILTER_BILINEAR 4
 FILTER_BILINEAR 8
 
 INIT_XMM sse2
