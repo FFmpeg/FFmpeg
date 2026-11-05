@@ -31,11 +31,11 @@
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
-#include "avformat.h"
-#include "avio_internal.h"
-#include "internal.h"
-#include "mux.h"
-#include "version.h"
+#include "libavformat/avformat.h"
+#include "libavformat/avio_internal.h"
+#include "libavformat/internal.h"
+#include "libavformat/mux.h"
+#include "libavformat/version.h"
 #include "libavformat/vorbis/comment.h"
 
 #define MAX_PAGE_SIZE 65025

@@ -30,12 +30,12 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/vorbis_parser.h"
 
-#include "avformat.h"
-#include "demux.h"
-#include "internal.h"
-#include "oggdec.h"
+#include "libavformat/avformat.h"
+#include "libavformat/demux.h"
+#include "libavformat/internal.h"
+#include "libavformat/ogg/mapping.h"
 #include "libavformat/vorbis/comment.h"
-#include "replaygain.h"
+#include "libavformat/replaygain.h"
 
 /*
  * Parse the vorbis header

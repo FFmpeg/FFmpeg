@@ -22,9 +22,9 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavcodec/dirac.h"
-#include "avformat.h"
-#include "internal.h"
-#include "oggdec.h"
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
+#include "libavformat/ogg/mapping.h"
 
 static int dirac_header(AVFormatContext *s, int idx)
 {

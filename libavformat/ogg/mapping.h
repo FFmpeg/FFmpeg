@@ -22,10 +22,10 @@
     DEALINGS IN THE SOFTWARE.
 **/
 
-#ifndef AVFORMAT_OGGDEC_H
-#define AVFORMAT_OGGDEC_H
+#ifndef AVFORMAT_OGG_MAPPING_H
+#define AVFORMAT_OGG_MAPPING_H
 
-#include "avformat.h"
+#include "libavformat/avformat.h"
 
 struct ogg_codec {
     const int8_t *magic;
@@ -188,4 +188,4 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
     return pts;
 }
 
-#endif /* AVFORMAT_OGGDEC_H */
+#endif /* AVFORMAT_OGG_MAPPING_H */

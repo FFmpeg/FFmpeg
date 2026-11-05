@@ -26,9 +26,9 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavcodec/get_bits.h"
-#include "avformat.h"
-#include "internal.h"
-#include "oggdec.h"
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
+#include "libavformat/ogg/mapping.h"
 #include "libavformat/vorbis/comment.h"
 
 typedef struct TheoraParams {
