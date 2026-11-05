@@ -1,0 +1,6 @@
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_dvd
+#sample_rate 0: 48000
+#channel_layout_name 0: mono
+0,          0,          0,      168,      507, 0x9073936f

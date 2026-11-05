@@ -184,3 +184,22 @@ $(FATE_ACODEC): tests/data/asynth-44100-2.wav
 
 FATE_AVCONV += $(FATE_ACODEC)
 fate-acodec: $(FATE_ACODEC)
+
+# Exercise encoder boundary cases without external samples.
+AUDIO_ENCODER_BOUNDARY_DEPS = LAVFI_INDEV SINE_FILTER ATRIM_FILTER \
+                              PCM_S16LE_DECODER FRAMECRC_MUXER PIPE_PROTOCOL
+
+FATE_AUDIO_ENCODER_BOUNDARY-$(call ALLYES, $(AUDIO_ENCODER_BOUNDARY_DEPS) PCM_DVD_ENCODER ARESAMPLE_FILTER) += fate-audio-enc-pcm-dvd-short-tail
+fate-audio-enc-pcm-dvd-short-tail: CMD = framecrc -auto_conversion_filters -f lavfi -i sine=r=48000 -af atrim=end_sample=171 -c:a pcm_dvd -sample_fmt s32
+
+FATE_AUDIO_ENCODER_BOUNDARY-$(call ALLYES, $(AUDIO_ENCODER_BOUNDARY_DEPS) TTA_ENCODER) += fate-audio-enc-tta-one-sample
+fate-audio-enc-tta-one-sample: CMD = framecrc -f lavfi -i sine=r=44100 -af atrim=end_sample=1 -c:a tta
+
+FATE_AUDIO_ENCODER_BOUNDARY-$(call ALLYES, $(AUDIO_ENCODER_BOUNDARY_DEPS) ROQ_DPCM_ENCODER) += fate-audio-enc-roq-early-flush
+fate-audio-enc-roq-early-flush: CMD = framecrc -f lavfi -i sine=r=22050 -af atrim=end_sample=2205 -c:a roq_dpcm
+
+FATE_AUDIO_ENCODER_BOUNDARY-$(call ALLYES, $(AUDIO_ENCODER_BOUNDARY_DEPS) ADPCM_MS_ENCODER) += fate-audio-enc-adpcm-ms-mono-trellis
+fate-audio-enc-adpcm-ms-mono-trellis: CMD = framecrc -f lavfi -i sine=r=44100 -af atrim=end_sample=2036 -c:a adpcm_ms -trellis 5
+
+FATE_FFMPEG += $(FATE_AUDIO_ENCODER_BOUNDARY-yes)
+fate-acodec fate-audio-encoder-boundary: $(FATE_AUDIO_ENCODER_BOUNDARY-yes)
