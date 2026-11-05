@@ -782,9 +782,9 @@ static int adpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (!buf)
                 return AVERROR(ENOMEM);
             if (channels == 1) {
-                adpcm_compress_trellis(avctx, samples, buf, &c->status[0], n,
+                adpcm_compress_trellis(avctx, samples, buf, &c->status[0], 2 * n,
                                        channels);
-                for (int i = 0; i < n; i += 2)
+                for (int i = 0; i < 2 * n; i += 2)
                     *dst++ = (buf[i] << 4) | buf[i + 1];
             } else {
                 adpcm_compress_trellis(avctx, samples,     buf,
