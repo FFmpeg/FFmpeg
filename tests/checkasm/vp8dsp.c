@@ -120,7 +120,7 @@ static void check_idct(VP8DSPContext *d, bool is_vp7)
     LOCAL_ALIGNED_16(int16_t, subcoef0, [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [4 * 4]);
     int dc;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, ptrdiff_t stride);
+    declare_func(void, uint8_t *dst, int16_t *block, ptrdiff_t stride);
 
     randomize_buffers(src, dst, 4, coef);
 

@@ -149,8 +149,8 @@ filter_h6_shuf3: db 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11, 9, 12
 filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6,  6,  7,  7,  8
 filter_h2_shuf2: db 0, 1, 1, 2, 2, 3, 3, 4, 8, 9, 9, 10, 10, 11, 11, 12
 
-pw_20091: times 4 dw 20091
-pw_17734: times 4 dw 17734
+pw_20091: times 8 dw 20091
+pw_17734: times 8 dw 17734
 pw_3_3_0_0: times 2 dw 3, 3, 0, 0
 
 cextern pw_4
@@ -990,63 +990,81 @@ cglobal vp8_idct_dc_add4uv, 3, 3, 6, dst, block, stride
 ; void ff_vp8_idct_add_<opt>(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 ;-----------------------------------------------------------------------------
 
-; calculate %1=mul_35468(%1)-mul_20091(%2); %2=mul_20091(%1)+mul_35468(%2)
-;           this macro assumes that m6/m7 have words for 20091/17734 loaded
-%macro VP8_MULTIPLY_SUMSUB 4
-    mova      %3, %1
-    mova      %4, %2
-    pmulhw    %3, m6 ;20091(1)
-    pmulhw    %4, m6 ;20091(2)
-    paddw     %3, %1
-    paddw     %4, %2
-    paddw     %1, %1
-    paddw     %2, %2
-    pmulhw    %1, m7 ;35468(1)
-    pmulhw    %2, m7 ;35468(2)
-    psubw     %1, %4
-    paddw     %2, %3
+; calculate %1=mul_20091(low %1)+mul_35468(high %1), %2=mul_35468(low %1)-mul_20091(high %1);
+;           this macro assumes that m5/m6 have words for 17734/20091 loaded
+%macro VP8_MULTIPLY_SUMSUB 3
+    pmulhw     %3, %1, m6  ; 20091(1, 3)
+    paddw      %3, %1      ; MUL_20091(1, 3)
+    paddw      %1, %1
+    pmulhw     %1, m5      ; MUL_35468(1, 3)
+    MOVHL      %2, %3      ; MUL_20091(3)
+    psubw      %2, %1      ; MUL_20091(3)-MUL_35468(1)=-t2
+    punpckhqdq %1, %1
+    paddw      %1, %3      ; MUL_35468(3)+MUL_20091(1)=t3
 %endmacro
 
 ; calculate x0=%1+%3; x1=%1-%3
-;           x2=mul_35468(%2)-mul_20091(%4); x3=mul_20091(%2)+mul_35468(%4)
+;           Inputs 2 and 4 are supposed to be contained in the low and high half of %2
+;           x2=mul_35468(2)-mul_20091(4); x3=mul_20091(2)+mul_35468(4)
 ;           %1=x0+x3 (tmp0); %2=x1+x2 (tmp1); %3=x1-x2 (tmp2); %4=x0-x3 (tmp3)
-;           %5/%6 are temporary registers
-;           we assume m6/m7 have constant words 20091/17734 loaded in them
-%macro VP8_IDCT_TRANSFORM4x4_1D 6
+;           %5 is a clobber reg
+;           we assume m5/m6 have constant words 17734/20091 loaded in them
+%macro VP8_IDCT_TRANSFORM4x4_1D 5
     SUMSUB_BA         w, %3,  %1,  %5     ;t0, t1
-    VP8_MULTIPLY_SUMSUB m%2, m%4, m%5,m%6 ;t2, t3
-    SUMSUB_BA         w, %4,  %3,  %5     ;tmp0, tmp3
-    SUMSUB_BA         w, %2,  %1,  %5     ;tmp1, tmp2
-    SWAP                 %4,  %1
+    VP8_MULTIPLY_SUMSUB m%2, m%4, m%5     ;t3, -t2
+
+    SUMSUB_BA         w, %2,  %3,  %5     ;tmp0=t0+t3, tmp3=t0-t3
+    SUMSUB_BA         w, %4,  %1,  %5     ;tmp2=-t2+t1, tmp1=t1+t2
+    SWAP                 %1,  %2          ; %1 = tmp0, %2 = tmp1
     SWAP                 %4,  %3
 %endmacro
 
-INIT_MMX sse
-cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
+%macro VP8_STORE_DIFFx2 8 ; add, tmp1, tmp2, tmp3, zero, shift, source, stride
+    movd       %3, [%7]
+    movd       %4, [%7+%8]
+    psraw      %1, %6
+    MOVHL      %2, %1
+    punpcklbw  %3, %5
+    punpcklbw  %4, %5
+    paddw      %3, %1
+    paddw      %4, %2
+    packuswb   %3, %5
+    packuswb   %4, %5
+    movd     [%7], %3
+    movd  [%7+%8], %4
+%endmacro
+
+INIT_XMM sse2
+cglobal vp8_idct_add, 3, 3, 7, dst, block, stride
     ; load block data
     movq         m0, [blockq+ 0]
     movq         m1, [blockq+ 8]
     movq         m2, [blockq+16]
-    movq         m3, [blockq+24]
-    movq         m6, [pw_20091]
-    movq         m7, [pw_17734]
-    xorps      xmm0, xmm0
-    movaps [blockq+ 0], xmm0
-    movaps [blockq+16], xmm0
+    movhps       m1, [blockq+24]
+    mova         m6, [pw_20091]
+    mova         m5, [pw_17734]
+    xorps        m4, m4
+    movaps [blockq+ 0], m4
+    movaps [blockq+16], m4
 
     ; actual IDCT
-    VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4, 5
-    TRANSPOSE4x4W            0, 1, 2, 3, 4
+    VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4
+    punpcklwd               m0, m1
+    punpcklwd               m2, m3
+    SBUTTERFLY              dq, 0, 2, 1
+    punpckhqdq              m1, m0, m2
     paddw        m0, [pw_4]
-    VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4, 5
-    TRANSPOSE4x4W            0, 1, 2, 3, 4
+    VP8_IDCT_TRANSFORM4x4_1D 0, 1, 2, 3, 4
+    punpcklwd               m0, m1
+    punpcklwd               m2, m3
+    SBUTTERFLY              dq, 0, 2, 1
 
     ; store
     pxor         m4, m4
     DEFINE_ARGS dst1, dst2, stride
     lea       dst2q, [dst1q+2*strideq]
-    STORE_DIFFx2 m0, m1, m6, m7, m4, 3, dst1q, strideq, movd
-    STORE_DIFFx2 m2, m3, m6, m7, m4, 3, dst2q, strideq, movd
+    VP8_STORE_DIFFx2 m0, m1, m5, m6, m4, 3, dst1q, strideq
+    VP8_STORE_DIFFx2 m2, m3, m5, m6, m4, 3, dst2q, strideq
 
     RET
 
