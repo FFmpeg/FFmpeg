@@ -90,13 +90,15 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     TTAEncContext *s = avctx->priv_data;
     PutBitContext pb;
     int ret, i, out_bytes, cur_chan, res, samples;
-    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->ch_layout.nb_channels * s->bps;
+    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->ch_layout.nb_channels * s->bps + 4;
+    int64_t bits_left;
 
 pkt_alloc:
     cur_chan = 0, res = 0, samples = 0;
     if ((ret = ff_alloc_packet(avctx, avpkt, pkt_size)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
+    bits_left = 8 * (pkt_size - 4);
 
     // init per channel states
     for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
@@ -109,7 +111,7 @@ pkt_alloc:
         TTAChannel *c = &s->ch_ctx[cur_chan];
         TTAFilter *filter = &c->filter;
         TTARice *rice = &c->rice;
-        uint32_t k, unary, outval;
+        uint32_t k, unary = 0, outval;
         int32_t value, temp;
 
         value = get_sample(frame, samples++, avctx->sample_fmt);
@@ -153,23 +155,25 @@ pkt_alloc:
                 rice->k1++;
 
             unary = 1 + (outval >> k);
-            if (unary + 100LL > put_bits_left(&pb)) {
-                if (pkt_size < INT_MAX/2) {
-                    pkt_size *= 2;
-                    av_packet_unref(avpkt);
-                    goto pkt_alloc;
-                } else
-                    return AVERROR(ENOMEM);
+        }
+
+        if (unary + 1LL + k > bits_left) {
+            if (pkt_size < INT_MAX/2) {
+                pkt_size *= 2;
+                av_packet_unref(avpkt);
+                goto pkt_alloc;
+            } else
+                return AVERROR(ENOMEM);
+        }
+        bits_left -= unary + 1 + k;
+        while (unary) {
+            if (unary > 31) {
+                put_bits(&pb, 31, 0x7FFFFFFF);
+                unary -= 31;
+            } else {
+                put_bits(&pb, unary, (1U << unary) - 1);
+                unary = 0;
             }
-            do {
-                if (unary > 31) {
-                    put_bits(&pb, 31, 0x7FFFFFFF);
-                    unary -= 31;
-                } else {
-                    put_bits(&pb, unary, (1U << unary) - 1);
-                    unary = 0;
-                }
-            } while (unary);
         }
 
         put_bits(&pb, 1, 0);
