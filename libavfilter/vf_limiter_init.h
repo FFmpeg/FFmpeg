@@ -48,7 +48,7 @@ static void limiter##n(const uint8_t *ssrc, uint8_t *ddst,      \
 LIMITER(8,  uint8_t)
 LIMITER(16, uint16_t)
 
-static av_unused void ff_limiter_init(LimiterContext *s, int depth)
+av_unused static void ff_limiter_init(LimiterContext *s, int depth)
 {
     if (depth == 8) {
         s->dsp.limiter = limiter8;
