@@ -20,7 +20,6 @@
  */
 #include "faanidct.h"
 #include "libavutil/common.h"
-#include "libavutil/emms.h"
 
 /* To allow switching to double. */
 typedef float FLOAT;
@@ -129,8 +128,6 @@ void ff_faanidct(int16_t block[64]){
     FLOAT temp[64];
     int i;
 
-    emms_c();
-
     for(i=0; i<64; i++)
         temp[i] = block[i] * prescale[i];
 
@@ -143,8 +140,6 @@ void ff_faanidct_add(uint8_t *dest, ptrdiff_t line_size, int16_t block[64])
     FLOAT temp[64];
     int i;
 
-    emms_c();
-
     for(i=0; i<64; i++)
         temp[i] = block[i] * prescale[i];
 
@@ -156,8 +151,6 @@ void ff_faanidct_put(uint8_t *dest, ptrdiff_t line_size, int16_t block[64])
 {
     FLOAT temp[64];
     int i;
-
-    emms_c();
 
     for(i=0; i<64; i++)
         temp[i] = block[i] * prescale[i];
