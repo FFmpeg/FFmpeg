@@ -309,7 +309,7 @@ static int vorbis_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     AVVorbisParseContext *s = s1->priv_data;
     int duration;
 
-    if (!s->valid_extradata && avctx->extradata && avctx->extradata_size) {
+    if (!s->extradata_parsed && avctx->extradata && avctx->extradata_size) {
         ff_vorbis_parse_init(s, avctx->extradata, avctx->extradata_size);
     }
     if (!s->valid_extradata)
