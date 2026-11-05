@@ -131,7 +131,7 @@ int ff_vorbis_update_metadata(AVFormatContext *s, AVStream *st,
 
     /* New metadata packet; release old data. */
     av_dict_free(&st->metadata);
-    ret = ff_vorbis_stream_comment(s, st, buf, size);
+    ret = ff_vorbis_comment_read_stream(s, st, buf, size);
     if (ret < 0)
         return ret;
 

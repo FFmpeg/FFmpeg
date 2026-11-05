@@ -1097,7 +1097,7 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
         snprintf(buf, sizeof(buf), "0x%"PRIx64, par->ch_layout.u.mask);
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
-        len = ff_vorbiscomment_length(dict, vendor, NULL, 0);
+        len = ff_vorbis_comment_length(dict, vendor, NULL, 0);
         if (len < 0)
             return len;
         av_assert1(len < (1 << 24) - 4);
@@ -1105,7 +1105,7 @@ static int put_flac_codecpriv(AVFormatContext *s, AVIOContext *pb,
         avio_w8(pb, 0x84);
         avio_wb24(pb, len);
 
-        ff_vorbiscomment_write(pb, dict, vendor, NULL, 0);
+        ff_vorbis_comment_write(pb, dict, vendor, NULL, 0);
 
         av_dict_free(&dict);
     }

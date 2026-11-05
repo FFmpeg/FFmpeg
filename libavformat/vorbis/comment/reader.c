@@ -70,10 +70,10 @@ static int ogm_chapter(AVFormatContext *as, const uint8_t *key, const uint8_t *v
     return 1;
 }
 
-int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
-                             const uint8_t *buf, int size)
+int ff_vorbis_comment_read_stream(AVFormatContext *as, AVStream *st,
+                                  const uint8_t *buf, int size)
 {
-    int updates = ff_vorbis_comment(as, &st->metadata, buf, size, 1);
+    int updates = ff_vorbis_comment_read(as, &st->metadata, buf, size, 1);
 
     if (updates > 0) {
         st->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
@@ -145,9 +145,9 @@ end:
     return 0;
 }
 
-int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
-                      const uint8_t *buf, int size,
-                      int parse_picture)
+int ff_vorbis_comment_read(AVFormatContext *as, AVDictionary **m,
+                           const uint8_t *buf, int size,
+                           int parse_picture)
 {
     const uint8_t *p   = buf;
     const uint8_t *end = buf + size;
@@ -188,7 +188,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
         av_log(as, AV_LOG_INFO,
                "truncated comment header, %i comments not found\n", n);
 
-    ff_metadata_conv(m, NULL, ff_vorbiscomment_metadata_conv);
+    ff_metadata_conv(m, NULL, ff_vorbis_comment_metadata_conv);
 
     return updates;
 }

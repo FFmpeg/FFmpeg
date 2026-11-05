@@ -27,20 +27,20 @@
 
 /**
  * Calculate the length in bytes of a VorbisComment. This is the minimum
- * size required by ff_vorbiscomment_write().
+ * size required by ff_vorbis_comment_write().
  *
  * @param m The metadata structure to be parsed. For no metadata, set to NULL.
  * @param vendor_string The vendor string to be added into the VorbisComment.
  * For no string, set to an empty string.
  * @return The length in bytes.
  */
-int ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
-                            AVChapter **chapters, unsigned int nb_chapters);
+int ff_vorbis_comment_length(const AVDictionary *m, const char *vendor_string,
+                             AVChapter **chapters, unsigned int nb_chapters);
 
 /**
  * Write a VorbisComment into an AVIOContext. The output size can be obtained
  * in advance by passing the same chapters, AVDictionary and vendor_string to
- * ff_vorbiscomment_length()
+ * ff_vorbis_comment_length()
  *
  * @param pb The AVIOContext to write the output.
  * @param m The metadata struct to write.
@@ -48,11 +48,11 @@ int ff_vorbiscomment_length(const AVDictionary *m, const char *vendor_string,
  * @param chapters The chapters to write.
  * @param nb_chapters The number of chapters to write.
  */
-int ff_vorbiscomment_write(AVIOContext *pb, const AVDictionary *m,
-                           const char *vendor_string,
-                           AVChapter **chapters, unsigned int nb_chapters);
+int ff_vorbis_comment_write(AVIOContext *pb, const AVDictionary *m,
+                            const char *vendor_string,
+                            AVChapter **chapters, unsigned int nb_chapters);
 
-extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
+extern const AVMetadataConv ff_vorbis_comment_metadata_conv[];
 
 /**
  * Parse Vorbis comments
@@ -62,8 +62,8 @@ extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
  *        by a single byte (not counted in size).
  *        All changes will have been reverted upon return.
  */
-int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
-                      const uint8_t *buf, int size, int parse_picture);
+int ff_vorbis_comment_read(AVFormatContext *ms, AVDictionary **m,
+                           const uint8_t *buf, int size, int parse_picture);
 
 /**
  * Parse Vorbis comments and add metadata to an AVStream
@@ -73,7 +73,7 @@ int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
  *        by a single byte (not counted in size).
  *        All changes will have been reverted upon return.
  */
-int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
-                             const uint8_t *buf, int size);
+int ff_vorbis_comment_read_stream(AVFormatContext *as, AVStream *st,
+                                  const uint8_t *buf, int size);
 
 #endif /* AVFORMAT_VORBIS_COMMENT_H */

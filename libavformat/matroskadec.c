@@ -2183,7 +2183,7 @@ static int matroska_parse_flac(AVFormatContext *s,
             AVDictionary *dict = NULL;
             AVDictionaryEntry *chmask;
 
-            ff_vorbis_comment(s, &dict, p, block_size, 0);
+            ff_vorbis_comment_read(s, &dict, p, block_size, 0);
             chmask = av_dict_get(dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", NULL, 0);
             if (chmask) {
                 uint64_t mask = strtol(chmask->value, NULL, 0);

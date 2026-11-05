@@ -66,9 +66,9 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     int len;
 
-    ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
+    ff_metadata_conv(m, ff_vorbis_comment_metadata_conv, NULL);
 
-    len = ff_vorbiscomment_length(*m, vendor, NULL, 0);
+    len = ff_vorbis_comment_length(*m, vendor, NULL, 0);
     if (len < 0)
         return len;
     if (len >= ((1<<24) - 4))
@@ -76,7 +76,7 @@ static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
 
     avio_w8(pb, last_block ? 0x84 : 0x04);
     avio_wb24(pb, len);
-    ff_vorbiscomment_write(pb, *m, vendor, NULL, 0);
+    ff_vorbis_comment_write(pb, *m, vendor, NULL, 0);
 
     return 0;
 }
