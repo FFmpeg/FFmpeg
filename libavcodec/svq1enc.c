@@ -26,7 +26,6 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
-#include "libavutil/emms.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -653,7 +652,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                 s->frame_height / (i ? 4 : 1),
                                 pict->linesize[i],
                                 s->current_picture->linesize[i]);
-        emms_c();
         if (ret < 0)
             return ret;
     }
