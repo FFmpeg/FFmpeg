@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_VORBISCOMMENT_H
-#define AVFORMAT_VORBISCOMMENT_H
+#ifndef AVFORMAT_VORBIS_COMMENT_H
+#define AVFORMAT_VORBIS_COMMENT_H
 
-#include "avformat.h"
-#include "metadata.h"
+#include "libavformat/avformat.h"
+#include "libavformat/metadata.h"
 
 /**
  * Calculate the length in bytes of a VorbisComment. This is the minimum
@@ -54,4 +54,4 @@ int ff_vorbiscomment_write(AVIOContext *pb, const AVDictionary *m,
 
 extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
 
-#endif /* AVFORMAT_VORBISCOMMENT_H */
+#endif /* AVFORMAT_VORBIS_COMMENT_H */

@@ -37,7 +37,7 @@
 #include "flac_picture.h"
 #include "internal.h"
 #include "oggdec.h"
-#include "vorbiscomment.h"
+#include "libavformat/vorbis/comment.h"
 #include "replaygain.h"
 
 static int ogm_chapter(AVFormatContext *as, const uint8_t *key, const uint8_t *val)

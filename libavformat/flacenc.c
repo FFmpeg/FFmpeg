@@ -32,7 +32,7 @@
 #include "internal.h"
 #include "mux.h"
 #include "version.h"
-#include "vorbiscomment.h"
+#include "libavformat/vorbis/comment.h"
 
 
 typedef struct FlacMuxerContext {

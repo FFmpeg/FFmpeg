@@ -39,7 +39,7 @@
 #include "mux.h"
 #include "riff.h"
 #include "version.h"
-#include "vorbiscomment.h"
+#include "libavformat/vorbis/comment.h"
 #include "vvc.h"
 #include "wv.h"
 

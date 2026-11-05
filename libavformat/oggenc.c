@@ -36,7 +36,7 @@
 #include "internal.h"
 #include "mux.h"
 #include "version.h"
-#include "vorbiscomment.h"
+#include "libavformat/vorbis/comment.h"
 
 #define MAX_PAGE_SIZE 65025
 
