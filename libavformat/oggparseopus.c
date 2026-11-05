@@ -26,6 +26,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "oggdec.h"
+#include "libavformat/vorbis/comment.h"
 
 struct oggopus_private {
     int need_comments;

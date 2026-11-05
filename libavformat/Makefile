@@ -227,8 +227,8 @@ OBJS-$(CONFIG_FITS_DEMUXER)              += fitsdec.o
 OBJS-$(CONFIG_FITS_MUXER)                += fitsenc.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += flacdec.o rawdec.o \
                                             flac_picture.o   \
-                                            oggparsevorbis.o \
                                             replaygain.o     \
+                                            vorbis/comment/reader.o \
                                             vorbis/comment/writer.o
 OBJS-$(CONFIG_FLAC_MUXER)                += flacenc.o flacenc_header.o \
                                             vorbis/comment/writer.o
@@ -373,7 +373,7 @@ OBJS-$(CONFIG_M4V_DEMUXER)               += m4vdec.o rawdec.o
 OBJS-$(CONFIG_M4V_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o  \
                                             flac_picture.o rmsipr.o \
-                                            oggparsevorbis.o vorbis/comment/writer.o \
+                                            vorbis/comment/reader.o vorbis/comment/writer.o \
                                             qtpalette.o replaygain.o dovi_isom.o
 OBJS-$(CONFIG_MATROSKA_MUXER)            += matroskaenc.o matroska.o \
                                             flacenc_header.o vorbis/comment/writer.o \
@@ -457,7 +457,8 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += oggdec.o         \
                                             oggparsevorbis.o \
                                             oggparsevp8.o    \
                                             replaygain.o     \
-                                            vorbis/comment/writer.o  \
+                                            vorbis/comment/reader.o \
+                                            vorbis/comment/writer.o \
                                             flac_picture.o
 OBJS-$(CONFIG_OGA_MUXER)                 += oggenc.o \
                                             vorbis/comment/writer.o

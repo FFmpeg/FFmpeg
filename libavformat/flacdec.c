@@ -30,7 +30,7 @@
 #include "flac_picture.h"
 #include "internal.h"
 #include "rawdec.h"
-#include "oggdec.h"
+#include "libavformat/vorbis/comment.h"
 #include "replaygain.h"
 
 #define SEEKPOINT_SIZE 18

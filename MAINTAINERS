@@ -506,6 +506,7 @@ Muxers/Demuxers:
   tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   voc.c                                 Aurelien Jacobs
+  vorbis/comment/reader.c               David Conrad, Romain Beauxis
   wav.c                                 Michael Niedermayer
   wc3movie.c                            Mike Melanson
   webm dash (matroskaenc.c)             Vignesh Venkatasubramanian

@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "oggdec.h"
+#include "libavformat/vorbis/comment.h"
 
 struct speex_params {
     int packet_size;

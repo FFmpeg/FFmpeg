@@ -66,7 +66,7 @@
 #include "internal.h"
 #include "isom.h"
 #include "matroska.h"
-#include "oggdec.h"
+#include "libavformat/vorbis/comment.h"
 /* For ff_codec_get_id(). */
 #include "riff.h"
 #include "rmsipr.h"
