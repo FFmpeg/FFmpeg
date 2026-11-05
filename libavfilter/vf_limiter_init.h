@@ -25,23 +25,19 @@
 #include "limiter.h"
 
 #define LIMITER(n, type)                                        \
-static void limiter##n(const uint8_t *ssrc, uint8_t *ddst,      \
+static void limiter##n(const uint8_t *src8, uint8_t *dst8,      \
                        ptrdiff_t slinesize, ptrdiff_t dlinesize,\
                        int w, int h, int min, int max)          \
 {                                                               \
-    const type *src = (const type *)ssrc;                       \
-    type *dst = (type *)ddst;                                   \
-                                                                \
-    dlinesize /= sizeof(type);                                  \
-    slinesize /= sizeof(type);                                  \
-                                                                \
     for (int y = 0; y < h; y++) {                               \
+        const type *src = (const type *)src8;                   \
+        type *dst = (type *)dst8;                               \
         for (int x = 0; x < w; x++) {                           \
             dst[x] = av_clip(src[x], min, max);                 \
         }                                                       \
                                                                 \
-        dst += dlinesize;                                       \
-        src += slinesize;                                       \
+        dst8 += dlinesize;                                      \
+        src8 += slinesize;                                      \
     }                                                           \
 }
 
