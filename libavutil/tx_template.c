@@ -24,9 +24,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "attributes_internal.h"
 #include "mem.h"
 
+/* Hidden, so that assembly can address the tables PC-relatively even when
+ * libavutil is linked statically into a shared library. */
 #define TABLE_DEF(name, size) \
+    attribute_visibility_hidden \
     DECLARE_ALIGNED(32, TXSample, TX_TAB(ff_tx_tab_ ##name))[size]
 
 #define SR_POW2_TABLES \
