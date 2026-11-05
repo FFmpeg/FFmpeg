@@ -66,7 +66,7 @@ void checkasm_check_qpeldsp(void)
         TEST(avg_qpel_pixels_tab),
         TEST(put_no_rnd_qpel_pixels_tab),
     };
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
+    declare_func(void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
 
     ff_qpeldsp_init(&qdsp);
 
