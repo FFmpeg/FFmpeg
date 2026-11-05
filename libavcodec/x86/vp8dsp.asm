@@ -1045,8 +1045,8 @@ cglobal vp8_idct_add, 3, 3, 0, dst, block, stride
     pxor         m4, m4
     DEFINE_ARGS dst1, dst2, stride
     lea       dst2q, [dst1q+2*strideq]
-    STORE_DIFFx2 m0, m1, m6, m7, m4, 3, dst1q, strideq
-    STORE_DIFFx2 m2, m3, m6, m7, m4, 3, dst2q, strideq
+    STORE_DIFFx2 m0, m1, m6, m7, m4, 3, dst1q, strideq, movd
+    STORE_DIFFx2 m2, m3, m6, m7, m4, 3, dst2q, strideq, movd
 
     RET
 
