@@ -179,7 +179,7 @@ Codecs:
   avs2*                                 Huiwen Ren, Zhao Zhili
   bgmc.c, bgmc.h                        Thilo Borgmann
   binkaudio.c                           Peter Ross
-  cavs*                                 Stefan Gehrer
+  cavs*                                 Stefan Gehrer, Rainbaby
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cinepakenc.c                          Rl / Aetey G.T. AB
@@ -412,6 +412,7 @@ Muxers/Demuxers:
   bink.c                                Peter Ross
   boadec.c                              Michael Niedermayer
   caf*                                  Peter Ross
+  cavsvideodec.c                        Rainbaby
   codec2.c                              Tomas Härdin
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
