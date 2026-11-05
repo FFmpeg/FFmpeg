@@ -29,7 +29,6 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
@@ -1221,8 +1220,6 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 
     c->execute(c, dv_encode_video_segment, s->work_chunks, NULL,
                dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
-
-    emms_c();
 
     *got_packet = 1;
 
