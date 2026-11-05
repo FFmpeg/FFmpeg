@@ -40,11 +40,11 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavcodec/png.h"
-#include "avio_internal.h"
-#include "avlanguage.h"
-#include "demux.h"
-#include "id3v1.h"
-#include "id3v2.h"
+#include "libavformat/avio_internal.h"
+#include "libavformat/avlanguage.h"
+#include "libavformat/demux.h"
+#include "libavformat/id3v1.h"
+#include "libavformat/id3v2.h"
 
 const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
     { "COMM", "comment"      },
