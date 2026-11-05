@@ -37,7 +37,6 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"
@@ -1460,7 +1459,6 @@ static int skip_check(MPVMainEncContext *const m,
             }
         }
     }
-    emms_c();
 
     if (score)
         score64 = score;
@@ -2936,8 +2934,6 @@ int ff_mpv_reallocate_putbitbuffer(MPVEncContext *const s, size_t threshold, siz
             return AVERROR(ENOMEM);
         }
 
-        emms_c();
-
         av_fast_padded_malloc(&new_buffer, &new_buffer_size,
                               s->c.avctx->internal->byte_buffer_size + size_increase);
         if (!new_buffer)
@@ -3771,7 +3767,6 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         merge_context_after_me(s, s->c.enc_contexts[i]);
     m->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
     m->mb_var_sum    = s->me.   mb_var_sum_temp;
-    emms_c();
 
     if (s->me.scene_change_score > m->scenechange_threshold &&
         s->c.pict_type == AV_PICTURE_TYPE_P) {
@@ -3918,7 +3913,6 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             set_put_bits_buffer_size(&s->pb, FFMIN(s->c.enc_contexts[i]->pb.buf_end - s->pb.buf, INT_MAX/8-BUF_BITS));
         merge_context_after_encode(s, s->c.enc_contexts[i]);
     }
-    emms_c();
     return 0;
 }
 
@@ -4248,7 +4242,6 @@ static DECLARE_ALIGNED(16, int16_t, basis)[64][64];
 
 static void build_basis(uint8_t *perm){
     int i, j, x, y;
-    emms_c();
     for(i=0; i<8; i++){
         for(j=0; j<8; j++){
             for(y=0; y<8; y++){
