@@ -22,6 +22,7 @@ libavcodec/.*atrac9.* @lynne
 libavcodec/bink.* @pross
 libavcodec/bintext.* @pross
 libavcodec/.*bitpacked.* @lynne
+libavcodec/.*cavs.* @Rainbaby
 libavcodec/.*d3d12va.* @jianhuaw @tong1wu @younengxiao
 libavcodec/.*dirac.* @lynne
 libavcodec/.*dovi_rpu.* @haasn
@@ -137,6 +138,7 @@ libavformat/argo_.* @zane
 libavformat/bink.* @pross
 libavformat/bintext.* @pross
 libavformat/caf.* @pross
+libavformat/cavsvideo.* @Rainbaby
 libavformat/cine.* @pross
 libavformat/dsf.* @pross
 libavformat/eacdata.* @pross
@@ -236,6 +238,7 @@ doc/.* @GyanD
 
 # tests
 # =====
+tests/.*cavs.* @Rainbaby
 tests/checkasm/riscv/.* @Courmisch
 libavutil/tests/ambient_viewing_environment.* @MarcosAsh
 libavutil/tests/buffer.* @MarcosAsh
