@@ -26,7 +26,6 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/emms.h"
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264dec.h"
@@ -228,7 +227,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&cur->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
-    emms_c();
 
     h->current_slice = 0;
 

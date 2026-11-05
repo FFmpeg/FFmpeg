@@ -31,7 +31,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -133,8 +132,6 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
     offset[2] = (y >> vshift) * src->linesize[1];
     for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
         offset[i] = 0;
-
-    emms_c();
 
     avctx->draw_horiz_band(avctx, src, offset,
                            y, h->picture_structure, height);
