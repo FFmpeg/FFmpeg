@@ -85,13 +85,13 @@ SECTION .text
 
     paddw        m0, m6
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
-    pxor         m7, m7
-    mova    [%2+ 0], m7
-    mova    [%2+16], m7
+    pxor         m6, m6
+    mova    [%2+ 0], m6
+    mova    [%2+16], m6
 
-    STORE_DIFFx2 m0, m1, m4, m5, m7, 6, %1, %3, movd
+    STORE_DIFFx2 m0, m1, m4, m5, m6, 6, %1, %3, movd
     lea          %1, [%1+%3*2]
-    STORE_DIFFx2 m2, m3, m4, m5, m7, 6, %1, %3, movd
+    STORE_DIFFx2 m2, m3, m4, m5, m6, 6, %1, %3, movd
 %endmacro
 
 %macro IDCT8_1D 2
@@ -332,7 +332,7 @@ cglobal h264_idct8_add4_8, 5, 8 + npicregs, 10, dst1, block_offset, block, strid
     RET
 
 INIT_XMM sse2
-cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 8, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
+cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 7, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
 ; dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
 %if PIC
     lea     picregq, [scan8_mem]
@@ -695,7 +695,7 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 6
 
 INIT_XMM %1
 
-cglobal h264_idct_add_8, 3, 3, 8, dst_, block_, stride_
+cglobal h264_idct_add_8, 3, 3, 7, dst_, block_, stride_
     IDCT4_ADD    dst_q, block_q, stride_q
 RET
 
