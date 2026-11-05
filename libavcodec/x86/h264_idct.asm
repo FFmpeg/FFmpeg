@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* MMX/SSE2-optimized H.264 iDCT
+;* ASM-optimized H.264 iDCT
 ;*****************************************************************************
 ;* Copyright (C) 2004-2005 Michael Niedermayer, Loren Merritt
 ;* Copyright (C) 2003-2008 x264 project
@@ -76,27 +76,18 @@ SECTION .text
 
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     mova         m6, [pw_32]
-    %if mmsize == 8
-        TRANSPOSE4x4W 0, 1, 2, 3, 4
-    %else
-        punpcklwd m0, m1
-        punpcklwd m2, m3
-        SBUTTERFLY dq, 0, 2, 4
-        MOVHL m1, m0
-        MOVHL m3, m2
-    %endif
+
+    punpcklwd    m0, m1
+    punpcklwd    m2, m3
+    SBUTTERFLY   dq, 0, 2, 4
+    MOVHL        m1, m0
+    MOVHL        m3, m2
+
     paddw        m0, m6
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     pxor         m7, m7
-    %if mmsize == 16
-        mova    [%2+ 0], m7
-        mova    [%2+16], m7
-    %else
-        movq    [%2+ 0], m7
-        movq    [%2+ 8], m7
-        movq    [%2+16], m7
-        movq    [%2+24], m7
-    %endif
+    mova    [%2+ 0], m7
+    mova    [%2+16], m7
 
     STORE_DIFFx2 m0, m1, m4, m5, m7, 6, %1, %3, movd
     lea          %1, [%1+%3*2]
