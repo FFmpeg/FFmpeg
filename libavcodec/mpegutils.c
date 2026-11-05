@@ -22,7 +22,6 @@
 
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
-#include "libavutil/emms.h"
 #include "libavutil/frame.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -90,8 +89,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
     offset[2] = (y >> desc->log2_chroma_h) * src->linesize[1];
     for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
         offset[i] = 0;
-
-    emms_c();
 
     avctx->draw_horiz_band(avctx, src, offset,
                             y, picture_structure, h);
