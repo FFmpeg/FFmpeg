@@ -958,13 +958,15 @@ static int decode_lowdelay(DiracContext *s)
 
     if (s->threads_num_buf != avctx->thread_count ||
         s->thread_buf_size != coef_buf_size) {
-        s->threads_num_buf  = avctx->thread_count;
-        s->thread_buf_size  = coef_buf_size;
-        s->thread_buf       = av_realloc_f(s->thread_buf, avctx->thread_count, s->thread_buf_size);
-        if (!s->thread_buf) {
+        uint8_t *thread_buf = av_realloc_array(s->thread_buf, avctx->thread_count,
+                                               coef_buf_size);
+        if (!thread_buf) {
             av_log(s->avctx, AV_LOG_ERROR, "thread buffer allocation failure\n");
             return AVERROR(ENOMEM);
         }
+        s->thread_buf = thread_buf;
+        s->threads_num_buf = avctx->thread_count;
+        s->thread_buf_size = coef_buf_size;
     }
 
     align_get_bits(&s->gb);
