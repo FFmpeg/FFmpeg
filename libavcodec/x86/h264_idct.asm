@@ -220,18 +220,20 @@ cglobal h264_idct8_add_8, 3, 4, 10
     IDCT8_ADD_SSE r0, r1, r2, r3
     RET
 
-%macro DC_ADD_SSE2_INIT 2
-    add          %1, 32
-    sar          %1, 6
+%macro DC_ADD_INIT 3
+    add         %1d, 32
+    sar         %1d, 6
     movd         m0, %1d
-    lea          %1, [%2*3]
+    lea          %1, [3*%2]
     pshuflw      m0, m0, 0
     pxor         m1, m1
     psubw        m1, m0
     packuswb     m0, m0
     packuswb     m1, m1
+%if %3 > 4
     pshufd       m0, m0, 0
     pshufd       m1, m1, 0
+%endif
 %endmacro
 
 %macro DC_ADD_SSE2_OP 4
@@ -259,7 +261,7 @@ INIT_XMM sse2
 cglobal h264_idct8_dc_add_8, 3, 4, 6
     movsx        r3, word [r1]
     mov  dword [r1], 0
-    DC_ADD_SSE2_INIT r3, r2
+    DC_ADD_INIT r3, r2, 8
     DC_ADD_SSE2_OP movq, r0, r2, r3
     lea          r0, [r0+r2*4]
     DC_ADD_SSE2_OP movq, r0, r2, r3
@@ -270,7 +272,7 @@ cglobal h264_idct8_dc_add_8, 2, 3, 6
     movsx        r2, word [r1]
     mov  dword [r1], 0
     mov          r1, r2m
-    DC_ADD_SSE2_INIT r2, r1
+    DC_ADD_INIT r2, r1, 8
     DC_ADD_SSE2_OP movq, r0, r1, r2
     lea          r0, [r0+r1*4]
     DC_ADD_SSE2_OP movq, r0, r1, r2
@@ -297,7 +299,7 @@ cglobal h264_idct8_add4_8, 5, 8 + npicregs, 10, dst1, block_offset, block, strid
     test         r6, r6
     jz .no_dc
     mov   word [r2], 0
-    DC_ADD_SSE2_INIT r6, r3
+    DC_ADD_INIT r6, r3, 8
 %if ARCH_X86_64 == 0
 %define dst2q r1
 %define dst2d r1d
@@ -689,18 +691,6 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 6
     DEQUANT_STORE m6
     RET
 
-%macro DC_ADD_INIT 1
-    add      %1d, 32
-    sar      %1d, 6
-    movd     m0, %1d
-    pshuflw  m0, m0, 0
-    lea      %1, [3*stride_q]
-    pxor     m1, m1
-    psubw    m1, m0
-    packuswb m0, m0
-    packuswb m1, m1
-%endmacro
-
 %macro IDCT_XMM 1
 
 INIT_XMM %1
@@ -712,7 +702,7 @@ RET
 cglobal h264_idct_dc_add_8, 3, 4, 6, dst_, block_, stride_
     movsx             r3d, word [block_q]
     mov   dword [block_q], 0
-    DC_ADD_INIT r3
+    DC_ADD_INIT r3, stride_q, 4
     DC_ADD_SSE2_OP movd, dst_q, stride_q, r3
 RET
 
