@@ -131,7 +131,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     stereo = (channels == 2);
 
-    if (!in && context->input_frames >= 8)
+    if (!in && (context->input_frames >= 8 || !context->buffered_samples))
         return 0;
 
     if (in && context->input_frames < 8) {
@@ -153,7 +153,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         context->lastSample[1] &= 0xFF00;
     }
 
-    if (context->input_frames == 7)
+    if (context->input_frames < 8)
         data_size = channels * context->buffered_samples;
     else
         data_size = channels * avctx->frame_size;
@@ -181,7 +181,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     avpkt->duration = data_size / channels;
 
     context->input_frames++;
-    if (!in)
+    if (!frame)
         context->input_frames = FFMAX(context->input_frames, 8);
 
     *got_packet_ptr = 1;
