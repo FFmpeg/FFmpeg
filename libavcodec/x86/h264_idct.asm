@@ -67,23 +67,6 @@ SECTION .text
 %endif
 %endmacro
 
-; %1=uint8_t *dst, %2=int16_t *block, %3=ptrdiff_t stride
-; STORE_DIFFx2 not suitable here: it uses movh
-%macro STORE_DIFFx4 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
-    movd       %3, [%7]
-    movd       %4, [%7+%8]
-    psraw      %1, %6
-    psraw      %2, %6
-    punpcklbw  %3, %5
-    punpcklbw  %4, %5
-    paddw      %3, %1
-    paddw      %4, %2
-    packuswb   %3, %5
-    packuswb   %4, %5
-    movd     [%7], %3
-    movd  [%7+%8], %4
-%endmacro
-
 %macro IDCT4_ADD 3
     ; Load dct coeffs
     movq         m0, [%2]
@@ -115,9 +98,9 @@ SECTION .text
         movq    [%2+24], m7
     %endif
 
-    STORE_DIFFx4 m0, m1, m4, m5, m7, 6, %1, %3
+    STORE_DIFFx2 m0, m1, m4, m5, m7, 6, %1, %3, movd
     lea          %1, [%1+%3*2]
-    STORE_DIFFx4 m2, m3, m4, m5, m7, 6, %1, %3
+    STORE_DIFFx2 m2, m3, m4, m5, m7, 6, %1, %3, movd
 %endmacro
 
 %macro IDCT8_1D 2
