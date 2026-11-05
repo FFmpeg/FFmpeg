@@ -51,10 +51,10 @@ static void check_limiter(int depth)
     if (depth == 16)
         w /= 2;
 
-    LimiterContext s;
+    LimiterDSPContext s;
     ff_limiter_init(&s, depth);
 
-    if (check_func(s.dsp.limiter, "limiter%d", depth)) {
+    if (check_func(s.limiter, "limiter%d", depth)) {
         call_ref(src, dst_ref, WIDTH_PADDED, WIDTH_PADDED, w, HEIGHT, min, max);
         call_new(src, dst_new, WIDTH_PADDED, WIDTH_PADDED, w, HEIGHT, min, max);
 

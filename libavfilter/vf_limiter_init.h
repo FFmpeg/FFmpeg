@@ -48,16 +48,16 @@ static void limiter##n(const uint8_t *ssrc, uint8_t *ddst,      \
 LIMITER(8,  uint8_t)
 LIMITER(16, uint16_t)
 
-av_unused static void ff_limiter_init(LimiterContext *s, int depth)
+av_unused static void ff_limiter_init(LimiterDSPContext *s, int depth)
 {
     if (depth == 8) {
-        s->dsp.limiter = limiter8;
+        s->limiter = limiter8;
     } else {
-        s->dsp.limiter = limiter16;
+        s->limiter = limiter16;
     }
 
 #if ARCH_X86 && HAVE_X86ASM
-    ff_limiter_init_x86(&s->dsp, depth);
+    ff_limiter_init_x86(s, depth);
 #endif
 
 }

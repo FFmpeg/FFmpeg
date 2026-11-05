@@ -21,27 +21,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "avfilter.h"
 
 typedef struct LimiterDSPContext {
     void (*limiter)(const uint8_t *src, uint8_t *dst,
                     ptrdiff_t slinesize, ptrdiff_t dlinesize,
                     int w, int h, int min, int max);
 } LimiterDSPContext;
-
-typedef struct LimiterContext {
-    const AVClass *class;
-    int min, max; /* user-facing option */
-    int planes;
-    int nb_planes;
-    int plane_min[4]; /* resolved per-plane limits */
-    int plane_max[4];
-    int linesize[4];
-    int width[4];
-    int height[4];
-
-    LimiterDSPContext dsp;
-} LimiterContext;
 
 void ff_limiter_init_x86(LimiterDSPContext *dsp, int bpp);
 

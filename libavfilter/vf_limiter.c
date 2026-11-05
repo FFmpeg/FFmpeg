@@ -33,6 +33,20 @@ typedef struct ThreadData {
     AVFrame *out;
 } ThreadData;
 
+typedef struct LimiterContext {
+    const AVClass *class;
+    int min, max; /* user-facing option */
+    int planes;
+    int nb_planes;
+    int plane_min[4]; /* resolved per-plane limits */
+    int plane_max[4];
+    int linesize[4];
+    int width[4];
+    int height[4];
+
+    LimiterDSPContext dsp;
+} LimiterContext;
+
 #define OFFSET(x) offsetof(LimiterContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
@@ -88,7 +102,7 @@ static int config_input(AVFilterLink *inlink)
     s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
 
-    ff_limiter_init(s, depth);
+    ff_limiter_init(&s->dsp, depth);
 
     return 0;
 }
