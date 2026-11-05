@@ -20,7 +20,6 @@
 
 #include <math.h>
 
-#include "libavutil/emms.h"
 #include "libavutil/intmath.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -1714,7 +1713,6 @@ static int ratecontrol_1pass(SnowEncContext *enc, AVFrame *pict)
                     coef_sum+= abs(buf[x+y*stride]) * qdiv >> 16;
         }
     }
-    emms_c();
 
     /* ugly, ratecontrol just takes a sqrt again */
     av_assert0(coef_sum < INT_MAX);
@@ -1958,7 +1956,6 @@ redo_frame:
                 pic->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
                 s->current_picture->flags |= AV_FRAME_FLAG_KEY;
-                emms_c();
                 goto redo_frame;
             }
 
@@ -2053,7 +2050,6 @@ redo_frame:
         }
 
     }
-    emms_c();
 
     update_last_header_values(s);
 
