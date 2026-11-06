@@ -35,11 +35,16 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     FilterLink       *il = ff_filter_link(inlink);
     FilterLink       *ol = ff_filter_link(outlink);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if (inlink->h & 1) {
         av_log(ctx, AV_LOG_ERROR, "height must be even\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h) & 1) {
+        av_log(ctx, AV_LOG_ERROR, "chroma height must be even\n");
         return AVERROR_INVALIDDATA;
     }
 
