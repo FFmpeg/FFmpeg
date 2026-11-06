@@ -186,13 +186,15 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
 {
     int16_t val;
     int ret, i, version;
-    uint8_t *buf;
-    size_t size;
+    uint8_t *map, *buf;
+    size_t map_size, size;
     SelectiveColorContext *s = ctx->priv;
 
-    ret = av_file_map(fname, &buf, &size, 0, NULL);
+    ret = av_file_map(fname, &map, &map_size, 0, NULL);
     if (ret < 0)
         return ret;
+    buf  = map;
+    size = map_size;
 
 #define READ16(dst) do {                \
     if (size < 2) {                     \
@@ -235,7 +237,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
     }
 
 end:
-    av_file_unmap(buf, size);
+    av_file_unmap(map, map_size);
     return ret;
 }
 
