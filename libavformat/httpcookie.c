@@ -83,7 +83,7 @@ int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDi
         return AVERROR_INVALIDDATA;
     }
     *eql = '\0';
-    ret = av_dict_set(cookie, trim(param), eql + 1, 0);
+    ret = av_dict_set(cookie, trim(param), trim(eql + 1), 0);
 
     while (ret >= 0 && (param = av_strtok(next_param, ";", &saveptr))) {
         char *value = strchr(param, '=');
@@ -92,7 +92,7 @@ int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDi
             *value++ = '\0';
         param = trim(param);
         if (*param)
-            ret = av_dict_set(attributes, param, value ? value : "", 0);
+            ret = av_dict_set(attributes, param, value ? trim(value) : "", 0);
     }
 
     av_free(cstr);
