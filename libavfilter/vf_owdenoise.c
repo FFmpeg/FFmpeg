@@ -151,6 +151,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
     const int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
+    const int bytes_per_sample = (s->pixel_depth + 7) / 8;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -172,14 +173,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (s->luma_strength > 0) {
             filter(s, out->data[0], out->linesize[0], in->data[0], in->linesize[0], inlink->w, inlink->h, s->luma_strength);
         } else {
-            av_image_copy_plane(out->data[0], out->linesize[0], in ->data[0], in ->linesize[0], inlink->w, inlink->h);
+            av_image_copy_plane(out->data[0], out->linesize[0], in ->data[0], in ->linesize[0], inlink->w * bytes_per_sample, inlink->h);
         }
         if (s->chroma_strength > 0) {
             filter(s, out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw, ch, s->chroma_strength);
             filter(s, out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw, ch, s->chroma_strength);
         } else {
-            av_image_copy_plane(out->data[1], out->linesize[1], in ->data[1], in ->linesize[1], inlink->w, inlink->h);
-            av_image_copy_plane(out->data[2], out->linesize[2], in ->data[2], in ->linesize[2], inlink->w, inlink->h);
+            av_image_copy_plane(out->data[1], out->linesize[1], in ->data[1], in ->linesize[1], cw * bytes_per_sample, ch);
+            av_image_copy_plane(out->data[2], out->linesize[2], in ->data[2], in ->linesize[2], cw * bytes_per_sample, ch);
         }
 
         if (in->data[3])
