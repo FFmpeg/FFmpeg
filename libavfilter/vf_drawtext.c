@@ -1907,7 +1907,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
     }
 
-    if (s->reload && !(inl->frame_count_out % s->reload)) {
+    if (s->reload && s->text_source != AV_FRAME_DATA_DETECTION_BBOXES &&
+        !(inl->frame_count_out % s->reload)) {
         if ((ret = ff_load_textfile(ctx, (const char *)s->textfile, &s->text, NULL)) < 0) {
             av_frame_free(&frame);
             return ret;
