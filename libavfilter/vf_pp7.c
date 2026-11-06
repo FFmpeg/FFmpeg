@@ -231,14 +231,15 @@ static void filter(PP7Context *p, uint8_t *dst, const uint8_t *src,
             dctA_c(tp + 4 * 8, p_src + index, stride);
         }
         for (x = 0; x < width; ) {
-            const int qps = 3 + is_luma;
+            const int qpsh = 4 - p->hsub * !is_luma;
+            const int qpsv = 4 - p->vsub * !is_luma;
             int qp;
             int end = FFMIN(x + 8, width);
 
             if (p->qp)
                 qp = p->qp;
             else {
-                qp = qp_store[ (FFMIN(x, width - 1) >> qps) + (FFMIN(y, height - 1) >> qps) * qp_stride];
+                qp = qp_store[ (FFMIN(x, width - 1) >> qpsh) + (FFMIN(y, height - 1) >> qpsv) * qp_stride];
                 qp = ff_norm_qscale(qp, p->qscale_type);
             }
             for (; x < end; x++) {
