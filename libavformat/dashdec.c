@@ -34,6 +34,7 @@
 #include "url.h"
 
 #define INITIAL_BUFFER_SIZE 32768
+#define MAX_TIMELINE_SEGMENTS (1 << 24)
 
 struct fragment {
     int64_t url_offset;
@@ -1123,6 +1124,16 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         av_log(s, AV_LOG_ERROR, "Unknown format of Representation node id '%s' \n",
                rep->id ? rep->id : "");
         goto free;
+    }
+
+    int64_t nb_timeline_segments = 0;
+    for (int i = 0; i < rep->n_timelines; i++) {
+        nb_timeline_segments += av_clip64(rep->timelines[i]->repeat, 0, INT_MAX) + 1;
+        if (nb_timeline_segments > MAX_TIMELINE_SEGMENTS) {
+            av_log(s, AV_LOG_ERROR, "Too many segments in SegmentTimeline\n");
+            ret = AVERROR_INVALIDDATA;
+            goto free;
+        }
     }
 
     if (rep->fragment_duration > 0 && !rep->fragment_timescale)
