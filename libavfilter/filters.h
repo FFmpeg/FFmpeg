@@ -493,7 +493,7 @@ static inline const FFFilter *fffilter(const AVFilter *f)
 #define AVFILTER_DEFINE_CLASS(fname) \
     AVFILTER_DEFINE_CLASS_EXT(fname, #fname, fname##_options)
 
-#define D2TS(d)      (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
+#define D2TS(d)      ((d) >= INT64_MIN && (d) < (double)INT64_MAX ? (int64_t)(d) : AV_NOPTS_VALUE)
 #define TS2D(ts)     ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 

@@ -161,7 +161,7 @@ static int config_output_video(AVFilterLink *outlink)
 static inline char *double2int64str(char *buf, double v)
 {
     if (isnan(v)) snprintf(buf, BUF_SIZE, "nan");
-    else          snprintf(buf, BUF_SIZE, "%"PRId64, (int64_t)v);
+    else          snprintf(buf, BUF_SIZE, "%"PRId64, D2TS(v));
     return buf;
 }
 
