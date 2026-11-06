@@ -282,8 +282,9 @@ static void filter(SPPContext *p, uint8_t *dst, uint8_t *src,
             if (p->qp) {
                 qp = p->qp;
             } else{
-                const int qps = 3 + is_luma;
-                qp = qp_table[(FFMIN(x, width - 1) >> qps) + (FFMIN(y, height - 1) >> qps) * qp_stride];
+                const int qpsh = 4 - p->hsub * !is_luma;
+                const int qpsv = 4 - p->vsub * !is_luma;
+                qp = qp_table[(FFMIN(x, width - 1) >> qpsh) + (FFMIN(y, height - 1) >> qpsv) * qp_stride];
                 qp = FFMAX(1, ff_norm_qscale(qp, p->qscale_type));
             }
             for (i = 0; i < count; i++) {
