@@ -126,11 +126,14 @@ const char* ff_http_get_new_location(URLContext *h);
 int ff_http_parse_date(const char *date_str, struct tm *buf);
 
 /**
- * Parse a Set-Cookie style line into its cookie and attributes.
+ * Parse a Set-Cookie style line.
  *
- * @return 0 on success, a negative value otherwise
+ * @param cookie     the name and value of the cookie are added to it
+ * @param attributes the attributes of the cookie are added to it
+ * @return 0 on success, AVERROR_INVALIDDATA if the line holds no cookie,
+ *         another negative error code otherwise
  */
-int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **dict);
+int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDictionary **attributes);
 
 int ff_http_host_is_ip_literal(const char *host);
 

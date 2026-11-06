@@ -53,44 +53,48 @@ int ff_http_parse_date(const char *date_str, struct tm *buf)
     return av_small_strptime(date, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
 }
 
-int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **dict)
+static char *trim(char *str)
 {
-    char *param, *next_param, *cstr, *back;
-    char *saveptr = NULL;
+    char *end;
 
-    if (!set_cookie[0])
-        return 0;
+    str += strspn(str, WHITESPACES);
+    end  = str + strlen(str);
+    while (end > str && strchr(WHITESPACES, end[-1]))
+        *--end = '\0';
+    return str;
+}
+
+int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDictionary **attributes)
+{
+    char *param, *next_param, *cstr, *eql;
+    char *saveptr = NULL;
+    int ret;
 
     if (!(cstr = av_strdup(set_cookie)))
-        return AVERROR(EINVAL);
+        return AVERROR(ENOMEM);
 
-    // strip any trailing whitespace
-    back = &cstr[strlen(cstr)-1];
-    while (strchr(WHITESPACES, *back)) {
-        *back='\0';
-        if (back == cstr)
-            break;
-        back--;
+    // the name and value of the cookie come before the first ';'
+    param      = trim(cstr);
+    next_param = strchr(param, ';');
+    if (next_param)
+        *next_param++ = '\0';
+    if (!(eql = strchr(param, '=')) || eql == param) {
+        av_free(cstr);
+        return AVERROR_INVALIDDATA;
     }
+    *eql = '\0';
+    ret = av_dict_set(cookie, trim(param), eql + 1, 0);
 
-    next_param = cstr;
-    while ((param = av_strtok(next_param, ";", &saveptr))) {
+    while (ret >= 0 && (param = av_strtok(next_param, ";", &saveptr))) {
         char *name, *value;
         next_param = NULL;
         param += strspn(param, WHITESPACES);
-        if ((name = av_strtok(param, "=", &value))) {
-            char *end = name + strlen(name);
-            while (end > name && strchr(WHITESPACES, end[-1]))
-                *--end = '\0';
-            if (av_dict_set(dict, name, value ? value : "", 0) < 0) {
-                av_free(cstr);
-                return -1;
-            }
-        }
+        if ((name = av_strtok(param, "=", &value)))
+            ret = av_dict_set(attributes, trim(name), value ? value : "", 0);
     }
 
     av_free(cstr);
-    return 0;
+    return ret < 0 ? ret : 0;
 }
 
 int ff_http_host_is_ip_literal(const char *host)
@@ -118,18 +122,19 @@ int ff_http_bind_cookies_to_host(char **cookies, const char *host)
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     while ((cookie = av_strtok(next, "\n", &saveptr))) {
-        AVDictionary *params = NULL;
+        AVDictionary *pair = NULL, *params = NULL;
         int len = strlen(cookie), host_only;
 
         next = NULL;
         while (len && strchr(WHITESPACES, cookie[len - 1]))
             len--;
-        if ((ret = ff_http_parse_set_cookie(cookie, &params)) < 0) {
-            av_dict_free(&params);
-            break;
-        }
+        ret = ff_http_parse_set_cookie(cookie, &pair, &params);
         host_only = !ff_http_cookie_domain(params) && !av_dict_get(params, "@hostonly", NULL, 0);
+        av_dict_free(&pair);
         av_dict_free(&params);
+        if (ret == AVERROR(ENOMEM))
+            break;
+        ret = 0;
         av_bprintf(&bp, "%.*s%s%s\n", len, cookie, host_only ? "; @hostonly=" : "", host_only ? host : "");
     }
     av_free(copy);
