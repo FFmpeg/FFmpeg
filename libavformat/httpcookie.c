@@ -17,10 +17,13 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 
@@ -73,6 +76,12 @@ static int has_control_char(const char *str)
     return 0;
 }
 
+static int is_delta_seconds(const char *str)
+{
+    str += *str == '-';
+    return *str && !str[strspn(str, "0123456789")];
+}
+
 int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDictionary **attributes)
 {
     char *param, *next_param, *cstr, *eql;
@@ -106,8 +115,12 @@ int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDi
         if (value)
             *value++ = '\0';
         param = trim(param);
+        value = value ? trim(value) : NULL;
+        // an invalid Max-Age is ignored (RFC 6265 5.2.2)
+        if (!av_strcasecmp(param, "max-age") && (!value || !is_delta_seconds(value)))
+            continue;
         if (*param)
-            ret = av_dict_set(attributes, param, value ? trim(value) : "", 0);
+            ret = av_dict_set(attributes, param, value ? value : "", 0);
     }
 
     av_free(cstr);
@@ -125,6 +138,22 @@ const char *ff_http_cookie_domain(const AVDictionary *cookie_params)
     const char *domain = e ? e->value + (e->value[0] == '.') : "";
 
     return *domain ? domain : NULL;
+}
+
+int64_t ff_http_cookie_expiry(const AVDictionary *attributes)
+{
+    const AVDictionaryEntry *max_age = av_dict_get(attributes, "max-age", NULL, 0);
+    const AVDictionaryEntry *expires = av_dict_get(attributes, "expires", NULL, 0);
+    struct tm tm = { 0 };
+
+    // Max-Age takes precedence over Expires (RFC 6265 5.3)
+    if (max_age) {
+        int64_t delta = strtoll(max_age->value, NULL, 10);
+        return delta > 0 ? av_sat_add64(time(NULL), delta) : 1;
+    }
+    if (expires && !ff_http_parse_date(expires->value, &tm))
+        return FFMAX(av_timegm(&tm), 1);
+    return 0;
 }
 
 int ff_http_bind_cookies_to_host(char **cookies, const char *host)
