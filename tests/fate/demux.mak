@@ -237,7 +237,7 @@ tests/data/hls-webvtt-discont.m3u8: TAG = GEN
 tests/data/hls-webvtt-discont.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -f lavfi -i "aevalsrc=0:d=2" -c:a mp2fixed -flags +bitexact -muxdelay 0 -muxpreload 0 -output_ts_offset 10 \
-        -f mpegts $(TARGET_PATH)/tests/data/hls-webvtt-discont-a0.ts 2>/dev/null
+        -f mpegts -y $(TARGET_PATH)/tests/data/hls-webvtt-discont-a0.ts 2>/dev/null
 	$(Q)cp tests/data/hls-webvtt-discont-a0.ts tests/data/hls-webvtt-discont-a1.ts
 	$(Q)printf '#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhls-webvtt-discont-a0.ts\n#EXT-X-DISCONTINUITY\n#EXTINF:2,\nhls-webvtt-discont-a1.ts\n#EXT-X-ENDLIST\n' > tests/data/hls-webvtt-discont-a.m3u8
 	$(Q)printf 'WEBVTT\nX-TIMESTAMP-MAP=MPEGTS:900000,LOCAL:00:00:00.000\n\n00:00.500 --> 00:01.500\nhello\n' > tests/data/hls-webvtt-discont-s0.vtt
