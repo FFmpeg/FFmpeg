@@ -22,6 +22,7 @@
 #ifndef AVFORMAT_HTTP_H
 #define AVFORMAT_HTTP_H
 
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -141,6 +142,13 @@ int ff_http_host_is_ip_literal(const char *host);
  * @return the Domain attribute without a leading dot, NULL if there is none
  */
 const char *ff_http_cookie_domain(const AVDictionary *cookie_params);
+
+/**
+ * @param attributes attributes parsed by ff_http_parse_set_cookie()
+ * @return the time the cookie expires at in seconds since the epoch,
+ *         0 if it does not expire
+ */
+int64_t ff_http_cookie_expiry(const AVDictionary *attributes);
 
 /**
  * Restrict the cookies without a Domain to host.

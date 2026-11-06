@@ -1452,6 +1452,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
         AVDictionary *cookie_pair = NULL, *cookie_params = NULL;
         const AVDictionaryEntry *cookie_entry, *e;
         const char *domain;
+        int64_t expiry;
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
@@ -1467,13 +1468,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
             goto skip_cookie;
 
         // if the cookie has expired, don't add it
-        if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
-            struct tm tm_buf = {0};
-            if (!ff_http_parse_date(e->value, &tm_buf)) {
-                if (av_timegm(&tm_buf) < av_gettime() / 1000000)
-                    goto skip_cookie;
-            }
-        }
+        expiry = ff_http_cookie_expiry(cookie_params);
+        if (expiry && expiry < av_gettime() / 1000000)
+            goto skip_cookie;
 
         // if no domain in the cookie assume it applied to this request
         domain = ff_http_cookie_domain(cookie_params);
