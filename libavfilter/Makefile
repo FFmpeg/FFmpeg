@@ -692,6 +692,7 @@ SKIPHEADERS-$(CONFIG_SCALE_CUDA_FILTER)      += vf_scale_cuda.h
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
 
+TESTPROGS-$(CONFIG_AMIX_FILTER)   += amix
 TESTPROGS-$(CONFIG_DRAWVG_FILTER) += drawvg
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend

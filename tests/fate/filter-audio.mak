@@ -458,6 +458,10 @@ fate-filter-crazychannels: tests/data/filtergraphs/crazychannels
 fate-filter-crazychannels: CMD = framecrc -auto_conversion_filters -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/crazychannels
 FATE_AFILTER-$(call FILTERFRAMECRC, ARESAMPLE SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT, FILE_PROTOCOL) += fate-filter-crazychannels
 
+FATE_AFILTER_API-$(CONFIG_AMIX_FILTER) += fate-filter-amix-pts
+fate-filter-amix-pts: libavfilter/tests/amix$(EXESUF)
+fate-filter-amix-pts: CMD = run libavfilter/tests/amix$(EXESUF)
+
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)
 fate-filter-formats: CMD = run libavfilter/tests/formats$(EXESUF)
@@ -465,4 +469,5 @@ fate-filter-formats: CMD = run libavfilter/tests/formats$(EXESUF)
 FATE_AFILTER-yes := $(if $(call FRAMECRC), $(FATE_AFILTER-yes))
 FATE_SAMPLES_AVCONV += $(FATE_AFILTER_SAMPLES-yes)
 FATE_FFMPEG += $(FATE_AFILTER-yes)
-fate-afilter: $(FATE_AFILTER-yes) $(FATE_AFILTER_SAMPLES-yes)
+FATE-$(CONFIG_AVFILTER) += $(FATE_AFILTER_API-yes)
+fate-afilter: $(FATE_AFILTER-yes) $(FATE_AFILTER_SAMPLES-yes) $(FATE_AFILTER_API-yes)

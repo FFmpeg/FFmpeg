@@ -316,7 +316,10 @@ static int output_frame(AVFilterLink *outlink)
             }
         }
 
-        s->next_pts = frame_list_next_pts(s->frame_list);
+        /* Preserve the next timestamp if input 0 has no queued frames
+         * but its EOF has not been acknowledged yet. */
+        if (s->frame_list->nb_frames)
+            s->next_pts = frame_list_next_pts(s->frame_list);
     } else {
         /* first input closed: use the available samples */
         nb_samples = INT_MAX;
