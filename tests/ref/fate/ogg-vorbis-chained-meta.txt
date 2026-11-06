@@ -2,7 +2,7 @@ Stream ID: 0, codec name: vorbis, metadata: encoder=Lavc61.19.100 libvorbis:titl
 Stream ID: 0, packet PTS: -128, packet DTS: -128
 Stream ID: 0, new metadata: encoder=Lavc61.19.100 libvorbis:title=First Stream
 Stream ID: 0, packet PTS: 0, packet DTS: 0
-Stream ID: 0, frame PTS: 0, metadata: N/A
+Stream ID: 0, frame PTS: 0, metadata: encoder=Lavc61.19.100 libvorbis:title=First Stream
 Stream ID: 0, packet PTS: 576, packet DTS: 576
 Stream ID: 0, frame PTS: 576, metadata: N/A
 Stream ID: 0, packet PTS: 1600, packet DTS: 1600

@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/dict.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
@@ -158,6 +159,10 @@ typedef struct vorbis_context_s {
     int8_t       previous_window;
     float        *channel_residues;
     float        *saved;
+    /**
+     * Tags of a dropped priming frame, added to the first frame with samples.
+     */
+    AVDictionary *pending_metadata;
 } vorbis_context;
 
 /* Helper functions */
@@ -1859,6 +1864,22 @@ static int vorbis_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (!vc->first_frame) {
         vc->first_frame = 1;
         avctx->internal->skip_samples = len;
+        if (!(avctx->flags2 & AV_CODEC_FLAG2_SKIP_MANUAL)) {
+            av_dict_free(&vc->pending_metadata);
+            vc->pending_metadata = frame->metadata;
+            frame->metadata      = NULL;
+        }
+    } else if (vc->pending_metadata) {
+        if (!frame->metadata) {
+            frame->metadata      = vc->pending_metadata;
+            vc->pending_metadata = NULL;
+        } else {
+            ret = av_dict_copy(&frame->metadata, vc->pending_metadata,
+                               AV_DICT_DONT_OVERWRITE);
+            av_dict_free(&vc->pending_metadata);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     ff_dlog(NULL, "parsed %d bytes %d bits, returned %d samples (*ch*bits) \n",
@@ -1877,6 +1898,7 @@ static av_cold int vorbis_decode_close(AVCodecContext *avctx)
     vorbis_context *vc = avctx->priv_data;
 
     vorbis_free(vc);
+    av_dict_free(&vc->pending_metadata);
 
     return 0;
 }
@@ -1885,6 +1907,7 @@ static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
 {
     vorbis_context *vc = avctx->priv_data;
 
+    av_dict_free(&vc->pending_metadata);
     if (vc->saved) {
         memset(vc->saved, 0, (vc->blocksize[1] / 4) * vc->audio_channels *
                              sizeof(*vc->saved));
