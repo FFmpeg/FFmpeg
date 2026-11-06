@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 
 #include "libavutil/avstring.h"
@@ -64,6 +65,14 @@ static char *trim(char *str)
     return str;
 }
 
+static int has_control_char(const char *str)
+{
+    for (; *str; str++)
+        if (((uint8_t)*str < 0x20 && *str != '\t') || *str == 0x7f)
+            return 1;
+    return 0;
+}
+
 int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDictionary **attributes)
 {
     char *param, *next_param, *cstr, *eql;
@@ -73,8 +82,14 @@ int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDi
     if (!(cstr = av_strdup(set_cookie)))
         return AVERROR(ENOMEM);
 
+    // a line with control characters other than HTAB holds no cookie (RFC 6265bis 5.6)
+    param = trim(cstr);
+    if (has_control_char(param)) {
+        av_free(cstr);
+        return AVERROR_INVALIDDATA;
+    }
+
     // the name and value of the cookie come before the first ';'
-    param      = trim(cstr);
     next_param = strchr(param, ';');
     if (next_param)
         *next_param++ = '\0';
