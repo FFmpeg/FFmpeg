@@ -3312,8 +3312,10 @@ static int tile_slice_payload(const HEVCTileSlice *sl,
     return 0;
 }
 
-/* Only an independent slice covering exactly one tile, or any independent
- * slice of an untiled picture under slice threading, may be deferred. */
+/* A slice without entry points lies within a single tile, so an independent
+ * one can be deferred; a dependent one cannot be reordered. Under slice
+ * threading, the slices of an untiled picture are deferred as well.
+ */
 static int slice_is_deferrable(const HEVCContext *s)
 {
     const HEVCPPS *const pps = s->pps;
@@ -3337,8 +3339,7 @@ static int slice_is_deferrable(const HEVCContext *s)
 
     start_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
 
-    if (start_ts < 0 || start_ts >= pps->sps->ctb_size ||
-        (start_ts > 0 && pps->tile_id[start_ts - 1] == pps->tile_id[start_ts]))
+    if (start_ts < 0 || start_ts >= pps->sps->ctb_size)
         return 0;
 
     return 1;
@@ -3394,8 +3395,11 @@ static int defer_tile_slice(HEVCContext *s, const H2645NAL *nal)
     return 1;
 }
 
-/* Fill the tile table and return 1 if the deferred slices map one to one
- * onto the tiles, 0 to decode them in their original order. */
+/* Build the segment table and the per-tile runs of segments from the
+ * deferred slices. Return 1 if start_ts increases strictly and every tile
+ * begins with a segment at its first CTB, 0 otherwise (the caller then
+ * decodes the slices in their original order), <0 on error.
+ */
 static int build_tile_streams(HEVCContext *s, unsigned nb)
 {
     const HEVCPPS *const pps = s->pps;
@@ -3403,45 +3407,42 @@ static int build_tile_streams(HEVCContext *s, unsigned nb)
     const unsigned nb_tiles = pps->num_tile_columns * pps->num_tile_rows;
     int ret;
 
-    if (nb != nb_tiles)
-        return 0;
-
     ret = alloc_tile_streams(s, nb_tiles);
     if (ret < 0)
         return ret;
 
-    ret = alloc_tile_segments(s, nb_tiles);
+    ret = alloc_tile_segments(s, nb);
     if (ret < 0)
         return ret;
 
+    /* The check below keeps start_ts strictly increasing, so the segments
+     * of a tile form one run of the table.
+     */
     for (unsigned i = 0; i < nb; i++) {
         const HEVCTileSlice *const sl = &s->tile_slices[i];
+        HEVCTileSegment *const seg = &s->tile_segments[i];
         HEVCTileStream *t;
-        HEVCTileSegment *seg;
         const uint8_t *data;
         size_t size;
         int tile;
 
-        if (sl->start_ts < 0 || sl->start_ts >= sps->ctb_size)
-            return 0;
-
-        tile = pps->tile_id[sl->start_ts];
-
-        if (tile < 0 || tile >= (int)nb_tiles)
-            return 0;
-
-        /* Every slice has to start at a tile, one slice per tile */
-        if (pps->ctb_addr_rs_to_ts[pps->tile_pos_rs[tile]] != sl->start_ts)
-            return 0;
-
-        t = &s->tile_streams[tile];
-        if (t->end_seg)
+        if (sl->start_ts < 0 || sl->start_ts >= sps->ctb_size ||
+            (i && sl->start_ts <= sl[-1].start_ts))
             return 0;
 
         if (tile_slice_payload(sl, &data, &size) < 0)
             return 0;
 
-        seg = &s->tile_segments[tile];
+        tile = pps->tile_id[sl->start_ts];
+        t    = &s->tile_streams[tile];
+
+        if (!t->end_seg) {
+            if (sl->start_ts != pps->ctb_addr_rs_to_ts[pps->tile_pos_rs[tile]])
+                return 0;
+            t->next_seg = i;
+        }
+        t->end_seg = i + 1;
+
         seg->sh        = &sl->sh;
         seg->rpl       = sl->rpl;
         seg->collocated_ref = sl->collocated_ref;
@@ -3449,9 +3450,6 @@ static int build_tile_streams(HEVCContext *s, unsigned nb)
         seg->size      = size;
         seg->start_ts  = sl->start_ts;
         seg->qp_y_seed = sl->qp_y_seed;
-
-        t->next_seg = tile;
-        t->end_seg  = tile + 1;
     }
 
     for (unsigned i = 0; i < nb_tiles; i++)
@@ -3599,9 +3597,11 @@ end:
     return ret;
 }
 
-/* If picture_complete, the slices cover the picture and are decoded in row
- * major order. Otherwise more slices follow, so decode them in their
- * original order. */
+/* If picture_complete, no more slices follow and the deferred ones are
+ * decoded in row major order when build_tile_streams() accepts them.
+ * Otherwise decode them in their original order. Under slice threading, the
+ * deferred slices of an untiled picture are decoded in parallel instead.
+ */
 static int decode_deferred_tile_slices(HEVCContext *s, int picture_complete)
 {
     const HEVCPPS   *const pps = s->pps;

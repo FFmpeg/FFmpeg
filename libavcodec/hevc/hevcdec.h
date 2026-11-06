@@ -638,10 +638,12 @@ typedef struct HEVCContext {
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
 
-    /* Slices deferred when every tile carries its own slice, or when the
-     * slices of an untiled picture are decoded in parallel. Frame and layer
-     * are kept so that leftovers are dropped, not decoded into another
-     * frame. */
+    /* Independent slices of one picture that stay within single tiles,
+     * buffered for decoding in row major order. The frame and layer are
+     * kept so that leftovers from another picture are dropped instead of
+     * being decoded into the current frame. The slices of an untiled picture
+     * are buffered here as well, for parallel decoding.
+     */
     HEVCTileSlice *tile_slices;
     unsigned nb_tile_slices;
     unsigned tile_slices_alloc;
