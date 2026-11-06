@@ -29,32 +29,79 @@
 
 #include "http.h"
 
-#define MAX_DATE_LEN  19
 #define WHITESPACES " \n\t\r"
+
+static int is_date_delimiter(uint8_t c)
+{
+    return c == 0x09 || (c >= 0x20 && c <= 0x2F) || (c >= 0x3B && c <= 0x40) ||
+           (c >= 0x5B && c <= 0x60) || (c >= 0x7B && c <= 0x7E);
+}
+
+/* Parse min to max digits not followed by a digit, return their number or 0. */
+static int parse_digits(const char *str, int min, int max, int *val)
+{
+    int n;
+
+    for (n = *val = 0; n < max && av_isdigit(str[n]); n++)
+        *val = *val * 10 + str[n] - '0';
+    return n >= min && !av_isdigit(str[n]) ? n : 0;
+}
+
+static int parse_time(const char *str, struct tm *tm)
+{
+    int n, m;
+
+    return (n = parse_digits(str, 1, 2, &tm->tm_hour)) && str[n++] == ':' &&
+           (m = parse_digits(str + n, 1, 2, &tm->tm_min)) && str[n + m++] == ':' &&
+           parse_digits(str + n + m, 1, 2, &tm->tm_sec);
+}
+
+static int parse_month(const char *str)
+{
+    static const char months[] = "janfebmaraprmayjunjulaugsepoctnovdec";
+
+    for (int i = 0; i < 12; i++)
+        if (!av_strncasecmp(str, months + 3 * i, 3))
+            return i;
+    return -1;
+}
 
 int ff_http_parse_date(const char *date_str, struct tm *buf)
 {
-    char date_buf[MAX_DATE_LEN];
-    int i, j, date_buf_len = MAX_DATE_LEN-1;
-    char *date;
+    static const uint8_t month_days[12] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    int found_time = 0, found_day = 0, found_month = 0, found_year = 0, month, year;
+    struct tm tm = { 0 };
 
-    // strip off any punctuation or whitespace
-    for (i = 0, j = 0; date_str[i] != '\0' && j < date_buf_len; i++) {
-        if ((date_str[i] >= '0' && date_str[i] <= '9') ||
-            (date_str[i] >= 'A' && date_str[i] <= 'Z') ||
-            (date_str[i] >= 'a' && date_str[i] <= 'z')) {
-            date_buf[j] = date_str[i];
-            j++;
+    // cookie-date algorithm of RFC 6265 5.1.1, it accepts all HTTP-date formats too
+    while (*date_str) {
+        while (*date_str && is_date_delimiter(*date_str))
+            date_str++;
+        if (!*date_str)
+            break;
+        if (!found_time && parse_time(date_str, &tm)) {
+            found_time = 1;
+        } else if (!found_day && parse_digits(date_str, 1, 2, &tm.tm_mday)) {
+            found_day = 1;
+        } else if (!found_month && (month = parse_month(date_str)) >= 0) {
+            tm.tm_mon   = month;
+            found_month = 1;
+        } else if (!found_year && parse_digits(date_str, 2, 4, &year)) {
+            found_year = 1;
         }
+        while (*date_str && !is_date_delimiter(*date_str))
+            date_str++;
     }
-    date_buf[j] = '\0';
-    date = date_buf;
 
-    // move the string beyond the day of week
-    while ((*date < '0' || *date > '9') && *date != '\0')
-        date++;
-
-    return av_small_strptime(date, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
+    if (!found_time || !found_day || !found_month || !found_year)
+        return AVERROR(EINVAL);
+    year += year < 70 ? 2000 : year < 100 ? 1900 : 0;
+    if (year < 1601 || tm.tm_hour > 23 || tm.tm_min > 59 || tm.tm_sec > 59 ||
+        tm.tm_mday < 1 || tm.tm_mday > month_days[tm.tm_mon] ||
+        (tm.tm_mon == 1 && tm.tm_mday == 29 && (year % 4 || (year % 100 == 0 && year % 400))))
+        return AVERROR(EINVAL);
+    tm.tm_year = year - 1900;
+    *buf = tm;
+    return 0;
 }
 
 static char *trim(char *str)
