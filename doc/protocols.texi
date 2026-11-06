@@ -1151,7 +1151,8 @@ Set the HTTP proxy to tunnel through.
 
 @item cookies
 Cookies to be sent in future requests, given as newline-delimited
-@code{Set-Cookie}-style values.
+@code{Set-Cookie}-style values. A cookie without a domain is only sent to the
+host of the URL.
 
 @item location
 The actual location of the data after following redirects. This is an output
