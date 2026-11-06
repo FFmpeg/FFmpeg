@@ -45,6 +45,7 @@ typedef struct JPEG2000ParserContext {
     uint8_t skipped_codestream;
     uint8_t read_tp;
     uint8_t in_codestream;
+    uint8_t skip_to_eoc;
 } JPEG2000ParserContext;
 
 static inline void reset_context(JPEG2000ParserContext *m)
@@ -60,6 +61,7 @@ static inline void reset_context(JPEG2000ParserContext *m)
     m->skip_bytes = 0;
     m->read_tp = 0;
     m->in_codestream = 0;
+    m->skip_to_eoc = 0;
 }
 
 /* Returns 1 if marker has any data which can be skipped
@@ -128,6 +130,12 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
             m->read_tp--;
             continue;
         }
+        if (m->skip_to_eoc) {
+            if ((state64 & 0xFFFF) == 0xFF91)
+                m->skip_bytes = 5;
+            if ((state64 & 0xFFFF) != 0xFFD9)
+                continue;
+        }
         if (m->fheader_read) {
             if (m->fheader_read == 1) {
                 if (state64 == 0x6A5020200D0A870A) { // JP2 signature box value.
@@ -162,9 +170,12 @@ static int find_frame_end(JPEG2000ParserContext *m, const uint8_t *buf, int buf_
                 return i + 1; // End of frame detected, return frame size.
             }
             m->in_codestream = 0;
+            m->skip_to_eoc = 0;
         } else if (m->in_codestream) {
             if ((state64 & 0xFFFF) == 0xFF90) { // Are we in tile part header?
                 m->read_tp = 8;
+            } else if ((state64 & 0xFFFF) == 0xFF93) {
+                m->skip_to_eoc = 1;
             } else if (info_marker((state64 & 0xFFFF0000)>>16) && pc->frame_start_found && (state64 & 0xFFFF)) {
                 // Calculate number of bytes to skip to get to end of the next marker.
                 m->skip_bytes = (state64 & 0xFFFF)-1;
