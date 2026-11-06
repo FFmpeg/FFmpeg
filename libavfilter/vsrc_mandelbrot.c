@@ -131,7 +131,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->cache_used = 0;
     s->point_cache= av_malloc_array(s->cache_allocated, sizeof(*s->point_cache));
     s-> next_cache= av_malloc_array(s->cache_allocated, sizeof(*s-> next_cache));
-    s-> zyklus    = av_malloc_array(s->maxiter + 16, sizeof(*s->zyklus));
+    s-> zyklus    = av_malloc_array(s->maxiter + 16LL, sizeof(*s->zyklus));
 
     if (!s->point_cache || !s->next_cache || !s->zyklus)
         return AVERROR(ENOMEM);
