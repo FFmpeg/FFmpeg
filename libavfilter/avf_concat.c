@@ -49,9 +49,8 @@ typedef struct ConcatContext {
         unsigned eof;
     } *in;
     struct concat_silence {
-        int64_t pts;
+        int64_t end_pts;
         int64_t nb_samples;
-        int64_t sent;
     } *silence;
 } ConcatContext;
 
@@ -255,7 +254,6 @@ static int queue_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
     ConcatContext *cat = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[out_no];
     struct concat_silence *silence = &cat->silence[out_no];
-    int64_t nb_samples;
     AVRational rate_tb = { 1, ctx->inputs[in_no]->sample_rate };
 
     if (!rate_tb.den)
@@ -264,11 +262,9 @@ static int queue_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
         return AVERROR_INVALIDDATA;
     if (seg_delta < cat->in[in_no].pts)
         return AVERROR_INVALIDDATA;
-    nb_samples = av_rescale_q(seg_delta - cat->in[in_no].pts,
-                              outlink->time_base, rate_tb);
-    silence->pts        = cat->in[in_no].pts + cat->delta_ts - seg_delta;
-    silence->nb_samples = nb_samples;
-    silence->sent       = 0;
+    silence->nb_samples = av_rescale_q(seg_delta - cat->in[in_no].pts,
+                                       outlink->time_base, rate_tb);
+    silence->end_pts    = cat->delta_ts;
     return 0;
 }
 
@@ -279,15 +275,16 @@ static int send_silence(AVFilterContext *ctx, unsigned out_no)
     struct concat_silence *silence = &cat->silence[out_no];
     AVRational rate_tb = { 1, outlink->sample_rate };
     int frame_nb_samples = FFMIN(FFMAX(9600, rate_tb.den / 5), /* arbitrary */
-                                 silence->nb_samples - silence->sent);
+                                 silence->nb_samples);
     AVFrame *buf = ff_get_audio_buffer(outlink, frame_nb_samples);
 
     if (!buf)
         return AVERROR(ENOMEM);
     av_samples_set_silence(buf->extended_data, 0, frame_nb_samples,
                            outlink->ch_layout.nb_channels, outlink->format);
-    buf->pts = silence->pts + av_rescale_q(silence->sent, rate_tb, outlink->time_base);
-    silence->sent += frame_nb_samples;
+    buf->pts = silence->end_pts -
+               av_rescale_q(silence->nb_samples, rate_tb, outlink->time_base);
+    silence->nb_samples -= frame_nb_samples;
     return ff_filter_frame(outlink, buf);
 }
 
@@ -313,7 +310,7 @@ static int flush_segment(AVFilterContext *ctx)
                                 seg_delta);
             if (ret < 0)
                 return ret;
-            while (cat->silence[str].sent < cat->silence[str].nb_samples) {
+            while (cat->silence[str].nb_samples) {
                 ret = send_silence(ctx, str);
                 if (ret < 0)
                     return ret;
