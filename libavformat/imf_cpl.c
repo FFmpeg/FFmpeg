@@ -351,6 +351,10 @@ static int fill_base_resource(void *log_ctx, xmlNodePtr resource_elem,
         av_log(log_ctx, AV_LOG_ERROR, "Invalid IntrinsicDuration element found in a Resource\n");
         return ret;
     }
+    if (resource->entry_point > resource->duration) {
+        av_log(log_ctx, AV_LOG_ERROR, "EntryPoint is beyond the IntrinsicDuration of a Resource\n");
+        return AVERROR_INVALIDDATA;
+    }
     resource->duration -= resource->entry_point;
 
     /* read SourceDuration */
