@@ -210,6 +210,10 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
                "the settings might not be loaded properly\n", version);
 
     READ16(s->correction_method);
+    if (s->correction_method >= NB_CORRECTION_METHODS) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
 
     // 1st CMYK entry is reserved/unused
     for (i = 0; i < FF_ARRAY_ELEMS(s->cmyk_adjust[0]); i++) {
