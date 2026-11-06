@@ -1038,7 +1038,7 @@ static av_cold int init(AVFilterContext *ctx)
     };
 
 #if CONFIG_LIBFRIBIDI
-    if (s->text_shaping)
+    if (s->text_shaping && s->text_source != AV_FRAME_DATA_DETECTION_BBOXES)
         if ((err = shape_text(ctx)) < 0)
             return err;
 #endif
