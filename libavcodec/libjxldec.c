@@ -45,6 +45,8 @@
 #include <jxl/thread_parallel_runner.h>
 #include "libjxl.h"
 
+#define EXIF_MAX_SIZE (16 << 20)
+
 typedef struct LibJxlDecodeContext {
     void *runner;
     JxlDecoder *decoder;
@@ -629,6 +631,15 @@ success:
             size_t remainder = JxlDecoderReleaseBoxBuffer(ctx->decoder);
             ctx->exif_pos = ctx->exif->size - remainder;
             size_t new_size = ctx->exif->size << 1;
+            JxlBoxType type;
+            if (new_size > EXIF_MAX_SIZE &&
+                (JxlDecoderGetBoxType(ctx->decoder, type, JXL_FALSE) != JXL_DEC_SUCCESS ||
+                 AV_RL32(type) == MKTAG('b','r','o','b'))) {
+                av_log(avctx, AV_LOG_ERROR, "Compressed Exif box larger than %d bytes\n", EXIF_MAX_SIZE);
+                av_buffer_unref(&ctx->exif);
+                ctx->exif_box = 0;
+                return AVERROR_INVALIDDATA;
+            }
             ret = av_buffer_realloc(&ctx->exif, new_size);
             if (ret < 0)
                 return AVERROR(ENOMEM);
