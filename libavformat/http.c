@@ -1116,24 +1116,19 @@ static int host_in_cookie_domain(const char *host, const char *domain)
 static int parse_cookie(HTTPContext *s, const char *p, const char *host,
                         AVDictionary **cookies)
 {
-    AVDictionary *new_params = NULL;
+    AVDictionary *new_cookie = NULL, *new_params = NULL;
     const AVDictionaryEntry *e, *cookie_entry;
     const char *eql;
     char *name, *value;
     int len;
 
     // ensure the cookie is parsable
-    if (ff_http_parse_set_cookie(p, &new_params)) {
+    if (ff_http_parse_set_cookie(p, &new_cookie, &new_params)) {
+        av_dict_free(&new_cookie);
         av_dict_free(&new_params);
         return -1;
     }
-
-    // if there is no cookie value there is nothing to parse
-    cookie_entry = av_dict_iterate(new_params, NULL);
-    if (!cookie_entry || !cookie_entry->value) {
-        av_dict_free(&new_params);
-        return -1;
-    }
+    cookie_entry = av_dict_iterate(new_cookie, NULL);
 
     // ensure the cookie is not expired or older than an existing value
     if ((e = av_dict_get(new_params, "expires", NULL, 0)) && e->value) {
@@ -1143,6 +1138,7 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
 
             // if the cookie has already expired ignore it
             if (av_timegm(&new_tm) < av_gettime() / 1000000) {
+                av_dict_free(&new_cookie);
                 av_dict_free(&new_params);
                 return 0;
             }
@@ -1150,20 +1146,23 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
             // only replace an older cookie with the same name
             e2 = av_dict_get(*cookies, cookie_entry->key, NULL, 0);
             if (e2 && e2->value) {
-                AVDictionary *old_params = NULL;
-                if (!ff_http_parse_set_cookie(p, &old_params)) {
+                AVDictionary *old_cookie = NULL, *old_params = NULL;
+                if (!ff_http_parse_set_cookie(p, &old_cookie, &old_params)) {
                     e2 = av_dict_get(old_params, "expires", NULL, 0);
                     if (e2 && e2->value) {
                         struct tm old_tm = {0};
                         if (!ff_http_parse_date(e->value, &old_tm)) {
                             if (av_timegm(&new_tm) < av_timegm(&old_tm)) {
+                                av_dict_free(&new_cookie);
                                 av_dict_free(&new_params);
+                                av_dict_free(&old_cookie);
                                 av_dict_free(&old_params);
                                 return -1;
                             }
                         }
                     }
                 }
+                av_dict_free(&old_cookie);
                 av_dict_free(&old_params);
             }
         }
@@ -1172,9 +1171,11 @@ static int parse_cookie(HTTPContext *s, const char *p, const char *host,
     int host_only = host && !domain;
     if (domain && !host_in_cookie_domain(host, domain)) {
         av_log(s, AV_LOG_WARNING, "Ignoring cookie for domain %s set by %s\n", domain, host);
+        av_dict_free(&new_cookie);
         av_dict_free(&new_params);
         return 0;
     }
+    av_dict_free(&new_cookie);
     av_dict_free(&new_params);
 
     // duplicate the cookie name (dict will dupe the value)
@@ -1448,9 +1449,9 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
 
     *cookies = NULL;
     while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
-        AVDictionary *cookie_params = NULL;
+        AVDictionary *cookie_pair = NULL, *cookie_params = NULL;
         const AVDictionaryEntry *cookie_entry, *e;
-        const char *domain, *eql;
+        const char *domain;
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
@@ -1458,19 +1459,12 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
 
         // continue on to the next cookie if this one cannot be parsed
-        if (ff_http_parse_set_cookie(cookie, &cookie_params))
+        if (ff_http_parse_set_cookie(cookie, &cookie_pair, &cookie_params))
             goto skip_cookie;
+        cookie_entry = av_dict_iterate(cookie_pair, NULL);
 
-        // if the cookie has no value, skip it
-        cookie_entry = av_dict_iterate(cookie_params, NULL);
-        eql = strchr(cookie, '=');
-        if (!cookie_entry || !eql || eql == cookie + strspn(cookie, WHITESPACES) ||
-            memchr(cookie, ';', eql - cookie))
+        if (av_dict_get(cookie_params, "secure", NULL, 0) && !av_stristart(s->location, "https:", NULL))
             goto skip_cookie;
-
-        for (e = cookie_entry; (e = av_dict_iterate(cookie_params, e)); )
-            if (!av_strcasecmp(e->key, "secure") && !av_stristart(s->location, "https:", NULL))
-                goto skip_cookie;
 
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
@@ -1511,6 +1505,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path)
             ret = AVERROR(ENOMEM);
 
     skip_cookie:
+        av_dict_free(&cookie_pair);
         av_dict_free(&cookie_params);
     }
 
