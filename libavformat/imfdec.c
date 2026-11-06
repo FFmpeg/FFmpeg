@@ -466,6 +466,7 @@ static int open_track_file_resource(AVFormatContext *s,
 {
     IMFContext *c = s->priv_data;
     IMFAssetLocator *asset_locator;
+    AVRational duration;
     void *tmp;
 
     asset_locator = find_asset_map_locator(&c->asset_locator_map, track_file_resource->track_file_uuid);
@@ -493,6 +494,10 @@ static int open_track_file_resource(AVFormatContext *s,
         return AVERROR(ENOMEM);
     track->resources = tmp;
 
+    av_reduce(&duration.num, &duration.den,
+              track_file_resource->base.duration * (int64_t)track_file_resource->base.edit_rate.den,
+              track_file_resource->base.edit_rate.num, INT_MAX);
+
     for (uint32_t i = 0; i < track_file_resource->base.repeat_count; i++) {
         IMFVirtualTrackResourcePlaybackCtx vt_ctx;
 
@@ -503,10 +508,7 @@ static int open_track_file_resource(AVFormatContext *s,
         vt_ctx.ts_offset = av_sub_q(vt_ctx.start_time,
                                     av_div_q(av_make_q((int)track_file_resource->base.entry_point, 1),
                                              track_file_resource->base.edit_rate));
-        vt_ctx.end_time = av_add_q(track->duration,
-                                   av_make_q((int)track_file_resource->base.duration
-                                                 * track_file_resource->base.edit_rate.den,
-                                             track_file_resource->base.edit_rate.num));
+        vt_ctx.end_time = av_add_q(track->duration, duration);
         track->resources[track->resource_count++] = vt_ctx;
         track->duration = vt_ctx.end_time;
     }
