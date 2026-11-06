@@ -3696,6 +3696,7 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
         s->sh.num_entry_point_offsets > 0                &&
         pps->tiles_enabled_flag                          &&
         !pps->entropy_coding_sync_enabled_flag           &&
+        !pps->constrained_intra_pred_flag                &&
         s->sh.first_slice_in_pic_flag                    &&
         s->sh.num_entry_point_offsets + 1 == pps->num_tile_rows * pps->num_tile_columns)
         return hls_slice_data_tiles(s, nal);
