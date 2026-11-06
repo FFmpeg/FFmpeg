@@ -961,8 +961,9 @@ copy:
                 const int d1 = (s->in.format == INTERLEAVE_COLS_LR || s->in.format == INTERLEAVE_COLS_RL) && (s->in.format & 1) != (s->out.format & 1);
                 const int d2 = (s->in.format == INTERLEAVE_COLS_LR || s->in.format == INTERLEAVE_COLS_RL) ? !d1 : 0;
                 const int m = 1 + (s->in.format == INTERLEAVE_COLS_LR || s->in.format == INTERLEAVE_COLS_RL);
-                uint8_t *left  = ileft->data[i]  + ileft->linesize[i]  * y + s->in_off_left[i]  + d1 * s->pixstep[i];
-                uint8_t *right = iright->data[i] + iright->linesize[i] * y + s->in_off_right[i] + d2 * s->pixstep[i];
+                const int in_y = y / s->in.row_step * s->in.row_step;
+                uint8_t *left  = ileft->data[i]  + ileft->linesize[i]  * in_y + s->in_off_left[i]  + d1 * s->pixstep[i];
+                uint8_t *right = iright->data[i] + iright->linesize[i] * in_y + s->in_off_right[i] + d2 * s->pixstep[i];
                 int p, b;
 
                 if (s->out.format == CHECKERBOARD_RL && s->in.format != INTERLEAVE_COLS_LR && s->in.format != INTERLEAVE_COLS_RL)
