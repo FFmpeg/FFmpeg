@@ -498,6 +498,7 @@ static void margins_borders8(FillBordersContext *s, AVFrame *frame)
         const int bottom = s->borders[p].bottom;
         const int width = s->planewidth[p];
         const int height = s->planeheight[p];
+        const int tail_width = FFMIN(width, 8);
 
         for (int y = top; y < height - bottom; y++) {
             memset(ptr + linesize * y, ptr[linesize * y + left], left);
@@ -506,7 +507,7 @@ static void margins_borders8(FillBordersContext *s, AVFrame *frame)
 
         for (int y = top - 1; y >= 0; y--) {
             ptr[linesize * y] = ptr[linesize * (y + 1)];
-            memcpy(ptr + linesize * y + width - 8, ptr + linesize * (y + 1) + width - 8, 8);
+            memcpy(ptr + linesize * y + width - tail_width, ptr + linesize * (y + 1) + width - tail_width, tail_width);
 
             for (int x = 1; x < width - 8; x++) {
                 int prev = ptr[linesize * (y + 1) + x - 1];
@@ -519,7 +520,7 @@ static void margins_borders8(FillBordersContext *s, AVFrame *frame)
 
         for (int y = height - bottom; y < height; y++) {
             ptr[linesize * y] = ptr[linesize * (y - 1)];
-            memcpy(ptr + linesize * y + width - 8, ptr + linesize * (y - 1) + width - 8, 8);
+            memcpy(ptr + linesize * y + width - tail_width, ptr + linesize * (y - 1) + width - tail_width, tail_width);
 
             for (int x = 1; x < width - 8; x++) {
                 int prev = ptr[linesize * (y - 1) + x - 1];
@@ -543,6 +544,7 @@ static void margins_borders16(FillBordersContext *s, AVFrame *frame)
         const int bottom = s->borders[p].bottom;
         const int width = s->planewidth[p];
         const int height = s->planeheight[p];
+        const int tail_width = FFMIN(width, 8);
 
         for (int y = top; y < height - bottom; y++) {
             for (int x = 0; x < left; x++)
@@ -554,7 +556,7 @@ static void margins_borders16(FillBordersContext *s, AVFrame *frame)
 
         for (int y = top - 1; y >= 0; y--) {
             ptr[linesize * y] = ptr[linesize * (y + 1)];
-            memcpy(ptr + linesize * y + width - 8, ptr + linesize * (y + 1) + width - 8, 16);
+            memcpy(ptr + linesize * y + width - tail_width, ptr + linesize * (y + 1) + width - tail_width, tail_width * 2);
 
             for (int x = 1; x < width - 8; x++) {
                 int prev = ptr[linesize * (y + 1) + x - 1];
@@ -567,7 +569,7 @@ static void margins_borders16(FillBordersContext *s, AVFrame *frame)
 
         for (int y = height - bottom; y < height; y++) {
             ptr[linesize * y] = ptr[linesize * (y - 1)];
-            memcpy(ptr + linesize * y + width - 8, ptr + linesize * (y - 1) + width - 8, 16);
+            memcpy(ptr + linesize * y + width - tail_width, ptr + linesize * (y - 1) + width - tail_width, tail_width * 2);
 
             for (int x = 1; x < width - 8; x++) {
                 int prev = ptr[linesize * (y - 1) + x - 1];
