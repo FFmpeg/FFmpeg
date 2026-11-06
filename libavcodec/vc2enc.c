@@ -1093,6 +1093,14 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (s->wavelet_idx != VC2_TRANSFORM_9_7  &&
+        s->wavelet_idx != VC2_TRANSFORM_5_3  &&
+        s->wavelet_idx != VC2_TRANSFORM_HAAR &&
+        s->wavelet_idx != VC2_TRANSFORM_HAAR_S) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported wavelet type %d\n", s->wavelet_idx);
+        return AVERROR(EINVAL);
+    }
+
     if (s->base_vf <= 0) {
         if (avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
             s->strict_compliance = s->base_vf = 0;
