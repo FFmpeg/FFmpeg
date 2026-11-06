@@ -121,6 +121,10 @@ AVFILTER_DEFINE_CLASS(mandelbrot);
 static av_cold int init(AVFilterContext *ctx)
 {
     MBContext *s = ctx->priv;
+    int ret = av_image_check_size(s->w, s->h, 0, ctx);
+
+    if (ret < 0)
+        return ret;
 
     s->bailout *= s->bailout;
 
@@ -153,9 +157,6 @@ static int config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     FilterLink *l = ff_filter_link(outlink);
     MBContext *s = ctx->priv;
-
-    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
-        return AVERROR(EINVAL);
 
     outlink->w = s->w;
     outlink->h = s->h;
