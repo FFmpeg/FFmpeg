@@ -219,7 +219,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
     memset(&src[offset + in->nb_samples], 0, (H - in->nb_samples) * sizeof(float));
 
-    for (int i = S; i < H + S; i++) {
+    for (int i = S; i < in->nb_samples + S; i++) {
         float P = 0.f, Q = 0.f;
         int v = 0;
 
