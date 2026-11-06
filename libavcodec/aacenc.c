@@ -1650,7 +1650,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (is_mode || ms_mode || tns_mode || pred_mode) {
                     for (i = 0; i < s->chan_map[0]; i++) {
                         // Must restore coeffs
-                        chans = tag == TYPE_CPE ? 2 : 1;
+                        chans = s->chan_map[i + 1] == TYPE_CPE ? 2 : 1;
                         cpe = &s->cpe[i];
                         for (ch = 0; ch < chans; ch++)
                             memcpy(cpe->ch[ch].coeffs, cpe->ch[ch].pcoeffs, sizeof(cpe->ch[ch].coeffs));
