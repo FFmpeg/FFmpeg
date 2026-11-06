@@ -288,6 +288,11 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
+    if (s->planeheight[1] < 2) {
+        av_log(ctx, AV_LOG_ERROR, "Video with chroma planes of less than 2 lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
+
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     nb_threads = ff_filter_get_nb_threads(ctx);
     s->work_line = av_calloc(nb_threads, sizeof(*s->work_line));
