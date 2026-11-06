@@ -1242,6 +1242,72 @@ static int setup_protocols(CurlContext *c)
     return ret;
 }
 
+/* The host as libcurl matches it against cookies. */
+static int curl_url_host(char *host, size_t host_size, const char *url)
+{
+    unsigned flags = curl_version_info(CURLVERSION_NOW)->features & CURL_VERSION_IDN ? CURLU_PUNYCODE : 0;
+    CURLU *u = curl_url();
+    char *curl_host = NULL;
+    CURLUcode uc;
+    int ret;
+
+    if (!u)
+        return AVERROR(ENOMEM);
+    uc = curl_url_set(u, CURLUPART_URL, url, 0);
+    if (uc == CURLUE_OK)
+        uc = curl_url_get(u, CURLUPART_HOST, &curl_host, flags);
+    if (uc == CURLUE_OK) {
+        size_t len = strlen(curl_host);
+        int brackets = len >= 2 && curl_host[0] == '[' && curl_host[len - 1] == ']';
+        len -= 2 * brackets;
+        ret = len < host_size ? 0 : AVERROR(EINVAL);
+        if (!ret)
+            av_strlcpy(host, curl_host + brackets, len + 1);
+    } else
+        ret = uc == CURLUE_OUT_OF_MEMORY ? AVERROR(ENOMEM) : AVERROR(EINVAL);
+    curl_free(curl_host);
+    curl_url_cleanup(u);
+    return ret;
+}
+
+/* CURLOPT_COOKIELIST line for a bound cookies option line, NULL if the line holds
+ * no cookie libcurl can store unchanged. */
+static int cookie_list_line(char **line, const char *cookie)
+{
+    AVDictionary *cookie_pair = NULL, *attributes = NULL;
+    const AVDictionaryEntry *pair, *host_only, *path;
+    const char *domain;
+    int ret;
+
+    *line = NULL;
+    if ((ret = ff_http_parse_set_cookie(cookie, &cookie_pair, &attributes)) < 0) {
+        ret = ret == AVERROR_INVALIDDATA ? 0 : ret;
+        goto end;
+    }
+    pair      = av_dict_iterate(cookie_pair, NULL);
+    domain    = ff_http_cookie_domain(attributes);
+    host_only = av_dict_get(attributes, "@hostonly", NULL, 0);
+    path      = av_dict_get(attributes, "path", NULL, 0);
+    if (host_only && !domain)
+        domain = host_only->value;
+    else if (host_only)
+        goto end;
+    if (!domain || strchr(".#", *domain) || av_stristart(domain, "Set-Cookie:", NULL) ||
+        strchr(pair->key, '\t') || strchr(pair->value, '\t') || strchr(domain, '\t') ||
+        (path && strchr(path->value, '\t')))
+        goto end;
+    *line = av_asprintf("%s\t%s\t%s\t%s\t%"PRId64"\t%s\t%s", domain,
+                        host_only || ff_http_host_is_ip_literal(domain) ? "FALSE" : "TRUE",
+                        path && (*path->value == '/' || *path->value == '"') ? path->value : "/",
+                        av_dict_get(attributes, "secure", NULL, 0) ? "TRUE" : "FALSE",
+                        ff_http_cookie_expiry(attributes), pair->key, pair->value);
+    ret = *line ? 0 : AVERROR(ENOMEM);
+end:
+    av_dict_free(&cookie_pair);
+    av_dict_free(&attributes);
+    return ret;
+}
+
 #define CURL_SETOPT(opt, val)                                               \
     do {                                                                    \
         int ret_ = curl_setopt_checked(c, #opt,                            \
@@ -1317,18 +1383,24 @@ static int setup_curl(CurlContext *c)
         return AVERROR(ENOSYS);
     }
     if (c->cookies && c->cookies[0]) {
-        char *copy = av_strdup(c->cookies);
-        char *line, *saveptr = NULL;
+        char host[1024], *copy, *line, *saveptr = NULL;
+
+        if ((ret = curl_url_host(host, sizeof(host), url)) < 0 ||
+            (ret = ff_http_bind_cookies_to_host(&c->cookies, host)) < 0)
+            return ret;
+        copy = av_strdup(c->cookies);
         if (!copy)
             return AVERROR(ENOMEM);
-        for (line = av_strtok(copy, "\r\n", &saveptr); line;
-             line = av_strtok(NULL, "\r\n", &saveptr)) {
-            char *sc = av_asprintf("Set-Cookie: %s", line);
+        for (line = av_strtok(copy, "\n", &saveptr); line;
+             line = av_strtok(NULL, "\n", &saveptr)) {
+            char *sc;
 
-            if (!sc) {
+            if ((ret = cookie_list_line(&sc, line)) < 0) {
                 av_free(copy);
-                return AVERROR(ENOMEM);
+                return ret;
             }
+            if (!sc)
+                continue;
             cc = curl_easy_setopt(e, CURLOPT_COOKIELIST, sc);
             av_free(sc);
             if ((ret = curl_setopt_checked(c, "CURLOPT_COOKIELIST", cc)) < 0) {
