@@ -248,12 +248,21 @@ static void find_next_delta_ts(AVFilterContext *ctx, int64_t *seg_delta)
     *seg_delta = pts;
 }
 
+static int silence_pending(AVFilterContext *ctx, unsigned out_no)
+{
+    ConcatContext *cat = ctx->priv;
+
+    return cat->silence[out_no].nb_samples &&
+           !ff_outlink_get_status(ctx->outputs[out_no]);
+}
+
 static int queue_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
                          int64_t seg_delta)
 {
     ConcatContext *cat = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[out_no];
     struct concat_silence *silence = &cat->silence[out_no];
+    int64_t nb_samples;
     AVRational rate_tb = { 1, ctx->inputs[in_no]->sample_rate };
 
     if (!rate_tb.den)
@@ -262,9 +271,12 @@ static int queue_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no,
         return AVERROR_INVALIDDATA;
     if (seg_delta < cat->in[in_no].pts)
         return AVERROR_INVALIDDATA;
-    silence->nb_samples = av_rescale_q(seg_delta - cat->in[in_no].pts,
-                                       outlink->time_base, rate_tb);
-    silence->end_pts    = cat->delta_ts;
+    nb_samples = av_rescale_q(seg_delta - cat->in[in_no].pts,
+                              outlink->time_base, rate_tb);
+    if (nb_samples < 0 || nb_samples > INT64_MAX - silence->nb_samples)
+        return AVERROR_INVALIDDATA;
+    silence->nb_samples += nb_samples;
+    silence->end_pts     = cat->delta_ts;
     return 0;
 }
 
@@ -310,11 +322,6 @@ static int flush_segment(AVFilterContext *ctx)
                                 seg_delta);
             if (ret < 0)
                 return ret;
-            while (cat->silence[str].nb_samples) {
-                ret = send_silence(ctx, str);
-                if (ret < 0)
-                    return ret;
-            }
         }
     }
     return 0;
@@ -398,6 +405,8 @@ static int activate(AVFilterContext *ctx)
     /* Forward available frames */
     if (cat->cur_idx < ctx->nb_inputs) {
         for (i = 0; i < ctx->nb_outputs; i++) {
+            if (silence_pending(ctx, i))
+                continue;
             ret = ff_inlink_consume_frame(ctx->inputs[cat->cur_idx + i], &frame);
             if (ret < 0)
                 return ret;
@@ -413,6 +422,8 @@ static int activate(AVFilterContext *ctx)
         for (i = 0; i < ctx->nb_outputs; i++) {
             AVFilterLink *inlink = ctx->inputs[cat->cur_idx + i];
 
+            if (silence_pending(ctx, i))
+                continue;
             ret = ff_inlink_acknowledge_status(inlink, &status, &pts);
             /* TODO use pts */
             if (ret > 0) {
@@ -437,10 +448,15 @@ static int activate(AVFilterContext *ctx)
     ret = FFERROR_NOT_READY;
     for (i = 0; i < ctx->nb_outputs; i++) {
         if (ff_outlink_frame_wanted(ctx->outputs[i])) {
+            if (silence_pending(ctx, i))
+                return send_silence(ctx, i);
             if (cat->in[cat->cur_idx + i].eof) {
-                for (j = 0; j < ctx->nb_outputs; j++)
+                for (j = 0; j < ctx->nb_outputs; j++) {
+                    if (silence_pending(ctx, j))
+                        return send_silence(ctx, j);
                     if (!cat->in[cat->cur_idx + j].eof)
                         ff_inlink_request_frame(ctx->inputs[cat->cur_idx + j]);
+                }
                 return 0;
             } else {
                 ff_inlink_request_frame(ctx->inputs[cat->cur_idx + i]);
