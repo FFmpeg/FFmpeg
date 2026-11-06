@@ -791,7 +791,7 @@ TESTPROGS-$(CONFIG_RTPDEC)               += rtpdec
 FIFO-MUXER-TESTPROGS-$(CONFIG_NETWORK)   += fifo_muxer
 TESTPROGS-$(CONFIG_FIFO_MUXER)           += $(FIFO-MUXER-TESTPROGS-yes)
 TESTPROGS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh
-TESTPROGS-$(CONFIG_HTTP_PROTOCOL)        += http
+TESTPROGS-$(CONFIG_HTTP_PROTOCOL)        += http httpcookie
 # http_nobody covers both the http and httpproxy read paths.
 HTTP_NOBODY_TESTPROG-$(CONFIG_HTTP_PROTOCOL)      = http_nobody
 HTTP_NOBODY_TESTPROG-$(CONFIG_HTTPPROXY_PROTOCOL) = http_nobody

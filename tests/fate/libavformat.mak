@@ -56,6 +56,10 @@ FATE_LIBAVFORMAT-$(CONFIG_HTTP_PROTOCOL) += fate-http-status-line
 fate-http-status-line: libavformat/tests/http$(EXESUF)
 fate-http-status-line: CMD = run libavformat/tests/http$(EXESUF) $(FATE_HTTP_STATUS_LINES)
 
+FATE_LIBAVFORMAT-$(CONFIG_HTTP_PROTOCOL) += fate-httpcookie
+fate-httpcookie: libavformat/tests/httpcookie$(EXESUF)
+fate-httpcookie: CMD = run libavformat/tests/httpcookie$(EXESUF)
+
 FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/tests/noproxy$(EXESUF)
 fate-noproxy: CMD = run libavformat/tests/noproxy$(EXESUF)
