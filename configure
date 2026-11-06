@@ -2604,6 +2604,7 @@ TYPES_LIST="
     IDXGIOutput5
     __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5
     IDirect3DDxgiInterfaceAccess
+    ID3D12VideoEncodeCommandList
     kCMVideoCodecType_HEVC
     kCMVideoCodecType_HEVCWithAlpha
     kCMVideoCodecType_VP9
@@ -7075,6 +7076,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "windows.h d3d12.h" "ID3D12Device"
 check_type "windows.h d3d12video.h" "ID3D12VideoDecoder"
 check_type "windows.h d3d12video.h" "ID3D12VideoEncoder"
+check_type "windows.h d3d12video.h" "ID3D12VideoEncodeCommandList"
 check_type "windows.h d3d12video.h" "ID3D12VideoProcessor"
 check_type "windows.h d3d12video.h" "ID3D12VideoMotionEstimator"
 test_code cc "windows.h d3d12video.h" "D3D12_FEATURE_VIDEO feature = D3D12_FEATURE_VIDEO_ENCODER_CODEC" && \

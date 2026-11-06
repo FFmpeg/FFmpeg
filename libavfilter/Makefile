@@ -682,6 +682,7 @@ SKIPHEADERS-$(CONFIG_LCMS2)                  += fflcms2.h
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 
 SKIPHEADERS-$(CONFIG_AMF)                    += vf_amf_common.h
+SKIPHEADERS-$(CONFIG_SCALE_D3D12_FILTER)     += d3d12_filter.h d3d12_vpp.h
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h stack_internal.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h stack_internal.h
