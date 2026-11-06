@@ -1,0 +1,35 @@
+0: [sid]=[secret] domain=- expiry=0
+1: [sid]=[secret] [Path]=[/a] [Domain]=[.example.com] domain=example.com expiry=0
+2: [domain]=[localhost] domain=- expiry=0
+3: [path]=[secret] [Domain]=[example.com] [Path]=[/] domain=example.com expiry=0
+4: [sid]=[secret] domain=- expiry=0
+5: [sid]=[secret] [Path]=[abc] domain=- expiry=0
+6: [sid]=[secret] [Path]=["/"] domain=- expiry=0
+7: [sid]=[secret] [Secure]=[] [HttpOnly]=[] domain=- expiry=0
+8: [sid]=[secret] [Max-Age]=[0] [Expires]=[Wed, 09 Jun 2100 10:18:14 GMT] domain=- expiry=1
+9: [sid]=[secret] [Max-Age]=[-1] domain=- expiry=1
+10: [sid]=[secret] [Max-Age]=[0] domain=- expiry=1
+11: [sid]=[secret] [Expires]=[Sunday, 06-Nov-1994 08:49:37 GMT] domain=- expiry=784111777
+12: [sid]=[secret] [Domain]=[example.com] domain=example.com expiry=0
+13: [sid]=[secret] [Expires]=[Wed, 09 Jun 2100 10:18:14 GMT] domain=- expiry=2147483647
+14: [sid]=[secret] [Expires]=[Sunday, 06-Nov-1994 08:49:37 GMT] domain=- expiry=784111777
+15: [sid]=[sec	ret] domain=- expiry=0
+16: no cookie
+17: no cookie
+18: no cookie
+19: no cookie
+20: no cookie
+21: no cookie
+Wed, 21 Oct 2015 07:28:00 GMT: 1445412480
+Wednesday, 21-Oct-15 07:28:00 GMT: 1445412480
+Wed Oct 21 07:28:00 2015: 1445412480
+Thu, 01 Jan 1970 00:00:00 GMT: 0
+Thu, 29 Feb 2024 12:00:00 GMT: 1709208000
+Thu, 29 Feb 2023 12:00:00 GMT: invalid
+Wed, 21 Oct 1600 07:28:00 GMT: invalid
+Wed, 21 Oct 2015 24:00:00 GMT: invalid
+120: invalid
+sid=secret; @hostonly=example.com
+domain=localhost; @hostonly=example.com
+sid=secret; Domain=example.com
+sid=secret; @hostonly=other
