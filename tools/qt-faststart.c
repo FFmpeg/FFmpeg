@@ -571,6 +571,10 @@ int main(int argc, char *argv[])
         perror(argv[1]);
         goto error_out;
     }
+    if (last_offset < start_offset) {
+        fprintf(stderr, "moov atom overlaps the ftyp atom\n");
+        goto error_out;
+    }
     moov_atom_size = atom_size;
     moov_atom      = malloc(moov_atom_size);
     if (!moov_atom) {
