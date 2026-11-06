@@ -2776,12 +2776,11 @@ static void hls_decode_neighbour(HEVCLocalContext *lc,
 }
 
 /* Decode one CTB from the substream in lc->sub. */
-static int decode_ctb(HEVCContext *s, const HEVCLayerContext *l,
-                      HEVCLocalContext *lc, int ctb_addr_rs)
+static int decode_ctb_data(const HEVCContext *s, const HEVCLayerContext *l,
+                           HEVCLocalContext *lc, int ctb_addr_rs)
 {
     const HEVCPPS   *const pps = s->pps;
     const HEVCSPS   *const sps = pps->sps;
-    const int ctb_size    = 1 << sps->log2_ctb_size;
     const int ctb_addr_ts = pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     const int x_ctb       = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
     const int y_ctb       = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
@@ -2805,12 +2804,27 @@ static int decode_ctb(HEVCContext *s, const HEVCLayerContext *l,
         goto fail;
 
     ff_hevc_save_states(lc, pps, ctb_addr_ts + 1);
-    ff_hevc_hls_filters(lc, l, pps, x_ctb, y_ctb, ctb_size);
 
     return ret;
 
 fail:
     l->tab_slice_address[ctb_addr_rs] = -1;
+    return ret;
+}
+
+static int decode_ctb(HEVCContext *s, const HEVCLayerContext *l,
+                      HEVCLocalContext *lc, int ctb_addr_rs)
+{
+    const HEVCPPS   *const pps = s->pps;
+    const HEVCSPS   *const sps = pps->sps;
+    const int ctb_size = 1 << sps->log2_ctb_size;
+    const int x_ctb    = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
+    const int y_ctb    = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
+    int ret = decode_ctb_data(s, l, lc, ctb_addr_rs);
+
+    if (ret >= 0)
+        ff_hevc_hls_filters(lc, l, pps, x_ctb, y_ctb, ctb_size);
+
     return ret;
 }
 
@@ -3109,6 +3123,16 @@ static int tile_interleave_wanted(const HEVCContext *s, const HEVCPPS *pps)
     return pps->num_tile_columns * pps->num_tile_rows > 1;
 }
 
+static int slice_threads_wanted(const HEVCContext *s, const HEVCPPS *pps)
+{
+    return s->avctx->active_thread_type == FF_THREAD_SLICE &&
+           pps                                         &&
+           !pps->tiles_enabled_flag                    &&
+           !pps->entropy_coding_sync_enabled_flag      &&
+           !pps->constrained_intra_pred_flag           &&
+           !pps->pps_scc_extension_flag;
+}
+
 static int alloc_tile_streams(HEVCContext *s, unsigned n)
 {
     if (n > s->tile_streams_alloc) {
@@ -3258,14 +3282,14 @@ static int tile_slice_payload(const HEVCTileSlice *sl,
     return 0;
 }
 
-/* Only an independent slice covering exactly one tile may be deferred. */
+/* Only an independent slice covering exactly one tile, or any independent
+ * slice of an untiled picture under slice threading, may be deferred. */
 static int slice_is_deferrable(const HEVCContext *s)
 {
     const HEVCPPS *const pps = s->pps;
     int start_ts;
 
-    if (!tile_interleave_wanted(s, pps)         ||
-        s->sh.num_entry_point_offsets != 0      ||
+    if (s->sh.num_entry_point_offsets != 0      ||
         s->sh.dependent_slice_segment_flag      ||
         s->cur_layer != 0                       ||
         !s->cur_frame)
@@ -3273,6 +3297,12 @@ static int slice_is_deferrable(const HEVCContext *s)
 
     /* Never mix in slices collected for another frame */
     if (s->nb_tile_slices && s->cur_frame != s->tile_slices_frame)
+        return 0;
+
+    if (slice_threads_wanted(s, pps))
+        return 1;
+
+    if (!tile_interleave_wanted(s, pps))
         return 0;
 
     start_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
@@ -3392,6 +3422,144 @@ static int build_tile_streams(HEVCContext *s, unsigned nb)
     return 1;
 }
 
+static int hls_decode_entry_slice(AVCodecContext *avctx, void *hevc_lclist,
+                                  int job, int thread)
+{
+    HEVCLocalContext *lc = &((HEVCLocalContext *)hevc_lclist)[thread];
+    const HEVCContext *const s = lc->parent;
+    const HEVCLayerContext *const l = &s->layers[s->tile_slices_layer];
+    const HEVCPPS *const pps = s->pps;
+    const HEVCTileSlice *const sl = &s->tile_slices[job];
+    const uint8_t *data;
+    size_t size;
+    int more_data = 1, ts = sl->start_ts;
+
+    tile_slice_payload(sl, &data, &size);
+
+    bind_slice_ctx(lc, &sl->sh, sl->rpl, sl->collocated_ref);
+    substream_load(&lc->sub, data, size, sl->qp_y_seed);
+    lc->slice_bs_defer = 1;
+
+    while (more_data && ts < sl->end_ts) {
+        more_data = decode_ctb_data(s, l, lc, pps->ctb_addr_ts_to_rs[ts]);
+        if (more_data < 0)
+            return more_data;
+        ts++;
+    }
+
+    return ts;
+}
+
+/* Returns 1 if decoded, 0 to decode the slices serially, <0 on error. */
+static int decode_slices_parallel(HEVCContext *s, const HEVCLayerContext *l,
+                                  unsigned nb)
+{
+    const HEVCPPS *const pps = s->pps;
+    const HEVCSPS *const sps = pps->sps;
+    const int ctb_size = 1 << sps->log2_ctb_size;
+    HEVCLocalContext *lc;
+    int *end_ts;
+    int ret;
+
+    for (unsigned i = 0; i < nb; i++) {
+        HEVCTileSlice *const sl = &s->tile_slices[i];
+        const uint8_t *data;
+        size_t size;
+
+        if (sl->start_ts < 0 || sl->start_ts >= sps->ctb_size ||
+            tile_slice_payload(sl, &data, &size) < 0)
+            return 0;
+
+        if (i) {
+            if (sl->start_ts <= s->tile_slices[i - 1].start_ts)
+                return 0;
+            s->tile_slices[i - 1].end_ts = sl->start_ts;
+        }
+    }
+    s->tile_slices[nb - 1].end_ts = sps->ctb_size;
+
+    ret = alloc_local_ctxs(s);
+    if (ret < 0)
+        return ret;
+    lc = &s->local_ctx[0];
+
+    end_ts = av_calloc(nb, sizeof(*end_ts));
+    if (!end_ts)
+        return AVERROR(ENOMEM);
+
+    s->avctx->execute2(s->avctx, hls_decode_entry_slice, s->local_ctx, end_ts, nb);
+
+    for (unsigned i = 0; i < s->nb_local_ctx; i++)
+        s->local_ctx[i].slice_bs_defer = 0;
+
+    for (unsigned i = 0; i < nb; i++) {
+        const HEVCTileSlice *const sl = &s->tile_slices[i];
+
+        if (end_ts[i] < 0) {
+            if (end_ts[i] != AVERROR_INVALIDDATA ||
+                (s->avctx->err_recognition & AV_EF_EXPLODE)) {
+                ret = end_ts[i];
+                goto end;
+            }
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "Skipping invalid undecodable slice %u\n", i);
+            end_ts[i] = sl->start_ts;
+        }
+
+        for (int ts = end_ts[i]; ts < sl->end_ts; ts++)
+            l->tab_slice_address[pps->ctb_addr_ts_to_rs[ts]] = -1;
+    }
+
+    for (unsigned i = 0; i < nb; i++) {
+        const HEVCTileSlice *const sl = &s->tile_slices[i];
+
+        if (sl->sh.disable_deblocking_filter_flag ||
+            !sl->sh.slice_loop_filter_across_slices_enabled_flag)
+            continue;
+
+        bind_slice_ctx(lc, &sl->sh, sl->rpl, sl->collocated_ref);
+
+        for (int ts = sl->start_ts; ts < end_ts[i]; ts++) {
+            const int rs    = pps->ctb_addr_ts_to_rs[ts];
+            const int x_ctb = (rs % sps->ctb_width) << sps->log2_ctb_size;
+            const int y_ctb = (rs / sps->ctb_width) << sps->log2_ctb_size;
+            unsigned edges = 0;
+
+            if (y_ctb > 0 && l->tab_slice_address[rs - sps->ctb_width] >= 0)
+                edges |= BOUNDARY_UPPER_SLICE;
+            if (x_ctb > 0 && l->tab_slice_address[rs - 1] >= 0)
+                edges |= BOUNDARY_LEFT_SLICE;
+
+            hls_decode_neighbour(lc, l, pps, sps, x_ctb, y_ctb, ts);
+            ff_hevc_ctb_edge_bs(lc, l, pps, x_ctb, y_ctb, edges);
+        }
+    }
+
+    for (unsigned i = 0; i < nb; i++) {
+        const HEVCTileSlice *const sl = &s->tile_slices[i];
+
+        bind_slice_ctx(lc, &sl->sh, sl->rpl, sl->collocated_ref);
+
+        for (int ts = sl->start_ts; ts < end_ts[i]; ts++) {
+            const int rs    = pps->ctb_addr_ts_to_rs[ts];
+            const int x_ctb = (rs % sps->ctb_width) << sps->log2_ctb_size;
+            const int y_ctb = (rs / sps->ctb_width) << sps->log2_ctb_size;
+
+            ff_hevc_hls_filters(lc, l, pps, x_ctb, y_ctb, ctb_size);
+        }
+    }
+
+    if (end_ts[nb - 1] == sps->ctb_size)
+        finish_last_ctb_filter(s, l, lc,
+                               (sps->ctb_width  - 1) << sps->log2_ctb_size,
+                               (sps->ctb_height - 1) << sps->log2_ctb_size);
+
+    ret = 1;
+end:
+    av_free(end_ts);
+    return ret;
+}
+
 /* If picture_complete, the slices cover the picture and are decoded in row
  * major order. Otherwise more slices follow, so decode them in their
  * original order. */
@@ -3413,6 +3581,12 @@ static int decode_deferred_tile_slices(HEVCContext *s, int picture_complete)
         av_log(s->avctx, AV_LOG_WARNING,
                "Dropping %u deferred tile slice(s) of a stale picture\n", nb);
         return 0;
+    }
+
+    if (picture_complete && nb > 1 && slice_threads_wanted(s, pps)) {
+        ret = decode_slices_parallel(s, l, nb);
+        if (ret)
+            return ret < 0 ? ret : 0;
     }
 
     if (picture_complete) {
@@ -3610,7 +3784,8 @@ static int hls_slice_data_tiles(HEVCContext *s, const H2645NAL *nal)
             y_ctb = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
             hls_decode_neighbour(&s->local_ctx[0], l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
             if (s->local_ctx[0].boundary_flags & (BOUNDARY_LEFT_TILE | BOUNDARY_UPPER_TILE))
-                ff_hevc_tile_boundary_bs(&s->local_ctx[0], l, pps, x_ctb, y_ctb);
+                ff_hevc_ctb_edge_bs(&s->local_ctx[0], l, pps, x_ctb, y_ctb,
+                                    BOUNDARY_LEFT_TILE | BOUNDARY_UPPER_TILE);
         }
     }
 

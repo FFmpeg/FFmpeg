@@ -778,7 +778,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
 
     boundary_upper = y0 > 0 && !(y0 & 7);
     if (boundary_upper &&
-        ((!lc->sh->slice_loop_filter_across_slices_enabled_flag &&
+        (((!lc->sh->slice_loop_filter_across_slices_enabled_flag || lc->slice_bs_defer) &&
           lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
           (y0 % (1 << sps->log2_ctb_size)) == 0) ||
          ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
@@ -819,7 +819,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
     // bs for vertical TU boundaries
     boundary_left = x0 > 0 && !(x0 & 7);
     if (boundary_left &&
-        ((!lc->sh->slice_loop_filter_across_slices_enabled_flag &&
+        (((!lc->sh->slice_loop_filter_across_slices_enabled_flag || lc->slice_bs_defer) &&
           lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
           (x0 % (1 << sps->log2_ctb_size)) == 0) ||
          ((!pps->loop_filter_across_tiles_enabled_flag || lc->tile_bs_defer) &&
@@ -930,8 +930,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
     }
 }
 
-void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
-                              const HEVCPPS *pps, int x0, int y0)
+void ff_hevc_ctb_edge_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                         const HEVCPPS *pps, int x0, int y0, unsigned edges)
 {
     const HEVCSPS *const sps = pps->sps;
     const HEVCContext *s = lc->parent;
@@ -943,7 +943,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
     const int ctb_size         = 1 << sps->log2_ctb_size;
     int i, bs;
 
-    if ((lc->boundary_flags & BOUNDARY_UPPER_TILE) && y0 > 0) {
+    if ((lc->boundary_flags & edges & (BOUNDARY_UPPER_TILE | BOUNDARY_UPPER_SLICE)) && y0 > 0) {
         const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
                                     ff_hevc_get_ref_list(s->cur_frame, x0, y0 - 1) :
                                     lc->rpl;
@@ -967,7 +967,7 @@ void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
         }
     }
 
-    if ((lc->boundary_flags & BOUNDARY_LEFT_TILE) && x0 > 0) {
+    if ((lc->boundary_flags & edges & (BOUNDARY_LEFT_TILE | BOUNDARY_LEFT_SLICE)) && x0 > 0) {
         const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
                                      ff_hevc_get_ref_list(s->cur_frame, x0 - 1, y0) :
                                      lc->rpl;

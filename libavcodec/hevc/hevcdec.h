@@ -459,6 +459,7 @@ typedef struct HEVCLocalContext {
 
     /* decoding tiles in parallel: defer tile-boundary BS to a serial pass */
     int tile_bs_defer;
+    int slice_bs_defer;
 
     // an array of these structs is used for per-thread state - pad its size
     // to avoid false sharing
@@ -510,6 +511,7 @@ typedef struct HEVCTileSlice {
     const uint8_t *data;
     int size;
     int start_ts;
+    int end_ts;
     int qp_y_seed;      ///< lc[0].qp_y before deferring, the initial QP predictor
     const RefPicList *rpl;              ///< reference lists of this slice
     const HEVCFrame *collocated_ref;    ///< temporal MVP target of this slice
@@ -627,7 +629,8 @@ typedef struct HEVCContext {
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
 
-    /* Slices deferred when every tile carries its own slice. Frame and layer
+    /* Slices deferred when every tile carries its own slice, or when the
+     * slices of an untiled picture are decoded in parallel. Frame and layer
      * are kept so that leftovers are dropped, not decoded into another
      * frame. */
     HEVCTileSlice *tile_slices;
@@ -769,8 +772,8 @@ void ff_hevc_set_qPy(HEVCLocalContext *lc,
 void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayerContext *l,
                                            const HEVCPPS *pps,
                                            int x0, int y0, int log2_trafo_size);
-void ff_hevc_tile_boundary_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
-                              const HEVCPPS *pps, int x0, int y0);
+void ff_hevc_ctb_edge_bs(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                         const HEVCPPS *pps, int x0, int y0, unsigned edges);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc);
 int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc);
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCLocalContext *lc);
