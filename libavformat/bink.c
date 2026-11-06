@@ -263,7 +263,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while (bink->current_track < bink->num_audio_tracks) {
         uint32_t audio_size = avio_rl32(pb);
-        if (audio_size > bink->remain_packet_size - 4) {
+        if (audio_size + 4LL > bink->remain_packet_size) {
             av_log(s, AV_LOG_ERROR,
                    "frame %"PRId64": audio size in header (%"PRIu32") > size of packet left (%"PRIu32")\n",
                    bink->video_pts, audio_size, bink->remain_packet_size);
