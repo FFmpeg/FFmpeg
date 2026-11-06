@@ -396,6 +396,10 @@ static int config_output(AVFilterLink *outlink)
             av_log(ctx, AV_LOG_ERROR, "height must be even\n");
             return AVERROR_INVALIDDATA;
         }
+        if (AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h) & 1) {
+            av_log(ctx, AV_LOG_ERROR, "chroma height must be even\n");
+            return AVERROR_INVALIDDATA;
+        }
         break;
     }
 
