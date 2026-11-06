@@ -587,6 +587,8 @@ null_chunk_retry:
         auxsize = avio_rl16(pb);
         auxtag = avio_rl32(pb);
         avio_skip(pb, auxsize);
+        if (vsize < auxsize + sizeof(uint16_t) + sizeof(uint32_t))
+            return AVERROR_INVALIDDATA;
         vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming brain-dead */
     }
 
