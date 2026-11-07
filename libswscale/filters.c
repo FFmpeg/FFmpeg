@@ -284,6 +284,7 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     filter = av_refstruct_alloc_ext(sizeof(*filter), 0, NULL, sws_filter_free);
     if (!filter)
         return AVERROR(ENOMEM);
+    filter->scaler = scaler;
     memcpy(filter->name, fun.name, sizeof(filter->name));
     filter->src_size = params->src_size;
     filter->dst_size = params->dst_size;

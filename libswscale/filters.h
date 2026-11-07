@@ -108,6 +108,7 @@ typedef struct SwsFilterWeights {
     /**
      * Copy of the parameters used to generate this filter, for reference.
      */
+    SwsScaler scaler; /* SWS_SCALE_AUTO is resolved */
     int src_size;
     int dst_size;
     double virtual_size;
