@@ -291,6 +291,63 @@ static void nmr_bail_channel(SingleChannelElement *sce)
     }
 }
 
+/* Zero coded band b, subwindow flags included (the group flag is re-derived
+ * by ANDing). */
+static void nmr_drop_band(NMRSlot *t, int b)
+{
+    for (int w2 = 0; w2 < t->sce->ics.group_len[t->bw[b]]; w2++)
+        t->sce->zeroes[(t->bw[b] + w2)*16 + t->bg[b]] = 1;
+}
+
+/* Keep the coding sequence act[] scalefactor-chain legal on grid `step`.
+ * A band's candidates only reach up to where it quantizes to zero, so two
+ * neighbours more than SCALE_MAX_DIFF apart leave the trellis without any
+ * legal path: every later state stays FLT_MAX and the backtrack returns the
+ * finest candidates, an oversized frame. Walk the chain tracking the
+ * scalefactor range still reachable from its start, and drop the quieter
+ * band of a pair that cannot connect: within reach it would quantize to
+ * zero anyway. A no-op on a legal chain. */
+static void nmr_chain_repair(NMRSlot *t, int step)
+{
+    int rlo[128], rhi[128], n = 0;
+
+    for (int k = 0; k < t->nact; k++) {
+        const int b = t->act[k];
+        const int lo = t->blo[b], hi = lo + (t->bnc[b] - 1)*step;
+        int clo = lo, chi = hi, keep = 1;
+        while (n) {
+            const int p = t->act[n - 1];
+            clo = FFMAX(lo, rlo[n - 1] - SCALE_MAX_DIFF);
+            chi = FFMIN(hi, rhi[n - 1] + SCALE_MAX_DIFF);
+            clo = lo + (clo - lo + step - 1) / step * step;
+            if (clo <= chi) {
+                chi = lo + (chi - lo) / step * step;
+                break;
+            }
+            if (t->maxvals[t->bidx[p]] > t->maxvals[t->bidx[b]]) {
+                keep = 0;
+                break;
+            }
+            nmr_drop_band(t, p);
+            n--;
+        }
+        if (!keep) {
+            nmr_drop_band(t, b);
+            continue;
+        }
+        if (!n) {
+            clo = lo;
+            chi = hi;
+        }
+        /* n <= k: compacting in place never overwrites an unread entry */
+        t->act[n] = b;
+        rlo[n]    = clo;
+        rhi[n]    = chi;
+        n++;
+    }
+    t->nact = n;
+}
+
 /* Per-channel setup into slot t: short-block threshold shaping, the
  * allocation law, zero decisions, and the PASS 1 coarse candidate curves.
  * Returns the coded-band count; 0 = nothing codeable (caller bails). */
@@ -546,6 +603,9 @@ static int nmr_setup_channel(AVCodecContext *avctx, AACEncContext *s,
         t->is_pns[b] = 0;
     }
     t->nact = nbnd;
+    /* the fine pass refines around the coarse solve, so a chain legal on
+     * the coarse grid stays legal there */
+    nmr_chain_repair(t, cstep);
     return nbnd;
 }
 
@@ -1100,19 +1160,17 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
                 int dropped = 0;
                 for (int k = 0; k < nsl; k++) {
                     NMRSlot *t = sl[k];
-                    SingleChannelElement *sce = t->sce;
-                    int hi = 1, b, w0, g;
+                    int hi = 1;
                     if (t->nact <= 1)
                         continue;
                     for (int b_ = 2; b_ < t->nact; b_++)
                         if (t->bg[t->act[b_]] >= t->bg[t->act[hi]])
                             hi = b_;
-                    b  = t->act[hi];
-                    w0 = t->bw[b]; g = t->bg[b];
-                    for (int w2 = 0; w2 < sce->ics.group_len[w0]; w2++)
-                        sce->zeroes[(w0+w2)*16+g] = 1;
+                    nmr_drop_band(t, t->act[hi]);
                     memmove(&t->act[hi], &t->act[hi + 1], (t->nact - hi - 1) * sizeof(t->act[0]));
                     t->nact--;
+                    /* the dropped band may have bridged its neighbours */
+                    nmr_chain_repair(t, NMR_STEP);
                     dropped = 1;
                 }
                 if (!dropped)
@@ -1316,6 +1374,8 @@ static void nmr_solve_group(AVCodecContext *avctx, AACEncContext *s,
                     if (!t->is_pns[t->act[b_]])
                         t->act[n++] = t->act[b_];
                 t->nact = n;
+                /* noise bands leave the scalefactor chain */
+                nmr_chain_repair(t, NMR_STEP);
             }
             pns_total += pns_count;
         }
