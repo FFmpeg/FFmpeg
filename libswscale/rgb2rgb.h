@@ -144,16 +144,18 @@ extern void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const u
 void ff_sws_rgb2rgb_init(void);
 
 /**
- * Packs the chroma positions from..to-1 of one line as YUYV when
- * luma_first is set and as UYVY otherwise.
+ * Packs one line of width pixels, starting at chroma position from, as YUYV
+ * when luma_first is set and as UYVY otherwise. The luma of an odd last
+ * pixel is repeated.
  */
 static inline void ff_pack_yuv422_line(uint8_t *dst, const uint8_t *ysrc,
                                        const uint8_t *usrc, const uint8_t *vsrc,
-                                       int from, int to, int luma_first)
+                                       int from, int width, int luma_first)
 {
-    for (int i = from; i < to; i++) {
+    for (int i = from; 2 * i < width; i++) {
+        const int y1 = 2 * i + 1 < width ? 2 * i + 1 : 2 * i;
         dst[4 * i +     !luma_first] = ysrc[2 * i];
-        dst[4 * i + 2 + !luma_first] = ysrc[2 * i + 1];
+        dst[4 * i + 2 + !luma_first] = ysrc[y1];
         dst[4 * i +      luma_first] = usrc[i];
         dst[4 * i + 2 +  luma_first] = vsrc[i];
     }
