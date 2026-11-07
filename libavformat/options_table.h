@@ -55,7 +55,11 @@ static const AVOption avformat_options[] = {
 #if FF_API_OLD_ID3V2_COMMENT
 {"legacy_id3v2_comm_keys", "also export id3v2 COMM descriptors as bare metadata keys", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS }, 0, 0, D|AV_OPT_FLAG_DEPRECATED, .unit = "fflags" },
 #endif
-{"seek2any", "allow seeking to non-keyframes on demuxer level when supported", OFFSET(seek2any), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, D},
+#if FF_API_SEEK2ANY
+{"seek2any", "allow seeking to non-keyframes on demuxer level when supported", OFFSET(seek2any), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, D|AV_OPT_FLAG_DEPRECATED},
+#endif
+{"seek_flags", "flags added to every seek", OFFSET(seek_flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, INT_MAX, D, .unit = "seek_flags"},
+{"any", "allow seeking to non-keyframes on demuxer level when supported", 0, AV_OPT_TYPE_CONST, {.i64 = AVSEEK_FLAG_ANY }, INT_MIN, INT_MAX, D, .unit = "seek_flags"},
 {"analyzeduration", "specify how many microseconds are analyzed to probe the input", OFFSET(max_analyze_duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, (double)INT64_MAX, D},
 {"cryptokey", "decryption key", OFFSET(key), AV_OPT_TYPE_BINARY, {.dbl = 0}, 0, 0, D},
 {"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), AV_OPT_TYPE_INT, {.i64 = 1<<20 }, 0, INT_MAX, D},

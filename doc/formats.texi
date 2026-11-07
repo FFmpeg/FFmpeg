@@ -76,9 +76,18 @@ It may be needed to increase max_interleave_delta to avoid flushing the longer
 streams before EOF.
 @end table
 
+@item seek_flags @var{flags} (@emph{input})
+Set flags added to every seek. Default is none.
+
+Possible values:
+@table @samp
+@item any
+Allow seeking to non-keyframes on demuxer level when supported.
+@end table
+
 @item seek2any @var{integer} (@emph{input})
 Allow seeking to non-keyframes on demuxer level when supported if set to 1.
-Default is 0.
+Default is 0. This option is deprecated, use @code{seek_flags any} instead.
 
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A

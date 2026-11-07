@@ -765,8 +765,13 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
     if (stream_index < -1 || stream_index >= (int)s->nb_streams)
         return AVERROR(EINVAL);
 
+#if FF_API_SEEK2ANY
+FF_DISABLE_DEPRECATION_WARNINGS
     if (s->seek2any > 0)
         flags |= AVSEEK_FLAG_ANY;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    flags |= s->seek_flags & AVSEEK_FLAG_ANY;
     flags &= ~AVSEEK_FLAG_BACKWARD;
 
     if (!(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))) {

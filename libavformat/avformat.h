@@ -1865,12 +1865,17 @@ typedef struct AVFormatContext {
      */
     unsigned int correct_ts_overflow;
 
+#if FF_API_SEEK2ANY
     /**
      * Force seeking to any (also non key) frames.
      * - encoding: unused
      * - decoding: Set by user
+     *
+     * @deprecated use AVSEEK_FLAG_ANY in seek_flags
      */
+    attribute_deprecated
     int seek2any;
+#endif
 
     /**
      * Flush the I/O context after each packet.
@@ -2056,6 +2061,13 @@ typedef struct AVFormatContext {
      * - demuxing: Set by user
      */
     int recursion_limit;
+
+    /**
+     * Flags added to the flags of every avformat_seek_file(): AVSEEK_FLAG_ANY.
+     * - encoding: unused
+     * - decoding: Set by user
+     */
+    int seek_flags;
 } AVFormatContext;
 
 /**
