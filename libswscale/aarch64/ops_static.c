@@ -58,6 +58,7 @@
 #define FFMIN(a,b) ((a) > (b) ? (b) : (a))
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
+#define FFALIGN(x, a) (((x)+(a)-1)&~((a)-1))
 
 static void av_freep(void *ptr)
 {

@@ -94,5 +94,6 @@ static inline int linear_num_vregs(const SwsAArch64OpImplParams *params)
 #define offsetof_impl_func       0
 #define offsetof_impl_priv       8
 #define sizeof_impl             24
+#define alignof_impl             8
 
 #endif /* SWSCALE_AARCH64_OPS_IMPL_H */
