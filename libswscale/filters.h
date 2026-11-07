@@ -123,7 +123,6 @@ typedef struct SwsFilterWeights {
      * Extra metadata about the filter, used to inform the optimizer / range
      * tracker about the filter's behavior.
      */
-    char name[16];    /* name of the configured filter kernel */
     int sum_positive; /* (maximum) sum of all positive weights */
     int sum_negative; /* (minimum) sum of all negative weights */
 } SwsFilterWeights;

@@ -39,7 +39,6 @@
 typedef double (*SwsFilterKernel)(double x, const double *params);
 
 typedef struct SwsFilterFunction {
-    char name[16];
     double radius; /* negative means resizable */
     SwsFilterKernel kernel;
     SwsFilterKernel window; /* optional */
@@ -235,7 +234,7 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
 
     if (!validate_params(&fun, scaler)) {
         av_log(log, AV_LOG_ERROR, "Invalid parameters for scaler %s: {%f, %f}\n",
-               fun.name, fun.params[0], fun.params[1]);
+               ff_sws_scaler_name(scaler), fun.params[0], fun.params[1]);
         return AVERROR(EINVAL);
     }
 
@@ -285,7 +284,6 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     if (!filter)
         return AVERROR(ENOMEM);
     filter->scaler = scaler;
-    memcpy(filter->name, fun.name, sizeof(filter->name));
     filter->src_size = params->src_size;
     filter->dst_size = params->dst_size;
     filter->virtual_size = virtual_size;
@@ -295,7 +293,7 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
         filter->sum_positive = SWS_FILTER_SCALE;
 
     av_log(log, AV_LOG_DEBUG, "Generating %s filter with %d taps (radius = %f)\n",
-           filter->name, filter->filter_size, radius);
+           ff_sws_scaler_name(scaler), filter->filter_size, radius);
 
     filter->num_weights = (size_t) params->dst_size * filter->filter_size;
     const size_t padded = filter->num_weights +
@@ -499,14 +497,14 @@ av_unused static double spline(double x, const double *params)
 }
 
 static const SwsFilterFunction filter_functions[SWS_SCALE_NB] = {
-    [SWS_SCALE_BILINEAR]    = { "bilinear",     1.0, triangle },
-    [SWS_SCALE_BICUBIC]     = { "bicubic",      2.0, cubic, .params = { 0.0, 0.6 } },
-    [SWS_SCALE_POINT]       = { "point",        0.5, box },
-    [SWS_SCALE_GAUSSIAN]    = { "gaussian",     4.0, gaussian, .params = { 3.0 } },
-    [SWS_SCALE_SINC]        = { "sinc",         RADIUS_MAX, sinc },
-    [SWS_SCALE_LANCZOS]     = { "lanczos",      -1.0, sinc, sinc, .params = { 3.0 } },
-    [SWS_SCALE_SPLINE]      = { "spline",       RADIUS_MAX, spline },
-    [SWS_SCALE_AREA]        = { "area",         1.0, area },
+    [SWS_SCALE_BILINEAR]    = { 1.0, triangle },
+    [SWS_SCALE_BICUBIC]     = { 2.0, cubic, .params = { 0.0, 0.6 } },
+    [SWS_SCALE_POINT]       = { 0.5, box },
+    [SWS_SCALE_GAUSSIAN]    = { 4.0, gaussian, .params = { 3.0 } },
+    [SWS_SCALE_SINC]        = { RADIUS_MAX, sinc },
+    [SWS_SCALE_LANCZOS]     = { -1.0, sinc, sinc, .params = { 3.0 } },
+    [SWS_SCALE_SPLINE]      = { RADIUS_MAX, spline },
+    [SWS_SCALE_AREA]        = { 1.0, area },
 };
 
 const char *ff_sws_scaler_name(SwsScaler scaler)
