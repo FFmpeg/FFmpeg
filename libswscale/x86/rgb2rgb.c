@@ -24,6 +24,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "config.h"
 #include "libavutil/attributes.h"
@@ -1158,7 +1159,7 @@ static inline void yuvPlanartoyuy2_line_mmxext(uint8_t *dst, const uint8_t *ysrc
         "cmp                        %4, %%"FF_REG_a" \n\t"
         " jb                        1b               \n\t"
         ::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
-        : "%"FF_REG_a
+        : "%"FF_REG_a, "memory"
     );
 }
 
@@ -1196,7 +1197,7 @@ static inline void yuvPlanartouyvy_line_mmxext(uint8_t *dst, const uint8_t *ysrc
         "cmp                       %4, %%"FF_REG_a" \n\t"
         " jb                       1b               \n\t"
         ::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
-        : "%"FF_REG_a
+        : "%"FF_REG_a, "memory"
     );
 }
 
@@ -1210,12 +1211,19 @@ static inline void yuvPlanartopacked_mmxext(void (*pack_line)(uint8_t *, const u
     for (int y = 0; y < height; y++) {
         //FIXME handle 2 lines at once (fewer prefetches, reuse some chroma, but very likely memory-limited anyway)
         if (chromWidth < 8) {
-            ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, 0, chromWidth, luma_first);
+            ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, 0, width, luma_first);
         } else {
             pack_line(dst, ysrc, usrc, vsrc, chromWidth & ~7);
-            if (chromWidth & 7) {
-                x86_reg i = chromWidth - 8;
-                pack_line(dst + 4 * i, ysrc + 2 * i, usrc + i, vsrc + i, 8);
+            if (width & 15) {
+                x86_reg i = ((width + 1) >> 1) - 8;
+                const uint8_t *y = ysrc + 2 * i;
+                uint8_t last[16];
+                if (width & 1) {
+                    memcpy(last, y, 15);
+                    last[15] = last[14];
+                    y = last;
+                }
+                pack_line(dst + 4 * i, y, usrc + i, vsrc + i, 8);
             }
         }
         if ((y&(vertLumPerChroma-1)) == vertLumPerChroma-1) {
