@@ -134,7 +134,7 @@ struc SwsOpExec
 endstruc
 
 struc SwsOpImpl
-    .cont resq 1
+    .func resq 1
     .priv resb 16
     .next resb 0
 endstruc
@@ -303,7 +303,7 @@ endstruc
 
 ; Load the next operation kernel's address to a register
 %macro LOAD_CONT 1 ; reg
-    mov %1, [implq + SwsOpImpl.cont]
+    mov %1, [implq + SwsOpImpl.next + SwsOpImpl.func]
 %endmacro
 
 ; Tail call into the next operation kernel, given that kernel's address

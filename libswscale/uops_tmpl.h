@@ -112,7 +112,7 @@ typedef struct SwsOpIter {
 #define CONTINUE(...)                                                           \
     ((void (*)(SwsOpIter *, const SwsOpImpl *,                                  \
                void *restrict x, void *restrict y,                              \
-               void *restrict z, void *restrict w)) impl->cont)                 \
+               void *restrict z, void *restrict w)) impl[1].func)               \
         (iter, &impl[1], __VA_ARGS__)
 
 /* Helper macros for common op setup code */

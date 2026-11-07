@@ -51,8 +51,8 @@ int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func, const void *ref,
         return AVERROR(EINVAL);
 
     av_assert1(func);
-    chain->impl[idx].cont = func;
-    chain->impl[idx + 1].priv = *priv;
+    chain->impl[idx].func = func;
+    chain->impl[idx].priv = *priv;
     chain->num_impl++;
     if (ref)
         chain->ref[chain->num_ref++] = av_refstruct_ref_c(ref);

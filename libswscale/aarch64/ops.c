@@ -37,7 +37,7 @@ static_assert(offsetof_exec_in       == offsetof(SwsOpExec, in),       "SwsOpExe
 static_assert(offsetof_exec_out      == offsetof(SwsOpExec, out),      "SwsOpExec layout mismatch");
 static_assert(offsetof_exec_in_bump  == offsetof(SwsOpExec, in_bump),  "SwsOpExec layout mismatch");
 static_assert(offsetof_exec_out_bump == offsetof(SwsOpExec, out_bump), "SwsOpExec layout mismatch");
-static_assert(offsetof_impl_cont     == offsetof(SwsOpImpl, cont),     "SwsOpImpl layout mismatch");
+static_assert(offsetof_impl_func     == offsetof(SwsOpImpl, func),     "SwsOpImpl layout mismatch");
 static_assert(offsetof_impl_priv     == offsetof(SwsOpImpl, priv),     "SwsOpImpl layout mismatch");
 static_assert(sizeof_impl            == sizeof(SwsOpImpl),             "SwsOpImpl layout mismatch");
 

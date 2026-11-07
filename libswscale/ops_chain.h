@@ -71,7 +71,7 @@ static_assert(sizeof(SwsOpPriv) == 16, "SwsOpPriv size mismatch");
  */
 typedef void (*SwsFuncPtr)(void);
 typedef struct SwsOpImpl {
-    SwsFuncPtr cont; /* Continuation for this operation. */
+    SwsFuncPtr func; /* Function pointer for this operation. */
     SwsOpPriv  priv; /* Private data for this operation. */
 } SwsOpImpl;
 
@@ -87,7 +87,7 @@ static_assert(offsetof(SwsOpImpl, priv) == 8, "SwsOpImpl layout mismatch");
  */
 typedef struct SwsOpChain {
 #define SWS_MAX_OPS 16
-    SwsOpImpl impl[SWS_MAX_OPS + 1]; /* reserve extra space for the entrypoint */
+    SwsOpImpl impl[SWS_MAX_OPS];
     int num_impl;
     int cpu_flags;      /* set of all used CPU flags */
     int over_read[4];   /* chain over-reads input by this many bytes */

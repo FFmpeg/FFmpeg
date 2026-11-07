@@ -61,7 +61,7 @@ typedef struct SwsAArch64Context {
 
     /* CPS-related variables. */
     RasmOp op0_func;
-    RasmOp op1_impl;
+    RasmOp op0_impl;
     RasmOp cont;
     RasmNode *load_cont_node;
     SwsAArch64OpRegs regs;
