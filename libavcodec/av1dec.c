@@ -1072,7 +1072,9 @@ static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
 {
     AV1DecContext *s = avctx->priv_data;
     const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
-    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(frame->format);
+    /* Use the negotiated software format for chroma subsampling,
+     * since frame->format may be a hardware pixel format. */
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
     AVFilmGrainParams *fgp;
     AVFilmGrainAOMParams *aom;
 
