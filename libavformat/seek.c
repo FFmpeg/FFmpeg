@@ -638,32 +638,6 @@ static int seek_frame_internal(AVFormatContext *s, int stream_index,
         return -1;
 }
 
-int av_seek_frame(AVFormatContext *s, int stream_index,
-                  int64_t timestamp, int flags)
-{
-    int ret;
-
-    if (stream_index < -1 || stream_index >= (int)s->nb_streams)
-        return AVERROR(EINVAL);
-
-    if (ffifmt(s->iformat)->read_seek2 && !ffifmt(s->iformat)->read_seek) {
-        int64_t min_ts = INT64_MIN, max_ts = INT64_MAX;
-        if ((flags & AVSEEK_FLAG_BACKWARD))
-            max_ts = timestamp;
-        else
-            min_ts = timestamp;
-        return avformat_seek_file(s, stream_index, min_ts, timestamp, max_ts,
-                                  flags & ~AVSEEK_FLAG_BACKWARD);
-    }
-
-    ret = seek_frame_internal(s, stream_index, timestamp, flags);
-
-    if (ret >= 0)
-        ret = avformat_queue_attached_pictures(s);
-
-    return ret;
-}
-
 /**
  * The largest pre-roll of the audio streams that are not discarded, in the
  * units of the seek: the time base of the stream, or AV_TIME_BASE when no
@@ -712,11 +686,69 @@ static void request_seek_discard(AVFormatContext *s, int stream_index,
         FFStream *const sti = ffstream(st);
 
         sti->seek_discard  = 1;
+        sti->seek_preroll  = !!(flags & AVSEEK_FLAG_PREROLL);
         sti->seek_to_start = !(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME)) &&
                              st->start_time != AV_NOPTS_VALUE &&
                              av_compare_ts(ts, time_base, st->start_time,
                                            st->time_base) <= 0;
     }
+}
+
+/**
+ * ts moved back by the pre-roll, without going below min_ts or before the
+ * start.
+ */
+static int64_t preroll_target(const AVFormatContext *s, int stream_index,
+                              int64_t min_ts, int64_t ts)
+{
+    int64_t start = stream_index >= 0 ? s->streams[stream_index]->start_time
+                                      : s->start_time;
+    int64_t target = FFMAX(av_sat_sub64(ts, seek_preroll(s, stream_index)),
+                           min_ts);
+
+    if (start != AV_NOPTS_VALUE)
+        target = FFMAX(target, FFMIN(start, ts));
+    return target;
+}
+
+int av_seek_frame(AVFormatContext *s, int stream_index,
+                  int64_t timestamp, int flags)
+{
+    int preroll_flag = flags & AVSEEK_FLAG_PREROLL;
+    int64_t target = timestamp;
+    int ret;
+
+    if (stream_index < -1 || stream_index >= (int)s->nb_streams)
+        return AVERROR(EINVAL);
+
+    if (ffifmt(s->iformat)->read_seek2 && !ffifmt(s->iformat)->read_seek) {
+        int64_t min_ts = INT64_MIN, max_ts = INT64_MAX;
+        if ((flags & AVSEEK_FLAG_BACKWARD))
+            max_ts = timestamp;
+        else
+            min_ts = timestamp;
+        return avformat_seek_file(s, stream_index, min_ts, timestamp, max_ts,
+                                  flags & ~AVSEEK_FLAG_BACKWARD);
+    }
+
+    flags &= ~AVSEEK_FLAG_PREROLL;
+    if (preroll_flag && !(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME)))
+        target = preroll_target(s, stream_index, INT64_MIN, timestamp);
+
+    ret = seek_frame_internal(s, stream_index, target, flags);
+    // Without a known start, the earlier target may come before the first
+    // packet.
+    if (ret < 0 && target != timestamp) {
+        target = timestamp;
+        ret = seek_frame_internal(s, stream_index, timestamp, flags);
+    }
+    if (ret >= 0 && preroll_flag)
+        request_seek_discard(s, stream_index, target, flags | preroll_flag);
+
+    if (ret >= 0)
+        ret = avformat_queue_attached_pictures(s);
+
+    return ret;
 }
 
 static int seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
@@ -758,6 +790,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
                        int64_t ts, int64_t max_ts, int flags)
 {
     int64_t target = ts, target_max = max_ts;
+    int preroll_flag;
     int ret;
 
     if (min_ts > ts || max_ts < ts)
@@ -773,17 +806,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     flags |= s->seek_flags & (AVSEEK_FLAG_ANY | AVSEEK_FLAG_PREROLL);
     flags &= ~AVSEEK_FLAG_BACKWARD;
+    preroll_flag = flags & AVSEEK_FLAG_PREROLL;
+    // A demuxer that seeks through another one, as concat does, must not
+    // move the target back a second time.
+    flags &= ~AVSEEK_FLAG_PREROLL;
 
-    if (!(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))) {
-        int64_t preroll = seek_preroll(s, stream_index);
-        int64_t start = stream_index >= 0 ? s->streams[stream_index]->start_time
-                                          : s->start_time;
-
-        // Land early enough to decode the pre-roll, without leaving the
-        // range the caller asked for or going before the start.
-        target = FFMAX(av_sat_sub64(ts, preroll), min_ts);
-        if (start != AV_NOPTS_VALUE)
-            target = FFMAX(target, FFMIN(start, ts));
+    if (preroll_flag && !(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))) {
+        target = preroll_target(s, stream_index, min_ts, ts);
         // Move the finite upper bound back by the same amount as the target.
         // An open upper bound stays open.
         if (max_ts != INT64_MAX)
@@ -798,7 +827,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ret = seek_file(s, stream_index, min_ts, ts, max_ts, flags);
     }
     if (ret >= 0)
-        request_seek_discard(s, stream_index, target, flags);
+        request_seek_discard(s, stream_index, target, flags | preroll_flag);
     return ret;
 }
 

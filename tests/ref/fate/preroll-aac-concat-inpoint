@@ -1,4 +1,4 @@
-packet|stream_index=0|pts=-1000|flags=K__
-packet|stream_index=1|pts=-986|flags=K__|side_datum/skip_samples:skip_samples=1024
-packet|stream_index=1|pts=-965|flags=K__
-packet|stream_index=1|pts=-944|flags=K__
+packet|stream_index=0|pts=0|flags=K__
+packet|stream_index=1|pts=38|flags=K__
+packet|stream_index=1|pts=59|flags=K__
+packet|stream_index=1|pts=80|flags=K__

@@ -398,7 +398,8 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     if ((ret = match_streams(avf)) < 0)
         return ret;
     if (file->inpoint != AV_NOPTS_VALUE) {
-       if ((ret = avformat_seek_file(cat->avf, -1, INT64_MIN, file->inpoint, file->inpoint, 0)) < 0)
+       int flags = avf->seek_flags & AVSEEK_FLAG_PREROLL;
+       if ((ret = avformat_seek_file(cat->avf, -1, INT64_MIN, file->inpoint, file->inpoint, flags)) < 0)
            return ret;
     }
     return 0;

@@ -1583,7 +1583,8 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 if (first) {
                     if (par->initial_padding > 0)
                         skip = par->initial_padding;
-                } else if (!(sti->seek_to_start && pkt->pts != AV_NOPTS_VALUE && !in_priming)) {
+                } else if (sti->seek_preroll &&
+                           !(sti->seek_to_start && pkt->pts != AV_NOPTS_VALUE && !in_priming)) {
                     // Past the first packet, the decoder also misses what
                     // came before.
                     skip = FFMAX(skip, par->seek_preroll);

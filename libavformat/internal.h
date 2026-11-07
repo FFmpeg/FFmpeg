@@ -245,11 +245,17 @@ typedef struct FFStream {
 
     /**
      * Set by a seek, cleared on the next packet of the stream, which gets in
-     * skip_samples the rest of the priming if it is inside it, and unless it
-     * is the first packet of the stream, at least the seek pre-roll of the
-     * codec. After the priming, a seek to the start of the stream gets none.
+     * skip_samples the rest of the priming if it is inside it, and when
+     * seek_preroll is set and it is not the first packet of the stream, at
+     * least the seek pre-roll of the codec. After the priming, a seek to the
+     * start of the stream gets none.
      */
     int seek_discard;
+
+    /**
+     * Set with seek_discard when the seek had AVSEEK_FLAG_PREROLL.
+     */
+    int seek_preroll;
 
     /**
      * Set with seek_discard when the target of the seek is at or before the
