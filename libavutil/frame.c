@@ -802,7 +802,7 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
         int min_log2_align = INT_MAX;
 
         for (int i = 0; frame->data[i]; i++) {
-            int log2_align = offsets[i] ? ff_ctz(offsets[i]) : INT_MAX;
+            int log2_align = offsets[i] ? ff_ctzll(offsets[i]) : INT_MAX;
             min_log2_align = FFMIN(log2_align, min_log2_align);
         }
 
