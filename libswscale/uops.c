@@ -30,6 +30,7 @@
 #include "ops.h"
 #include "uops.h"
 #include "uops_list.h"
+#include "swscale_internal.h"
 
 int ff_sws_uop_cmp(const SwsUOp *a, const SwsUOp *b)
 {
@@ -484,7 +485,7 @@ static int translate_dither_op(SwsUOpList *ops, SwsUOpFlags flags, const SwsOp *
      * typically 320 bytes for a 16x16 dither matrix. */
     const int stride   = size * sizeof(SwsPixel);
     const int num_rows = ff_sws_dither_height(&uop.par.dither);
-    SwsPixel *matrix = uop.data.ptr = av_refstruct_allocz(num_rows * stride);
+    SwsPixel *matrix = uop.data.ptr = ff_refstruct_calloc(num_rows, stride);
     if (!matrix)
         return AVERROR(ENOMEM);
 
