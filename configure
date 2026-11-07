@@ -8136,6 +8136,10 @@ check_deps $CONFIG_LIST       \
            $HAVE_LIST         \
            $ALL_COMPONENTS    \
 
+enabled_all avformat tls_protocol securetransport &&
+    ! requested securetransport && warn \
+    "Secure Transport is deprecated by Apple and does not support TLS 1.3.\nConsider configuring with --enable-gnutls or --enable-openssl instead."
+
 enabled threads || warn \
     "Threading support was disabled or is not available on the target platform." \
     "This means that not only is this build not multi-threaded, but also"    \
