@@ -26,12 +26,11 @@ SECTION .text
 ; Global entry point. See `ops_include.asm` for info.
 
 %macro process_fn 1 ; number of planes
-cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
+cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16, 20
             ; Args:
             ;   execq, implq, bxd, yd as defined in ops_include.asm
             ;   bx_end and y_end are initially in tmp0d / tmp1d
             ;   (see SwsOpFunc signature)
-            sub rsp, 32
             mov [rsp +  0], implq ; [qword] impl     (restore implq after chain)
             mov [rsp +  8], bxd   ; [dword] bx_start (restore after line finish)
             mov [rsp + 12], tmp0d ; [dword] bx_end   (loop counter limit)
@@ -92,7 +91,6 @@ IF %1 > 3,  add out3q, [execq + SwsOpExec.out_bump3]
             add in0q, tmp0q
             jmp .loop
 .end:
-            add rsp, 32
             RET
 %endmacro
 
