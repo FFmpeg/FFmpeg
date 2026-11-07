@@ -296,6 +296,22 @@ $(eval $(call FATE_AAC_LAYOUT_TEST,7_2_3,7.2.3,12))
 $(eval $(call FATE_AAC_LAYOUT_TEST,9_1_4,9.1.4,14))
 $(eval $(call FATE_AAC_LAYOUT_TEST,9_1_6,9.1.6,16))
 
+# A near-silent window ahead of an onset: bands under the threshold in quiet
+# must stay uncoded, or no legal scalefactor chain remains and the frame
+# cannot fit the decoder buffer
+FATE_AAC_ENCODE_LAVFI += fate-aac-encode-onset
+fate-aac-encode-onset: CMD = ffmpeg -auto_conversion_filters -f lavfi -i "aevalsrc=1e-10*eq(n\,448)+gte(n\,704)*random(0):d=0.05" \
+    -c:a aac -fflags +bitexact -flags +bitexact -f adts - | probe -count_packets -show_entries stream=codec_name,nb_read_packets pipe:
+
+FATE_AAC_ENCODE_LAVFI += fate-aac-encode-onset-twoloop
+fate-aac-encode-onset-twoloop: CMD = ffmpeg -auto_conversion_filters -f lavfi -i "aevalsrc=1e-10*eq(n\,448)+gte(n\,704)*random(0):d=0.05" \
+    -c:a aac -aac_coder twoloop -b:a 64k -fflags +bitexact -flags +bitexact -f adts - | probe -count_packets -show_entries stream=codec_name,nb_read_packets pipe:
+
+# Strict rate control below what even a silent frame needs
+FATE_AAC_ENCODE_LAVFI += fate-aac-encode-strict-rate
+fate-aac-encode-strict-rate: CMD = ffmpeg -auto_conversion_filters -f lavfi -i "aevalsrc=0:s=48000:d=0.1" \
+    -c:a aac -b:a 1 -bt 0 -fflags +bitexact -flags +bitexact -f adts - | probe -count_packets -show_entries stream=codec_name,nb_read_packets pipe:
+
 FATE_AAC_LATM += fate-aac-latm_000000001180bc60
 fate-aac-latm_000000001180bc60: CMD = pcm -i $(TARGET_SAMPLES)/aac/latm_000000001180bc60.mpg
 fate-aac-latm_000000001180bc60: REF = $(SAMPLES)/aac/latm_000000001180bc60.s16
@@ -324,6 +340,7 @@ FATE_AAC_FRAMECRC-$(call FRAMECRC, MOV, AAC, ARESAMPLE_FILTER PAN_FILTER PCM_F32
 
 FATE_AAC_ENCODE-$(call TRANSCODE, AAC, MP4 MOV, WAV_MUXER WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += $(FATE_AAC_ENCODE)
 FATE_AAC_ENCODE_FFPROBE-$(call TRANSCODE, AAC, ADTS AAC, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += $(FATE_AAC_ENCODE_FFPROBE)
+FATE_AAC_ENCODE_LAVFI-$(call TRANSCODE, AAC, ADTS AAC, LAVFI_INDEV AEVALSRC_FILTER ARESAMPLE_FILTER PCM_F64LE_DECODER PCM_F64BE_DECODER) += $(FATE_AAC_ENCODE_LAVFI)
 
 FATE_AAC_BSF-$(call FRAMECRC, AAC MATROSKA, AAC, AAC_PARSER AAC_ADTSTOASC_BSF MATROSKA_MUXER) += fate-aac-autobsf-adtstoasc
 
@@ -350,6 +367,7 @@ FATE_SAMPLES_FFPROBE += $(FATE_AAC_PREROLL-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_AAC_ALL) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_BSF-yes) $(FATE_AAC_PARSER-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_AAC_ENCODE_FFPROBE-yes)
+FATE_FFMPEG_FFPROBE += $(FATE_AAC_ENCODE_LAVFI-yes)
 
-fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_PREROLL-yes) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_BSF-yes) $(FATE_AAC_PARSER-yes)
+fate-aac: $(FATE_AAC_ALL) $(FATE_AAC_PREROLL-yes) $(FATE_AAC_FRAMECRC-yes) $(FATE_AAC_ENCODE-yes) $(FATE_AAC_ENCODE_FFPROBE-yes) $(FATE_AAC_ENCODE_LAVFI-yes) $(FATE_AAC_BSF-yes) $(FATE_AAC_PARSER-yes)
 fate-aac-latm: $(FATE_AAC_LATM-yes)
