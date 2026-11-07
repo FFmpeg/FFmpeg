@@ -583,30 +583,31 @@ IF NEED(3), linear_muladdps %1, mw%4, LOAD(3), m15, FMA(3)
 %endmacro
 
 %macro LINEAR_FMA 3
-%assign PRIV_SIZE  gprsize
+%assign PRIV_SIZE  4 * 5 * BYTES
 %assign ONE_MASK   %1
 %assign ZERO_MASK  %2
 %assign EXACT_MASK %3
 
-        mov tmp0q, [implq + SwsOpImpl.priv] ; address of matrix
         LOAD_CONT tmp1q
-IF1 X,  linear_row m8,  tmp0q +  0 * BYTES, 0
-IF1 Y,  linear_row m9,  tmp0q +  5 * BYTES, 1
-IF1 Z,  linear_row m10, tmp0q + 10 * BYTES, 2
-IF1 W,  linear_row m11, tmp0q + 15 * BYTES, 3
+%define MATRIX implq + SwsOpImpl.priv
+IF1 X,  linear_row m8,  MATRIX +  0 * BYTES, 0
+IF1 Y,  linear_row m9,  MATRIX +  5 * BYTES, 1
+IF1 Z,  linear_row m10, MATRIX + 10 * BYTES, 2
+IF1 W,  linear_row m11, MATRIX + 15 * BYTES, 3
 IF X,   mova mx, m8
 IF Y,   mova my, m9
 IF Z,   mova mz, m10
 IF W,   mova mw, m11
-IF1 X,  linear_row m8,  tmp0q +  0 * BYTES, 0, 2
-IF1 Y,  linear_row m9,  tmp0q +  5 * BYTES, 1, 2
-IF1 Z,  linear_row m10, tmp0q + 10 * BYTES, 2, 2
-IF1 W,  linear_row m11, tmp0q + 15 * BYTES, 3, 2
+IF1 X,  linear_row m8,  MATRIX +  0 * BYTES, 0, 2
+IF1 Y,  linear_row m9,  MATRIX +  5 * BYTES, 1, 2
+IF1 Z,  linear_row m10, MATRIX + 10 * BYTES, 2, 2
+IF1 W,  linear_row m11, MATRIX + 15 * BYTES, 3, 2
 IF X,   mova mx2, m8
 IF Y,   mova my2, m9
 IF Z,   mova mz2, m10
 IF W,   mova mw2, m11
         CONTINUE tmp1q
+%undef MATRIX
 %endmacro
 
 %macro LINEAR 2

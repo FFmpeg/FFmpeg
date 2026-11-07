@@ -320,11 +320,10 @@ static int setup_linear(const SwsImplParams *params, SwsImplResult *out)
 {
     const SwsUOp *uop = params->uop;
     if (uop->type == SWS_PIXEL_F32) {
-        float *mat = av_refstruct_allocz(sizeof(uop->data.mat4x5));
-        if (!mat)
-            return AVERROR(ENOMEM);
-        memcpy(mat, uop->data.mat4x5, sizeof(uop->data.mat4x5));
-        ff_sws_op_priv_pack_refptr(out, mat);
+        /* Layout hard-coded in ops_float.asm */
+        static_assert(sizeof(uop->data.mat4x5) == 4 * 5 * sizeof(float),
+                      "mat4x5 layout mismatch");
+        SWS_OP_PRIV_PACK(out, uop->data.mat4x5);
         return 0;
     }
 
