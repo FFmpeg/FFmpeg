@@ -29,6 +29,7 @@
 #include "csputils.h"
 #include "ops_internal.h"
 #include "config_components.h"
+#include "swscale_internal.h"
 
 #define RET(x)                                                                 \
     do {                                                                       \
@@ -1329,7 +1330,7 @@ static AVRational64 *generate_bayer_matrix(const int size_log2)
 {
     const int size = 1 << size_log2;
     const int num_entries = size * size;
-    AVRational64 *m = av_refstruct_allocz(sizeof(*m) * num_entries);
+    AVRational64 *m = ff_refstruct_calloc(num_entries, sizeof(*m));
     av_assert1(size_log2 < 16);
     if (!m)
         return NULL;
