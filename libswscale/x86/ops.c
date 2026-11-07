@@ -671,11 +671,6 @@ static int compile_uops_x86(SwsContext *ctx, const SwsUOpList *uops, SwsCompiled
     case 4: out->func = ff_sws_process4_x86; break;
     }
 
-    if (ret < 0) {
-        ff_sws_op_chain_free(chain);
-        return ret;
-    }
-
     ff_sws_uop_list_print(ctx, AV_LOG_DEBUG, uops);
     ff_sws_op_chain_attach(chain, out);
     return 0;
