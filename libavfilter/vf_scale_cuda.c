@@ -1059,7 +1059,7 @@ static int cudascale_filter_init(AVFilterContext *ctx,
         goto fail;
 
     av_log(ctx, AV_LOG_VERBOSE, "  using %d tap '%s' filter: %d -> %d\n",
-           f->filter_size, weights->name, src_size, dst_size);
+           f->filter_size, ff_sws_scaler_name(weights->scaler), src_size, dst_size);
 
     ret = 0;
 
