@@ -66,6 +66,10 @@ FATE_PREROLL_SEEK-$(call ALLYES, CONCAT_DEMUXER MOV_DEMUXER AAC_DECODER FILE_PRO
 fate-preroll-aac-concat-seek: tests/data/samples/gapless/102400samples_qt-lc-aac.m4a
 fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat ../samples/gapless_102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3
 
+# An inpoint on a video keyframe: the cut starts at that keyframe.
+FATE_PREROLL_FFPROBE-$(call ALLYES, CONCAT_DEMUXER MATROSKA_DEMUXER H264_DECODER AAC_DECODER FILE_PROTOCOL PIPE_PROTOCOL) += fate-preroll-aac-concat-inpoint
+fate-preroll-aac-concat-inpoint: CMD = printf "ffconcat version 1.0\nfile file:%s\ninpoint 3\n" $(TARGET_SAMPLES)/mkv/test7_cut.mkv | run ffprobe$(PROGSSUF)$(EXESUF) -protocol_whitelist pipe,file -safe 0 -auto_convert 0 -f concat -i pipe: -read_intervals %+\#4 -show_entries packet=stream_index,pts,flags:packet_side_data=skip_samples -print_format compact
+
 # A seek close to the start of a stream whose start time is unknown.
 FATE_PREROLL_SEEK-$(call DEMDEC, AAC, AAC) += fate-preroll-aac-adts-seek-start
 fate-preroll-aac-adts-seek-start: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/aac/id3v2.aac -seekback 10000 -frames 2 -duration 3
