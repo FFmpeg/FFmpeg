@@ -31,17 +31,11 @@ cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             ;   execq, implq, bxd, yd as defined in ops_include.asm
             ;   bx_end and y_end are initially in tmp0d / tmp1d
             ;   (see SwsOpFunc signature)
-            ;
-            ; Stack layout:
-            ;   [rsp +  8] = [qword] impl       (restore implq after chain)
-            ;   [rsp + 16] = [dword] bx start   (restore after line finish)
-            ;   [rsp + 20] = [dword] bx end     (loop counter limit)
-            ;   [rsp + 24] = [dword] y end      (loop counter limit)
             sub rsp, 32
-            mov [rsp + 16], bxd
-            mov [rsp + 20], tmp0d ; bx_end
-            mov [rsp + 24], tmp1d ; y_end
-            mov [rsp +  8], implq
+            mov [rsp +  0], implq ; [qword] impl     (restore implq after chain)
+            mov [rsp +  8], bxd   ; [dword] bx_start (restore after line finish)
+            mov [rsp + 12], tmp0d ; [dword] bx_end   (loop counter limit)
+            mov [rsp + 16], tmp1d ; [dword] y_end    (loop counter limit)
             movsxdifnidn bxq, bxd
             movsxdifnidn yq, yd
 
@@ -56,13 +50,13 @@ IF %1 > 2,  mov out2q, [execq + SwsOpExec.out2]
 IF %1 > 3,  mov out3q, [execq + SwsOpExec.out3]
 .loop:
             call [implq] ; call into op chain
-            mov implq, [rsp + 8]
+            mov implq, [rsp]
             inc bxd
-            cmp bxd, [rsp + 20]
+            cmp bxd, [rsp + 12]
             jne .loop
             ; end of line
             inc yd
-            cmp yd, [rsp + 24]
+            cmp yd, [rsp + 16]
             je .end
             ; bump addresses to point to start of next line
             add in0q,  [execq + SwsOpExec.in_bump0]
@@ -73,7 +67,7 @@ IF %1 > 3,  add in3q,  [execq + SwsOpExec.in_bump3]
 IF %1 > 1,  add out1q, [execq + SwsOpExec.out_bump1]
 IF %1 > 2,  add out2q, [execq + SwsOpExec.out_bump2]
 IF %1 > 3,  add out3q, [execq + SwsOpExec.out_bump3]
-            mov bxd, [rsp + 16]
+            mov bxd, [rsp + 8]
             ; conditionally apply y bump (if non-NULL)
             mov tmp0q, [execq + SwsOpExec.in_bump_y]
             test tmp0q, tmp0q
