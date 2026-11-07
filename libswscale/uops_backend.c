@@ -111,7 +111,7 @@ static void process_c(const SwsOpExec *exec, const void *priv,
                       int bx_end, int y_end)
 {
     const SwsOpChain *chain = priv;
-    const SwsOpImpl *impl = chain->impl;
+    const SwsOpImpl *impl = (const SwsOpImpl *) chain->impl;
     block_t x, y, z, w; /* allocate enough space for any intermediate */
 
     SwsOpIter iter;

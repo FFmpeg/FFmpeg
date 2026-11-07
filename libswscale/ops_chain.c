@@ -42,20 +42,25 @@ void ff_sws_op_chain_free_cb(void *ptr)
 }
 
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func, const void *ref,
-                           const SwsOpPriv *priv)
+                           const void *data, size_t data_size)
 {
-    const int idx = chain->num_impl;
-    if (idx == SWS_MAX_OPS)
+    /* Ensures each SwsOpImpl is stored aligned, so that we can deref it */
+    const size_t op_size = FFALIGN(offsetof(SwsOpImpl, priv) + data_size,
+                                   alignof(SwsOpImpl));
+
+    if (chain->impl_size + op_size > sizeof(chain->impl))
         return AVERROR(EINVAL);
     if (ref && chain->num_ref >= FF_ARRAY_ELEMS(chain->ref))
         return AVERROR(EINVAL);
 
-    av_assert1(func);
-    chain->impl[idx].func = func;
-    chain->impl[idx].priv = *priv;
-    chain->num_impl++;
+    SwsOpImpl *impl = (SwsOpImpl *) &chain->impl[chain->impl_size];
+    impl->func = func;
+    if (data_size)
+        memcpy(&impl->priv, data, data_size);
+    chain->impl_size += op_size;
     if (ref)
         chain->ref[chain->num_ref++] = av_refstruct_ref_c(ref);
+
     return 0;
 }
 
@@ -122,7 +127,7 @@ int ff_sws_uop_lookup(SwsContext *ctx, const SwsUOpTable *const tables[],
     }
 
     ret = ff_sws_op_chain_append(chain, res.func ? res.func : match->func,
-                                 res.ref, &res.priv);
+                                 res.ref, &res.priv, sizeof(res.priv));
     av_refstruct_unref(&res.ref);
     if (ret < 0)
         return ret;
