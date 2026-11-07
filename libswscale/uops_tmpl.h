@@ -42,10 +42,10 @@
 #endif
 
 typedef union block_t {
-    uint8_t   u8[SWS_BLOCK_SIZE];
-    uint16_t u16[SWS_BLOCK_SIZE];
-    uint32_t u32[SWS_BLOCK_SIZE];
     float    f32[SWS_BLOCK_SIZE];
+    uint32_t u32[SWS_BLOCK_SIZE];
+    uint16_t u16[SWS_BLOCK_SIZE];
+    uint8_t   u8[SWS_BLOCK_SIZE];
 } block_t;
 
 #define SIZEOF_BLOCK (sizeof(pixel_t) * SWS_BLOCK_SIZE)
