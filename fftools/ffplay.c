@@ -3249,6 +3249,7 @@ static int read_thread(void *arg)
     }
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
+    ic->seek_flags |= AVSEEK_FLAG_PREROLL;
     if ((ret = av_dict_copy(&format_options, format_opts, 0)) < 0)
         goto fail;
     if (!av_dict_get(format_options, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
