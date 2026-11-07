@@ -97,11 +97,10 @@ int apv_read_vlc(int k)
 }
 
 /*
- * As above, with the trailing sign bit folded into the same window. The caller
- * says whether a sign bit is present (DC: when val != 0; AC levels: always);
- * sign is only valid when it is.
+ * As above, for AC levels, with their trailing sign bit folded into the same
+ * window.
  */
-int apv_read_vlc_sign(int k, bool sign_always, out bool sign)
+int apv_read_vlc_sign(int k, out bool sign)
 {
     /* Top 32 bits; the longest legal code is 31 bits, +1 for the sign */
     uint bits = show_bits(gb, 32);
@@ -126,13 +125,33 @@ int apv_read_vlc_sign(int k, bool sign_always, out bool sign)
     int val = caseA ? valA : (caseB ? valB : valC);
     int len = caseA ? lenA : (caseB ? lenB : lenC);
 
-    bool has_sign = sign_always || val != 0;
-    sign = has_sign && bool((bits >> (31 - len)) & 1u);
-    len += has_sign ? 1 : 0;
-
-    skip_bits(gb, len);
+    sign = bool((bits >> (31 - len)) & 1u);
+    skip_bits(gb, len + 1);
     if (!caseA && !caseB && badC)
         val = APV_MAX_TRANS_COEFF + 1;
+    return val;
+}
+
+/*
+ * DC differences go up to 65535, whose codes take up to 34 bits with the
+ * sign, more than one window holds. There is one per block, so read the
+ * prefix, the k or n + k bits after it and the sign one after the other.
+ */
+int apv_read_dc_diff(int k, out bool sign)
+{
+    uint bits = show_bits(gb, 32);
+    int n = clamp(31 - findMSB(bits << 2), 0, 15);
+
+    bool caseA = bits >= 0x80000000u;
+    bool caseB = bits <  0x40000000u;
+
+    int prefix = caseA ? 1 : (caseB ? 2 : 3 + n);
+    int base   = caseA ? 0 : (caseB ? 1 << k : ((1 << n) + 1) << k);
+    int len    = caseA || caseB ? k : n + k;
+
+    skip_bits(gb, prefix);
+    int val = base + int(get_bits(gb, len));
+    sign = val != 0 && get_bits(gb, 1) != 0u;
     return val;
 }
 
@@ -165,7 +184,7 @@ void decode_block(uint cbase, int cstride, ivec2 pos, uint comp)
     int dc_coeff;
     bool dc_sign;
 
-    int abs_diff = apv_read_vlc_sign(prev_k_dc, false, dc_sign);
+    int abs_diff = apv_read_dc_diff(prev_k_dc, dc_sign);
 
     dc_coeff = prev_dc + (dc_sign ? -abs_diff : abs_diff);
 
@@ -202,8 +221,7 @@ void decode_block(uint cbase, int cstride, ivec2 pos, uint comp)
             bool sign_ac_coeff;
 
             k_param = clamp(prev_level >> 2, 0, 4);
-            abs_ac_coeff_minus1 = apv_read_vlc_sign(k_param, true,
-                                                    sign_ac_coeff);
+            abs_ac_coeff_minus1 = apv_read_vlc_sign(k_param, sign_ac_coeff);
 
             if (sign_ac_coeff)
                 level = -abs_ac_coeff_minus1 - 1;
