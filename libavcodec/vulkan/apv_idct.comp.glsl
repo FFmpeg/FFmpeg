@@ -23,7 +23,6 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "common.glsl"
-#include "dct.glsl"
 
 #define APV_MAX_NUM_COMP    4
 #define APV_MAX_TILE_COLS   20
@@ -53,6 +52,45 @@ layout (push_constant, scalar) uniform pushConstants {
 };
 
 const int apv_level_scale[6] = { 40, 45, 51, 57, 64, 71 };
+
+/* Rows are padded to avoid bank conflicts */
+shared int blocks[APV_BLOCKS_PER_WG][8*(8 + 1)];
+
+/* Inverse of the APV integer transform, split into its even and odd halves
+ * like the HEVC one, then rounded and shifted down. */
+void apv_idct8(uint block, uint offset, uint stride, int shift)
+{
+    int s0 = blocks[block][0*stride + offset];
+    int s1 = blocks[block][1*stride + offset];
+    int s2 = blocks[block][2*stride + offset];
+    int s3 = blocks[block][3*stride + offset];
+    int s4 = blocks[block][4*stride + offset];
+    int s5 = blocks[block][5*stride + offset];
+    int s6 = blocks[block][6*stride + offset];
+    int s7 = blocks[block][7*stride + offset];
+
+    /* Even half, with the rounding offset */
+    int ee0 = 64*(s0 + s4) + (1 << (shift - 1));
+    int ee1 = 64*(s0 - s4) + (1 << (shift - 1));
+    int eo0 = 84*s2 + 35*s6;
+    int eo1 = 35*s2 - 84*s6;
+    int e0 = ee0 + eo0, e1 = ee1 + eo1, e2 = ee1 - eo1, e3 = ee0 - eo0;
+
+    /* Odd half */
+    int o0 = 89*s1 + 75*s3 + 50*s5 + 18*s7;
+    int o1 = 75*s1 - 18*s3 - 89*s5 - 50*s7;
+    int o2 = 50*s1 - 89*s3 + 18*s5 + 75*s7;
+    int o3 = 18*s1 - 50*s3 + 75*s5 - 89*s7;
+
+    blocks[block][0*stride + offset] = (e0 + o0) >> shift;
+    blocks[block][1*stride + offset] = (e1 + o1) >> shift;
+    blocks[block][2*stride + offset] = (e2 + o2) >> shift;
+    blocks[block][3*stride + offset] = (e3 + o3) >> shift;
+    blocks[block][4*stride + offset] = (e3 - o3) >> shift;
+    blocks[block][5*stride + offset] = (e2 - o2) >> shift;
+    blocks[block][6*stride + offset] = (e1 - o1) >> shift;
+    blocks[block][7*stride + offset] = (e0 - o0) >> shift;
+}
 
 void main(void)
 {
@@ -89,8 +127,10 @@ void main(void)
 
     const int half_range = 1 << (bit_depth - 1);
     const int max_val = (1 << bit_depth) - 1;
-    const float fact = float(half_range);
-    const float norm = 1.0f / (1024.0f * fact); /* DCT normalization const */
+    const int dequant_shift = bit_depth - 2;
+    /* Scaled coefficients beyond this saturate either way, clamping to it
+     * first keeps the dequantization within 32 bits */
+    const int dequant_max = 1 << (16 + dequant_shift - qp_shift);
 
     /* This component's plane inside the flat coefficient buffer */
     const int cw0 = int(tile_col[tile_count.x]);
@@ -106,35 +146,30 @@ void main(void)
     /* blocks fully outside the coded area have nothing stored for them */
     const bool oob = pos.x >= cstride || pos.y >= cheight;
 
-    /* Loop-invariant column scale */
-    const float col_scale = norm * idct_scale[col];
-
     [[unroll]]
     for (uint y = 0u; y < 8u; y++) {
         /* load */
         int   coeff = oob ? 0
                     : int(coeffs_in[cbase + uint((pos.y + int(y)) * cstride +
                                                  pos.x + int(col))]);
-        /* dequant + norm */
-        int   qs    = level_scale * int(q_matrix[comp][col][y]) * (1 << qp_shift);
-        float v     = float(coeff * qs) * col_scale;
-        /* scale */
-        blocks[block][y * 9u + col] = v * idct_scale[y];
+        /* dequant */
+        int   qs    = level_scale * int(q_matrix[comp][col][y]);
+        int   v     = clamp(coeff * qs, -dequant_max, dequant_max) << qp_shift;
+        v = (v + (1 << (dequant_shift - 1))) >> dequant_shift;
+        blocks[block][y * 9u + col] = clamp(v, -32768, 32767);
     }
     barrier();
 
-    idct8(block, col, 9);
+    apv_idct8(block, col, 9, 7);
     barrier();
 
-    blocks[block][col * 9u] += 1.0f;
-
-    idct8(block, col * 9u, 1);
+    apv_idct8(block, col * 9u, 1, 20 - bit_depth);
     barrier();
 
     [[unroll]]
     for (int y = 0; y < 8; y++) {
-        float v = round(blocks[block][y * 9u + col] * fact);
+        int v = blocks[block][y * 9u + col] + half_range;
         imageStore(dst[comp], pos + ivec2(col, y),
-                   uvec4(uint(clamp(int(v), 0, max_val))));
+                   uvec4(uint(clamp(v, 0, max_val))));
     }
 }
