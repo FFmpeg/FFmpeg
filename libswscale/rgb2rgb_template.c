@@ -399,7 +399,7 @@ static inline void yuvPlanartoyuy2_c(const uint8_t *ysrc, const uint8_t *usrc,
             uc     += 2;
             vc     += 2;
         }
-        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth & ~1, chromWidth, 1);
+        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth & ~1, width, 1);
 
 #else
         int *idst = (int32_t *)dst;
@@ -417,6 +417,7 @@ static inline void yuvPlanartoyuy2_c(const uint8_t *ysrc, const uint8_t *usrc,
             uc++;
             vc++;
         }
+        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth, width, 1);
 #endif
         if ((y & (vertLumPerChroma - 1)) == vertLumPerChroma - 1) {
             usrc += chromStride;
@@ -460,7 +461,7 @@ static inline void yuvPlanartouyvy_c(const uint8_t *ysrc, const uint8_t *usrc,
             uc     += 2;
             vc     += 2;
         }
-        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth & ~1, chromWidth, 0);
+        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth & ~1, width, 0);
 
 #else
         int *idst = (int32_t *)dst;
@@ -478,6 +479,7 @@ static inline void yuvPlanartouyvy_c(const uint8_t *ysrc, const uint8_t *usrc,
             uc++;
             vc++;
         }
+        ff_pack_yuv422_line(dst, ysrc, usrc, vsrc, chromWidth, width, 0);
 #endif
         if ((y & (vertLumPerChroma - 1)) == vertLumPerChroma - 1) {
             usrc += chromStride;
