@@ -20,6 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
+#include "libavutil/intfloat.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
@@ -52,6 +55,8 @@ static av_cold int init_filter(AVFilterContext *ctx)
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->output_format);
+    const VkFormat *vkfmts = av_vkfmt_from_pixfmt(vkctx->output_format);
+    float unit = 0.0f, clip_max = FLT_MAX;
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -62,9 +67,23 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
-    SPEC_LIST_CREATE(sl, 2, 2*sizeof(int))
+    /* The shader sees samples as fractions of their storage. bwdif clips to the
+     * largest sample value and decides on whole ones, so pass the largest and
+     * the size of a step. Float formats have neither. */
+    if (vkfmts[0] == VK_FORMAT_A2R10G10B10_UNORM_PACK32 ||
+        vkfmts[0] == VK_FORMAT_A2B10G10R10_UNORM_PACK32) {
+        unit = 1.0f / 1023;
+    } else if (!(desc->flags & AV_PIX_FMT_FLAG_FLOAT) &&
+               desc->comp[0].depth + desc->comp[0].shift <= 16) {
+        int bits = desc->comp[0].depth + desc->comp[0].shift > 8 ? 16 : 8;
+        unit     = (1 << desc->comp[0].shift) / (float)((1 << bits) - 1);
+        clip_max = ((1 << desc->comp[0].depth) - 1) * unit;
+    }
+
+    SPEC_LIST_CREATE(sl, 3, 2*sizeof(int) + sizeof(float))
     SPEC_LIST_ADD(sl, 0, 32, vkctx->output_height);
     SPEC_LIST_ADD(sl, 1, 32, AV_CEIL_RSHIFT(vkctx->output_height, desc->log2_chroma_h));
+    SPEC_LIST_ADD(sl, 2, 32, av_float2int(clip_max));
 
     ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t [3]) { 1, 64, planes }, 0);

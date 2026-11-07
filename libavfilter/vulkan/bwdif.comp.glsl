@@ -31,6 +31,9 @@ layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 layout (constant_id = 0) const int height = 0;
 layout (constant_id = 1) const int chroma_height = 0;
 
+/* The largest sample value, which bwdif clips to */
+layout (constant_id = 2) const float clip_max = 1.0;
+
 layout (set = 0, binding = 0) uniform writeonly image2D  dst[];
 layout (set = 0, binding = 1) uniform readonly  image2D prev[];
 layout (set = 0, binding = 2) uniform readonly  image2D  cur[];
@@ -62,7 +65,7 @@ void process_plane_intra(ivec2 pos, int h)
     dcur[1] = imageLoad(cur[idx], pos + ivec2(0, pos.y > 0     ? -1 :  1));
     dcur[2] = imageLoad(cur[idx], pos + ivec2(0, pos.y + 1 < h ?  1 : -1));
     dcur[3] = imageLoad(cur[idx], pos + ivec2(0, pos.y + 3 < h ?  3 : -1));
-    imageStore(dst[idx], pos, process_intra(dcur));
+    imageStore(dst[idx], pos, min(process_intra(dcur), clip_max));
 }
 
 vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4 next2[5])
@@ -178,7 +181,7 @@ void process_plane(const ivec2 pos)
         next2[4] = imageLoad(next[idx], pos + ivec2(0, 4));
     }
 
-    imageStore(dst[idx], pos, process_line(prev2, prev1, dcur, next1, next2));
+    imageStore(dst[idx], pos, min(process_line(prev2, prev1, dcur, next1, next2), clip_max));
 }
 
 void process_plane_edge(const ivec2 pos, int h)
@@ -227,7 +230,7 @@ void process_plane_edge(const ivec2 pos, int h)
         next2[2] = imageLoad(next[idx], pos + d2);
     }
 
-    imageStore(dst[idx], pos, process_edge(prev2, prev1, dcur, next1, next2, spat));
+    imageStore(dst[idx], pos, min(process_edge(prev2, prev1, dcur, next1, next2, spat), clip_max));
 }
 
 void main()
