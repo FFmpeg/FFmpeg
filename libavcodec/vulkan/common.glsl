@@ -254,9 +254,12 @@ struct GetBitContext {
 };
 
 #ifndef GET_BITS_SMEM
+/* Words past the end of the buffer are read from its end instead, so corrupt
+ * data cannot run the reader off into unmapped memory. */
 #define LOAD64()                                       \
     {                                                  \
-        u8vec4buf ptr = u8vec4buf(gb.buf);             \
+        uint64_t addr = min(gb.buf, gb.buf_end);       \
+        u8vec4buf ptr = u8vec4buf(addr);               \
         uint32_t rf1 = pack32((ptr[0].v).wzyx);        \
         uint32_t rf2 = pack32((ptr[1].v).wzyx);        \
         gb.buf += 8;                                   \
@@ -266,7 +269,7 @@ struct GetBitContext {
 
 #define RELOAD32()                                                \
     {                                                             \
-        u8vec4buf ptr = u8vec4buf(gb.buf);                        \
+        u8vec4buf ptr = u8vec4buf(min(gb.buf, gb.buf_end));       \
         uint32_t rf = pack32((ptr[0].v).wzyx);                    \
         gb.buf += 4;                                              \
         gb.bits = uint64_t(rf) << (32 - gb.bits_valid) | gb.bits; \
