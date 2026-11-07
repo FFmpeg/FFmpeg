@@ -899,7 +899,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
     if (!ctx->qf_enc) {
         av_log(avctx, AV_LOG_ERROR, "Encoding of %s is not supported by this device\n",
                avcodec_get_name(avctx->codec_id));
-        return err;
+        return AVERROR(ENOSYS);
     }
 
     /* Load all properties */
