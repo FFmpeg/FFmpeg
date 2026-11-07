@@ -8,16 +8,17 @@
 # bit-exact across platforms.
 
 PREROLL_SEEK_TS = 0.53
+PREROLL_OPT = -seek_flags preroll
 
 # 1: test name, 2: demuxer, 3: decoder, 4: sample
 define FATE_PREROLL_TEST
 FATE_PREROLL_FFPROBE-$(call DEMDEC, $(2), $(3)) += fate-preroll-$(1)-declared fate-preroll-$(1)-landing
 fate-preroll-$(1)-declared: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -show_entries stream=codec_name,sample_rate,initial_padding,seek_preroll -print_format compact $(TARGET_SAMPLES)/$(4)
-fate-preroll-$(1)-landing: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -read_intervals $(PREROLL_SEEK_TS)%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/$(4)
+fate-preroll-$(1)-landing: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(PREROLL_OPT) -select_streams a:0 -read_intervals $(PREROLL_SEEK_TS)%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/$(4)
 FATE_PREROLL_FFMPEG-$(call FRAMECRC, $(2), $(3), PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-preroll-$(1)-decode
-fate-preroll-$(1)-decode: CMD = framecrc -ss $(PREROLL_SEEK_TS) -t 0.15 -i $(TARGET_SAMPLES)/$(4) -map 0:a:0 -af volume=0,aresample -c:a pcm_s16le
+fate-preroll-$(1)-decode: CMD = framecrc $(PREROLL_OPT) -ss $(PREROLL_SEEK_TS) -t 0.15 -i $(TARGET_SAMPLES)/$(4) -map 0:a:0 -af volume=0,aresample -c:a pcm_s16le
 FATE_PREROLL_FFMPEG-$(call FRAMECRC, $(2), $(3), PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-preroll-$(1)-decode-noaccurate
-fate-preroll-$(1)-decode-noaccurate: CMD = framecrc -noaccurate_seek -ss $(PREROLL_SEEK_TS) -t 0.15 -i $(TARGET_SAMPLES)/$(4) -map 0:a:0 -af volume=0,aresample -c:a pcm_s16le
+fate-preroll-$(1)-decode-noaccurate: CMD = framecrc $(PREROLL_OPT) -noaccurate_seek -ss $(PREROLL_SEEK_TS) -t 0.15 -i $(TARGET_SAMPLES)/$(4) -map 0:a:0 -af volume=0,aresample -c:a pcm_s16le
 endef
 
 $(eval $(call FATE_PREROLL_TEST,aac-mov,MOV,AAC,gapless/102400samples_qt-lc-aac.m4a))
@@ -37,34 +38,34 @@ $(eval $(call FATE_PREROLL_TEST,mp3-itunes,MP3,MP3FLOAT,gapless/gapless-itunes.m
 # A seek that lands inside the priming, which here spans the first three
 # packets: the rest of the priming, or the pre-roll if longer, is skipped.
 FATE_PREROLL_FFMPEG-$(call FRAMECRC, CAF, AAC, PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-preroll-aac-caf-decode-in-priming
-fate-preroll-aac-caf-decode-in-priming: CMD = framecrc -noaccurate_seek -ss 0.01 -t 0.1 -i $(TARGET_SAMPLES)/caf/aac.caf -af volume=0,aresample -c:a pcm_s16le
+fate-preroll-aac-caf-decode-in-priming: CMD = framecrc $(PREROLL_OPT) -noaccurate_seek -ss 0.01 -t 0.1 -i $(TARGET_SAMPLES)/caf/aac.caf -af volume=0,aresample -c:a pcm_s16le
 
 # A forward seek, as ffplay does: the range starts before the target and is
 # open at the end.
 FATE_PREROLL_SEEK-$(call DEMDEC, MOV, AAC) += fate-preroll-aac-mov-seek-forward
-fate-preroll-aac-mov-seek-forward: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a -seekforw 530000 -seekmin 400000 -frames 2 -duration 3
+fate-preroll-aac-mov-seek-forward: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a -seekforw 530000 -seekmin 400000 -frames 2 -duration 3 $(PREROLL_OPT)
 
 # A seek past the end lands on the last packet, which carries the padding
 # to discard at the end of the stream.
 FATE_PREROLL_FFPROBE-$(call DEMDEC, CAF, AAC) += fate-preroll-aac-caf-landing-end
-fate-preroll-aac-caf-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -read_intervals 5.45%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/caf/aac.caf
+fate-preroll-aac-caf-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(PREROLL_OPT) -select_streams a:0 -read_intervals 5.45%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/caf/aac.caf
 FATE_PREROLL_FFPROBE-$(call DEMDEC, MATROSKA, OPUS) += fate-preroll-opus-mkv-landing-end
-fate-preroll-opus-mkv-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -select_streams a:0 -read_intervals 1.1%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv
+fate-preroll-opus-mkv-landing-end: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(PREROLL_OPT) -select_streams a:0 -read_intervals 1.1%+\#2 -show_entries packet=pts,duration:packet_side_data=skip_samples,discard_padding -print_format compact $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv
 
 # A seek on the video stream, just after a keyframe: the audio pre-roll
 # still needs room.
 FATE_PREROLL_SEEK-$(call DEMDEC, MOV, AAC H264) += fate-preroll-aac-mov-seek-video
-fate-preroll-aac-mov-seek-video: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -stream_id 0 -seekback 182000 -frames 4 -duration 3
+fate-preroll-aac-mov-seek-video: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -stream_id 0 -seekback 182000 -frames 4 -duration 3 $(PREROLL_OPT)
 
 # A seek on the stream that starts later, close enough to its start that
 # the seek targets it: the other stream is already past its own start.
 FATE_PREROLL_SEEK-$(call ALLYES, MOV_DEMUXER MOV_MUXER AAC_DECODER FILE_PROTOCOL) += fate-preroll-aac-mov-seek-staggered
-fate-preroll-aac-mov-seek-staggered: CMD = seek_staggered $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a 1 -stream_id 1 -seekback 42500 -frames 4 -duration 3
+fate-preroll-aac-mov-seek-staggered: CMD = seek_staggered $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a 1 -stream_id 1 -seekback 42500 -frames 4 -duration 3 $(PREROLL_OPT)
 
 # A seek through the concat demuxer, which seeks in the file it reads.
 FATE_PREROLL_SEEK-$(call ALLYES, CONCAT_DEMUXER MOV_DEMUXER AAC_DECODER FILE_PROTOCOL) += fate-preroll-aac-concat-seek
 fate-preroll-aac-concat-seek: tests/data/samples/gapless/102400samples_qt-lc-aac.m4a
-fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat ../samples/gapless_102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3
+fate-preroll-aac-concat-seek: CMD = seek_concat $(SRC_PATH)/tests/preroll.ffconcat ../samples/gapless_102400samples_qt-lc-aac.m4a -seekback 530000 -frames 3 -duration 3 $(PREROLL_OPT)
 
 # An inpoint on a video keyframe: the cut starts at that keyframe.
 FATE_PREROLL_FFPROBE-$(call ALLYES, CONCAT_DEMUXER MATROSKA_DEMUXER H264_DECODER AAC_DECODER FILE_PROTOCOL PIPE_PROTOCOL) += fate-preroll-aac-concat-inpoint
@@ -72,7 +73,7 @@ fate-preroll-aac-concat-inpoint: CMD = printf "ffconcat version 1.0\nfile file:%
 
 # A seek close to the start of a stream whose start time is unknown.
 FATE_PREROLL_SEEK-$(call DEMDEC, AAC, AAC) += fate-preroll-aac-adts-seek-start
-fate-preroll-aac-adts-seek-start: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/aac/id3v2.aac -seekback 10000 -frames 2 -duration 3
+fate-preroll-aac-adts-seek-start: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/aac/id3v2.aac -seekback 10000 -frames 2 -duration 3 $(PREROLL_OPT)
 
 $(FATE_PREROLL_SEEK-yes): libavformat/tests/seek$(EXESUF)
 

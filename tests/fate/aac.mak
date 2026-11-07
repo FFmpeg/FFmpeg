@@ -360,8 +360,8 @@ fate-aac-seek-preroll-eld: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries s
 # Where a seek lands, by the same lengths of frame.
 FATE_AAC_PREROLL-$(call DEMDEC, MOV, AAC) += fate-aac-seek-landing-sbr \
                                             fate-aac-seek-landing-frame-length-short
-fate-aac-seek-landing-sbr: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -read_intervals 10.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/aac/al_sbr_cm_48_2.mp4
-fate-aac-seek-landing-frame-length-short: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -read_intervals 3.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/aac/al04sf_48.mp4
+fate-aac-seek-landing-sbr: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -seek_flags preroll -read_intervals 10.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/aac/al_sbr_cm_48_2.mp4
+fate-aac-seek-landing-frame-length-short: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -seek_flags preroll -read_intervals 3.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/aac/al04sf_48.mp4
 
 FATE_SAMPLES_FFPROBE += $(FATE_AAC_PREROLL-yes)
 

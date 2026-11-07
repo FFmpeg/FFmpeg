@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-11-xx - xxxxxxxxxx - lavf 63.20.100 - avformat.h
+  Add AVSEEK_FLAG_PREROLL, for avformat_seek_file() to move the target back
+  by the audio pre-roll.
+
 2026-11-xx - xxxxxxxxxx - lavf 63.19.100 - avformat.h
   Add AVFormatContext.seek_flags.
   Deprecate AVFormatContext.seek2any in favor of AVSEEK_FLAG_ANY in

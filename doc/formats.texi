@@ -83,6 +83,9 @@ Possible values:
 @table @samp
 @item any
 Allow seeking to non-keyframes on demuxer level when supported.
+@item preroll
+Move the target of a seek back by the audio pre-roll, for a caller that
+decodes. The seek can then land on an earlier video keyframe.
 @end table
 
 @item seek2any @var{integer} (@emph{input})

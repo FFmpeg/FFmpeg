@@ -771,7 +771,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
         flags |= AVSEEK_FLAG_ANY;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    flags |= s->seek_flags & AVSEEK_FLAG_ANY;
+    flags |= s->seek_flags & (AVSEEK_FLAG_ANY | AVSEEK_FLAG_PREROLL);
     flags &= ~AVSEEK_FLAG_BACKWARD;
 
     if (!(flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))) {

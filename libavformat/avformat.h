@@ -2063,7 +2063,8 @@ typedef struct AVFormatContext {
     int recursion_limit;
 
     /**
-     * Flags added to the flags of every avformat_seek_file(): AVSEEK_FLAG_ANY.
+     * Flags added to the flags of every avformat_seek_file(): AVSEEK_FLAG_ANY
+     * and AVSEEK_FLAG_PREROLL.
      * - encoding: unused
      * - decoding: Set by user
      */
@@ -2743,6 +2744,7 @@ void avformat_close_input(AVFormatContext **s);
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
+#define AVSEEK_FLAG_PREROLL 16 ///< move the target back by the audio pre-roll, see avformat_seek_file()
 
 /**
  * @addtogroup lavf_encoding
