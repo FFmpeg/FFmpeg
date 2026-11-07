@@ -117,13 +117,16 @@ static_assert(alignof(SwsFilterPriv) <= alignof(SwsOpPriv),
 
 #define CALL(NAME, ...) fn(NAME)(iter, impl, x, y, z, w, __VA_ARGS__)
 
+#define NEXT_IMPL(N)                                                            \
+    ((const SwsOpImpl *) &impl->priv.data[FFALIGN(N, alignof(SwsOpImpl))])
+
 /* Helper macro to call into the next continuation with a given type; N gives
  * the size of private data consumed by this op */
 #define CONTINUE(N, ...)                                                        \
     ((void (*)(SwsOpIter *, const SwsOpImpl *,                                  \
                void *restrict x, void *restrict y,                              \
-               void *restrict z, void *restrict w)) impl[1].func)               \
-        (iter, &impl[1], __VA_ARGS__)
+               void *restrict z, void *restrict w)) NEXT_IMPL(N)->func)         \
+        (iter, NEXT_IMPL(N), __VA_ARGS__)
 
 /* Helper macros for common op setup code */
 #define DECL_SETUP(NAME, PARAMS, OUT)                                           \

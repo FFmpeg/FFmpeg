@@ -135,8 +135,7 @@ endstruc
 
 struc SwsOpImpl
     .func resq 1
-    .priv resb 16
-    .next resb 0
+    .priv resb 0
 endstruc
 
 %define SWS_COMP_NONE           0
@@ -306,14 +305,16 @@ endstruc
 ;---------------------------------------------------------
 ; Common macros for linking together different kernels
 
+%define sizeof_impl (SwsOpImpl.priv + ((PRIV_SIZE + gprsize - 1) & ~(gprsize - 1)))
+
 ; Load the next operation kernel's address to a register
 %macro LOAD_CONT 1 ; reg
-    mov %1, [implq + SwsOpImpl.next + SwsOpImpl.func]
+    mov %1, [implq + sizeof_impl + SwsOpImpl.func]
 %endmacro
 
 ; Tail call into the next operation kernel, given that kernel's address
 %macro CONTINUE 1 ; reg
-    add implq, SwsOpImpl.next
+    add implq, sizeof_impl
     jmp %1
     annotate_function_size
 %endmacro
