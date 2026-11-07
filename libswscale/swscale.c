@@ -1535,6 +1535,12 @@ static int validate_params(SwsContext *ctx)
     return 0;
 }
 
+static int bottom_field_fits(const AVFrame *frame, const SwsFormat *field)
+{
+    const int vsub = field->desc->log2_chroma_h;
+    return 2 * AV_CEIL_RSHIFT(field->height, vsub) <= AV_CEIL_RSHIFT(frame->height, vsub);
+}
+
 int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
 {
     SwsInternal *s = sws_internal(ctx);
@@ -1602,6 +1608,13 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
 
         if (src_fmt.height <= 0 || dst_fmt.height <= 0) {
             err_msg = "Interlaced frames need at least two lines";
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (field == FIELD_BOTTOM &&
+            (!bottom_field_fits(src, &src_fmt) || !bottom_field_fits(dst, &dst_fmt))) {
+            err_msg = "The bottom field has fewer chroma rows than its height requires";
             ret = AVERROR(EINVAL);
             goto fail;
         }
