@@ -80,10 +80,11 @@ static av_cold int init_filter(AVFilterContext *ctx)
         clip_max = ((1 << desc->comp[0].depth) - 1) * unit;
     }
 
-    SPEC_LIST_CREATE(sl, 3, 2*sizeof(int) + sizeof(float))
+    SPEC_LIST_CREATE(sl, 4, 2*sizeof(int) + 2*sizeof(float))
     SPEC_LIST_ADD(sl, 0, 32, vkctx->output_height);
     SPEC_LIST_ADD(sl, 1, 32, AV_CEIL_RSHIFT(vkctx->output_height, desc->log2_chroma_h));
     SPEC_LIST_ADD(sl, 2, 32, av_float2int(clip_max));
+    SPEC_LIST_ADD(sl, 3, 32, av_float2int(unit));
 
     ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t [3]) { 1, 64, planes }, 0);

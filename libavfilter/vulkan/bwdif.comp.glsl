@@ -34,6 +34,11 @@ layout (constant_id = 1) const int chroma_height = 0;
 /* The largest sample value, which bwdif clips to */
 layout (constant_id = 2) const float clip_max = 1.0;
 
+/* bwdif decides on whole sample values. These are floats, which aren't
+ * exact, so the decisions are made on steps of this size, 0 for float
+ * formats. */
+layout (constant_id = 3) const float unit = 0.0;
+
 layout (set = 0, binding = 0) uniform writeonly image2D  dst[];
 layout (set = 0, binding = 1) uniform readonly  image2D prev[];
 layout (set = 0, binding = 2) uniform readonly  image2D  cur[];
@@ -80,7 +85,9 @@ vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4
    temp_diff[1] = (abs(prev1[0] - fc) + abs(prev1[1] - fe)) / 2;
    temp_diff[2] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;
    vec4 diff = max(temp_diff[0] / 2, max(temp_diff[1], temp_diff[2]));
-   bvec4 diff_mask = equal(diff, vec4(0));
+   /* bwdif halves with shifts, so a change of one step is no motion: diff
+    * is then at most half a step, and otherwise at least one */
+   bvec4 diff_mask = lessThanEqual(diff, vec4(unit * 0.75));
 
    vec4 fbs = prev2[1] + next2[1];
    vec4 ffs = prev2[3] + next2[3];
@@ -97,7 +104,8 @@ vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4
                            coef_lf[0]*(fc + fe) - coef_lf[1]*(cur[0] + cur[3])) / (1 << 13);
    vec4 interpolate_cur = (coef_sp[0]*(fc + fe) - coef_sp[1]*(cur[0] + cur[3])) / (1 << 13);
 
-   bvec4 interpolate_cnd1 = greaterThan(abs(fc - fe), temp_diff[0]);
+   /* bwdif takes interpolate_cur when the differences are equal */
+   bvec4 interpolate_cnd1 = greaterThan(abs(fc - fe), temp_diff[0] + unit * 0.5);
    vec4 interpol = mix(interpolate_cur, interpolate_all, interpolate_cnd1);
    interpol = clamp(interpol, fd - diff, fd + diff);
    return mix(interpol, fd, diff_mask);
@@ -117,7 +125,7 @@ vec4 process_edge(vec4 prev2[3], vec4 prev1[2], vec4 cur[2], vec4 next1[2], vec4
    temp_diff[1] = (abs(prev1[0] - fc) + abs(prev1[1] - fe)) / 2;
    temp_diff[2] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;
    vec4 diff = max(temp_diff[0] / 2, max(temp_diff[1], temp_diff[2]));
-   bvec4 diff_mask = equal(diff, vec4(0));
+   bvec4 diff_mask = lessThanEqual(diff, vec4(unit * 0.75));
 
    if (spat) {
        vec4 fb = (prev2[0] + next2[0]) / 2 - fc;
