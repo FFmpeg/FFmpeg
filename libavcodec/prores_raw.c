@@ -36,7 +36,6 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "idctdsp.h"
 #include "proresdata.h"
 #include "thread.h"
 #include "hwconfig.h"
@@ -58,11 +57,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->pix_fmt = AV_PIX_FMT_NONE;
 
     ff_blockdsp_init(&s->bdsp);
-    /* Coefficients and the iDCT are 12-bit, the linearization curve then
-     * expands the result to the 16-bit linear output range. */
     ff_proresdsp_init(&s->prodsp, 12);
-
-    ff_permute_scantable(s->scan, ff_prores_interlaced_scan, s->prodsp.idct_permutation);
 
     return 0;
 }
@@ -168,7 +163,7 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
     int16_t rn_codebook = 0;
     int16_t ln_codebook = 66;
 
-    const uint8_t *scan = s->scan;
+    const uint8_t *scan = ff_prores_interlaced_scan;
     GetBitContext gb;
 
     if (component > 1)
@@ -473,7 +468,7 @@ static int decode_frame(AVCodecContext *avctx,
         memcpy(s->lin_curve, default_lin_curve, sizeof(s->lin_curve));
     }
 
-    ff_permute_scantable(s->qmat, s->prodsp.idct_permutation, qmat);
+    memcpy(s->qmat, qmat, sizeof(s->qmat));
 
     int tw16 = (w + 15) >> 4;
     s->nb_tw = (tw16 >> align) + av_popcount(~(-1 * (1 << align)) & tw16);

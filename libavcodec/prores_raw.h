@@ -52,7 +52,6 @@ typedef struct ProResRAWContext {
 
     int version;
 
-    DECLARE_ALIGNED(32, uint8_t, scan)[64];
     DECLARE_ALIGNED(32, uint8_t, qmat)[64];
 
     /* 8-point combined linearization curve
