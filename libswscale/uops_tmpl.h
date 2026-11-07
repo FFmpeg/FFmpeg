@@ -63,6 +63,17 @@ typedef struct SwsOpIter {
     const SwsOpExec *exec;
 } SwsOpIter;
 
+/* Private data for generic kernels. */
+typedef union SwsOpPriv {
+    float    f32[4];
+    uint32_t u32[4];
+    uint16_t u16[4];
+    uint8_t  u8[4];
+    void    *ptr;
+} SwsOpPriv;
+
+#define SWS_OP_PRIV(impl) ((const void *) (impl)->priv)
+
 /* Private data for filtered reads */
 typedef struct SwsFilterPriv {
     void *weights;
@@ -118,7 +129,7 @@ static_assert(alignof(SwsFilterPriv) <= alignof(SwsOpPriv),
 #define CALL(NAME, ...) fn(NAME)(iter, impl, x, y, z, w, __VA_ARGS__)
 
 #define NEXT_IMPL(N)                                                            \
-    ((const SwsOpImpl *) &impl->priv.data[FFALIGN(N, alignof(SwsOpImpl))])
+    ((const SwsOpImpl *) &impl->priv[FFALIGN(N, alignof(SwsOpImpl))])
 
 /* Helper macro to call into the next continuation with a given type; N gives
  * the size of private data consumed by this op */

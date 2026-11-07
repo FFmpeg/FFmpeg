@@ -43,41 +43,17 @@
 typedef struct SwsUOpTable SwsUOpTable;
 
 /**
- * Private data for each kernel.
- */
-typedef union SwsOpPriv {
-    char data[16];
-
-    /* Common types */
-    void *ptr;
-    uint8_t    u8[16];
-    int8_t     i8[16];
-    uint16_t   u16[8];
-    int16_t    i16[8];
-    uint32_t   u32[4];
-    int32_t    i32[4];
-    float      f32[4];
-    uint64_t   u64[2];
-    int64_t    i64[2];
-    uintptr_t uptr[2];
-    intptr_t  iptr[2];
-} SwsOpPriv;
-
-static_assert(sizeof(SwsOpPriv) == 16, "SwsOpPriv size mismatch");
-
-/**
  * Per-kernel execution context.
  *
  * Note: This struct is hard-coded in assembly, so do not change the layout.
  */
 typedef void (*SwsFuncPtr)(void);
 typedef struct SwsOpImpl {
-    SwsFuncPtr func; /* Function pointer for this operation. */
-    SwsOpPriv  priv; /* Private data for this operation. */
+    SwsFuncPtr func;   /* Function pointer for this operation. */
+    char       priv[]; /* Private data for this operation. */
 } SwsOpImpl;
 
 #if ARCH_X86_64 || ARCH_AARCH64
-static_assert(sizeof(SwsOpImpl) == 24,        "SwsOpImpl layout mismatch");
 static_assert(offsetof(SwsOpImpl, priv) == 8, "SwsOpImpl layout mismatch");
 static_assert(alignof(SwsOpImpl) == sizeof(void *), "SwsOpImpl alignment mismatch");
 #endif

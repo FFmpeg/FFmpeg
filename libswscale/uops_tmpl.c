@@ -275,7 +275,7 @@ DECL_READ(read_planar_fv, const SwsCompMask mask, const SwsPixelType type)
 {
     av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
-    const SwsFilterPriv *priv = (const SwsFilterPriv *) impl->priv.data;
+    const SwsFilterPriv *priv = SWS_OP_PRIV(impl);
     const float *restrict weights = priv->weights;
     const int filter_size = priv->filter_size;
     weights += filter_size * iter->y;
@@ -335,7 +335,7 @@ DECL_READ(read_planar_fh, const SwsCompMask mask, const SwsPixelType type)
 {
     av_assert2(type == SWS_PIXEL_F32);
     const SwsOpExec *exec = iter->exec;
-    const SwsFilterPriv *priv = (const SwsFilterPriv *) impl->priv.data;
+    const SwsFilterPriv *priv = SWS_OP_PRIV(impl);
     const int *restrict weights = priv->weights;
     const int filter_size = priv->filter_size;
     const float scale = 1.0f / SWS_FILTER_SCALE;
@@ -637,10 +637,11 @@ DECL_FUNC(clear, const SwsCompMask mask, const SwsCompMask one,
 {
     #define ONE(N)  SWS_COMP_TEST(one, N)
     #define ZERO(N) SWS_COMP_TEST(zero, N)
-    const pixel_t cx = ONE(0) ? PIXEL_MAX : ZERO(0) ? 0 : impl->priv.px[0];
-    const pixel_t cy = ONE(1) ? PIXEL_MAX : ZERO(1) ? 0 : impl->priv.px[1];
-    const pixel_t cz = ONE(2) ? PIXEL_MAX : ZERO(2) ? 0 : impl->priv.px[2];
-    const pixel_t cw = ONE(3) ? PIXEL_MAX : ZERO(3) ? 0 : impl->priv.px[3];
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+    const pixel_t cx = ONE(0) ? PIXEL_MAX : ZERO(0) ? 0 : priv->px[0];
+    const pixel_t cy = ONE(1) ? PIXEL_MAX : ZERO(1) ? 0 : priv->px[1];
+    const pixel_t cz = ONE(2) ? PIXEL_MAX : ZERO(2) ? 0 : priv->px[2];
+    const pixel_t cw = ONE(3) ? PIXEL_MAX : ZERO(3) ? 0 : priv->px[3];
 
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
@@ -663,7 +664,8 @@ SWS_FOR_STRUCT(PX, CLEAR, DECL_ENTRY, .setup = ff_sws_setup_vec4)
 
 DECL_FUNC(scale, const SwsCompMask mask)
 {
-    const pixel_t scale = impl->priv.px[0];
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+    const pixel_t scale = priv->px[0];
 
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
@@ -678,12 +680,14 @@ DECL_FUNC(scale, const SwsCompMask mask)
 
 DECL_FUNC(add, const SwsCompMask mask)
 {
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-        if (X) x[i] += impl->priv.px[0];
-        if (Y) y[i] += impl->priv.px[1];
-        if (Z) z[i] += impl->priv.px[2];
-        if (W) w[i] += impl->priv.px[3];
+        if (X) x[i] += priv->px[0];
+        if (Y) y[i] += priv->px[1];
+        if (Z) z[i] += priv->px[2];
+        if (W) w[i] += priv->px[3];
     }
 
     CONTINUE(sizeof(pixel_t[4]), x, y, z, w);
@@ -691,12 +695,14 @@ DECL_FUNC(add, const SwsCompMask mask)
 
 DECL_FUNC(min, const SwsCompMask mask)
 {
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-        if (X) x[i] = FFMIN(x[i], impl->priv.px[0]);
-        if (Y) y[i] = FFMIN(y[i], impl->priv.px[1]);
-        if (Z) z[i] = FFMIN(z[i], impl->priv.px[2]);
-        if (W) w[i] = FFMIN(w[i], impl->priv.px[3]);
+        if (X) x[i] = FFMIN(x[i], priv->px[0]);
+        if (Y) y[i] = FFMIN(y[i], priv->px[1]);
+        if (Z) z[i] = FFMIN(z[i], priv->px[2]);
+        if (W) w[i] = FFMIN(w[i], priv->px[3]);
     }
 
     CONTINUE(sizeof(pixel_t[4]), x, y, z, w);
@@ -704,12 +710,14 @@ DECL_FUNC(min, const SwsCompMask mask)
 
 DECL_FUNC(max, const SwsCompMask mask)
 {
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-        if (X) x[i] = FFMAX(x[i], impl->priv.px[0]);
-        if (Y) y[i] = FFMAX(y[i], impl->priv.px[1]);
-        if (Z) z[i] = FFMAX(z[i], impl->priv.px[2]);
-        if (W) w[i] = FFMAX(w[i], impl->priv.px[3]);
+        if (X) x[i] = FFMAX(x[i], priv->px[0]);
+        if (Y) y[i] = FFMAX(y[i], priv->px[1]);
+        if (Z) z[i] = FFMAX(z[i], priv->px[2]);
+        if (W) w[i] = FFMAX(w[i], priv->px[3]);
     }
 
     CONTINUE(sizeof(pixel_t[4]), x, y, z, w);
@@ -768,7 +776,8 @@ DECL_FUNC(dither, const SwsCompMask mask,
     const int size   = 1 << size_log2;
     const int stride = FFMAX(size, SWS_BLOCK_SIZE);
 
-    const pixel_t *matrix = impl->priv.ptr;
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+    const pixel_t *matrix = priv->ptr;
     matrix += (iter->y & (size - 1)) * stride;
     matrix += (iter->x & (size - 1)) & ~(SWS_BLOCK_SIZE - 1);
 
@@ -828,7 +837,8 @@ DECL_SETUP(setup_linear, params, out)
  */
 DECL_FUNC(linear, const SwsCompMask mask, const uint32_t one, const uint32_t zero)
 {
-    const fn(LinCoeffs) c = *(const fn(LinCoeffs) *) impl->priv.ptr;
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+    const fn(LinCoeffs) c = *(const fn(LinCoeffs) *) priv->ptr;
 
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
@@ -1006,7 +1016,8 @@ vec3_t fn(lut3d_dynamic)(const SwsLut3D *restrict lut3d, vec3_t rgb)
 
 DECL_FUNC(lut3d, const SwsCompMask mask, const int dynamic)
 {
-    const SwsLut3D *restrict lut3d = impl->priv.ptr;
+    const SwsOpPriv *priv = SWS_OP_PRIV(impl);
+    const SwsLut3D *restrict lut3d = priv->ptr;
 
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
