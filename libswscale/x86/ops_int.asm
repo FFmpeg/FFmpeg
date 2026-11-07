@@ -601,11 +601,12 @@ IF V2,  mova %3, %2
 %assign PRIV_SIZE 4 * 4
 %assign ONE_MASK  %1
 %assign ZERO_MASK %2
+        LOAD_CONT tmp0q
 IF1 X,  clear 0, mx, mx2
 IF1 Y,  clear 1, my, my2
 IF1 Z,  clear 2, mz, mz2
 IF1 W,  clear 3, mw, mw2
-        CONTINUE
+        CONTINUE tmp0q
 %endmacro
 
 ;---------------------------------------------------------
