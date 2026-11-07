@@ -33,7 +33,6 @@ cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             ;   (see SwsOpFunc signature)
             ;
             ; Stack layout:
-            ;   [rsp +  0] = [qword] impl->func (address of first kernel)
             ;   [rsp +  8] = [qword] impl       (restore implq after chain)
             ;   [rsp + 16] = [dword] bx start   (restore after line finish)
             ;   [rsp + 20] = [dword] bx end     (loop counter limit)
@@ -42,8 +41,6 @@ cglobal sws_process%1_x86, 6, 7 + 2 * %1, 16
             mov [rsp + 16], bxd
             mov [rsp + 20], tmp0d ; bx_end
             mov [rsp + 24], tmp1d ; y_end
-            mov tmp0q, [implq + SwsOpImpl.func]
-            mov [rsp +  0], tmp0q
             mov [rsp +  8], implq
             movsxdifnidn bxq, bxd
             movsxdifnidn yq, yd
@@ -58,7 +55,7 @@ IF %1 > 1,  mov out1q, [execq + SwsOpExec.out1]
 IF %1 > 2,  mov out2q, [execq + SwsOpExec.out2]
 IF %1 > 3,  mov out3q, [execq + SwsOpExec.out3]
 .loop:
-            call [rsp] ; call into op chain
+            call [implq] ; call into op chain
             mov implq, [rsp + 8]
             inc bxd
             cmp bxd, [rsp + 20]
