@@ -508,3 +508,21 @@ static const SwsFilterFunction filter_functions[SWS_SCALE_NB] = {
     [SWS_SCALE_SPLINE]      = { "spline",       RADIUS_MAX, spline },
     [SWS_SCALE_AREA]        = { "area",         1.0, area },
 };
+
+const char *ff_sws_scaler_name(SwsScaler scaler)
+{
+    switch (scaler) {
+    case SWS_SCALE_AUTO:     return "auto";
+    case SWS_SCALE_BILINEAR: return "bilinear";
+    case SWS_SCALE_BICUBIC:  return "bicubic";
+    case SWS_SCALE_POINT:    return "point";
+    case SWS_SCALE_AREA:     return "area";
+    case SWS_SCALE_GAUSSIAN: return "gaussian";
+    case SWS_SCALE_SINC:     return "sinc";
+    case SWS_SCALE_LANCZOS:  return "lanczos";
+    case SWS_SCALE_SPLINE:   return "spline";
+    case SWS_SCALE_NB:       break;
+    }
+
+    return NULL;
+}

@@ -42,6 +42,11 @@ enum {
     SWS_FILTER_PAD_ROWS = 32, /* extra zero rows past `weights` */
 };
 
+/**
+ * Return the friendly name of a given scaler enum, or NULL if invalid.
+ */
+const char *ff_sws_scaler_name(SwsScaler scaler);
+
 /* Parameters for filter generation. */
 typedef struct SwsFilterParams {
     /**
