@@ -114,28 +114,27 @@ static void process_c(const SwsOpExec *exec, const void *priv,
     const SwsOpImpl *impl = chain->impl;
     block_t x, y, z, w; /* allocate enough space for any intermediate */
 
-    SwsOpIter iterdata;
-    SwsOpIter *iter = &iterdata;
-    iter->exec = exec;
+    SwsOpIter iter;
+    iter.exec = exec;
     for (int i = 0; i < 4; i++) {
-        iter->in[i]  = (uintptr_t) exec->in[i];
-        iter->out[i] = (uintptr_t) exec->out[i];
+        iter.in[i]  = (uintptr_t) exec->in[i];
+        iter.out[i] = (uintptr_t) exec->out[i];
     }
 
     void (*entry)(SwsOpIter *, const SwsOpImpl *, void *, void *, void *, void *);
     entry = (void (*)(SwsOpIter *, const SwsOpImpl *,
                       void *, void *, void *, void *)) impl->func;
 
-    for (iter->y = y_start; iter->y < y_end; iter->y++) {
+    for (iter.y = y_start; iter.y < y_end; iter.y++) {
         for (int block = bx_start; block < bx_end; block++) {
-            iter->x = block * SWS_BLOCK_SIZE;
-            entry(iter, impl, &x, &y, &z, &w);
+            iter.x = block * SWS_BLOCK_SIZE;
+            entry(&iter, impl, &x, &y, &z, &w);
         }
 
-        const int y_bump = exec->in_bump_y ? exec->in_bump_y[iter->y] : 0;
+        const int y_bump = exec->in_bump_y ? exec->in_bump_y[iter.y] : 0;
         for (int i = 0; i < 4; i++) {
-            iter->in[i]  += exec->in_bump[i] + y_bump * exec->in_stride[i];
-            iter->out[i] += exec->out_bump[i];
+            iter.in[i]  += exec->in_bump[i] + y_bump * exec->in_stride[i];
+            iter.out[i] += exec->out_bump[i];
         }
     }
 }
