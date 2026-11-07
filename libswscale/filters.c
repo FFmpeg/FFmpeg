@@ -224,16 +224,6 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
         stretch_inv = ratio;
     }
 
-    if (scaler == SWS_SCALE_AREA) {
-        /**
-         * SWS_SCALE_AREA is a pseudo-filter that is equivalent to bilinear
-         * filtering for upscaling (since bilinear just evenly mixes samples
-         * according to the relative distance), and equivalent to (anti-aliased)
-         * point sampling for downscaling.
-         */
-        scaler = ratio >= 1.0 ? SWS_SCALE_BILINEAR : SWS_SCALE_POINT;
-    }
-
     SwsFilterFunction fun = filter_functions[scaler];
     if (!fun.kernel)
         return AVERROR(EINVAL);
@@ -259,6 +249,12 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
         break;
     case SWS_SCALE_BILINEAR:
         radius = 1.0 - SWS_MAX_REDUCE_CUTOFF;
+        break;
+    case SWS_SCALE_AREA:
+        /* Above ratio 1.0, this behaves like bilinear */
+        fun.params[0] = fmin(ratio, 1.0);
+        fun.radius = 0.5 + 0.5 * fun.params[0];
+        radius = fun.radius - SWS_MAX_REDUCE_CUTOFF * fun.params[0];
         break;
     default:
         /* Numerically estimate radius of nontrivial or parametric kernels */
@@ -351,6 +347,19 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
 av_unused static double box(double x, const double *params)
 {
     return 1.0;
+}
+
+/**
+ * Overlap between a destination pixel (unit box) and a source pixel of width
+ * params[0] <= 1, i.e. the convolution of two box filters (a trapezoid).
+ */
+static double area(double x, const double *params)
+{
+    const double w = params[0];
+    const double edge = 0.5 - 0.5 * w;
+    if (x <= edge)
+        return 1.0;
+    return fmax(1.0 - (x - edge) / w, 0.0);
 }
 
 av_unused static double triangle(double x, const double *params)
@@ -496,5 +505,5 @@ static const SwsFilterFunction filter_functions[SWS_SCALE_NB] = {
     [SWS_SCALE_SINC]        = { "sinc",         RADIUS_MAX, sinc },
     [SWS_SCALE_LANCZOS]     = { "lanczos",      -1.0, sinc, sinc, .params = { 3.0 } },
     [SWS_SCALE_SPLINE]      = { "spline",       RADIUS_MAX, spline },
-    /* SWS_SCALE_AREA is a pseudo-filter, see code above */
+    [SWS_SCALE_AREA]        = { "area",         1.0, area },
 };
