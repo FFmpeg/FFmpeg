@@ -26,6 +26,11 @@
 
 layout (local_size_x_id = 253, local_size_y_id = 254, local_size_z_id = 255) in;
 
+/* The planes' heights. The images can have more rows than the frame, so
+ * imageSize() doesn't give them. */
+layout (constant_id = 0) const int height = 0;
+layout (constant_id = 1) const int chroma_height = 0;
+
 layout (set = 0, binding = 0) uniform writeonly image2D  dst[];
 layout (set = 0, binding = 1) uniform readonly  image2D prev[];
 layout (set = 0, binding = 2) uniform readonly  image2D  cur[];
@@ -46,15 +51,17 @@ vec4 process_intra(vec4 cur[4])
    return (coef_sp[0]*(cur[1] + cur[2]) - coef_sp[1]*(cur[0] + cur[3])) / (1 << 13);
 }
 
-void process_plane_intra(ivec2 pos)
+void process_plane_intra(ivec2 pos, int h)
 {
     nonuniformEXT uint idx = gl_LocalInvocationID.z;
 
+    /* As in bwdif, a row past an edge is replaced by the nearest one on the
+     * other side */
     vec4 dcur[4];
-    dcur[0] = imageLoad(cur[idx], pos - ivec2(0, 3));
-    dcur[1] = imageLoad(cur[idx], pos - ivec2(0, 1));
-    dcur[2] = imageLoad(cur[idx], pos + ivec2(0, 1));
-    dcur[3] = imageLoad(cur[idx], pos + ivec2(0, 3));
+    dcur[0] = imageLoad(cur[idx], pos + ivec2(0, pos.y > 2     ? -3 :  1));
+    dcur[1] = imageLoad(cur[idx], pos + ivec2(0, pos.y > 0     ? -1 :  1));
+    dcur[2] = imageLoad(cur[idx], pos + ivec2(0, pos.y + 1 < h ?  1 : -1));
+    dcur[3] = imageLoad(cur[idx], pos + ivec2(0, pos.y + 3 < h ?  3 : -1));
     imageStore(dst[idx], pos, process_intra(dcur));
 }
 
@@ -90,6 +97,36 @@ vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4
    bvec4 interpolate_cnd1 = greaterThan(abs(fc - fe), temp_diff[0]);
    vec4 interpol = mix(interpolate_cur, interpolate_all, interpolate_cnd1);
    interpol = clamp(interpol, fd - diff, fd + diff);
+   return mix(interpol, fd, diff_mask);
+}
+
+/* bwdif's filter_edge, for the 4 rows nearest each edge: it interpolates
+ * from the rows next to the one it rebuilds, and checks against the rows 2
+ * away only when both are in the picture */
+vec4 process_edge(vec4 prev2[3], vec4 prev1[2], vec4 cur[2], vec4 next1[2], vec4 next2[3], bool spat)
+{
+   vec4 fc = cur[0];
+   vec4 fe = cur[1];
+   vec4 fd = (prev2[1] + next2[1]) / 2;
+
+   vec4 temp_diff[3];
+   temp_diff[0] = abs(prev2[1] - next2[1]);
+   temp_diff[1] = (abs(prev1[0] - fc) + abs(prev1[1] - fe)) / 2;
+   temp_diff[2] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;
+   vec4 diff = max(temp_diff[0] / 2, max(temp_diff[1], temp_diff[2]));
+   bvec4 diff_mask = equal(diff, vec4(0));
+
+   if (spat) {
+       vec4 fb = (prev2[0] + next2[0]) / 2 - fc;
+       vec4 ff = (prev2[2] + next2[2]) / 2 - fe;
+       vec4 dc = fd - fc;
+       vec4 de = fd - fe;
+       vec4 mmax = max(de, max(dc, min(fb, ff)));
+       vec4 mmin = min(de, min(dc, max(fb, ff)));
+       diff = max(diff, max(mmin, -mmax));
+   }
+
+   vec4 interpol = clamp((fc + fe) / 2, fd - diff, fd + diff);
    return mix(interpol, fd, diff_mask);
 }
 
@@ -144,21 +181,73 @@ void process_plane(const ivec2 pos)
     imageStore(dst[idx], pos, process_line(prev2, prev1, dcur, next1, next2));
 }
 
+void process_plane_edge(const ivec2 pos, int h)
+{
+    nonuniformEXT uint idx = gl_LocalInvocationID.z;
+    bool field_parity = (parity ^ tff) != 0;
+
+    /* As in bwdif, a row past an edge is replaced by the nearest one on the
+     * other side, and the rows 2 away are only used when both are in the
+     * picture */
+    bool spat = pos.y >= 2 && pos.y + 3 <= h;
+    ivec2 m1 = ivec2(0, pos.y > 0     ? -1 :  1);
+    ivec2 p1 = ivec2(0, pos.y + 1 < h ?  1 : -1);
+    ivec2 d2 = ivec2(0, spat ? 2 : 0);
+
+    vec4 dcur[2];
+    vec4 prev1[2];
+    vec4 next1[2];
+    vec4 prev2[3];
+    vec4 next2[3];
+
+    dcur[0] = imageLoad(cur[idx], pos + m1);
+    dcur[1] = imageLoad(cur[idx], pos + p1);
+
+    prev1[0] = imageLoad(prev[idx], pos + m1);
+    prev1[1] = imageLoad(prev[idx], pos + p1);
+
+    next1[0] = imageLoad(next[idx], pos + m1);
+    next1[1] = imageLoad(next[idx], pos + p1);
+
+    if (field_parity) {
+        prev2[0] = imageLoad(prev[idx], pos - d2);
+        prev2[1] = imageLoad(prev[idx], pos);
+        prev2[2] = imageLoad(prev[idx], pos + d2);
+
+        next2[0] = imageLoad(cur[idx], pos - d2);
+        next2[1] = imageLoad(cur[idx], pos);
+        next2[2] = imageLoad(cur[idx], pos + d2);
+    } else {
+        prev2[0] = imageLoad(cur[idx], pos - d2);
+        prev2[1] = imageLoad(cur[idx], pos);
+        prev2[2] = imageLoad(cur[idx], pos + d2);
+
+        next2[0] = imageLoad(next[idx], pos - d2);
+        next2[1] = imageLoad(next[idx], pos);
+        next2[2] = imageLoad(next[idx], pos + d2);
+    }
+
+    imageStore(dst[idx], pos, process_edge(prev2, prev1, dcur, next1, next2, spat));
+}
+
 void main()
 {
     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    nonuniformEXT uint idx = gl_LocalInvocationID.z;
     bool filter_field = ((pos.y ^ parity) & 1) == 1;
     bool is_intra = filter_field && (current_field == 0);
+    int h = idx == 1 || idx == 2 ? chroma_height : height;
+    bool is_edge = pos.y < 4 || pos.y + 5 > h;
 
-    ivec2 size = imageSize(dst[nonuniformEXT(gl_LocalInvocationID.z)]);
-    if (any(greaterThanEqual(pos, size))) {
+    if (pos.x >= imageSize(dst[idx]).x || pos.y >= h) {
         return;
     } else if (is_intra) {
-        process_plane_intra(pos);
+        process_plane_intra(pos, h);
+    } else if (filter_field && is_edge) {
+        process_plane_edge(pos, h);
     } else if (filter_field) {
         process_plane(pos);
     } else {
-        imageStore(dst[nonuniformEXT(gl_LocalInvocationID.z)], pos,
-                   imageLoad(cur[nonuniformEXT(gl_LocalInvocationID.z)], pos));
+        imageStore(dst[idx], pos, imageLoad(cur[idx], pos));
     }
 }

@@ -51,6 +51,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
     BWDIFVulkanContext *s = ctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(vkctx->output_format);
 
     s->qf = ff_vk_qf_find(vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     if (!s->qf) {
@@ -61,7 +62,11 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, FF_VK_DEFAULT_EXEC_CONTEXTS, 0, 0, 0, NULL));
 
-    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, NULL,
+    SPEC_LIST_CREATE(sl, 2, 2*sizeof(int))
+    SPEC_LIST_ADD(sl, 0, 32, vkctx->output_height);
+    SPEC_LIST_ADD(sl, 1, 32, AV_CEIL_RSHIFT(vkctx->output_height, desc->log2_chroma_h));
+
+    ff_vk_shader_load(&s->shd, VK_SHADER_STAGE_COMPUTE_BIT, sl,
                       (uint32_t [3]) { 1, 64, planes }, 0);
 
     const FFVulkanDescriptorSetBinding desc_set[] = {
