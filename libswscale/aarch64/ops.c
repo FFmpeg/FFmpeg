@@ -192,6 +192,7 @@ static int compile_uops_aarch64(SwsContext *ctx, const SwsUOpList *uops,
         ret = aarch64_setup(&uops->ops[i], &params, &res);
         if (ret < 0)
             goto error;
+        av_assert1(res.priv_size == aarch64_priv_size(&params));
         ret = ff_sws_op_chain_append(chain, func, res.ref, &res.priv, sizeof(res.priv));
         av_refstruct_unref(&res.ref);
         if (ret < 0)
