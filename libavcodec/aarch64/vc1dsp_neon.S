@@ -278,18 +278,18 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         mul             v3.8h, v4.8h, v0.h[5]   //                                                           22/2 * src[24]
         trn1            v2.4s, v6.4s, v2.4s
         mul             v4.8h, v4.8h, v0.h[4]   //                                                           10/2 * src[24]
-        mul             v6.8h, v7.8h, v0.h[6]   //            17 * src[0]
-        mul             v1.8h, v1.8h, v0.h[6]   //                                            17 * src[16]
+        add             v6.8h, v7.8h, v1.8h     //                 src[0]                 +        src[16]
+        sub             v1.8h, v7.8h, v1.8h     //                 src[0]                 -        src[16]
         mls             v3.8h, v2.8h, v0.h[4]   //  t4/2 =                - 10/2 * src[8]                  + 22/2 * src[24]
         mla             v4.8h, v2.8h, v0.h[5]   //  t3/2 =                  22/2 * src[8]                  + 10/2 * src[24]
-        add             v0.8h, v6.8h, v1.8h     //   t1  =    17 * src[0]                 +   17 * src[16]
-        sub             v1.8h, v6.8h, v1.8h     //   t2  =    17 * src[0]                 -   17 * src[16]
-        neg             v2.8h, v3.8h            // -t4/2
-        neg             v6.8h, v4.8h            // -t3/2
-        ssra            v4.8h, v0.8h, #1        // (t1 + t3) >> 1
-        ssra            v2.8h, v1.8h, #1        // (t2 - t4) >> 1
-        ssra            v3.8h, v1.8h, #1        // (t2 + t4) >> 1
-        ssra            v6.8h, v0.8h, #1        // (t1 - t3) >> 1
+        shl             v0.8h, v6.8h, #3        //            8 * (src[0]                 +        src[16])
+        shl             v7.8h, v1.8h, #3        //            8 * (src[0]                 -        src[16])
+        ssra            v0.8h, v6.8h, #1        //  t1 >> 1
+        ssra            v7.8h, v1.8h, #1        //  t2 >> 1
+        sub             v6.8h, v0.8h, v4.8h     // (t1 - t3) >> 1
+        add             v4.8h, v4.8h, v0.8h     // (t1 + t3) >> 1
+        sub             v2.8h, v7.8h, v3.8h     // (t2 - t4) >> 1
+        add             v3.8h, v3.8h, v7.8h     // (t2 + t4) >> 1
         srshr           v0.8h, v4.8h, #6        // (t1 + t3 + 64) >> 7
         srshr           v1.8h, v2.8h, #6        // (t2 - t4 + 64) >> 7
         srshr           v2.8h, v3.8h, #6        // (t2 + t4 + 64) >> 7
@@ -505,18 +505,18 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         trn2            v1.2s, v1.2s, v2.2s     // 20 21 22 23
         mul             v2.4h, v4.4h, v0.h[1]   //                                                           22/2 * src[24]
         mul             v4.4h, v4.4h, v0.h[0]   //                                                           10/2 * src[24]
-        mul             v7.4h, v16.4h, v0.h[2]  //            17 * src[0]
-        mul             v1.4h, v1.4h, v0.h[2]   //                                            17 * src[16]
+        add             v7.4h, v16.4h, v1.4h    //                 src[0]                 +        src[16]
+        sub             v1.4h, v16.4h, v1.4h    //                 src[0]                 -        src[16]
         mls             v2.4h, v3.4h, v0.h[0]   //  t4/2 =                - 10/2 * src[8]                  + 22/2 * src[24]
         mla             v4.4h, v3.4h, v0.h[1]   //  t3/2 =                  22/2 * src[8]                  + 10/2 * src[24]
-        add             v0.4h, v7.4h, v1.4h     //   t1  =    17 * src[0]                 +   17 * src[16]
-        sub             v1.4h, v7.4h, v1.4h     //   t2  =    17 * src[0]                 -   17 * src[16]
-        neg             v3.4h, v2.4h            // -t4/2
-        neg             v7.4h, v4.4h            // -t3/2
-        ssra            v4.4h, v0.4h, #1        // (t1 + t3) >> 1
-        ssra            v3.4h, v1.4h, #1        // (t2 - t4) >> 1
-        ssra            v2.4h, v1.4h, #1        // (t2 + t4) >> 1
-        ssra            v7.4h, v0.4h, #1        // (t1 - t3) >> 1
+        shl             v0.4h, v7.4h, #3        //            8 * (src[0]                 +        src[16])
+        shl             v16.4h, v1.4h, #3       //            8 * (src[0]                 -        src[16])
+        ssra            v0.4h, v7.4h, #1        //  t1 >> 1
+        ssra            v16.4h, v1.4h, #1       //  t2 >> 1
+        sub             v7.4h, v0.4h, v4.4h     // (t1 - t3) >> 1
+        add             v4.4h, v4.4h, v0.4h     // (t1 + t3) >> 1
+        sub             v3.4h, v16.4h, v2.4h    // (t2 - t4) >> 1
+        add             v2.4h, v2.4h, v16.4h    // (t2 + t4) >> 1
         trn1            v0.2d, v4.2d, v3.2d
         trn1            v1.2d, v2.2d, v7.2d
         srshr           v0.8h, v0.8h, #6        // (t1 + t3 + 64) >> 7, (t2 - t4 + 64) >> 7
