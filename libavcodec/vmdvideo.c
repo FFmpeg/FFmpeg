@@ -325,7 +325,9 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
 
     case 2:
         for (i = 0; i < frame_height; i++) {
-            bytestream2_get_buffer(&gb, dp, frame_width);
+            if (bytestream2_get_bytes_left(&gb) < frame_width)
+                return AVERROR_INVALIDDATA;
+            bytestream2_get_bufferu(&gb, dp, frame_width);
             dp += frame->linesize[0];
         }
         break;
