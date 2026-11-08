@@ -51,6 +51,7 @@ typedef struct ATDecodeContext {
     unsigned pkt_size;
     AudioFrameQueue afq;
     int eof;
+    int64_t end_pts;
     int frame_size;
 
     AVFrame* encoding_frame;
@@ -575,13 +576,24 @@ static int ffat_encode(AVCodecContext *avctx, AVPacket *avpkt,
 
     if ((!ret || ret == 1) && *got_packet_ptr) {
         avpkt->size = out_buffers.mBuffers[0].mDataByteSize;
+        avpkt->flags |= AV_PKT_FLAG_KEY;
+        if (at->eof && !at->afq.remaining_samples) {
+            uint8_t *sd = av_packet_new_side_data(avpkt,
+                                                  AV_PKT_DATA_SKIP_SAMPLES, 10);
+            if (!sd)
+                return AVERROR(ENOMEM);
+            AV_WL32(sd + 4, avctx->frame_size);
+            avpkt->pts = at->end_pts;
+            return 0;
+        }
         ret = ff_af_queue_remove(&at->afq, out_pkt_desc.mVariableFramesInPacket ?
                                  out_pkt_desc.mVariableFramesInPacket :
                                  avctx->frame_size,
                                  avpkt);
         if (ret < 0)
             return ret;
-        avpkt->flags |= AV_PKT_FLAG_KEY;
+        at->end_pts = avpkt->pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+                      avpkt->pts + avpkt->duration;
     } else if (ret && ret != 1) {
         av_log(avctx, AV_LOG_ERROR, "Encode error: %i\n", ret);
         return AVERROR_EXTERNAL;
