@@ -251,7 +251,8 @@ int ff_init_filters(SwsInternal * c)
     int num_cdesc;
     int num_vdesc = isPlanarYUV(c->opts.dst_format) && !isGray(c->opts.dst_format) ? 2 : 1;
     int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
-    int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
+    int need_chr_conv = !isGray(c->opts.dst_format) &&
+                        (c->chrToYV12 || c->readChrPlanar);
     int need_gamma = c->is_internal_gamma;
     int srcIdx, dstIdx;
     int dst_stride = FFALIGN(c->opts.dst_w * sizeof(int16_t) + 66, 16);
