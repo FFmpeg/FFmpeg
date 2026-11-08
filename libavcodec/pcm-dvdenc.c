@@ -25,6 +25,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "encode.h"
+#include "internal.h"
 
 typedef struct PCMDVDContext {
     uint8_t header[3];       // Header added to every frame
@@ -107,6 +108,7 @@ static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
     s->header[2] = 0x80;
 
     avctx->frame_size = frame_size;
+    avctx->internal->pad_samples = s->samples_per_block;
 
     return 0;
 }
@@ -179,8 +181,7 @@ const FFCodec ff_pcm_dvd_encoder = {
     CODEC_LONG_NAME("PCM signed 16|20|24-bit big-endian for DVD-Video media"),
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_PCM_DVD,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SMALL_LAST_FRAME |
-                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(PCMDVDContext),
     .init           = pcm_dvd_encode_init,
     FF_CODEC_ENCODE_CB(pcm_dvd_encode_frame),

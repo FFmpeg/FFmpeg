@@ -62,6 +62,14 @@ FATE_PCM-$(call TRANSCODE, PCM_DVD, MPEG2VOB MPEGPS, WAV_DEMUXER PCM_S16LE_DECOD
 fate-pcm_dvd-16-1-96000: tests/data/asynth-96000-1.wav
 fate-pcm_dvd-16-1-96000: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-96000-1.wav vob "-c:a pcm_dvd" "-t 0.2"
 
+FATE_PCM-$(call ALLYES, PCM_DVD_ENCODER LAVFI_INDEV SINE_FILTER ATRIM_FILTER ARESAMPLE_FILTER \
+                       PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-pcm-dvd-last-block
+fate-pcm-dvd-last-block: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=r=48000,atrim=end_sample=85" -c:a pcm_dvd -sample_fmt s32 -map 0:a -map 0:a -flags2:a:1 +fixed_frame_size
+
+FATE_PCM-$(call ALLYES, PCM_DVD_ENCODER LAVFI_INDEV SINE_FILTER ATRIM_FILTER ARESAMPLE_FILTER \
+                       PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-pcm-dvd-last-block-coarse-tb
+fate-pcm-dvd-last-block-coarse-tb: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=r=48000,atrim=end_sample=69" -c:a pcm_dvd -sample_fmt s32 -enc_time_base 1/1000
+
 # PCM Blu-ray encoder/decoder roundtrip tests (s16, locally generated sources)
 FATE_PCM_BLURAY_S16 = fate-pcm-bluray-s16-mono                                \
                       fate-pcm-bluray-s16-stereo                               \
