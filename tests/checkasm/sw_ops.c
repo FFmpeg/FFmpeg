@@ -532,7 +532,7 @@ static void check_filter(const char *name, SwsUOp *uop)
 
             char desc[256];
             snprintf(desc, sizeof(desc), "%s_%s_%d", name,
-                     uop->data.kernel->name, par.src_size);
+                     ff_sws_scaler_name(par.scaler), par.src_size);
 
             check_read(desc, uop);
             av_refstruct_unref(&uop->data.kernel);
