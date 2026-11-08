@@ -216,10 +216,12 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
         virtual_size = params->dst_size;
 
     const double ratio = virtual_size / params->src_size;
-    double stretch = 1.0;
+    const double ratio_inv = 1.0 / ratio;
+    double stretch = 1.0, stretch_inv = 1.0;
     if (ratio < 1.0 && scaler != SWS_SCALE_POINT) {
         /* Widen filter for downscaling (anti-aliasing) */
         stretch = 1.0 / ratio;
+        stretch_inv = ratio;
     }
 
     if (scaler == SWS_SCALE_AREA) {
@@ -308,7 +310,6 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
         return AVERROR(ENOMEM);
     }
 
-    const double ratio_inv = 1.0 / ratio, stretch_inv = 1.0 / stretch;
     for (int i = 0; i < params->dst_size; i++)
         compute_row(filter, &fun, radius, ratio_inv, stretch_inv, i, tmp);
     av_free(tmp);
