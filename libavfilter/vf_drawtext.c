@@ -1919,7 +1919,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 strcat(s->text, bbox->classify_labels[j]);
             }
             s->x = bbox->x;
-            s->y = bbox->y - s->fontsize;
+            s->y = (int64_t)bbox->y - s->fontsize;
         }
         draw_text(ctx, frame);
     }
