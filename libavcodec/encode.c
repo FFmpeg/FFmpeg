@@ -510,7 +510,8 @@ static int encode_send_frame_internal(AVCodecContext *avctx, const AVFrame *src)
                 ec->last_audio_frame = 1;
                 if (!(avctx->codec->capabilities & AV_CODEC_CAP_SMALL_LAST_FRAME) ||
                     (avctx->flags2 & AV_CODEC_FLAG2_FIXED_FRAME_SIZE)) {
-                    int pad_samples = avci->pad_samples ? avci->pad_samples : avctx->frame_size;
+                    int pad_samples = avci->pad_samples && !(avctx->flags2 & AV_CODEC_FLAG2_FIXED_FRAME_SIZE) ?
+                                      avci->pad_samples : avctx->frame_size;
                     int out_samples = (src->nb_samples + pad_samples - 1) / pad_samples * pad_samples;
 
                     if (out_samples != src->nb_samples) {
