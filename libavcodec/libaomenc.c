@@ -24,6 +24,7 @@
  */
 
 #include <limits.h>
+#include <stdlib.h>
 
 #define AOM_DISABLE_CTRL_TYPECHECKS 1
 #include <aom/aom_encoder.h>
@@ -32,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/cpu.h"
+#include "libavutil/dict.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
@@ -50,6 +52,7 @@
 #include "itut35.h"
 #include "libaom.h"
 #include "profiles.h"
+#include "qpfile_parser.h"
 
 /*
  * Portion of struct aom_codec_cx_pkt from aom_encoder.h.
@@ -68,6 +71,12 @@ struct FrameListData {
     uint64_t frame_number;
     struct FrameListData *next;
 };
+
+/* libaom 3.15.3 applies ROI maps only in realtime usage at cpu-used >= 7
+ * without lookahead (measured: lower speeds, good usage and a nonzero
+ * lag-in-frames ignore the map content). */
+#define QPFILE_AOM_USAGE_REALTIME 1 /* AOM_USAGE_REALTIME */
+#define QPFILE_AOM_MIN_CPU_USED   7
 
 typedef struct AOMEncoderContext {
     AVClass *class;
@@ -110,6 +119,35 @@ typedef struct AOMEncoderContext {
     int enable_global_motion;
     int enable_intrabc;
     int enable_restoration;
+    char *qpfile_path;
+
+    /* qpfile -> libaom AOME_SET_ROI_MAP ROI map.
+     * Populated by ff_qpfile_load() in aom_init() when qpfile_path is set,
+     * consumed per-frame in aom_encode(), released in aom_free().
+     *
+     * libaom requires the segment-id map to match its mode-info grid
+     * exactly: rows == mi_rows, cols == mi_cols (4x4-luma cells; see
+     * av1/encoder/encoder.c::av1_set_roi_map). The qpfile rows are at
+     * 16x16-MB granularity, so each MB cell expands into a 4x4 block of
+     * mi cells. delta_q[8] holds up to AOM_MAX_SEGMENTS distinct QP
+     * deltas; per-frame qp_offsets are quantised into <=8 segment ids
+     * (uniform binning when more distinct values than segments exist).
+     *
+     * roi_seg_map is allocated once at the encoder grid size; libaom
+     * deep-copies it on every aom_codec_control() call, so the buffer
+     * can be reused across frames.
+     */
+    FFQpFile qpfile;
+    int            qpfile_loaded;
+    uint8_t       *roi_seg_map;
+    unsigned int   roi_mi_rows;
+    unsigned int   roi_mi_cols;
+    unsigned int   roi_input_frame;  /* input frames seen: the qpfile's frame index */
+    const FFQpFrame *roi_qf;          /* record the cached map was built from */
+    int            roi_cached;        /* roi_qf, roi_seg_q and roi_n_seg are valid */
+    int            roi_seg_q[AOM_MAX_SEGMENTS];
+    unsigned int   roi_n_seg;
+
     int usage;
     int tune;
     int still_picture;
@@ -506,6 +544,17 @@ static av_cold int aom_free(AVCodecContext *avctx)
 
     aom_codec_destroy(&ctx->encoder);
     aom_img_remove_metadata(&ctx->rawimg);
+    if (ctx->qpfile_loaded) {
+        ff_qpfile_free(&ctx->qpfile);
+        ctx->qpfile_loaded = 0;
+    }
+    av_freep(&ctx->roi_seg_map);
+    ctx->roi_mi_rows = 0;
+    ctx->roi_mi_cols = 0;
+    ctx->roi_input_frame = 0;
+    ctx->roi_qf = NULL;
+    ctx->roi_cached = 0;
+    ctx->roi_n_seg = 0;
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
@@ -797,6 +846,38 @@ static const struct {
     { AV1E_SET_ENABLE_SMOOTH_INTERINTRA,  OFFSET(enable_smooth_interintra) },
 };
 
+/* Return the cpu-used value libaom runs with: an aom-params entry wins over -cpu-used. */
+static int qpfile_aom_cpu_used(const AOMContext *ctx)
+{
+    const AVDictionaryEntry *en = av_dict_get(ctx->aom_params, "cpu-used",
+                                              NULL, AV_DICT_MATCH_CASE);
+    char *end;
+    long v;
+
+    if (!en)
+        return ctx->cpu_used;
+    v = strtol(en->value, &end, 10);
+    return end == en->value ? ctx->cpu_used : (int)av_clip64(v, INT_MIN, INT_MAX);
+}
+
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+/* Load the QP file and check its grid, returning 0 or a negative error code. */
+static av_cold int load_qpfile(AVCodecContext *avctx)
+{
+    AOMContext *ctx = avctx->priv_data;
+    int ret = ff_qpfile_load(avctx, ctx->qpfile_path, &ctx->qpfile);
+
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "cannot read qpfile %s: %s\n",
+               ctx->qpfile_path, av_err2str(ret));
+        return ret;
+    }
+    ctx->qpfile_loaded = 1;
+    return ff_qpfile_check_grid(avctx, "libaom", &ctx->qpfile,
+                                avctx->width, avctx->height);
+}
+#endif
+
 static av_cold int aom_config(AVCodecContext *avctx,
                               const struct aom_codec_iface *iface)
 {
@@ -1072,6 +1153,56 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (res < 0)
         return res;
 
+    if (ctx->qpfile_path && *ctx->qpfile_path) {
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+        if (avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "qpfile needs one-pass encoding: libaom applies "
+                   "ROI maps only without recode.\n");
+            return AVERROR(EINVAL);
+        }
+        if (ctx->usage != QPFILE_AOM_USAGE_REALTIME ||
+            qpfile_aom_cpu_used(ctx) < QPFILE_AOM_MIN_CPU_USED) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "qpfile with libaom-av1 requires -usage realtime and cpu-used >= 7, "
+                   "also when set through aom-params; libaom applies ROI maps only in "
+                   "realtime usage at speed 7 or more.\n");
+            return AVERROR(EINVAL);
+        }
+        if (ctx->enccfg.g_lag_in_frames) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "qpfile with libaom-av1 needs -lag-in-frames 0; "
+                   "libaom ignores ROI maps with lookahead.\n");
+            return AVERROR(EINVAL);
+        }
+        res = load_qpfile(avctx);
+        if (res < 0)
+            return res;
+        /* libaom's segmentation map is sized at the mode-info grid:
+         * size_in_mi(x) == ALIGN_POWER_OF_TWO(x, 3) >> MI_SIZE_LOG2,
+         * i.e. each dim aligned up to a multiple of 8 px and divided
+         * by 4. Mirror that here so av1_set_roi_map's (rows, cols)
+         * equality check passes. */
+        ctx->roi_mi_cols = ((unsigned)((avctx->width  + 7) & ~7)) >> 2;
+        ctx->roi_mi_rows = ((unsigned)((avctx->height + 7) & ~7)) >> 2;
+        ctx->roi_seg_map = av_calloc((size_t)ctx->roi_mi_rows *
+                                         ctx->roi_mi_cols,
+                                     sizeof(*ctx->roi_seg_map));
+        if (!ctx->roi_seg_map)
+            return AVERROR(ENOMEM);
+        av_log(avctx, AV_LOG_VERBOSE,
+               "qpfile=%s loaded (frames=%u, %ux%u qpfile blocks "
+               "-> %ux%u mi grid).\n",
+               ctx->qpfile_path, ctx->qpfile.frame_count,
+               ctx->qpfile.block_cols, ctx->qpfile.block_rows,
+               ctx->roi_mi_cols, ctx->roi_mi_rows);
+#else
+        av_log(avctx, AV_LOG_ERROR,
+               "qpfile needs libaom 3.13.0 or newer.\n");
+        return AVERROR(ENOSYS);
+#endif
+    }
+
     ctx->dovi.logctx = avctx;
     if ((res = ff_dovi_configure(&ctx->dovi, avctx)) < 0)
         return res;
@@ -1324,6 +1455,118 @@ static enum AVPixelFormat aomfmt_to_pixfmt(struct aom_image *img)
     return AV_PIX_FMT_NONE;
 }
 
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+/* libaom-av1 ROI map helpers. Convert one FFQpFrame into a
+ * libaom aom_roi_map_t whose (rows, cols, roi_map, delta_q) match the
+ * encoder's mode-info grid (4x4-luma cells).
+ *
+ * Quantisation: per-MB qp_offsets are clipped to [-12, +12] by the
+ * shared parser. Per frame, we discover the actual value range and
+ * emit one segment per distinct value when there are at most
+ * AOM_MAX_SEGMENTS of them, or do uniform linear binning across the span
+ * (lossy: each MB rounds to its nearest segment QP). Each frame's map is
+ * built through a 25-entry offset lookup table and reused while the same
+ * record applies. */
+
+#define QPFILE_AOM_MAX_SEGMENTS  AOM_MAX_SEGMENTS  /* 8, see aomcx.h */
+#define QPFILE_AOM_MI_PER_MB     4                 /* 16 px MB / 4 px mi */
+
+/* Give each mode-info cell the segment nearest its macroblock's QP offset. */
+static void qpfile_aom_paint_seg_map(const FFQpFrame *qf,
+                                     uint8_t *seg_map,
+                                     unsigned mi_rows, unsigned mi_cols,
+                                     const int *seg_q, unsigned n_seg)
+{
+    uint8_t lut[QPFILE_LUT_SIZE];
+    unsigned mi_y, mi_x;
+    unsigned mb_rows = qf->block_rows;
+    unsigned mb_cols = qf->block_cols;
+
+    ff_qpfile_segment_lut(lut, seg_q, n_seg);
+    /* For each mi cell, pick the qpfile MB it overlaps, then snap that
+     * MB's QP-offset to the nearest segment id. mi index / 4 = mb idx. */
+    for (mi_y = 0; mi_y < mi_rows; mi_y++) {
+        unsigned mb_y = mi_y / QPFILE_AOM_MI_PER_MB;
+        mb_y = FFMIN(mb_y, mb_rows - 1u);
+        for (mi_x = 0; mi_x < mi_cols; mi_x++) {
+            unsigned mb_x = mi_x / QPFILE_AOM_MI_PER_MB;
+            int v;
+            mb_x = FFMIN(mb_x, mb_cols - 1u);
+            v = qf->block_offsets[mb_y * mb_cols + mb_x];
+            seg_map[mi_y * mi_cols + mi_x] = lut[v - QPFILE_DELTA_MIN];
+        }
+    }
+}
+
+/* Send an ROI map to libaom via AOME_SET_ROI_MAP, returning 0 or an error. */
+static int qpfile_aom_send_roi(AVCodecContext *avctx, aom_roi_map_t *roi,
+                                unsigned frame_index)
+{
+    AOMContext *ctx = avctx->priv_data;
+    int res = aom_codec_control(&ctx->encoder, AOME_SET_ROI_MAP, roi);
+
+    if (res != AOM_CODEC_OK) {
+        av_log(avctx, AV_LOG_ERROR,
+               "AOME_SET_ROI_MAP failed for frame %u (res=%d).\n",
+               frame_index, res);
+        return AVERROR_EXTERNAL;
+    }
+    return 0;
+}
+
+/* Clear an ROI map to rows x cols mode-info cells with no reference frame. */
+static void qpfile_aom_init_roi(aom_roi_map_t *roi, unsigned rows, unsigned cols)
+{
+    memset(roi, 0, sizeof(*roi));
+    roi->rows = rows;
+    roi->cols = cols;
+    for (unsigned i = 0; i < QPFILE_AOM_MAX_SEGMENTS; i++)
+        roi->ref_frame[i] = -1;
+}
+
+/* Refresh the cached ROI segment map and QP deltas when the active record changes. */
+static void qpfile_aom_update_map(AOMContext *ctx, const FFQpFrame *qf)
+{
+    ctx->roi_n_seg = 0;
+    if (qf)
+        ctx->roi_n_seg = ff_qpfile_segment_values(qf, ctx->roi_seg_q,
+                                                  QPFILE_AOM_MAX_SEGMENTS);
+    if (ctx->roi_n_seg)
+        qpfile_aom_paint_seg_map(qf, ctx->roi_seg_map,
+                                 ctx->roi_mi_rows, ctx->roi_mi_cols,
+                                 ctx->roi_seg_q, ctx->roi_n_seg);
+    ctx->roi_qf     = qf;
+    ctx->roi_cached = 1;
+}
+
+/* Build and apply the ROI map for a frame, returning 0 or a negative error. */
+static int qpfile_aom_apply_roi(AVCodecContext *avctx, unsigned frame_index)
+{
+    AOMContext *ctx = avctx->priv_data;
+    aom_roi_map_t roi;
+    const FFQpFrame *qf;
+
+    if (!ctx->qpfile_loaded || !ctx->roi_seg_map ||
+        !ctx->roi_mi_rows || !ctx->roi_mi_cols)
+        return 0;
+
+    qf = ff_qpfile_frame_for_index(&ctx->qpfile, frame_index);
+    if (!ctx->roi_cached || qf != ctx->roi_qf)
+        qpfile_aom_update_map(ctx, qf);
+
+    qpfile_aom_init_roi(&roi, ctx->roi_mi_rows, ctx->roi_mi_cols);
+    if (ctx->roi_n_seg) {
+        roi.enabled          = 1;
+        roi.roi_map          = ctx->roi_seg_map;
+        roi.delta_qp_enabled = 1;
+        for (unsigned i = 0; i < ctx->roi_n_seg; i++)
+            roi.delta_q[i] = ctx->roi_seg_q[i];
+    }
+
+    return qpfile_aom_send_roi(avctx, &roi, frame_index);
+}
+#endif
+
 static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
@@ -1334,8 +1577,17 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
     int res, coded_size;
     aom_enc_frame_flags_t flags = 0;
     AVFrameSideData *sd;
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+    unsigned roi_frame = 0;
+#endif
 
     if (frame) {
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+        /* Count every input frame before any step that can fail, so that
+         * the frames after a dropped one keep their own qpfile records. */
+        if (ctx->qpfile_loaded)
+            roi_frame = ctx->roi_input_frame++;
+#endif
         rawimg                      = &ctx->rawimg;
         aom_img_remove_metadata(rawimg);
         rawimg->planes[AOM_PLANE_Y] = frame->data[0];
@@ -1396,6 +1648,14 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
         if (res < 0)
             return res;
     }
+
+#if HAVE_STRUCT_AOM_ROI_MAP_REF_FRAME
+    if (ctx->qpfile_loaded && frame) {
+        int qret = qpfile_aom_apply_roi(avctx, roi_frame);
+        if (qret < 0)
+            return qret;
+    }
+#endif
 
     res = aom_codec_encode(&ctx->encoder, rawimg, timestamp, duration, flags);
     if (res != AOM_CODEC_OK) {
@@ -1559,6 +1819,13 @@ static av_cold int av1_reconf(AVCodecContext *avctx, AVDictionary **dict)
     if (res < 0)
         return res;
 
+    if (ctx->qpfile_loaded && qpfile_aom_cpu_used(ctx) < QPFILE_AOM_MIN_CPU_USED) {
+        av_log(avctx, AV_LOG_ERROR,
+               "qpfile with libaom-av1 requires cpu-used >= 7, also when set through "
+               "aom-params; libaom applies ROI maps only at speed 7 or more.\n");
+        return AVERROR(EINVAL);
+    }
+
     res = aom_config(avctx, ctx->encoder.iface);
     if (res < 0)
         return res;
@@ -1621,6 +1888,7 @@ static const AVOption options[] = {
     { "tune",            "The metric that the encoder tunes for. Automatically chosen by the encoder by default", OFFSET(tune), AV_OPT_TYPE_INT, {.i64 = -1}, -1, AOM_TUNE_SSIM, VE, .unit = "tune"},
     { "psnr",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_PSNR}, 0, 0, VE, .unit = "tune"},
     { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, .unit = "tune"},
+    { "qpfile", "Read per-frame QP offsets from a file as a region-of-interest map (needs libaom 3.13.0 or newer)", OFFSET(qpfile_path), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     FF_AV1_PROFILE_OPTS
     { "still-picture", "Encode in single frame mode (typically used for still AVIF images).", OFFSET(still_picture), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, VE },
     { "dolbyvision",     "Enable Dolby Vision RPU coding", OFFSET(dovi.enable), AV_OPT_TYPE_BOOL, {.i64 = FF_DOVI_AUTOMATIC }, -1, 1, VE, .unit = "dovi" },

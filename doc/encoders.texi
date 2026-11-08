@@ -1974,6 +1974,38 @@ Enable interintra compound. Default is true.
 @item enable-smooth-interintra (@emph{boolean}) (Requires libaom >= v2.0.0)
 Enable smooth interintra mode. Default is true.
 
+@item qpfile @var{filename}
+Read per-frame QP offsets from @var{filename} and pass them to libaom as
+a region-of-interest map. libaom applies the map only in one-pass encoding
+with @option{usage} @samp{realtime}, an effective @option{cpu-used} of at
+least 7, and @option{lag-in-frames} 0, the default for realtime usage;
+other settings are refused. Speeds above 8 can be selected through
+@option{aom-params} when supported by the linked libaom.
+
+The file is plain text. Each record starts with a header line
+@samp{@var{frame} @var{type} @var{qp}}, where @var{frame} is the 0-based
+input frame number, strictly increasing from record to record.
+@var{type} is @samp{I}, @samp{P} or @samp{B} in either case, and
+@var{qp} is an integer from 0 to 63; both are checked but not used.
+Frame numbers go up to 4294967295, and a file holds at most 1048576 records.
+Zero or more lines of whitespace-separated integer offsets follow,
+one line per row of 16x16 blocks and one value per block column; the grid
+must match the video size rounded up to 16 pixels. Offsets are clipped to
+the range -12 to 12. Lines holding only spaces or tabs and lines starting with
+@samp{#} are skipped; a line with a NUL byte is refused. A frame uses the last
+record whose number is not greater than its own; a record without offset lines,
+or no record yet, clears the map. libaom takes at most 8 distinct offsets per
+frame; when a frame holds more, they are quantized to 8 evenly spaced values.
+The offsets are deltas on libaom's 0 to 63 quantizer scale; libaom converts each
+to a quantizer index delta, so an offset of 12 becomes 48. While a map is
+enabled, libaom does not run its cyclic-refresh adaptive quantization
+(@option{aq-mode} 3). Up to at least version 3.15.3, libaom checks each
+distinct offset of a frame against the quantizer index of the previous one
+instead of the frame's base index, so near the ends of the quantizer index
+range an offset can be changed or dropped.
+
+Requires at least libaom 3.13.0.
+
 @item aom-params
 Set libaom options using a list of @var{key}=@var{value} pairs separated
 by ":". For a list of supported options, see @command{aomenc --help} under the

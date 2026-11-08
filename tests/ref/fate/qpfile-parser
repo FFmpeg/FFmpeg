@@ -1,0 +1,39 @@
+valid: ok frames 2 grid 2x1
+valid frame 0: index 2 offsets -12 12
+valid frame 1: index 5 offsets 3 -3
+valid check_grid 32x16: ok
+valid check_grid 48x16: EINVAL
+valid frame_for_index 1: none
+valid frame_for_index 2: 2
+valid frame_for_index 4: 2
+valid frame_for_index 5: 5
+valid frame_for_index 100: 5
+valid segment_values 1: -3 3
+crlf: ok frames 2 grid 2x1
+clip: ok frames 1 grid 2x1
+clip frame 0: index 0 offsets -12 12
+header-only: ok frames 2 grid 0x0
+header-only check_grid 32x16: ok
+clearing: ok frames 3 grid 2x1
+clearing lookup 1: none
+clearing lookup frame 2: index 2 offsets 1 2
+clearing lookup frame 4: index 2 offsets 1 2
+clearing lookup 5: index 5 clear
+clearing lookup 7: index 5 clear
+clearing lookup frame 8: index 8 offsets -3 3
+clearing lookup frame 100: index 8 offsets -3 3
+index-max: ok frames 1 grid 2x1
+index-max frame 0: index 4294967295 offsets -1 1
+index-over: EINVAL
+not-increasing: EINVAL
+no-record: EINVAL
+nul: EINVAL
+row-width: EINVAL
+frame-width: EINVAL
+frame-rows: EINVAL
+palette -12 0 12 budget 8: -12 0 12
+palette -12 0 12 budget 2: -12 12
+palette -12..12 budget 8: -12 -9 -6 -2 1 5 8 12
+palette empty budget 8: (none)
+palette -12 0 12 budget 1: (none)
+lut -12 0 12: 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2

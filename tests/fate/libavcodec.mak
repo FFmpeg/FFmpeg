@@ -143,5 +143,9 @@ $(FATE_SAMPLES_ENC_RECON-yes): CMP = null
 FATE_EXTERN-yes += $(FATE_SAMPLES_ENC_RECON-yes)
 fate-enc-recon: $(FATE_SAMPLES_ENC_RECON-yes)
 
+FATE_LIBAVCODEC-$(CONFIG_QPFILE) += fate-qpfile-parser
+fate-qpfile-parser: libavcodec/tests/qpfile_parser$(EXESUF)
+fate-qpfile-parser: CMD = run libavcodec/tests/qpfile_parser$(EXESUF)
+
 FATE-$(CONFIG_AVCODEC) += $(FATE_LIBAVCODEC-yes)
 fate-libavcodec: $(FATE_LIBAVCODEC-yes)
