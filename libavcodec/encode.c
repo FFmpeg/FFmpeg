@@ -258,9 +258,11 @@ static int encode_set_packet_props(AVCodecContext *avctx, AVPacket *avpkt, const
                 int discard_padding = AV_RL32(frame_sd->data + 4);
 
                 if (discard_padding > 0 && avctx->frame_size && ec->last_audio_frame) {
+                    if (!frame->duration)
+                        avpkt->duration = ff_samples_to_time_base(avctx, frame->nb_samples - discard_padding);
                     avpkt->duration = av_sat_add64(avpkt->duration, ff_samples_to_time_base(avctx, avctx->initial_padding));
-                    avpkt->duration = FFMIN(avpkt->duration, ff_samples_to_time_base(avctx, avctx->frame_size));
-                    discard_padding = avctx->frame_size - ff_samples_from_time_base(avctx, avpkt->duration);
+                    avpkt->duration = FFMIN(avpkt->duration, ff_samples_to_time_base(avctx, frame->nb_samples));
+                    discard_padding = FFMAX(0, discard_padding - avctx->initial_padding);
                 }
 
                 if (skip_samples > 0 || discard_padding > 0) {
