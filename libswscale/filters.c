@@ -60,6 +60,20 @@ static double scaler_sample(const SwsFilterFunction *f, double x)
     return w;
 }
 
+/**
+ * Explanation of the 0.5 offsets: Normally, pixel samples are assumed
+ * to be representative of the center of their containing area; e.g. for
+ * a 2x2 image, the samples are located at {0.5, 1.5}^2. However, with
+ * integer indexing, we round sample positions down (0-based indexing).
+ * So the (0, 0) sample is actually located at (0.5, 0.5) and represents
+ * the entire square from (0,0) to (1,1). When normalizing between different
+ * image sizes, we therefore need to add/subtract off these 0.5 offsets.
+ */
+static double get_src_pos(int dst_pos, double ratio_inv, double offset)
+{
+    return (dst_pos + 0.5) * ratio_inv - 0.5 + offset;
+}
+
 static void compute_row(SwsFilterWeights *f, const SwsFilterFunction *fun,
                         double radius, double ratio_inv, double stretch_inv,
                         int dst_pos, double *tmp)
@@ -67,16 +81,7 @@ static void compute_row(SwsFilterWeights *f, const SwsFilterFunction *fun,
     int *out = &f->weights[dst_pos * f->filter_size];
     int *pos = &f->offsets[dst_pos];
 
-    /**
-     * Explanation of the 0.5 offsets: Normally, pixel samples are assumed
-     * to be representative of the center of their containing area; e.g. for
-     * a 2x2 image, the samples are located at {0.5, 1.5}^2. However, with
-     * integer indexing, we round sample positions down (0-based indexing).
-     * So the (0, 0) sample is actually located at (0.5, 0.5) and represents
-     * the entire square from (0,0) to (1,1). When normalizing between different
-     * image sizes, we therefore need to add/subtract off these 0.5 offsets.
-     */
-    const double src_pos = (dst_pos + 0.5) * ratio_inv - 0.5 + f->offset;
+    const double src_pos = get_src_pos(dst_pos, ratio_inv, f->offset);
     if (f->filter_size == 1) {
         *pos = fmin(fmax(round(src_pos), 0.0), f->src_size - 1);
         *out = SWS_FILTER_SCALE;
