@@ -86,7 +86,7 @@ jobs:
           - name: 'Full, Wine, win64'
             image: 'ghcr.io/ffmpeg-builds/ffmpeg-builds/win64-gpl:latest'
             target_exec: 'wine'
-            runner: 'linux-amd64'
+            runner: 'linux-amd64-big'
           - name: 'Full, Linux, aarch64'
             image: 'ghcr.io/ffmpeg-builds/ffmpeg-builds/linuxarm64-gpl:latest'
             target_exec: ''
