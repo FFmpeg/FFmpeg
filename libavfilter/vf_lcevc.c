@@ -272,6 +272,7 @@ static int send_output_picture(AVFilterLink *inlink)
     res = LCEVC_SendDecoderPicture(lcevc->decoder, picture);
     if (res != LCEVC_Success) {
         av_log(ctx, AV_LOG_ERROR, "LCEVC_SendDecoderPicture failed\n");
+        LCEVC_FreePicture(lcevc->decoder, picture);
         av_frame_free(&lcevc->out);
         return AVERROR_EXTERNAL;
     }
