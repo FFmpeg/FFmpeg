@@ -383,7 +383,7 @@ static void log_callback(LCEVC_DecoderHandle dec, LCEVC_Event event,
     if (event != LCEVC_Log) // shouldn't happen
         return;
 
-    if (strlen(data) != size) // sanitize input
+    if (!size || data[size - 1]) // sanitize input
         return;
 
     av_log(logctx, AV_LOG_INFO, "LCEVC Log: %s\n", data);
