@@ -3241,6 +3241,39 @@ Variable bit rate.
 Constant bit rate (not allowed in MP4 container).
 @end table
 
+@item qpfile @var{filename}
+Read per-frame macroblock QP offsets from @var{filename} and pass them to
+x264 as quantizer offsets. x264 applies the offsets through adaptive
+quantization; the option is refused when x264 runs without adaptive
+quantization, that is with constant QP, or with @option{aq-mode} 0 or
+@option{aq-strength} 0 while @option{mbtree} is off; it is also refused
+with interlaced or fake-interlaced encoding.
+
+The file is plain text. Each record starts with a header line
+@samp{@var{frame} @var{type} @var{qp}}, where @var{frame} is the 0-based
+input frame number, strictly increasing from record to record.
+@var{type} is @samp{I}, @samp{P} or @samp{B} in either case, and
+@var{qp} is an integer from 0 to 63; both are checked but not used.
+Frame numbers go up to 4294967295, and a file holds at most 1048576 records.
+Zero or more lines of whitespace-separated integer offsets follow, one
+line per row of 16x16 macroblocks and one value per macroblock column; the
+grid must match the video size rounded up to 16 pixels. Offsets are clipped
+to the range -12 to 12. Lines holding only spaces or tabs and lines starting
+with @samp{#} are skipped; a line with a NUL byte is refused. A frame uses
+the last record whose number is not greater than its own; a record without
+offset lines ends the offsets.
+
+On a frame that also carries region-of-interest side data
+(@code{AV_FRAME_DATA_REGIONS_OF_INTEREST}, for example from the
+@code{addroi} filter), the offsets are added to the per-macroblock
+quantizer offsets that the encoder builds from that side data. A record
+without offset lines leaves those region offsets unchanged.
+
+This is not the format of the x264 command-line @option{--qpfile}
+option, which sets frame types and QPs; the type @samp{K} of that format
+is refused here. In two-pass encoding, give both passes the same file:
+x264 leaves the result undefined when the offsets differ between passes.
+
 @item x264opts @var{opts}
 @item x264-params @var{opts}
 Override the x264 configuration using a :-separated list of key=value

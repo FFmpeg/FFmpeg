@@ -39,6 +39,8 @@
 #include "sei.h"
 #include "golomb.h"
 
+#include "qpfile_parser.h"
+
 #include <x264.h>
 #include <float.h>
 #include <math.h>
@@ -126,6 +128,10 @@ typedef struct X264Context {
     int roi_warned;
 
     int mb_info;
+
+    char *qpfile_path;
+    FFQpFile qpf;   /* the loaded qpfile (frame_count 0: none) */
+    unsigned qpf_frames;  /* input frames seen: the qpfile's frame index */
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -488,6 +494,36 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic,
     return 0;
 }
 
+/* Add the qpfile's per-MB QP offsets of input frame `frame_index` to the
+ * picture's quant_offsets (x264 adds them to adaptive quantization's own, as
+ * for a region of interest). x264 has no qpfile parameter: its qpfile is a
+ * feature of the x264 command line, not of libx264. */
+static int setup_qpfile(AVCodecContext *ctx, x264_picture_t *pic, unsigned frame_index)
+{
+    X264Context *x4 = ctx->priv_data;
+    const FFQpFrame *qf;
+    size_t n_mb;
+    float *qoffsets;
+
+    qf = ff_qpfile_frame_for_index(&x4->qpf, frame_index);
+    if (!qf || !qf->block_offsets)
+        return 0;
+    n_mb = (size_t)qf->block_cols * qf->block_rows;
+
+    qoffsets = pic->prop.quant_offsets;
+    if (!qoffsets) {
+        qoffsets = av_calloc(n_mb, sizeof(*qoffsets));
+        if (!qoffsets)
+            return AVERROR(ENOMEM);
+        pic->prop.quant_offsets      = qoffsets;
+        pic->prop.quant_offsets_free = av_free;
+    }
+    for (size_t i = 0; i < n_mb; i++)
+        qoffsets[i] += (float)qf->block_offsets[i];
+
+    return 0;
+}
+
 static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
                        x264_picture_t **ppic)
 {
@@ -496,6 +532,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     x264_picture_t *pic = &x4->pic;
     x264_sei_t     *sei = &pic->extra_sei;
     unsigned int sei_data_size = 0;
+    unsigned frame_index = 0;
     int64_t wallclock = 0;
     int ret;
     AVFrameSideData *sd;
@@ -504,6 +541,12 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     *ppic = NULL;
     if (!frame)
         return 0;
+
+    /* Count every input frame here, before any step that can fail: the
+     * caller drops a frame whose setup fails, and the following frames
+     * must keep their own qpfile records. */
+    if (x4->qpf.frame_count)
+        frame_index = x4->qpf_frames++;
 
     x264_picture_init(pic);
     pic->img.i_csp   = x4->params.i_csp;
@@ -581,6 +624,12 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
         ret = setup_roi(ctx, pic, frame, sd->data, sd->size);
+        if (ret < 0)
+            goto fail;
+    }
+
+    if (x4->qpf.frame_count) {
+        ret = setup_qpfile(ctx, pic, frame_index);
         if (ret < 0)
             goto fail;
     }
@@ -800,6 +849,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
     X264Context *x4 = avctx->priv_data;
 
     av_freep(&x4->sei);
+    ff_qpfile_free(&x4->qpf);
 
     for (int i = 0; i < x4->nb_reordered_opaque; i++)
         opaque_uninit(&x4->reordered_opaque[i]);
@@ -1433,6 +1483,19 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.analyse.b_mb_info = x4->mb_info;
 
+    if (x4->qpfile_path && *x4->qpfile_path) {
+        ret = ff_qpfile_load(avctx, x4->qpfile_path, &x4->qpf);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "cannot read qpfile %s: %s\n",
+                   x4->qpfile_path, av_err2str(ret));
+            return ret;
+        }
+        ret = ff_qpfile_check_grid(avctx, "libx264", &x4->qpf,
+                                   avctx->width, avctx->height);
+        if (ret < 0)
+            return ret;
+    }
+
     // update AVCodecContext with x264 parameters
     avctx->has_b_frames = x4->params.i_bframe ?
         x4->params.i_bframe_pyramid ? 2 : 1 : 0;
@@ -1444,6 +1507,26 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
         return AVERROR_EXTERNAL;
+
+    if (x4->qpfile_path && *x4->qpfile_path) {
+        x264_param_t effective;
+        x264_encoder_parameters(x4->enc, &effective);
+        if (effective.rc.i_aq_mode == X264_AQ_NONE) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "a qpfile needs adaptive quantization, but x264 runs without it (constant QP, or aq-mode 0 or aq-strength 0 without mbtree).\n");
+            return AVERROR(EINVAL);
+        }
+        if (effective.b_interlaced || effective.b_fake_interlaced) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "a qpfile does not support interlaced or fake-interlaced encoding.\n");
+            return AVERROR(EINVAL);
+        }
+        const unsigned mbx = (avctx->width  + MB_SIZE - 1) / MB_SIZE;
+        const unsigned mby = (avctx->height + MB_SIZE - 1) / MB_SIZE;
+        av_log(avctx, AV_LOG_VERBOSE, "qpfile=%s loaded (%u frames, %ux%u macroblocks); "
+               "offsets applied as quant_offsets.\n", x4->qpfile_path, x4->qpf.frame_count,
+               mbx, mby);
+    }
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         ret = set_extradata(avctx);
@@ -1609,6 +1692,7 @@ static const AVOption options[] = {
     { "udu_sei",      "Use user data unregistered SEI if available",      OFFSET(udu_sei),  AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
     { "x264-params",  "Override the x264 configuration using a :-separated list of key=value parameters", OFFSET(x264_params), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
     { "mb_info",      "Set mb_info data through AVSideData, only useful when used from the API", OFFSET(mb_info), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "qpfile",       "Read per-frame QP offsets from a file (needs adaptive quantization)", OFFSET(qpfile_path), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { NULL },
 };
 
