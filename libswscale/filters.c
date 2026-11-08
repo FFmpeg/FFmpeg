@@ -200,7 +200,7 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
                            SwsFilterWeights **out)
 {
     SwsScaler scaler = params->scaler;
-    if (scaler >= SWS_SCALE_NB)
+    if (scaler >= SWS_SCALE_NB || params->src_size <= 0 || params->dst_size <= 0)
         return AVERROR(EINVAL);
 
     if (scaler == SWS_SCALE_AUTO)
