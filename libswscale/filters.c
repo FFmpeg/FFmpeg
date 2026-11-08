@@ -84,8 +84,8 @@ static void compute_row(SwsFilterWeights *f, const SwsFilterFunction *fun,
     }
 
     /* First and last pixels that are actually within the filter envelope */
-    const int start   = ceil (src_pos - radius);
-    const int stop    = floor(src_pos + radius);
+    const int start   = floor(src_pos - radius) + 1;
+    const int stop    = ceil (src_pos + radius) - 1;
     const int clamped = av_clip(start, 0, f->src_size - f->filter_size);
     *pos = clamped;
 
