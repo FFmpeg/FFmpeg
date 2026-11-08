@@ -1,5 +1,5 @@
-451a0326abe6e7a074184d3410eef4ce *tests/data/fate/ffv1-golomb-float32-26bit.nut
-163524 tests/data/fate/ffv1-golomb-float32-26bit.nut
+823f1949055b53c21f21cb5413aac9cb *tests/data/fate/ffv1-golomb-float32-26bit.nut
+169112 tests/data/fate/ffv1-golomb-float32-26bit.nut
 #tb 0: 1/1
 #media_type 0: video
 #codec_id 0: rawvideo

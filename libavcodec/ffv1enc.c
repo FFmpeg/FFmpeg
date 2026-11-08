@@ -1161,10 +1161,22 @@ static void encode_slice_header(FFV1Context *f, FFV1SliceContext *sc)
     }
 }
 
+#define NB_Y_COEFF 15
+
+/* Each contribution to the partial sums is at most 98303,
+ * so up to 4096 of them fit in an int. */
+static av_always_inline void accumulate_rct_stats(int64_t stat[NB_Y_COEFF],
+                                                 int partial[NB_Y_COEFF])
+{
+    for (int i = 0; i < NB_Y_COEFF; i++) {
+        stat[i] += partial[i];
+        partial[i] = 0;
+    }
+}
+
 static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
                               const uint8_t *src[3], const int stride[3], int w, int h)
 {
-#define NB_Y_COEFF 15
     static const int rct_y_coeff[15][2] = {
         {0, 0}, //      4G
         {1, 1}, //  R + 2G + B
@@ -1184,7 +1196,8 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
         {1, 0}, //  R + 3G
     };
 
-    int stat[NB_Y_COEFF] = {0};
+    int64_t stat[NB_Y_COEFF] = {0};
+    int partial[NB_Y_COEFF] = {0};
     int x, y, i, p, best;
     int16_t *sample[3];
     int lbd = f->bits_per_raw_sample <= 8;
@@ -1232,7 +1245,7 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
                 bb -= bg;
 
                 for (i = 0; i<NB_Y_COEFF; i++) {
-                    stat[i] += FFABS(bg + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1])>>2));
+                    partial[i] += FFABS(bg + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1])>>2));
                 }
 
             }
@@ -1243,7 +1256,10 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
             lastr = r;
             lastg = g;
             lastb = b;
+            if ((x & 4095) == 4095)
+                accumulate_rct_stats(stat, partial);
         }
+        accumulate_rct_stats(stat, partial);
     }
 
     best = 0;
@@ -1264,7 +1280,8 @@ static void choose_rct_params_bayer(const FFV1Context *f, FFV1SliceContext *sc,
         { 0, 0 }, { 1, 1 }, { 2, 2 }, { 0, 2 }, { 2, 0 }, { 4, 0 }, { 0, 4 }, { 0, 3 },
         { 3, 0 }, { 3, 1 }, { 1, 3 }, { 1, 2 }, { 2, 1 }, { 0, 1 }, { 1, 0 },
     };
-    int stat[NB_Y_COEFF] = {0};
+    int64_t stat[NB_Y_COEFF] = {0};
+    int partial[NB_Y_COEFF] = {0};
     int16_t *sample[3];
     int i, best;
 
@@ -1298,7 +1315,7 @@ static void choose_rct_params_bayer(const FFV1Context *f, FFV1SliceContext *sc,
                 bb -= bgm;
 
                 for (i = 0; i < NB_Y_COEFF; i++)
-                    stat[i] += FFABS(bgm + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1]) >> 2));
+                    partial[i] += FFABS(bgm + ((br*rct_y_coeff[i][0] + bb*rct_y_coeff[i][1]) >> 2));
             }
             sample[0][x] = agm;
             sample[1][x] = ab;
@@ -1307,7 +1324,10 @@ static void choose_rct_params_bayer(const FFV1Context *f, FFV1SliceContext *sc,
             last_gm = gm;
             last_b  = b;
             last_r  = r;
+            if ((x & 4095) == 4095)
+                accumulate_rct_stats(stat, partial);
         }
+        accumulate_rct_stats(stat, partial);
     }
 
     best = 0;
