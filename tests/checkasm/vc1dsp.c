@@ -323,6 +323,21 @@ static void check_inv_trans_adding(void)
             call_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
             if (memcmp(inv_trans_out0, inv_trans_out1, 10 * 24))
                 fail();
+
+            for (int sign = -1; sign <= 1; sign += 2) {
+                int dc = tests[k].width == 8 && tests[k].height == 8 ? 2000 :
+                         tests[k].width == 4 && tests[k].height == 4 ? 1000 :
+                                                                       1400;
+                memset(inv_trans_in0, 0, 8 * 8 * sizeof (int16_t));
+                memset(inv_trans_in1, 0, 8 * 8 * sizeof (int16_t));
+                inv_trans_in0[0] = inv_trans_in1[0] = sign * dc;
+                RANDOMIZE_BUFFER8(inv_trans_out, 10 * 24);
+                call_ref(inv_trans_out0 + 24 + 8, 24, inv_trans_in0);
+                call_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
+                if (memcmp(inv_trans_out0, inv_trans_out1, 10 * 24))
+                    fail();
+            }
+
             bench_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
             av_free(coeffs);
         }
