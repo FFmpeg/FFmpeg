@@ -29,6 +29,7 @@
 
 typedef struct LCEVCContext {
     LCEVC_DecoderHandle decoder;
+    AVFrame *out;
     int w, h;
 } LCEVCContext;
 
@@ -193,7 +194,7 @@ static int alloc_enhanced_frame(AVFilterLink *inlink, const AVFrame *out,
     return 0;
 }
 
-static int generate_output(AVFilterLink *inlink, AVFrame *out)
+static int generate_output(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -202,23 +203,22 @@ static int generate_output(AVFilterLink *inlink, AVFrame *out)
     LCEVC_DecodeInformation info;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
+    AVFrame *out;
 
     res = LCEVC_ReceiveDecoderPicture(lcevc->decoder, &picture, &info);
     if (res == LCEVC_Again) {
         int64_t pts;
         int status;
-        if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-            av_frame_free(&out);
+        if (ff_inlink_acknowledge_status(inlink, &status, &pts))
             ff_outlink_set_status(outlink, status, pts);
-            return 0;
-        }
-        // this shouldn't be reachable, but instead of asserting, just error out
-        return AVERROR_BUG;
+        return 0;
     } else if (res != LCEVC_Success) {
         av_log(ctx, AV_LOG_ERROR, "LCEVC_ReceiveDecoderPicture failed\n");
         return AVERROR_EXTERNAL;
     }
 
+    out = lcevc->out;
+    lcevc->out = NULL;
     av_frame_copy_props(out, (AVFrame *)info.baseUserData);
     av_frame_remove_side_data(out, AV_FRAME_DATA_LCEVC);
 
@@ -250,25 +250,33 @@ static int generate_output(AVFilterLink *inlink, AVFrame *out)
     return ff_filter_frame(outlink, out);
 }
 
-static int receive_frame(AVFilterLink *inlink, AVFrame *out)
+static int send_output_picture(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
     LCEVCContext *lcevc = ctx->priv;
     LCEVC_PictureHandle picture;
     LCEVC_ReturnCode res;
     int ret;
 
-    ret = alloc_enhanced_frame(inlink, out, &picture);
-    if (ret < 0)
+    lcevc->out = ff_get_video_buffer(outlink, lcevc->w, lcevc->h);
+    if (!lcevc->out)
+        return AVERROR(ENOMEM);
+
+    ret = alloc_enhanced_frame(inlink, lcevc->out, &picture);
+    if (ret < 0) {
+        av_frame_free(&lcevc->out);
         return ret;
+    }
 
     res = LCEVC_SendDecoderPicture(lcevc->decoder, picture);
     if (res != LCEVC_Success) {
         av_log(ctx, AV_LOG_ERROR, "LCEVC_SendDecoderPicture failed\n");
+        av_frame_free(&lcevc->out);
         return AVERROR_EXTERNAL;
     }
 
-    return generate_output(inlink, out);
+    return 0;
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -302,7 +310,7 @@ static int activate(AVFilterContext *ctx)
     LCEVCContext *lcevc   = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *in, *out;
+    AVFrame *in;
     int status, ret;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
@@ -352,15 +360,15 @@ static int activate(AVFilterContext *ctx)
         lcevc->h = desc.height;
     }
 
-    out = ff_get_video_buffer(outlink, lcevc->w, lcevc->h);
-    if (!out)
-        return AVERROR(ENOMEM);
-
-    ret = receive_frame(inlink, out);
-    if (ret < 0) {
-        av_frame_free(&out);
-        return ret;
+    if (!lcevc->out) {
+        ret = send_output_picture(inlink);
+        if (ret < 0)
+            return ret;
     }
+
+    ret = generate_output(inlink);
+    if (ret < 0)
+        return ret;
 
     flush_bases(ctx);
 
@@ -425,6 +433,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     LCEVC_FlushDecoder(lcevc->decoder);
     flush_bases(ctx);
     LCEVC_DestroyDecoder(lcevc->decoder);
+    av_frame_free(&lcevc->out);
 }
 
 static const AVFilterPad lcevc_outputs[] = {
