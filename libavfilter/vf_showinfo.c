@@ -168,17 +168,19 @@ static void dump_detection_bbox(AVFilterContext *ctx, const AVFrameSideData *sd)
 
     header = (const AVDetectionBBoxHeader *)sd->data;
     nb_bboxes = header->nb_bboxes;
-    av_log(ctx, AV_LOG_INFO, "source: %s\n", header->source);
+    av_log(ctx, AV_LOG_INFO, "source: %.*s\n", (int)sizeof(header->source), header->source);
 
     for (int i = 0; i < nb_bboxes; i++) {
         bbox = av_get_detection_bbox(header, i);
-        av_log(ctx, AV_LOG_INFO, "index: %d,\tregion: (%d, %d) -> (%d, %d), label: %s, confidence: %d/%d.\n",
+        av_log(ctx, AV_LOG_INFO, "index: %d,\tregion: (%d, %d) -> (%d, %d), label: %.*s, confidence: %d/%d.\n",
                                  i, bbox->x, bbox->y, bbox->x + bbox->w, bbox->y + bbox->h,
-                                 bbox->detect_label, bbox->detect_confidence.num, bbox->detect_confidence.den);
+                                 (int)sizeof(bbox->detect_label), bbox->detect_label,
+                                 bbox->detect_confidence.num, bbox->detect_confidence.den);
         if (bbox->classify_count > 0) {
             for (int j = 0; j < bbox->classify_count; j++) {
-                av_log(ctx, AV_LOG_INFO, "\t\tclassify:  label: %s, confidence: %d/%d.\n",
-                       bbox->classify_labels[j], bbox->classify_confidences[j].num, bbox->classify_confidences[j].den);
+                av_log(ctx, AV_LOG_INFO, "\t\tclassify:  label: %.*s, confidence: %d/%d.\n",
+                       (int)sizeof(bbox->classify_labels[j]), bbox->classify_labels[j],
+                       bbox->classify_confidences[j].num, bbox->classify_confidences[j].den);
             }
         }
     }
