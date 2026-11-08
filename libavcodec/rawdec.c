@@ -428,7 +428,8 @@ static int raw_decode(AVCodecContext *avctx, AVFrame *frame,
         avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
         FFSWAP(uint8_t *, frame->data[1], frame->data[2]);
 
-    if (avctx->codec_tag == AV_RL32("I420") && (avctx->width+1)*(avctx->height+1) * 3/2 == buf_size) {
+    if (avctx->codec_tag == AV_RL32("I420") && !((avctx->width | avctx->height) & 1) &&
+        (avctx->width+1)*(avctx->height+1) * 3/2 == buf_size) {
         frame->data[1] = frame->data[1] +  (avctx->width+1)*(avctx->height+1) -avctx->width*avctx->height;
         frame->data[2] = frame->data[2] + ((avctx->width+1)*(avctx->height+1) -avctx->width*avctx->height)*5/4;
     }
