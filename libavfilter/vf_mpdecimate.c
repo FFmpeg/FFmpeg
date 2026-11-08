@@ -25,6 +25,7 @@
  * Rich Felker.
  */
 
+#include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixelutils.h"
@@ -85,8 +86,10 @@ AVFILTER_DEFINE_CLASS(mpdecimate);
 
 /**
  * Return 1 if the two planes are different, 0 otherwise.
+ * The reason is appended to bp, which the caller prints with the frame's
+ * keep/drop decision in a single av_log() call.
  */
-static int diff_planes(AVFilterContext *ctx,
+static int diff_planes(AVFilterContext *ctx, AVBPrint *bp,
                        uint8_t *cur, int cur_linesize,
                        uint8_t *ref, int ref_linesize,
                        int w, int h)
@@ -103,27 +106,27 @@ static int diff_planes(AVFilterContext *ctx,
             d = decimate->sad(cur + y*cur_linesize + x, cur_linesize,
                               ref + y*ref_linesize + x, ref_linesize);
             if (d > decimate->hi) {
-                av_log(ctx, AV_LOG_DEBUG, "%d>=hi ", d);
+                av_bprintf(bp, "%d>=hi ", d);
                 return 1;
             }
             if (d > decimate->lo) {
                 c++;
                 if (c > t) {
-                    av_log(ctx, AV_LOG_DEBUG, "lo:%d>=%d ", c, t);
+                    av_bprintf(bp, "lo:%d>=%d ", c, t);
                     return 1;
                 }
             }
         }
     }
 
-    av_log(ctx, AV_LOG_DEBUG, "lo:%d<%d ", c, t);
+    av_bprintf(bp, "lo:%d<%d ", c, t);
     return 0;
 }
 
 /**
  * Tell if the frame is different with respect to the reference frame ref.
  */
-static int is_frame_different(AVFilterContext *ctx,
+static int is_frame_different(AVFilterContext *ctx, AVBPrint *bp,
                               AVFrame *cur, AVFrame *ref)
 {
     DecimateContext *decimate = ctx->priv;
@@ -137,7 +140,7 @@ static int is_frame_different(AVFilterContext *ctx,
          */
         int vsub = plane == 1 || plane == 2 ? decimate->vsub : 0;
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
-        if (diff_planes(ctx,
+        if (diff_planes(ctx, bp,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
                         AV_CEIL_RSHIFT(ref->width, hsub),
@@ -152,10 +155,11 @@ static int is_frame_different(AVFilterContext *ctx,
  * Tell if the frame should be decimated, for example if it is no much
  * different with respect to the reference frame ref.
  */
-static DecimateResult decimate_frame(AVFilterContext *ctx, AVFrame *cur, AVFrame *ref)
+static DecimateResult decimate_frame(AVFilterContext *ctx, AVBPrint *bp,
+                                     AVFrame *cur, AVFrame *ref)
 {
     DecimateContext *decimate = ctx->priv;
-    int is_similar = is_frame_different(ctx, cur, ref) == 0;
+    int is_similar = is_frame_different(ctx, bp, cur, ref) == 0;
 
     if (!is_similar) {
         return DECIMATE_KEEP_UPDATE;
@@ -235,7 +239,11 @@ static int filter_frame_mode_0(AVFilterLink *inlink, AVFrame *cur)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out = NULL;
     int ret;
-    DecimateResult result = decimate->ref ? decimate_frame(inlink->dst, cur, decimate->ref) : DECIMATE_KEEP_UPDATE;
+    AVBPrint bp;
+    DecimateResult result;
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    result = decimate->ref ? decimate_frame(inlink->dst, &bp, cur, decimate->ref) : DECIMATE_KEEP_UPDATE;
 
     switch (result) {
     case DECIMATE_DROP:
@@ -249,6 +257,7 @@ static int filter_frame_mode_0(AVFilterLink *inlink, AVFrame *cur)
     case DECIMATE_KEEP_UPDATE:
         out = av_frame_clone(cur);
         if (!out) {
+            av_bprint_finalize(&bp, NULL);
             av_frame_free(&cur);
             return AVERROR(ENOMEM);
         }
@@ -260,11 +269,12 @@ static int filter_frame_mode_0(AVFilterLink *inlink, AVFrame *cur)
     }
 
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "%s pts:%s pts_time:%s drop_count:%d keep_count:%d\n",
-           result == DECIMATE_DROP ? "drop" : "keep",
+           "%s%s pts:%s pts_time:%s drop_count:%d keep_count:%d\n",
+           bp.str, result == DECIMATE_DROP ? "drop" : "keep",
            av_ts2str(cur->pts), av_ts2timestr(cur->pts, &inlink->time_base),
            decimate->drop_count,
            decimate->keep_count);
+    av_bprint_finalize(&bp, NULL);
 
     if (result == DECIMATE_DROP) {
         av_frame_free(&cur);
@@ -284,10 +294,13 @@ static int filter_frame_mode_1(AVFilterLink *inlink, AVFrame *cur)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int ret;
     AVFrame *out = NULL;
+    AVBPrint bp;
 
-    if (!decimate->ref || is_frame_different(inlink->dst, cur, decimate->ref)) {
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    if (!decimate->ref || is_frame_different(inlink->dst, &bp, cur, decimate->ref)) {
         AVFrame *ref = av_frame_clone(cur);
         if (!ref) {
+            av_bprint_finalize(&bp, NULL);
             av_frame_free(&cur);
             return AVERROR(ENOMEM);
         }
@@ -299,11 +312,12 @@ static int filter_frame_mode_1(AVFilterLink *inlink, AVFrame *cur)
     }
 
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "%s pts:%s pts_time:%s dup_count:%d\n",
-           decimate->dup_count ==
+           "%s%s pts:%s pts_time:%s dup_count:%d\n",
+           bp.str, decimate->dup_count ==
            decimate->min_dup_count ? "keep" : "drop", av_ts2str(cur->pts),
            av_ts2timestr(cur->pts, &inlink->time_base),
            decimate->dup_count);
+    av_bprint_finalize(&bp, NULL);
 
     if (decimate->dup_count == decimate->min_dup_count) {
         out = av_frame_clone(decimate->ref);
