@@ -134,10 +134,6 @@ static int send_frame(AVFilterLink *inlink, AVFrame *in)
     LCEVC_ReturnCode res;
     int ret;
 
-    ret = alloc_base_frame(inlink, in, &picture);
-    if (ret < 0)
-        return ret;
-
     if (sd) {
         res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, sd->data, sd->size);
         if (res == LCEVC_Again)
@@ -147,6 +143,10 @@ static int send_frame(AVFilterLink *inlink, AVFrame *in)
             return AVERROR_EXTERNAL;
         }
     }
+
+    ret = alloc_base_frame(inlink, in, &picture);
+    if (ret < 0)
+        return ret;
 
     res = LCEVC_SetPictureUserData(lcevc->decoder, picture, in);
     if (res != LCEVC_Success) {
