@@ -889,6 +889,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     if (ctx->internal_error) {
         av_log(avctx, AV_LOG_ERROR, "cuvid decode callback error\n");
         ret = ctx->internal_error;
+        ctx->internal_error = 0;
         goto error;
     }
 
