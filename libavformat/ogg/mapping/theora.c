@@ -35,7 +35,39 @@ typedef struct TheoraParams {
     int gpshift;
     int gpmask;
     unsigned version;
+    uint8_t *packet[3];                 ///< headers of the link, until all three are in
+    int len[3];
 } TheoraParams;
+
+/**
+ * Pack the three headers of a link with Xiph lacing, which carries headers
+ * of any size, and free them.
+ */
+static int theora_pack_headers(TheoraParams *thp, uint8_t **buf)
+{
+    uint64_t size = 1 + thp->len[0] / 255 + 1 + thp->len[1] / 255 + 1 +
+                    (uint64_t)thp->len[0] + thp->len[1] + thp->len[2];
+    int offset;
+    uint8_t *ptr;
+
+    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+        return AVERROR_INVALIDDATA;
+
+    ptr = *buf = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!ptr)
+        return AVERROR(ENOMEM);
+
+    ptr[0]  = 2;
+    offset  = 1;
+    offset += av_xiphlacing(&ptr[offset], thp->len[0]);
+    offset += av_xiphlacing(&ptr[offset], thp->len[1]);
+    for (int i = 0; i < 3; i++) {
+        memcpy(&ptr[offset], thp->packet[i], thp->len[i]);
+        offset += thp->len[i];
+        av_freep(&thp->packet[i]);
+    }
+    return offset;
+}
 
 static int theora_header(AVFormatContext *s, int idx)
 {
@@ -43,9 +75,8 @@ static int theora_header(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st          = s->streams[idx];
     TheoraParams *thp     = os->private;
-    int cds               = st->codecpar->extradata_size + os->psize + 2;
-    int err;
-    uint8_t *cdp;
+    int type              = os->buf[os->pstart] & 0x7f;
+    int ret;
 
     if (!(os->buf[os->pstart] & 0x80))
         return 0;
@@ -129,18 +160,25 @@ static int theora_header(AVFormatContext *s, int idx)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((err = av_reallocp(&st->codecpar->extradata,
-                           cds + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
-        st->codecpar->extradata_size = 0;
-        return err;
-    }
-    memset(st->codecpar->extradata + cds, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    /* The headers are freed once packed, so a repeated one is ignored. */
+    if (type > 0 && !thp->packet[0] || type > 1 && !thp->packet[1])
+        return 1;
 
-    cdp    = st->codecpar->extradata + st->codecpar->extradata_size;
-    *cdp++ = os->psize >> 8;
-    *cdp++ = os->psize & 0xff;
-    memcpy(cdp, os->buf + os->pstart, os->psize);
-    st->codecpar->extradata_size = cds;
+    ret = av_reallocp(&thp->packet[type], os->psize);
+    if (ret < 0)
+        return ret;
+    memcpy(thp->packet[type], os->buf + os->pstart, os->psize);
+    thp->len[type] = os->psize;
+
+    if (type == 2) {
+        av_freep(&st->codecpar->extradata);
+        ret = theora_pack_headers(thp, &st->codecpar->extradata);
+        if (ret < 0) {
+            st->codecpar->extradata_size = 0;
+            return ret;
+        }
+        st->codecpar->extradata_size = ret;
+    }
 
     return 1;
 }
@@ -211,11 +249,22 @@ static int theora_packet(AVFormatContext *s, int idx)
     return 0;
 }
 
+static void theora_cleanup(AVFormatContext *s, int idx)
+{
+    struct ogg *ogg = s->priv_data;
+    TheoraParams *thp = ogg->streams[idx].private;
+
+    if (thp)
+        for (int i = 0; i < 3; i++)
+            av_freep(&thp->packet[i]);
+}
+
 const struct ogg_codec ff_theora_codec = {
     .magic     = "\200theora",
     .magicsize = 7,
     .header    = theora_header,
     .packet    = theora_packet,
     .gptopts   = theora_gptopts,
+    .cleanup   = theora_cleanup,
     .nb_header = 3,
 };
