@@ -113,6 +113,10 @@ static int ffat_update_ctx(AVCodecContext *avctx)
                                    kAudioConverterPrimeInfo,
                                    &size, &prime_info)) {
         avctx->initial_padding = prime_info.leadingFrames;
+        if (avctx->codec_id == AV_CODEC_ID_AAC &&
+            (avctx->profile == AV_PROFILE_AAC_HE ||
+             avctx->profile == AV_PROFILE_AAC_HE_V2))
+            avctx->initial_padding *= 2;
     }
 
     size = sizeof(out_format);
