@@ -795,6 +795,21 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             fpc->headers->prev = NULL;
         av_freep(&fpc->best_header);
         fpc->nb_headers_buffered--;
+
+        /* Without a child, get_best_header() already returned everything
+         * from this header to the end of the FIFO. At EOF there can be no
+         * further frames, so any header still queued is a false sync inside
+         * that frame. Drop them and drain the FIFO, or the next flush emits
+         * part of the final frame a second time. */
+        if (fpc->end_padded) {
+            for (curr = fpc->headers; curr; curr = temp) {
+                temp = curr->next;
+                av_free(curr);
+                fpc->nb_headers_buffered--;
+            }
+            fpc->headers = NULL;
+            flac_fifo_drain(&fpc->fifo_buf, flac_fifo_size(&fpc->fifo_buf));
+        }
     }
 
     /* Find and score new headers.                                     */
