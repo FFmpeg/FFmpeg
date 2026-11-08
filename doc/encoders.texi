@@ -2120,6 +2120,51 @@ Set log2 of the number of rows of tiles to use (0-6).
 @item tile_columns
 Set log2 of the number of columns of tiles to use (0-4).
 
+@item qpfile @var{filename}
+Read per-frame QP offsets from @var{filename} and pass them to SVT-AV1 as
+region-of-interest map events. SVT-AV1 applies the maps only with CRF or
+constant-QP rate control, so the option is refused unless the effective
+rate-control mode is 0: a target bit rate set with @option{b} selects
+another mode unless @option{crf} or @option{qp} is also set above 0, and
+@samp{rc} in @option{svtav1-params} overrides both. Internal scaling, a
+@samp{superres-mode} or @samp{resize-mode} other than 0 in
+@option{svtav1-params}, is refused too: SVT-AV1 would apply the map to the
+scaled frame with the layout of the full-size frame, moving the offsets to
+other superblocks. The first pass of a two-pass encode, the @code{pass1}
+flag or @samp{pass=1} in @option{svtav1-params}, is refused as well:
+SVT-AV1 can encode that pass at a reduced size and would then read the map
+with the layout of the reduced frame.
+
+The file is plain text. Each record starts with a header line
+@samp{@var{frame} @var{type} @var{qp}}, where @var{frame} is the 0-based
+input frame number, strictly increasing from record to record.
+@var{type} is @samp{I}, @samp{P} or @samp{B} in either case, and
+@var{qp} is an integer from 0 to 63; both are checked but not used.
+Frame numbers go up to 4294967295, and a file holds at most 1048576 records.
+Zero or more lines of whitespace-separated integer offsets follow,
+one line per row of 16x16 blocks and one value per block column; the grid
+must match the video size rounded up to 16 pixels. Offsets are clipped to
+the range -12 to 12. Lines holding only spaces or tabs and lines starting with
+@samp{#} are skipped; a line with a NUL byte is refused. A frame uses the last
+record whose number is not greater than its own. SVT-AV1 keeps each map
+until the next event, so an event is sent only when the record a frame uses
+differs from the one last sent, normally on the frame of the record; a
+record without offset lines sends a neutral map. The offsets are AV1
+quantizer index deltas, so the same offset changes the quality less than
+with libaom-av1.
+
+The ROI map contains one value per 64x64 cell: the offsets of up to
+sixteen 16x16 blocks are averaged, and each frame's averages are mapped
+to at most 8 segment values. A region smaller than a cell can disappear
+through averaging. When SVT-AV1 uses 128x128 superblocks, a coded block
+spanning multiple map cells selects the coarsest mapped offset among
+those cells, subject to the library's quantizer-range adjustments.
+The maps replace SVT-AV1's segmentation-based adaptive quantization
+(@samp{aq-mode=1}) for the rest of the encode: a neutral map ends the
+offsets but does not bring that adaptive quantization back.
+
+Requires at least SVT-AV1 1.6.0.
+
 @item svtav1-params
 Set SVT-AV1 options using a list of @var{key}=@var{value} pairs separated
 by ":". See the SVT-AV1 encoder user guide for a list of accepted parameters.
