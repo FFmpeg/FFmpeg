@@ -54,11 +54,22 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     FieldContext *field = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
 
     field->nb_planes = av_pix_fmt_count_planes(outlink->format);
 
     outlink->w = inlink->w;
     outlink->h = (inlink->h + (field->type == FIELD_TYPE_TOP)) / 2;
+
+    if (field->type == FIELD_TYPE_BOTTOM &&
+        AV_CEIL_RSHIFT(outlink->h, desc->log2_chroma_h) > AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h) / 2) {
+        av_log(ctx, AV_LOG_ERROR, "The chroma planes of height %d have no complete bottom field\n", inlink->h);
+        return AVERROR(EINVAL);
+    }
+    if (!outlink->h) {
+        av_log(ctx, AV_LOG_ERROR, "Height %d is too small\n", inlink->h);
+        return AVERROR(EINVAL);
+    }
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d type:%s -> w:%d h:%d\n",
            inlink->w, inlink->h, field->type == FIELD_TYPE_BOTTOM ? "bottom" : "top",
