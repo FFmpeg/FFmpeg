@@ -267,11 +267,22 @@ int ff_sws_filter_generate(void *log, const SwsFilterParams *params,
     }
     radius *= stretch;
 
-    int filter_size = ceil(radius * 2.0);
-    filter_size = FFMIN(filter_size, params->src_size);
-    av_assert0(filter_size >= 1);
-    if (filter_size > SWS_FILTER_SIZE_MAX)
-        return AVERROR(ENOTSUP);
+    /* Compute filter size by checking the number of taps in each row */
+    int filter_size = 0;
+    for (int i = 0; i < params->dst_size; i++) {
+        /* Matches the indexing in compute_row() */
+        const double src_pos = get_src_pos(i, ratio_inv, params->offset);
+        const int start = floor(src_pos - radius) + 1;
+        const int stop  = ceil (src_pos + radius) - 1;
+        const int taps  = av_clip(stop - start + 1, 1, params->src_size);
+        if (taps > SWS_FILTER_SIZE_MAX) {
+            return AVERROR(ENOTSUP);
+        } else if (taps > filter_size) {
+            filter_size = taps;
+            if (taps == params->src_size)
+                break; /* can't get any bigger */
+        }
+    }
 
     SwsFilterWeights *filter;
     filter = av_refstruct_alloc_ext(sizeof(*filter), 0, NULL, sws_filter_free);
