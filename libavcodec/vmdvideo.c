@@ -372,6 +372,9 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
             pp  = FF_PTR_ADD(pp, prev_linesize);
         }
         break;
+    default:
+        avpriv_request_sample(s->avctx, "Method %d", meth);
+        return AVERROR_PATCHWELCOME;
     }
     return 0;
 }
