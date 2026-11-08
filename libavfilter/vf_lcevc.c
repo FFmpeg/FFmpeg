@@ -431,7 +431,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     LCEVCContext *lcevc = ctx->priv;
 
-    LCEVC_FlushDecoder(lcevc->decoder);
+    LCEVC_SynchronizeDecoder(lcevc->decoder, 1);
     flush_bases(ctx);
     LCEVC_DestroyDecoder(lcevc->decoder);
     av_frame_free(&lcevc->out);
