@@ -385,27 +385,6 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     }
 
     select->select = res = av_expr_eval(select->expr, select->var_values, NULL);
-    av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%f pts:%f t:%f key:%d",
-           select->var_values[VAR_N],
-           select->var_values[VAR_PTS],
-           select->var_values[VAR_T],
-           !!(frame->flags & AV_FRAME_FLAG_KEY));
-
-    switch (inlink->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        av_log(inlink->dst, AV_LOG_DEBUG, " interlace_type:%c pict_type:%c scene:%f",
-               !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :
-               (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',
-               av_get_picture_type_char(frame->pict_type),
-               select->var_values[VAR_SCENE]);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        av_log(inlink->dst, AV_LOG_DEBUG, " samples_n:%d consumed_samples_n:%f",
-               frame->nb_samples,
-               select->var_values[VAR_CONSUMED_SAMPLES_N]);
-        break;
-    }
 
     if (res == 0) {
         select->select_out = -1; /* drop */
@@ -416,7 +395,36 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
         select->select_out = FFMIN(u-1, select->nb_outputs-1); /* other outputs */
     }
 
-    av_log(inlink->dst, AV_LOG_DEBUG, " -> select:%f select_out:%d\n", res, select->select_out);
+    switch (inlink->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        av_log(inlink->dst, AV_LOG_DEBUG,
+               "n:%f pts:%f t:%f key:%d"
+               " interlace_type:%c pict_type:%c scene:%f"
+               " -> select:%f select_out:%d\n",
+               select->var_values[VAR_N],
+               select->var_values[VAR_PTS],
+               select->var_values[VAR_T],
+               !!(frame->flags & AV_FRAME_FLAG_KEY),
+               !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :
+               (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',
+               av_get_picture_type_char(frame->pict_type),
+               select->var_values[VAR_SCENE],
+               res, select->select_out);
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        av_log(inlink->dst, AV_LOG_DEBUG,
+               "n:%f pts:%f t:%f key:%d"
+               " samples_n:%d consumed_samples_n:%f"
+               " -> select:%f select_out:%d\n",
+               select->var_values[VAR_N],
+               select->var_values[VAR_PTS],
+               select->var_values[VAR_T],
+               !!(frame->flags & AV_FRAME_FLAG_KEY),
+               frame->nb_samples,
+               select->var_values[VAR_CONSUMED_SAMPLES_N],
+               res, select->select_out);
+        break;
+    }
 
     if (res) {
         select->var_values[VAR_PREV_SELECTED_N]   = select->var_values[VAR_N];
