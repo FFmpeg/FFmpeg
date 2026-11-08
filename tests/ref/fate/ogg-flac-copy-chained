@@ -1,0 +1,11 @@
+copy
+flags=-b-
+flags=--e
+flags=-b-
+flags=--e
+cut
+flags=-b-
+flags=--e
+copy headers: different
+cut headers: different
+decoded copy: different
