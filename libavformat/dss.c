@@ -159,6 +159,8 @@ static int64_t dss_count_frames(AVFormatContext *s)
     }
     av_packet_free(&pkt);
 
+    if (pb->error < 0 && pb->error != AVERROR_EOF)
+        return pb->error;
     if (ret != AVERROR_EOF && ret != AVERROR_INVALIDDATA)
         return ret;
     return frames;
@@ -254,12 +256,14 @@ static int dss_seek_block(AVFormatContext *s, int64_t pos)
 
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         if (avio_seek(pb, keep, SEEK_SET) < 0)
-            return AVERROR_EOF;
+            return pb->error < 0 ? pb->error : AVERROR_EOF;
         ret = ffio_ensure_seekback(pb, pos - keep + 2 * DSS_BLOCK_SIZE);
         if (ret < 0)
             return ret;
     }
-    return avio_seek(pb, pos, SEEK_SET) < 0 ? AVERROR_EOF : 0;
+    if (avio_seek(pb, pos, SEEK_SET) < 0)
+        return pb->error < 0 ? pb->error : AVERROR_EOF;
+    return 0;
 }
 
 /* Read `size` bytes of frame payload, stepping over any block header met on
@@ -277,13 +281,18 @@ static int dss_read_payload(AVFormatContext *s, uint8_t *buf, int size)
 
         if (off < DSS_AUDIO_BLOCK_HEADER_SIZE) {
             if (avio_skip(pb, DSS_AUDIO_BLOCK_HEADER_SIZE - off) < 0)
-                return AVERROR_EOF;
+                return pb->error < 0 ? pb->error : AVERROR_EOF;
             continue;
         }
         chunk = FFMIN(size, (int)(DSS_BLOCK_SIZE - off));
         ret = ffio_read_size(pb, buf, chunk);
-        if (ret < 0)
-            return ret;
+        if (ret < 0) {
+            /* ffio_read_size reports a short read as invalid data, including
+             * when AVIO returned some bytes before an I/O error. */
+            if (pb->error < 0)
+                return pb->error;
+            return ret == AVERROR_INVALIDDATA ? AVERROR_EOF : ret;
+        }
         buf  += chunk;
         size -= chunk;
     }
@@ -316,7 +325,7 @@ static int dss_next_block(AVFormatContext *s)
         if (ret < 0 && ret != AVERROR_EOF)
             goto fail;
         if (ret != DSS_AUDIO_BLOCK_HEADER_SIZE) {
-            ret = AVERROR_EOF;
+            ret = pb->error < 0 ? pb->error : AVERROR_EOF;
             goto fail;
         }
 
@@ -340,13 +349,18 @@ static int dss_next_block(AVFormatContext *s)
             if (cont >= 2)
                 at += DSS_AUDIO_BLOCK_HEADER_SIZE;
             if (at >= ctx->dss_header_size + DSS_AUDIO_BLOCK_HEADER_SIZE &&
-                avio_seek(pb, at, SEEK_SET) >= 0)
+                avio_seek(pb, at, SEEK_SET) >= 0) {
                 ctx->dss_sp_swap_byte = avio_r8(pb);
+                if (pb->error < 0) {
+                    ret = pb->error;
+                    goto fail;
+                }
+            }
         }
 
         if (avio_seek(pb, ctx->block_pos + DSS_AUDIO_BLOCK_HEADER_SIZE + cont,
                       SEEK_SET) < 0) {
-            ret = AVERROR_EOF;
+            ret = pb->error < 0 ? pb->error : AVERROR_EOF;
             goto fail;
         }
         return 0;
@@ -426,7 +440,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             ret = dss_read_payload(s, pkt->data, 2);
             if (ret < 0)
-                return AVERROR_EOF; /* no whole frame left */
+                return ret;
             done = 2;
             if (!(pkt->data[1] & 0x80))
                 size = DSS_SP_SHORT_FRAME_SIZE;
@@ -441,7 +455,7 @@ static int dss_sp_read_packet(AVFormatContext *s, AVPacket *pkt)
     else
         ret = dss_read_payload(s, pkt->data + done, size + 1 - done);
     if (ret < 0)
-        return ret == AVERROR_EOF ? ret : AVERROR_EOF;
+        return ret;
 
     ctx->frames_left--;
 
@@ -470,7 +484,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = dss_read_payload(s, &byte, 1);
     if (ret < 0)
-        return AVERROR_EOF; /* no whole frame left */
+        return ret;
     if (byte == 0xff)
         return AVERROR_INVALIDDATA;
 
@@ -489,7 +503,7 @@ static int dss_723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = dss_read_payload(s, pkt->data + 1, size - 1);
     if (ret < 0)
-        return AVERROR_EOF; /* no whole frame left */
+        return ret;
 
     ctx->frames_left--;
 
@@ -523,6 +537,8 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
         if (ret >= 0)
             ret = ffio_read_size(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
         if (ret < 0) {
+            if (s->pb->error < 0 && s->pb->error != AVERROR_EOF)
+                return s->pb->error;
             /* Past the end: scan again for the block with the last frame. */
             if (!frames)
                 return ret;
