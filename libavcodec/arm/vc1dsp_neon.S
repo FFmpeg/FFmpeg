@@ -83,38 +83,37 @@
 @ Input columns: q0 q1 q2 q3
 @ Output columns: q0 q1 q2 q3
 @ Trashes: r12 q8 q9 q10 q11 q12 q13
-.macro vc1_inv_trans_4x8_helper add rshift
-        @ Compute temp1, temp2 and setup scalar #17, #22, #10
+.macro vc1_inv_trans_4x8_helper rshift
+        @ Compute temp1, temp2 and setup scalar #11, #5
         vadd.i16        q12,   q0,  q2              @ temp1 = src[0] + src[2]
-        movw            r12,   #17
+        movw            r12,   #11
         vsub.i16        q13,   q0,  q2              @ temp2 = src[0] - src[2]
-        movt            r12,   #22
+        movt            r12,   #5
         vmov.32         d0[0], r12
-        movw            r12,   #10
-        vmov.16         d1[0], r12
 
-        vmov.i16        q8,  #\add                  @ t1 will accumulate here
-        vmov.i16        q9,  #\add                  @ t2 will accumulate here
+        vmul.i16        q10, q1,  d0[0]             @ t3/2 = 11 * src[1]
+        vmul.i16        q11, q3,  d0[0]             @ t4/2 = 11 * src[3]
 
-        vmul.i16        q10, q1,  d0[1]             @ t3 = 22 * (src[1])
-        vmul.i16        q11, q3,  d0[1]             @ t4 = 22 * (src[3])
+        vshl.i16        q8,  q12, #3                @ 8 * temp1
+        vshl.i16        q9,  q13, #3                @ 8 * temp2
 
-        vmla.i16        q8,  q12, d0[0]             @ t1 = 17 * (temp1) + 4
-        vmla.i16        q9,  q13, d0[0]             @ t2 = 17 * (temp2) + 4
+        vmla.i16        q10, q3,  d0[1]             @ t3/2 += 5 * src[3]
+        vmls.i16        q11, q1,  d0[1]             @ t4/2 -= 5 * src[1]
 
-        vmla.i16        q10, q3,  d1[0]             @ t3 += 10 * src[3]
-        vmls.i16        q11, q1,  d1[0]             @ t4 -= 10 * src[1]
+        vsra.s16        q8,  q12, #1                @ t1 >> 1 = 8 * temp1 + (temp1 >> 1)
+        vsra.s16        q9,  q13, #1                @ t2 >> 1 = 8 * temp2 + (temp2 >> 1)
 
-        vhadd.s16       q0,  q8,  q10               @ dst[0] = (t1 + t3) >> 1
-        vhsub.s16       q3,  q8,  q10               @ dst[3] = (t1 - t3) >> 1
-        vhsub.s16       q1,  q9,  q11               @ dst[1] = (t2 - t4) >> 1
-        vhadd.s16       q2,  q9,  q11               @ dst[2] = (t2 + t4) >> 1
+        vadd.i16        q0,  q8,  q10               @ dst[0] = (t1 + t3) >> 1
+        vsub.i16        q3,  q8,  q10               @ dst[3] = (t1 - t3) >> 1
+        vsub.i16        q1,  q9,  q11               @ dst[1] = (t2 - t4) >> 1
+        vadd.i16        q2,  q9,  q11               @ dst[2] = (t2 + t4) >> 1
 
-        @ Halving add/sub above already did one shift
-        vshr.s16        q0,  q0,  #(\rshift - 1)    @ dst[0] >>= (rshift - 1)
-        vshr.s16        q3,  q3,  #(\rshift - 1)    @ dst[3] >>= (rshift - 1)
-        vshr.s16        q1,  q1,  #(\rshift - 1)    @ dst[1] >>= (rshift - 1)
-        vshr.s16        q2,  q2,  #(\rshift - 1)    @ dst[2] >>= (rshift - 1)
+        @ One shift is already done above, the rounding shift adds the
+        @ rounding constant
+        vrshr.s16       q0,  q0,  #(\rshift - 1)    @ dst[0] = (dst[0] + round) >> (rshift - 1)
+        vrshr.s16       q3,  q3,  #(\rshift - 1)    @ dst[3] = (dst[3] + round) >> (rshift - 1)
+        vrshr.s16       q1,  q1,  #(\rshift - 1)    @ dst[1] = (dst[1] + round) >> (rshift - 1)
+        vrshr.s16       q2,  q2,  #(\rshift - 1)    @ dst[2] = (dst[2] + round) >> (rshift - 1)
 .endm
 
 @ Takes 8 columns of 4 values each and operates on it. Modeled after the second
@@ -133,30 +132,30 @@
         @   src[48]     d5 overwritten later
         @   src[56]     d7
 
-        movw            r12,   #12
-        vmov.i16        q14,   #\add            @ t1|t2 will accumulate here
-        movt            r12,   #6
+        movw            r12,   #6
+        vmov.i16        q14,   #(\add / 2)      @ t1/2|t2/2 will accumulate here
+        movt            r12,   #3
 
         vadd.i16        d20,   d0,  d1          @ temp1 = src[0] + src[32]
         vsub.i16        d21,   d0,  d1          @ temp2 = src[0] - src[32]
-        vmov.i32        d0[0], r12              @ 16-bit: d0[0] = #12, d0[1] = #6
+        vmov.i32        d0[0], r12              @ 16-bit: d0[0] = #6, d0[1] = #3
 
-        vshl.i16        q15,   q2,  #4          @ t3|t4 = 16 * (src[16]|src[48])
+        vshl.i16        q15,   q2,  #3          @ t3/2|t4/2 = 8 * (src[16]|src[48])
         vswp            d4,    d5               @ q2 = src[48]|src[16]
-        vmla.i16        q14,   q10, d0[0]       @ t1|t2 = 12 * (temp1|temp2) + 64
+        vmla.i16        q14,   q10, d0[0]       @ t1/2|t2/2 = 6 * (temp1|temp2) + add / 2
         movw            r12,   #15
         movt            r12,   #9
         vmov.i32        d0[1], r12              @ 16-bit: d0[2] = #15, d0[3] = #9
-        vneg.s16        d31,   d31              @ t4 = -t4
-        vmla.i16        q15,   q2,  d0[1]       @ t3|t4 += 6 * (src[48]|src[16])
+        vneg.s16        d31,   d31              @ t4/2 = -t4/2
+        vmla.i16        q15,   q2,  d0[1]       @ t3/2|t4/2 += 3 * (src[48]|src[16])
 
         @ At this point:
         @   d0[2]   #15
         @   d0[3]   #9
         @   q1      src[8]|src[40]
         @   q3      src[24]|src[56]
-        @   q14     old t1|t2
-        @   q15     old t3|t4
+        @   q14     old t1/2|t2/2
+        @   q15     old t3/2|t4/2
 
         vshl.i16        q8,  q1,  #4            @ t1|t2 = 16 * (src[8]|src[40])
         vswp            d2,  d3                 @ q1 = src[40]|src[8]
@@ -172,16 +171,14 @@
         vswp            d6,  d7                 @ q3 = src[24]|src[8]
         vswp            d2,  d3                 @ q1 = src[56]|src[40]
 
-        vsub.i16        q11, q14, q15           @ t8|t7 = old t1|t2 - old t3|t4
-        vadd.i16        q10, q14, q15           @ t5|t6 = old t1|t2 + old t3|t4
-  .if \add1beforeshift
-        vmov.i16        q15, #1
-  .endif
+        vsub.i16        q11, q14, q15           @ t8/2|t7/2 = old t1/2|t2/2 - old t3/2|t4/2
+        vadd.i16        q10, q14, q15           @ t5/2|t6/2 = old t1/2|t2/2 + old t3/2|t4/2
+        vmov.i16        q15, #\add1beforeshift
 
         vadd.i16        d18, d18, d24           @ t3 += temp3
         vsub.i16        d19, d19, d25           @ t4 -= temp4
 
-        vswp            d22, d23                @ q11 = t7|t8
+        vswp            d22, d23                @ q11 = t7/2|t8/2
 
         vneg.s16        d17, d17                @ t2 = -t2
         vmla.i16        q9,  q1,  d0[2]         @ t3|t4 += 15 * src[56]|src[40]
@@ -192,30 +189,25 @@
         @   t2  d17
         @   t3  d18
         @   t4  d19
-        @   t5  d20
-        @   t6  d21
-        @   t7  d22
-        @   t8  d23
-        @   #1  q15
+        @   t5/2  d20
+        @   t6/2  d21
+        @   t7/2  d22
+        @   t8/2  d23
+        @   #add1beforeshift q15
 
-  .if \add1beforeshift
-        vadd.i16        q3,  q15, q10           @ line[7,6] = t5|t6 + 1
-        vadd.i16        q2,  q15, q11           @ line[5,4] = t7|t8 + 1
-  .endif
+        @ t5..t8 are even, so (t5|t6 + t1|t2) >> 1 = t5/2|t6/2 + (t1|t2 >> 1),
+        @ and (t5|t6 - t1|t2 + add1) >> 1 = t5/2|t6/2 + ((add1 - t1|t2) >> 1).
+        @ t5/2..t8/2 are only added, so they may wrap as long as the sums fit.
+        vshr.s16        q0,  q8,  #1            @ t1|t2 >> 1
+        vshr.s16        q1,  q9,  #1            @ t3|t4 >> 1
+        vhsub.s16       q3,  q15, q8            @ (add1 - t1|t2) >> 1
+        vhsub.s16       q2,  q15, q9            @ (add1 - t3|t4) >> 1
+        vadd.i16        q0,  q0,  q10           @ line[0,1] = (t5|t6 + t1|t2) >> 1
+        vadd.i16        q1,  q1,  q11           @ line[2,3] = (t7|t8 + t3|t4) >> 1
+        vadd.i16        q2,  q2,  q11           @ line[5,4] = (t7|t8 - t3|t4 + add1) >> 1
+        vadd.i16        q3,  q3,  q10           @ line[7,6] = (t5|t6 - t1|t2 + add1) >> 1
 
-        @ Sometimes this overflows, so to get one additional bit of precision, use
-        @ a single instruction that both adds and shifts right (halving).
-        vhadd.s16       q1,  q9,  q11           @ line[2,3] = (t3|t4 + t7|t8) >> 1
-        vhadd.s16       q0,  q8,  q10           @ line[0,1] = (t1|t2 + t5|t6) >> 1
-  .if \add1beforeshift
-        vhsub.s16       q2,  q2,  q9            @ line[5,4] = (t7|t8 - t3|t4 + 1) >> 1
-        vhsub.s16       q3,  q3,  q8            @ line[7,6] = (t5|t6 - t1|t2 + 1) >> 1
-  .else
-        vhsub.s16       q2,  q11, q9            @ line[5,4] = (t7|t8 - t3|t4) >> 1
-        vhsub.s16       q3,  q10, q8            @ line[7,6] = (t5|t6 - t1|t2) >> 1
-  .endif
-
-        vshr.s16        q9,  q1,  #(\rshift - 1)    @ one shift is already done by vhadd/vhsub above
+        vshr.s16        q9,  q1,  #(\rshift - 1)    @ one shift is already done above
         vshr.s16        q8,  q0,  #(\rshift - 1)
         vshr.s16        q10, q2,  #(\rshift - 1)
         vshr.s16        q11, q3,  #(\rshift - 1)
@@ -473,7 +465,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   row[2] q2
         @   row[3] q3
 
-        vc1_inv_trans_4x8_helper add=64, rshift=7
+        vc1_inv_trans_4x8_helper rshift=7
 
         @ At this point:
         @   line[0].l   d0
@@ -523,7 +515,7 @@ function ff_vc1_inv_trans_4x8_neon, export=1
         vld4.16         {d1[2], d3[2], d5[2], d7[2]}, [r2,:64], r12
         vld4.16         {d1[3], d3[3], d5[3], d7[3]}, [r2,:64]
 
-        vc1_inv_trans_4x8_helper add=4, rshift=3
+        vc1_inv_trans_4x8_helper rshift=3
 
         @ At this point:
         @   dst[0] = q0
@@ -571,26 +563,24 @@ endfunc
 
 @ Setup constants in registers which are used by vc1_inv_trans_4x4_helper
 .macro vc1_inv_trans_4x4_helper_setup
-        vmov.i16        q13, #17
-        vmov.i16        q14, #22
-        vmov.i16        d30, #10                @ only need double-word, not quad-word
+        vmov.i16        q14, #11
+        vmov.i16        d30, #5                 @ only need double-word, not quad-word
 .endm
 
 @ This is modeled after the first for loop in vc1_inv_trans_4x4_c.
-.macro vc1_inv_trans_4x4_helper add rshift
-        vmov.i16        q2,  #\add              @ t1|t2 will accumulate here
-
+.macro vc1_inv_trans_4x4_helper rshift
         vadd.i16        d16, d0,  d1            @ temp1 = src[0] + src[2]
         vsub.i16        d17, d0,  d1            @ temp2 = src[0] - src[2]
-        vmul.i16        q3,  q14, q1            @ t3|t4 = 22 * (src[1]|src[3])
-        vmla.i16        q2,  q13, q8            @ t1|t2 = 17 * (temp1|temp2) + add
-        vmla.i16        d6,  d30, d3            @ t3 += 10 * src[3]
-        vmls.i16        d7,  d30, d2            @ t4 -= 10 * src[1]
+        vmul.i16        q3,  q14, q1            @ t3/2|t4/2 = 11 * (src[1]|src[3])
+        vshl.i16        q2,  q8,  #3            @ 8 * (temp1|temp2)
+        vmla.i16        d6,  d30, d3            @ t3/2 += 5 * src[3]
+        vmls.i16        d7,  d30, d2            @ t4/2 -= 5 * src[1]
+        vsra.s16        q2,  q8,  #1            @ t1|t2 >> 1 = 8 * temp + (temp >> 1)
 
-        vadd.i16        q0,  q2,  q3            @ dst[0,2] = (t1|t2 + t3|t4)
-        vsub.i16        q1,  q2,  q3            @ dst[3,1] = (t1|t2 - t3|t4)
-        vshr.s16        q0,  q0,  #\rshift      @ dst[0,2] >>= rshift
-        vshr.s16        q1,  q1,  #\rshift      @ dst[3,1] >>= rshift
+        vadd.i16        q0,  q2,  q3            @ dst[0,2] = (t1|t2 + t3|t4) >> 1
+        vsub.i16        q1,  q2,  q3            @ dst[3,1] = (t1|t2 - t3|t4) >> 1
+        vrshr.s16       q0,  q0,  #(\rshift - 1) @ dst[0,2] = (dst[0,2] + round) >> (rshift - 1)
+        vrshr.s16       q1,  q1,  #(\rshift - 1) @ dst[3,1] = (dst[3,1] + round) >> (rshift - 1)
 .endm
 
 @ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
@@ -611,7 +601,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         @   src[2] = d1
         @   src[3] = d3
 
-        vc1_inv_trans_4x4_helper add=4, rshift=3     @ compute t1, t2, t3, t4 and combine them into dst[0-3]
+        vc1_inv_trans_4x4_helper rshift=3     @ compute t1, t2, t3, t4 and combine them into dst[0-3]
 
         @ At this point:
         @   dst[0] = d0
@@ -635,7 +625,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         @   src[16] = d1
         @   src[24] = d3
 
-        vc1_inv_trans_4x4_helper add=64, rshift=7             @ compute t1, t2, t3, t4 and combine them into dst[0-3]
+        vc1_inv_trans_4x4_helper rshift=7             @ compute t1, t2, t3, t4 and combine them into dst[0-3]
 
         @ At this point:
         @   line[0] = d0
