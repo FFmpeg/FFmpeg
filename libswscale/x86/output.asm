@@ -42,7 +42,9 @@ pd_65535_invf:             times 8 dd 0x37800080 ;1.0/65535.0
 pd_yuv2gbrp16_start:       times 8 dd -0x40000000
 pd_yuv2gbrp_y_start:       times 8 dd  (1 << 9)
 pd_yuv2gbrp_uv_start:      times 8 dd  ((1 << 9) - (128 << 19))
-pd_yuv2gbrp_a_start:       times 8 dd  (1 << 18)
+pd_yuv2gbrp_a_start_8:     times 8 dd  (1 << 18)
+pd_yuv2gbrp_a_start_10:    times 8 dd  (1 << 16)
+pd_yuv2gbrp_a_start_12:    times 8 dd  (1 << 14)
 pd_yuv2gbrp16_offset:      times 8 dd  0x10000  ;(1 << 16)
 pd_yuv2gbrp16_round13:     times 8 dd  0xE0002000  ;(1 << 13) - (1 << 29)
 pd_yuv2gbrp16_a_offset:    times 8 dd  0x20002000
@@ -758,7 +760,7 @@ endstruc
     %define Y_START  [pd_yuv2gbrp_y_start]
     %define Y_ROUND  m9
     %define UV_START [pd_yuv2gbrp_uv_start]
-    %define A_START  [pd_yuv2gbrp_a_start]
+    %define A_START  [pd_yuv2gbrp_a_start_ %+ DEPTH]
     %define A_CLIP2P 27
 %endif
 

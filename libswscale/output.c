@@ -2385,7 +2385,7 @@ yuv2gbrp_full_X_c(SwsInternal *c, const int16_t *lumFilter,
         V >>= 10;
 
         if (hasAlpha) {
-            A = 1 << 18;
+            A = 1 << (SH - 4);
 
             for (j = 0; j < lumFilterSize; j++)
                 A += alpSrc[j][i] * (unsigned)lumFilter[j];
