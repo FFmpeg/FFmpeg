@@ -305,70 +305,16 @@ static void yuv2planeX_float ## BE_LE ## _c(const int16_t *filter, int filterSiz
     template(filter, filterSize, (const int32_t **)src, (dest_type *)dest, dstW, 1); \
 }
 
-#define yuv2yaf32_1(template, dest_type, BE_LE, is_be) \
-static void yuv2yaf32 ## BE_LE ## _1_c(SwsInternal *c, const int16_t *lumSrc, \
-                                       const int16_t *chrUSrc[2], \
-                                       const int16_t *chrVSrc[2], \
-                                       const int16_t *alpSrc, uint8_t *dest, \
-                                       int dstW, int uvalpha, int y) \
-{ \
-    dest_type *dst = (dest_type *) dest; \
-    template((const int32_t *)lumSrc, dst, dstW, 2); \
-    if (alpSrc) { \
-        template((const int32_t *)alpSrc, dst + 1, dstW, 2); \
-    } else { \
-        for (int i = 0; i < dstW; i++) { \
-            if (is_be) { \
-                AV_WB32(&dst[2 * i + 1], av_float2int(1.0f)); \
-            } else { \
-                AV_WL32(&dst[2 * i + 1], av_float2int(1.0f)); \
-            } \
-        } \
-    } \
-}
-
-#define yuv2yaf32_X(template, dest_type, BE_LE, is_be) \
-static void yuv2yaf32 ## BE_LE ## _X_c(SwsInternal *c, const int16_t *lumFilter, \
-                                       const int16_t **lumSrc, int lumFilterSize, \
-                                       const int16_t *chrFilter, \
-                                       const int16_t **chrUSrc, \
-                                       const int16_t **chrVSrc, int chrFilterSize, \
-                                       const int16_t **alpSrc, uint8_t *dest, \
-                                       int dstW, int y) \
-{ \
-    dest_type *dst = (dest_type *) dest; \
-    template(lumFilter, lumFilterSize, (const int32_t **) lumSrc, dst, dstW, 2); \
-    if (alpSrc) { \
-        template(lumFilter, lumFilterSize, (const int32_t **) alpSrc, dst + 1, dstW, 2); \
-    } else { \
-        for (int i = 0; i < dstW; i++) { \
-            if (is_be) { \
-                AV_WB32(&dst[2 * i + 1], av_float2int(1.0f)); \
-            } else { \
-                AV_WL32(&dst[2 * i + 1], av_float2int(1.0f)); \
-            } \
-        } \
-    } \
-}
-
 #if HAVE_BIGENDIAN
 yuv2plane1_float(yuv2plane1_float_c_template,       float,    BE)
 yuv2plane1_float(yuv2plane1_float_bswap_c_template, uint32_t, LE)
 yuv2planeX_float(yuv2planeX_float_c_template,       float,    BE)
 yuv2planeX_float(yuv2planeX_float_bswap_c_template, uint32_t, LE)
-yuv2yaf32_1(yuv2plane1_float_c_template,            float,    be, 1)
-yuv2yaf32_1(yuv2plane1_float_bswap_c_template,      uint32_t, le, 0)
-yuv2yaf32_X(yuv2planeX_float_c_template,            float,    be, 1)
-yuv2yaf32_X(yuv2planeX_float_bswap_c_template,      uint32_t, le, 0)
 #else
 yuv2plane1_float(yuv2plane1_float_c_template,       float,    LE)
 yuv2plane1_float(yuv2plane1_float_bswap_c_template, uint32_t, BE)
 yuv2planeX_float(yuv2planeX_float_c_template,       float,    LE)
 yuv2planeX_float(yuv2planeX_float_bswap_c_template, uint32_t, BE)
-yuv2yaf32_1(yuv2plane1_float_c_template,            float,    le, 0)
-yuv2yaf32_1(yuv2plane1_float_bswap_c_template,      uint32_t, be, 1)
-yuv2yaf32_X(yuv2planeX_float_c_template,            float,    le, 0)
-yuv2yaf32_X(yuv2planeX_float_bswap_c_template,      uint32_t, be, 1)
 #endif
 
 #undef output_pixel
@@ -1071,6 +1017,26 @@ YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
     } else { \
         AV_WL16(pos, val); \
     }
+#define output_pixel32(pos, val) \
+    if (is_be) { \
+        AV_WB32(pos, val); \
+    } else { \
+        AV_WL32(pos, val); \
+    }
+
+static av_always_inline void
+output_pixel_ya(uint16_t *dest, int i, int Y, int A,
+                enum AVPixelFormat target, int is_be)
+{
+    if (target == AV_PIX_FMT_YAF32LE || target == AV_PIX_FMT_YAF32BE) {
+        static const float float_mult = 1.0f / 65535.0f;
+        output_pixel32(&dest[4 * i    ], av_float2int(float_mult * Y));
+        output_pixel32(&dest[4 * i + 2], av_float2int(float_mult * A));
+    } else {
+        output_pixel(&dest[2 * i    ], Y);
+        output_pixel(&dest[2 * i + 1], A);
+    }
+}
 
 static av_always_inline void
 yuv2ya16_X_c_template(SwsInternal *c, const int16_t *lumFilter,
@@ -1106,8 +1072,7 @@ yuv2ya16_X_c_template(SwsInternal *c, const int16_t *lumFilter,
             A = av_clip_uint16(A);
         }
 
-        output_pixel(&dest[2 * i    ], Y);
-        output_pixel(&dest[2 * i + 1], A);
+        output_pixel_ya(dest, i, Y, A, target, is_be);
     }
 }
 
@@ -1140,8 +1105,7 @@ yuv2ya16_2_c_template(SwsInternal *c, const int32_t *buf[2],
             A = av_clip_uint16(A);
         }
 
-        output_pixel(&dest[2 * i    ], Y);
-        output_pixel(&dest[2 * i + 1], hasAlpha ? A : 65535);
+        output_pixel_ya(dest, i, Y, hasAlpha ? A : 65535, target, is_be);
     }
 }
 
@@ -1167,8 +1131,7 @@ yuv2ya16_1_c_template(SwsInternal *c, const int32_t *buf0,
                 A = av_clip_uint16(A);
         }
 
-        output_pixel(&dest[2 * i    ], Y);
-        output_pixel(&dest[2 * i + 1], hasAlpha ? A : 65535);
+        output_pixel_ya(dest, i, Y, hasAlpha ? A : 65535, target, is_be);
     }
 }
 
@@ -1632,6 +1595,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
 }
 
 #undef output_pixel
+#undef output_pixel32
 #undef r_b
 #undef b_r
 
@@ -1697,6 +1661,8 @@ YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64be, AV_PIX_FMT_BGRA64, BE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64le, AV_PIX_FMT_BGRA64, LE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16be, AV_PIX_FMT_YA16, BE, 1, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16le, AV_PIX_FMT_YA16, LE, 1, 0)
+YUV2PACKED16WRAPPER(yuv2, ya16, yaf32be, AV_PIX_FMT_YAF32, BE, 1, 0)
+YUV2PACKED16WRAPPER(yuv2, ya16, yaf32le, AV_PIX_FMT_YAF32, LE, 1, 0)
 
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgb48be_full, AV_PIX_FMT_RGB48, BE, 0, 0)
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgb48le_full, AV_PIX_FMT_RGB48, LE, 0, 0)
@@ -3894,10 +3860,12 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_YAF32LE:
         *yuv2packed1 = yuv2yaf32le_1_c;
+        *yuv2packed2 = yuv2yaf32le_2_c;
         *yuv2packedX = yuv2yaf32le_X_c;
         break;
     case AV_PIX_FMT_YAF32BE:
         *yuv2packed1 = yuv2yaf32be_1_c;
+        *yuv2packed2 = yuv2yaf32be_2_c;
         *yuv2packedX = yuv2yaf32be_X_c;
         break;
     case AV_PIX_FMT_V30XLE:
