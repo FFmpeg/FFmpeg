@@ -26577,6 +26577,32 @@ BT.2020
 
 @end table
 
+@item acceleration
+
+Select the preference for the hardware acceleration between compute hardware
+path and Video Processing Engine (VPE) hardware path. The accepted values are:
+@table @samp
+
+@item compute
+Explicitly use the compute path.
+
+@item vpe
+Use the Video Processing Engine (VPE) hardware path, falling back to the
+compute path if VPE is unavailable or the configuration is unsupported.
+
+@end table
+
+Note:
+
+VPE 1.0/1.1 hardware supports a limited set of pixel formats:
+@itemize
+@item
+Supported input pixel formats: bgra, rgba, argb, nv12, p010
+
+@item
+Supported output pixel formats: bgra, rgba, argb, rgbaf16
+@end itemize
+
 @item in_trc
 Override input transfer characteristics.
 

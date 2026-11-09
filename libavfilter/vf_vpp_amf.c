@@ -189,6 +189,35 @@ static int amf_filter_config_output(AVFilterLink *outlink)
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_OUTPUT_TRANSFER_CHARACTERISTIC, ctx->out_trc);
     }
 
+    if (ctx->acceleration != AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT) {
+        AMFCaps *converter_caps = NULL;
+        int vpe_available = 0;
+        int supported = 0;
+
+        res = AMF_IFACE_CALL(ctx->component, GetCaps, &converter_caps);
+        if (res == AMF_OK && converter_caps) {
+            AMFVariantStruct var;
+            AMFVariantInit(&var);
+
+            res = AMF_IFACE_CALL(converter_caps, GetProperty, AMF_VIDEO_CONVERTER_CAP_VPE_AVAILABILITY, &var);
+            if (res == AMF_OK) {
+                supported = 1;
+                vpe_available = var.boolValue;
+            }
+            AMF_IFACE_CALL(converter_caps, Release);
+        }
+
+        if (!supported) {
+            av_log(avctx, AV_LOG_WARNING, "Acceleration selection is not supported by the AMF runtime, the compute path will be used.\n");
+        } else if (ctx->acceleration == AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED && !vpe_available) {
+            av_log(avctx, AV_LOG_WARNING, "VPE is unavailable on this device, the compute path will be used.\n");
+        } else {
+            AMF_ASSIGN_PROPERTY_INT64(res, ctx->component, AMF_VIDEO_CONVERTER_ACCELERATION_TYPE, ctx->acceleration);
+            if (res != AMF_OK)
+                av_log(avctx, AV_LOG_WARNING, "Failed to set requested acceleration type, error: %d\n", res);
+        }
+    }
+
     res = ctx->component->pVtbl->Init(ctx->component, av_av_to_amf_format(in_format), inlink->w, inlink->h);
     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFConverter-Init() failed with error %d\n", res);
 
@@ -255,6 +284,10 @@ static const AVOption vpp_amf_options[] = {
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = SCALE_FORCE_OAR_INCREASE }, 0, 0, FLAGS, "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
     { "reset_sar", "reset SAR to 1 and scale to square pixels if scaling proportionally", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
+
+    { "acceleration",   "Preferred converter acceleration path",     OFFSET(acceleration),      AV_OPT_TYPE_INT,   { .i64 = AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT }, AMF_VIDEO_CONVERTER_ACCELERATION_DEFAULT, AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED, FLAGS, "acceleration" },
+    { "compute",        "Compute",          0,  AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_ACCELERATION_COMPUTE }, 0, 0, FLAGS, "acceleration" },
+    { "vpe",            "VPE preferred",    0,  AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_ACCELERATION_VPE_PREFERRED },  0, 0, FLAGS, "acceleration" },
 
     { NULL },
 };

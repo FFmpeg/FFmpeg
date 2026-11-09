@@ -50,6 +50,7 @@ typedef struct AMFFilterContext {
     int fill;
     int fill_color;
     int keep_ratio;
+    int acceleration;
 
     AVMasteringDisplayMetadata *master_display;
     AVContentLightMetadata     *light_meta;
