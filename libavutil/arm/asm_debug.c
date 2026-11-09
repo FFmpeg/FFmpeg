@@ -161,7 +161,7 @@ void avpriv_dump_simd_f64(int line, const char *msg, int first, int last, const 
     fprintf(stderr, "%d: %s:\n", line, msg);
     for (int v = first; v <= last; v++) {
         const double *vec = &ptr[1*v];
-        fprintf(stderr, "v%02d = {", v);
+        fprintf(stderr, "d%02d = {", v);
         for (int i = 0; i < 1; i++)
             fprintf(stderr, "%s %f", i > 0 ? "," : "", vec[i]);
         fprintf(stderr, " }\n");
