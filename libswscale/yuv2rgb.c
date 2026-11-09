@@ -965,7 +965,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsInternal *c, const int inv_table[4],
         fill_gv_table(c->table_gV, 4, cgv);
         break;
     default:
-        if(!isPlanar(c->opts.dst_format) || bpp <= 24)
+        if ((!isPlanar(c->opts.dst_format) && !isFloat(c->opts.dst_format)) || bpp <= 24)
             av_log(c, AV_LOG_ERROR, "%ibpp not supported by yuv2rgb\n", bpp);
         return AVERROR(EINVAL);
     }

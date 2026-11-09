@@ -1009,8 +1009,8 @@ YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, AV_PIX_FMT_YUYV422)
 YUV2PACKEDWRAPPER(yuv2, 422, yvyu422, AV_PIX_FMT_YVYU422)
 YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
 
-#define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE) ? R : B)
-#define B_R ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE) ? B : R)
+#define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) ? R : B)
+#define B_R ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) ? B : R)
 #define output_pixel(pos, val) \
     if (is_be) { \
         AV_WB16(pos, val); \
@@ -1136,6 +1136,59 @@ yuv2ya16_1_c_template(SwsInternal *c, const int32_t *buf0,
 }
 
 static av_always_inline void
+output_pixel_rgba(uint16_t *dest, int i, unsigned Y1, unsigned Y2,
+                  int R, int G, int B, int A1, int A2,
+                  enum AVPixelFormat target, int eightbytes, int is_be)
+{
+    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) {
+        static const float float_mult = 1.0f / 65535.0f;
+        ptrdiff_t stride = 12;
+        output_pixel32(&dest[stride * i     ], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y1) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  2], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y1) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  4], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y1) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  6], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  8], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i + 10], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16)));
+    } else {
+        ptrdiff_t stride = eightbytes ? 8 : 6;
+        output_pixel(&dest[stride * i    ], av_clip_uintp2(((int)(R + Y1) >> 14) + (1<<15), 16));
+        output_pixel(&dest[stride * i + 1], av_clip_uintp2(((int)(G + Y1) >> 14) + (1<<15), 16));
+        output_pixel(&dest[stride * i + 2], av_clip_uintp2(((int)(B + Y1) >> 14) + (1<<15), 16));
+        if (eightbytes) {
+            output_pixel(&dest[stride * i + 3], av_clip_uintp2(A1, 30) >> 14);
+            output_pixel(&dest[stride * i + 4], av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16));
+            output_pixel(&dest[stride * i + 5], av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16));
+            output_pixel(&dest[stride * i + 6], av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16));
+            output_pixel(&dest[stride * i + 7], av_clip_uintp2(A2, 30) >> 14);
+        } else {
+            output_pixel(&dest[stride * i + 3], av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16));
+            output_pixel(&dest[stride * i + 4], av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16));
+            output_pixel(&dest[stride * i + 5], av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16));
+        }
+    }
+}
+
+static av_always_inline void
+output_pixel_rgba_full(uint16_t *dest, int i, unsigned Y, int R, int G, int B, int A,
+                       enum AVPixelFormat target, int eightbytes, int is_be)
+{
+    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) {
+        static const float float_mult = 1.0f / 65535.0f;
+        ptrdiff_t stride = 6;
+        output_pixel32(&dest[stride * i     ], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  2], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y) >> 14) + (1<<15), 16)));
+        output_pixel32(&dest[stride * i +  4], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y) >> 14) + (1<<15), 16)));
+    } else {
+        ptrdiff_t stride = eightbytes ? 4 : 3;
+        output_pixel(&dest[stride * i    ], av_clip_uintp2(((int)(R + (unsigned)Y) >> 14) + (1<<15), 16));
+        output_pixel(&dest[stride * i + 1], av_clip_uintp2(((int)(G + (unsigned)Y) >> 14) + (1<<15), 16));
+        output_pixel(&dest[stride * i + 2], av_clip_uintp2(((int)(B + (unsigned)Y) >> 14) + (1<<15), 16));
+        if (eightbytes)
+            output_pixel(&dest[stride * i + 3], av_clip_uintp2(A, 30) >> 14);
+    }
+}
+
+static av_always_inline void
 yuv2rgba64_X_c_template(SwsInternal *c, const int16_t *lumFilter,
                        const int32_t **lumSrc, int lumFilterSize,
                        const int16_t *chrFilter, const int32_t **chrUSrc,
@@ -1198,23 +1251,7 @@ yuv2rgba64_X_c_template(SwsInternal *c, const int16_t *lumFilter,
         G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
         B =                            U * c->yuv2rgb_u2b_coeff;
 
-        // 8 bits: 30 - 22 = 8 bits, 16 bits: 30 bits - 14 = 16 bits
-        output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y1) >> 14) + (1<<15), 16));
-        output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y1) >> 14) + (1<<15), 16));
-        output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y1) >> 14) + (1<<15), 16));
-        if (eightbytes) {
-            output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-            output_pixel(&dest[4], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[5], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[6], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
-            dest += 8;
-        } else {
-            output_pixel(&dest[3], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[4], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[5], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-            dest += 6;
-        }
+        output_pixel_rgba(dest, i, Y1, Y2, R_B, G, B_R, A1, A2, target, eightbytes, is_be);
     }
 }
 
@@ -1267,22 +1304,7 @@ yuv2rgba64_2_c_template(SwsInternal *c, const int32_t *buf[2],
             A2 += 1 << 13;
         }
 
-        output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y1) >> 14) + (1<<15), 16));
-        output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y1) >> 14) + (1<<15), 16));
-        output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y1) >> 14) + (1<<15), 16));
-        if (eightbytes) {
-            output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-            output_pixel(&dest[4], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[5], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[6], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
-            dest += 8;
-        } else {
-            output_pixel(&dest[3], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[4], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-            output_pixel(&dest[5], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-            dest += 6;
-        }
+        output_pixel_rgba(dest, i, Y1, Y2, R_B, G, B_R, A1, A2, target, eightbytes, is_be);
     }
 }
 
@@ -1324,22 +1346,7 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y1) >> 14) + (1<<15), 16));
-            output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y1) >> 14) + (1<<15), 16));
-            output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y1) >> 14) + (1<<15), 16));
-            if (eightbytes) {
-                output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-                output_pixel(&dest[4], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[5], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[6], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
-                dest += 8;
-            } else {
-                output_pixel(&dest[3], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[4], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[5], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-                dest += 6;
-            }
+            output_pixel_rgba(dest, i, Y1, Y2, R_B, G, B_R, A1, A2, target, eightbytes, is_be);
         }
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
@@ -1373,22 +1380,7 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y1) >> 14) + (1<<15), 16));
-            output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y1) >> 14) + (1<<15), 16));
-            output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y1) >> 14) + (1<<15), 16));
-            if (eightbytes) {
-                output_pixel(&dest[3], av_clip_uintp2(A1      , 30) >> 14);
-                output_pixel(&dest[4], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[5], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[6], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[7], av_clip_uintp2(A2      , 30) >> 14);
-                dest += 8;
-            } else {
-                output_pixel(&dest[3], av_clip_uintp2(((int)(R_B + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[4], av_clip_uintp2(((int)(  G + Y2) >> 14) + (1<<15), 16));
-                output_pixel(&dest[5], av_clip_uintp2(((int)(B_R + Y2) >> 14) + (1<<15), 16));
-                dest += 6;
-            }
+            output_pixel_rgba(dest, i, Y1, Y2, R_B, G, B_R, A1, A2, target, eightbytes, is_be);
         }
     }
 }
@@ -1445,16 +1437,7 @@ yuv2rgba64_full_X_c_template(SwsInternal *c, const int16_t *lumFilter,
         G = (unsigned)V * c->yuv2rgb_v2g_coeff + (unsigned)U * c->yuv2rgb_u2g_coeff;
         B =                                      (unsigned)U * c->yuv2rgb_u2b_coeff;
 
-        // 8bit: 30 - 22 = 8bit, 16bit: 30bit - 14 = 16bit
-        output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + (unsigned)Y)>>14) + (1<<15), 16));
-        output_pixel(&dest[1], av_clip_uintp2(((int)(  G + (unsigned)Y)>>14) + (1<<15), 16));
-        output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + (unsigned)Y)>>14) + (1<<15), 16));
-        if (eightbytes) {
-            output_pixel(&dest[3], av_clip_uintp2(A, 30) >> 14);
-            dest += 4;
-        } else {
-            dest += 3;
-        }
+        output_pixel_rgba_full(dest, i, Y, R_B, G, B_R, A, target, eightbytes, is_be);
     }
 }
 
@@ -1501,15 +1484,7 @@ yuv2rgba64_full_2_c_template(SwsInternal *c, const int32_t *buf[2],
             A += 1 << 13;
         }
 
-        output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y) >> 14) + (1<<15), 16));
-        output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y) >> 14) + (1<<15), 16));
-        output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y) >> 14) + (1<<15), 16));
-        if (eightbytes) {
-            output_pixel(&dest[3], av_clip_uintp2(A, 30) >> 14);
-            dest += 4;
-        } else {
-            dest += 3;
-        }
+        output_pixel_rgba_full(dest, i, Y, R_B, G, B_R, A, target, eightbytes, is_be);
     }
 }
 
@@ -1545,15 +1520,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y) >> 14) + (1<<15), 16));
-            output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y) >> 14) + (1<<15), 16));
-            output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y) >> 14) + (1<<15), 16));
-            if (eightbytes) {
-                output_pixel(&dest[3], av_clip_uintp2(A, 30) >> 14);
-                dest += 4;
-            } else {
-                dest += 3;
-            }
+            output_pixel_rgba_full(dest, i, Y, R_B, G, B_R, A, target, eightbytes, is_be);
         }
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
@@ -1581,15 +1548,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
             G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
             B =                            U * c->yuv2rgb_u2b_coeff;
 
-            output_pixel(&dest[0], av_clip_uintp2(((int)(R_B + Y) >> 14) + (1<<15), 16));
-            output_pixel(&dest[1], av_clip_uintp2(((int)(  G + Y) >> 14) + (1<<15), 16));
-            output_pixel(&dest[2], av_clip_uintp2(((int)(B_R + Y) >> 14) + (1<<15), 16));
-            if (eightbytes) {
-                output_pixel(&dest[3], av_clip_uintp2(A, 30) >> 14);
-                dest += 4;
-            } else {
-                dest += 3;
-            }
+            output_pixel_rgba_full(dest, i, Y, R_B, G, B_R, A, target, eightbytes, is_be);
         }
     }
 }
@@ -1659,6 +1618,8 @@ YUV2PACKED16WRAPPER(yuv2, rgba64, bgra64be, AV_PIX_FMT_BGRA64, BE, 1, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, bgra64le, AV_PIX_FMT_BGRA64, LE, 1, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64be, AV_PIX_FMT_BGRA64, BE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64le, AV_PIX_FMT_BGRA64, LE, 0, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbf32be, AV_PIX_FMT_RGBF32, BE, 0, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbf32le, AV_PIX_FMT_RGBF32, LE, 0, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16be, AV_PIX_FMT_YA16, BE, 1, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16le, AV_PIX_FMT_YA16, LE, 1, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, yaf32be, AV_PIX_FMT_YAF32, BE, 1, 0)
@@ -1676,6 +1637,8 @@ YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgra64be_full, AV_PIX_FMT_BGRA64, BE, 1, 
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgra64le_full, AV_PIX_FMT_BGRA64, LE, 1, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgrx64be_full, AV_PIX_FMT_BGRA64, BE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgrx64le_full, AV_PIX_FMT_BGRA64, LE, 0, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbf32be_full, AV_PIX_FMT_RGBF32, BE, 0, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbf32le_full, AV_PIX_FMT_RGBF32, LE, 0, 0)
 
 /*
  * Write out 2 RGB pixels in the target pixel format. This function takes a
@@ -3586,6 +3549,16 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
             *yuv2packed2 = yuv2x2bgr10_full_2_c;
             *yuv2packed1 = yuv2x2bgr10_full_1_c;
             break;
+        case AV_PIX_FMT_RGBF32LE:
+            *yuv2packedX = yuv2rgbf32le_full_X_c;
+            *yuv2packed2 = yuv2rgbf32le_full_2_c;
+            *yuv2packed1 = yuv2rgbf32le_full_1_c;
+            break;
+        case AV_PIX_FMT_RGBF32BE:
+            *yuv2packedX = yuv2rgbf32be_full_X_c;
+            *yuv2packed2 = yuv2rgbf32be_full_2_c;
+            *yuv2packed1 = yuv2rgbf32be_full_1_c;
+            break;
         case AV_PIX_FMT_GBRP:
         case AV_PIX_FMT_GBRP9BE:
         case AV_PIX_FMT_GBRP9LE:
@@ -3809,6 +3782,16 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
             *yuv2packed1 = yuv2x2bgr10_1_c;
             *yuv2packed2 = yuv2x2bgr10_2_c;
             *yuv2packedX = yuv2x2bgr10_X_c;
+            break;
+        case AV_PIX_FMT_RGBF32LE:
+            *yuv2packedX = yuv2rgbf32le_X_c;
+            *yuv2packed2 = yuv2rgbf32le_2_c;
+            *yuv2packed1 = yuv2rgbf32le_1_c;
+            break;
+        case AV_PIX_FMT_RGBF32BE:
+            *yuv2packedX = yuv2rgbf32be_X_c;
+            *yuv2packed2 = yuv2rgbf32be_2_c;
+            *yuv2packed1 = yuv2rgbf32be_1_c;
             break;
         }
     }
