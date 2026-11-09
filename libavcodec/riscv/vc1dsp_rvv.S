@@ -73,35 +73,39 @@ inv_trans_dc 4, 4, 32, 1, f4
         .variant_cc ff_vc1_inv_trans_8_rvv
 func ff_vc1_inv_trans_8_rvv, zve32x
         li      t4, 12
-        vsll.vi v14, v6, 4
-        li      t2, 6
-        vsll.vi v12, v2, 4
+        vadd.vv v28, v0, v4
+        li      t2, 16
+        vsub.vv v29, v0, v4
+        li      t3, 6
+        vwmul.vx  v8, v28, t4  # 12 * (src[0] + src[4])
+        li      t5, -16
+        vwmul.vx  v14, v28, t4
+        li      t6, -6
+        vwmul.vx  v10, v29, t4 # 12 * (src[0] - src[4])
+        vwmul.vx  v12, v29, t4
+        vwmacc.vx v8, t2, v2
+        vwmacc.vx v14, t5, v2
+        vwmacc.vx v10, t3, v2
+        vwmacc.vx v12, t6, v2
+        vwmacc.vx v8, t3, v6   # t5
+        vwmacc.vx v14, t6, v6  # t8
+        vwmacc.vx v10, t5, v6  # t6
+        vwmacc.vx v12, t2, v6  # t7
         li      t5, 15
-        vmul.vx v8, v0, t4
         li      t3, 9
-        # t[2..5] = [6 9 12 15]
-        vmul.vx v10, v4, t4
-        vmul.vx v16, v2, t2
-        vmacc.vx  v12, t2, v6  # t3
-        vnmsac.vx v14, t2, v2 # -t4
-        vadd.vv v24, v8, v10  # t1
-        vsub.vv v25, v8, v10  # t2
-        vadd.vv v28, v24, v12 # t5
-        vsub.vv v31, v24, v12 # t8
-        vsub.vv v29, v25, v14 # t6
-        vadd.vv v30, v25, v14 # t7
+        li      t4, 4
         vsll.vi v20, v1, 4
         vsll.vi v22, v7, 2
         vmacc.vx  v20, t5, v3
         vmacc.vx  v22, t3, v5
-        vsll.vi v21, v3, 2
+        vmul.vx v21, v1, t5
         vsll.vi v23, v5, 4
         vadd.vv v24, v20, v22 # t1
-        vnmsac.vx v21, t5, v1
+        vnmsac.vx v21, t4, v3
         vmacc.vx  v23, t3, v7
         vsll.vi v20, v3, 4
         vsll.vi v22, v5, 2
-        vadd.vv v25, v21, v23 # -t2
+        vsub.vv v25, v21, v23 # t2
         vnmsac.vx v20, t3, v1
         vmacc.vx v22, t5, v7
         vsll.vi v21, v1, 2
@@ -109,49 +113,55 @@ func ff_vc1_inv_trans_8_rvv, zve32x
         vsub.vv v26, v22, v20 # t3
         vnmsac.vx v21, t3, v3
         vnmsac.vx v23, t5, v5
-        srli    t2, t1, 2
-        vwadd.vv  v8, v28, v24
-        vwsub.vv  v10, v29, v25
         vsub.vv v27, v21, v23 # t4
-        vwadd.vv  v12, v30, v26
-        vwadd.vv  v14, v31, v27
-        beqz    t2, 1f # faster than 4x add t2=zero
-        .irp    n,31,30,29,28
-        vadd.vi v\n, v\n, 1
-        .endr
+        srli    t2, t1, 2
+        vwadd.wv  v16, v8, v24
+        vwadd.wv  v18, v10, v25
+        vwadd.wv  v20, v12, v26
+        vwadd.wv  v22, v14, v27
+        beqz    t2, 1f
+        vmv.v.i   v28, 1
+        vwadd.wv  v8, v8, v28
+        vwadd.wv  v10, v10, v28
+        vwadd.wv  v12, v12, v28
+        vwadd.wv  v14, v14, v28
 1:
-        vwsub.vv  v16, v31, v27
-        vwsub.vv  v18, v30, v26
-        vwadd.vv  v20, v29, v25
-        vwsub.vv  v22, v28, v24
-        vnclip.wx v0, v8, t1
-        vnclip.wx v1, v10, t1
-        vnclip.wx v2, v12, t1
-        vnclip.wx v3, v14, t1
-        vnclip.wx v4, v16, t1
-        vnclip.wx v5, v18, t1
-        vnclip.wx v6, v20, t1
-        vnclip.wx v7, v22, t1
+        vwsub.wv  v14, v14, v27
+        vwsub.wv  v12, v12, v26
+        vwsub.wv  v10, v10, v25
+        vwsub.wv  v8, v8, v24
+        vnclip.wx v0, v16, t1
+        vnclip.wx v1, v18, t1
+        vnclip.wx v2, v20, t1
+        vnclip.wx v3, v22, t1
+        vnclip.wx v4, v14, t1
+        vnclip.wx v5, v12, t1
+        vnclip.wx v6, v10, t1
+        vnclip.wx v7, v8, t1
         jr      t0
 endfunc
 
         .variant_cc ff_vc1_inv_trans_4_rvv
 func ff_vc1_inv_trans_4_rvv, zve32x
         li      t3, 17
-        vmul.vx v8, v0, t3
+        vadd.vv v24, v0, v2
         li      t4, 22
-        vmul.vx v10, v2, t3
-        li      t2, 10
-        vmul.vx v26, v1, t4
-        vmul.vx v27, v3, t4
-        vadd.vv v24, v8, v10  # t1
-        vsub.vv v25, v8, v10  # t2
-        vmacc.vx v26, t2, v3  # t3
-        vnmsac.vx v27, t2, v1 # t4
-        vwadd.vv  v8, v24, v26
-        vwsub.vv  v10, v25, v27
-        vwadd.vv  v12, v25, v27
-        vwsub.vv  v14, v24, v26
+        vsub.vv v25, v0, v2
+        li      t5, 10
+        vwmul.vx  v8, v24, t3  # 17 * (src[0] + src[2])
+        li      t6, -22
+        vwmul.vx  v10, v25, t3 # 17 * (src[0] - src[2])
+        li      t2, -10
+        vwmul.vx  v12, v25, t3
+        vwmul.vx  v14, v24, t3
+        vwmacc.vx v8, t4, v1
+        vwmacc.vx v10, t6, v3
+        vwmacc.vx v12, t4, v3
+        vwmacc.vx v14, t6, v1
+        vwmacc.vx v8, t5, v3   # t1 + t3
+        vwmacc.vx v10, t5, v1  # t2 - t4
+        vwmacc.vx v12, t2, v1  # t2 + t4
+        vwmacc.vx v14, t2, v3  # t1 - t3
         vnclip.wx v0, v8, t1
         vnclip.wx v1, v10, t1
         vnclip.wx v2, v12, t1
