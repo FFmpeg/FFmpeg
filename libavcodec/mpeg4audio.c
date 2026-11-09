@@ -184,7 +184,7 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
         } else if (sbr_ratio == 3) {
             ratio_mult = 2;
             ratio_dec = 1;
-        } else if (sbr_ratio == 4) {
+        } else if (sbr_ratio == 1) {
             ratio_mult = 4;
             ratio_dec = 1;
         } else {
