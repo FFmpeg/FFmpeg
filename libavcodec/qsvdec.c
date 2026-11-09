@@ -417,6 +417,7 @@ static int qsv_decode_init_context(AVCodecContext *avctx, QSVContext *q, mfxVide
         ret = av_image_get_buffer_size(avctx->pix_fmt, FFALIGN(avctx->coded_width, 128), FFALIGN(avctx->coded_height, 64), 1);
         if (ret < 0)
             return ret;
+        av_buffer_pool_uninit(&q->pool);
         q->pool = av_buffer_pool_init(ret, av_buffer_allocz);
     }
     return 0;
