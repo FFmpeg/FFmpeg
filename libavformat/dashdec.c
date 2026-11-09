@@ -1733,7 +1733,10 @@ static struct fragment *get_current_fragment(struct representation *pls)
         if (pls->timelines || pls->fragments) {
             refresh_manifest(pls->parent);
         }
-        if (pls->cur_seq_no <= min_seq_no) {
+        min_seq_no = calc_min_seg_no(pls->parent, pls);
+        max_seq_no = calc_max_seg_no(pls, c);
+
+        if (pls->cur_seq_no < min_seq_no) {
             av_log(pls->parent, AV_LOG_VERBOSE, "old fragment: cur[%"PRId64"] min[%"PRId64"] max[%"PRId64"]\n", (int64_t)pls->cur_seq_no, min_seq_no, max_seq_no);
             pls->cur_seq_no = calc_cur_seg_no(pls->parent, pls);
         } else if (pls->cur_seq_no > max_seq_no) {
