@@ -609,7 +609,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     } else if (sbr_ratio == 3) {
         ratio_mult = 2;
         ratio_dec = 1;
-    } else if (sbr_ratio == 4) {
+    } else if (sbr_ratio == 1) {
         ratio_mult = 4;
         ratio_dec = 1;
     } else {
@@ -2096,7 +2096,7 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
     } else if (sbr_ratio == 3) {
         ratio_mult = 2;
         ratio_dec = 1;
-    } else if (sbr_ratio == 4) {
+    } else if (sbr_ratio == 1) {
         ratio_mult = 4;
         ratio_dec = 1;
     } else {
