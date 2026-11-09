@@ -43,14 +43,21 @@ func ff_vc1_inv_trans_\cols\()x\rows\()_dc_rvv, zve64x, zba
 .else
         vsetivli    zero, \rows * \cols, e8, m\mat_lmul, ta, ma
 .endif
+        li      t1, 255
         bgez    t2, 1f
 
         neg     t2, t2
+        bltu    t2, t1, 2f
+        mv      t2, t1
+2:
         vssubu.vx   v0, v0, t2
         vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
         vsse\w\().v v0, (a0), a1
         ret
 1:
+        bltu    t2, t1, 3f
+        mv      t2, t1
+3:
         vsaddu.vx   v0, v0, t2
         vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
         vsse\w\().v v0, (a0), a1
