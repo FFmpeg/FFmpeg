@@ -222,7 +222,6 @@ static int dss_read_header(AVFormatContext *s)
     st->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-    st->start_time = 0;
 
     frames = dss_count_frames(s);
     if (frames < 0)

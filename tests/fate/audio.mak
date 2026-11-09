@@ -37,6 +37,9 @@ fate-dss-format1: CMD = framecrc -i $(TARGET_SAMPLES)/dss/olympus-format1.dss
 FATE_SAMPLES_AUDIO_FFPROBE-$(CONFIG_DSS_DEMUXER) += fate-dss-format1-duration
 fate-dss-format1-duration: CMD = probe -show_entries stream=duration,nb_frames $(TARGET_SAMPLES)/dss/olympus-format1.dss
 
+FATE_SAMPLES_AUDIO_FFPROBE-$(CONFIG_DSS_DEMUXER) += fate-dss-format1-start-time
+fate-dss-format1-start-time: CMD = probe -read_intervals %+\#1 -show_packets -show_entries stream=start_time,duration,nb_frames:packet=pts $(TARGET_SAMPLES)/dss/olympus-format1-noswap.dss
+
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, DSS, G723_1, ARESAMPLE_FILTER) += fate-dss-lp
 fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30 -af aresample
 
