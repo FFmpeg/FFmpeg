@@ -92,6 +92,7 @@ static inline int aarch64_priv_size(const SwsAArch64OpImplParams *params)
     case SWS_UOP_READ_BIT:
     case SWS_UOP_WRITE_BIT:
     case SWS_UOP_CLEAR:
+    case SWS_UOP_ADD:
     case SWS_UOP_MIN:
     case SWS_UOP_MAX:
         return 16; /* one full vector register */

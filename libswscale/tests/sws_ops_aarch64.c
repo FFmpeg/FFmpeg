@@ -201,7 +201,7 @@ static int collect_ops_compile(SwsContext *ctx, const SwsOpList *ops,
     if (!uops)
         return AVERROR(ENOMEM);
 
-    SwsUOpFlags flags = SWS_UOP_FLAG_PUNNING;
+    SwsUOpFlags flags = SWS_UOP_FLAG_PUNNING | SWS_UOP_FLAG_ADD;
     if (!(ctx->flags & SWS_BITEXACT))
         flags |= SWS_UOP_FLAG_FMA;
     ret = ff_sws_ops_translate(ctx, ops, flags, uops);
@@ -298,6 +298,7 @@ static const char op_type_names[SWS_UOP_TYPE_NB][16] = {
     [SWS_UOP_TO_F32        ] = "to_f32",
     [SWS_UOP_EXPAND_PAIR   ] = "expand_pair",
     [SWS_UOP_EXPAND_QUAD   ] = "expand_quad",
+    [SWS_UOP_ADD           ] = "add",
     [SWS_UOP_MIN           ] = "min",
     [SWS_UOP_MAX           ] = "max",
     [SWS_UOP_SCALE         ] = "scale",
@@ -336,6 +337,7 @@ static const char uop_types[SWS_UOP_TYPE_NB][32] = {
     [SWS_UOP_TO_F32        ] = "SWS_UOP_TO_F32",
     [SWS_UOP_EXPAND_PAIR   ] = "SWS_UOP_EXPAND_PAIR",
     [SWS_UOP_EXPAND_QUAD   ] = "SWS_UOP_EXPAND_QUAD",
+    [SWS_UOP_ADD           ] = "SWS_UOP_ADD",
     [SWS_UOP_MIN           ] = "SWS_UOP_MIN",
     [SWS_UOP_MAX           ] = "SWS_UOP_MAX",
     [SWS_UOP_SCALE         ] = "SWS_UOP_SCALE",

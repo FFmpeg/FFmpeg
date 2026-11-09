@@ -246,6 +246,18 @@ static void asmgen_setup_clear(SwsAArch64Context *s, const SwsAArch64OpImplParam
     }
 }
 
+static void asmgen_setup_add(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
+                             SwsAArch64OpRegs *regs)
+{
+    RasmContext *r = s->rctx;
+    RasmOp *vk = regs->vk;
+
+    RasmOp add_vec = regs->vt[0];
+    i_ldr(r, v_q(add_vec), IMPL_PRIV(s));                           CMT("v128 add_vec = impl->priv.v128;");
+    asmgen_set_load_cont_node(s);
+    LOOP_MASK(p, i) { i_dup(r, vk[i], a64op_elem(add_vec, i));      CMTF("v128 vadd%u = add_vec[%u];", i, i); }
+}
+
 static void asmgen_setup_min(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
 {
@@ -584,6 +596,7 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpEntry *entry)
     case SWS_UOP_WRITE_BIT:    asmgen_setup_write_bit(s, p, &s->regs);    break;
     case SWS_UOP_UNPACK:       asmgen_setup_unpack(s, p, &s->regs);       break;
     case SWS_UOP_CLEAR:        asmgen_setup_clear(s, p, &s->regs);        break;
+    case SWS_UOP_ADD:          asmgen_setup_add(s, p, &s->regs);          break;
     case SWS_UOP_MIN:          asmgen_setup_min(s, p, &s->regs);          break;
     case SWS_UOP_MAX:          asmgen_setup_max(s, p, &s->regs);          break;
     case SWS_UOP_SCALE:        asmgen_setup_scale(s, p, &s->regs);        break;
@@ -618,6 +631,7 @@ static void asmgen_op_cps(SwsAArch64Context *s, const SwsAArch64OpEntry *entry)
     case SWS_UOP_TO_F32:       asmgen_op_convert(s, p, &s->regs);      break;
     case SWS_UOP_EXPAND_PAIR:  asmgen_op_expand(s, p, &s->regs);       break;
     case SWS_UOP_EXPAND_QUAD:  asmgen_op_expand(s, p, &s->regs);       break;
+    case SWS_UOP_ADD:          asmgen_op_add(s, p, &s->regs);          break;
     case SWS_UOP_MIN:          asmgen_op_min(s, p, &s->regs);          break;
     case SWS_UOP_MAX:          asmgen_op_max(s, p, &s->regs);          break;
     case SWS_UOP_SCALE:        asmgen_op_scale(s, p, &s->regs);        break;

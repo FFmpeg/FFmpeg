@@ -137,6 +137,7 @@ static int aarch64_setup(const SwsUOp *uop, const SwsAArch64OpImplParams *p,
         break;
     }
     case SWS_UOP_CLEAR:
+    case SWS_UOP_ADD:
     case SWS_UOP_MIN:
     case SWS_UOP_MAX: {
         int ret = ff_sws_setup_vec4(&(const SwsImplParams) { .uop = uop }, out);
@@ -233,7 +234,7 @@ static int compile_ops_aarch64(SwsContext *ctx, const SwsOpList *ops,
     if (!uops)
         return AVERROR(ENOMEM);
 
-    SwsUOpFlags flags = SWS_UOP_FLAG_PUNNING;
+    SwsUOpFlags flags = SWS_UOP_FLAG_PUNNING | SWS_UOP_FLAG_ADD;
     if (!(ctx->flags & SWS_BITEXACT))
         flags |= SWS_UOP_FLAG_FMA;
     int ret = ff_sws_ops_translate(ctx, ops, flags, uops);

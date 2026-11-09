@@ -754,6 +754,25 @@ static void asmgen_op_expand(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
+/* SWS_UOP_ADD: add vec4 to masked components */
+
+static void asmgen_op_add(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
+                          SwsAArch64OpRegs *regs)
+{
+    RasmContext *r = s->rctx;
+    RasmOp *sl = regs->sl;
+    RasmOp *sh = regs->sh;
+    RasmOp *dl = regs->dl;
+    RasmOp *dh = regs->dh;
+    RasmOp *vk = regs->vk;
+
+    av_assert0(p->type == SWS_PIXEL_F32);
+
+    LOOP_MASK      (p, i) { i_fadd(r, dl[i], sl[i], vk[i]);         CMTF("vl[%u] += vadd%u;", i, i); }
+    LOOP_MASK_VH(s, p, i) { i_fadd(r, dh[i], sh[i], vk[i]);         CMTF("vh[%u] += vadd%u;", i, i); }
+}
+
+/*********************************************************************/
 /* SWS_UOP_MIN: min(x, vec4) on masked components */
 
 static void asmgen_op_min(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
