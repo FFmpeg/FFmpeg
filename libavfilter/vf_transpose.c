@@ -176,6 +176,45 @@ static void transpose_8x8_64_c(uint8_t *src, ptrdiff_t src_linesize,
     transpose_block_64_c(src, src_linesize, dst, dst_linesize, 8, 8);
 }
 
+static inline void transpose_block_96_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 12) {
+        for (x = 0; x < w; x++) {
+            int64_t v1 = AV_RB48(src + x*src_linesize);
+            int64_t v2 = AV_RB48(src + 6 + x*src_linesize);
+            AV_WB48(dst + 12*x, v1);
+            AV_WB48(dst + 6 + 12*x, v2);
+        }
+    }
+}
+
+static void transpose_8x8_96_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_96_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_128_c(uint8_t *src, ptrdiff_t src_linesize,
+                                         uint8_t *dst, ptrdiff_t dst_linesize,
+                                         int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 16) {
+        for (x = 0; x < w; x++) {
+            AV_COPY128U(dst + 16*x, src + x*src_linesize);
+        }
+    }
+}
+
+static void transpose_8x8_128_c(uint8_t *src, ptrdiff_t src_linesize,
+                                uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_128_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
 static int config_props_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -234,6 +273,10 @@ static int config_props_output(AVFilterLink *outlink)
                 v->transpose_8x8   = transpose_8x8_48_c; break;
         case 8: v->transpose_block = transpose_block_64_c;
                 v->transpose_8x8   = transpose_8x8_64_c; break;
+        case 12: v->transpose_block = transpose_block_96_c;
+                 v->transpose_8x8   = transpose_8x8_96_c; break;
+        case 16: v->transpose_block = transpose_block_128_c;
+                 v->transpose_8x8   = transpose_8x8_128_c; break;
         default:
             return AVERROR_BUG;
         }
