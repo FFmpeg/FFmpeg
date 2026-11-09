@@ -387,8 +387,10 @@ static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_SMPTE_2094_APP5);
     if (sd) {
         fd.hdr_smpte2094_app5 = av_buffer_ref(sd->buf);
-        if (!fd.hdr_smpte2094_app5)
-            return AVERROR(ENOMEM);
+        if (!fd.hdr_smpte2094_app5) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     fd.duration     = frame->duration;
