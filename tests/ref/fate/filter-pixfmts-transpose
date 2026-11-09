@@ -92,6 +92,8 @@ rgb8                c90feb30c3c9391ef5f470209d7b7a15
 rgba                4d76a9542143752a4ac30f82f88f68f1
 rgba64be            a60041217f4c0cd796d19d3940a12a41
 rgba64le            ad47197774858858ae7b0c177dffa459
+rgbaf32be           30255224cbe16c571e04bbcb74f220a6
+rgbaf32le           73f6a194cae097cea6448c1facb2d7cf
 rgbf32be            a89fa50c9e278ad1e2bc44a9435c48fd
 rgbf32le            883cc75a2f3f00090b719d99e4c2b1da
 uyva                cb773ee5a9f8964b9c826d55f9f425a3

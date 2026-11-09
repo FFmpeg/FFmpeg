@@ -1398,6 +1398,8 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         dstFormat != AV_PIX_FMT_BGR48BE &&
         dstFormat != AV_PIX_FMT_RGBF32LE &&
         dstFormat != AV_PIX_FMT_RGBF32BE &&
+        dstFormat != AV_PIX_FMT_RGBAF32LE &&
+        dstFormat != AV_PIX_FMT_RGBAF32BE &&
         dstFormat != AV_PIX_FMT_RGBA  &&
         dstFormat != AV_PIX_FMT_ARGB  &&
         dstFormat != AV_PIX_FMT_BGRA  &&

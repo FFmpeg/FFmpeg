@@ -1009,8 +1009,10 @@ YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, AV_PIX_FMT_YUYV422)
 YUV2PACKEDWRAPPER(yuv2, 422, yvyu422, AV_PIX_FMT_YVYU422)
 YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
 
-#define R_B ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) ? R : B)
-#define B_R ((target == AV_PIX_FMT_RGB48LE || target == AV_PIX_FMT_RGB48BE || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) ? B : R)
+#define R_B ((target == AV_PIX_FMT_RGB48LE  || target == AV_PIX_FMT_RGB48BE  || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || \
+              target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE || target == AV_PIX_FMT_RGBAF32LE || target == AV_PIX_FMT_RGBAF32BE) ? R : B)
+#define B_R ((target == AV_PIX_FMT_RGB48LE  || target == AV_PIX_FMT_RGB48BE  || target == AV_PIX_FMT_RGBA64LE || target == AV_PIX_FMT_RGBA64BE || \
+              target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE || target == AV_PIX_FMT_RGBAF32LE || target == AV_PIX_FMT_RGBAF32BE) ? B : R)
 #define output_pixel(pos, val) \
     if (is_be) { \
         AV_WB16(pos, val); \
@@ -1140,15 +1142,24 @@ output_pixel_rgba(uint16_t *dest, int i, unsigned Y1, unsigned Y2,
                   int R, int G, int B, int A1, int A2,
                   enum AVPixelFormat target, int eightbytes, int is_be)
 {
-    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) {
+    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE ||
+        target == AV_PIX_FMT_RGBAF32LE || target == AV_PIX_FMT_RGBAF32BE) {
         static const float float_mult = 1.0f / 65535.0f;
-        ptrdiff_t stride = 12;
+        ptrdiff_t stride = eightbytes ? 16 : 12;
         output_pixel32(&dest[stride * i     ], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y1) >> 14) + (1<<15), 16)));
         output_pixel32(&dest[stride * i +  2], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y1) >> 14) + (1<<15), 16)));
         output_pixel32(&dest[stride * i +  4], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y1) >> 14) + (1<<15), 16)));
-        output_pixel32(&dest[stride * i +  6], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16)));
-        output_pixel32(&dest[stride * i +  8], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16)));
-        output_pixel32(&dest[stride * i + 10], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16)));
+        if (eightbytes) {
+            output_pixel32(&dest[stride * i +  6], av_float2int(float_mult * (av_clip_uintp2(A1      , 30) >> 14)));
+            output_pixel32(&dest[stride * i +  8], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16)));
+            output_pixel32(&dest[stride * i + 10], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16)));
+            output_pixel32(&dest[stride * i + 12], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16)));
+            output_pixel32(&dest[stride * i + 14], av_float2int(float_mult * (av_clip_uintp2(A2      , 30) >> 14)));
+        } else {
+            output_pixel32(&dest[stride * i +  6], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y2) >> 14) + (1<<15), 16)));
+            output_pixel32(&dest[stride * i +  8], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y2) >> 14) + (1<<15), 16)));
+            output_pixel32(&dest[stride * i + 10], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y2) >> 14) + (1<<15), 16)));
+        }
     } else {
         ptrdiff_t stride = eightbytes ? 8 : 6;
         output_pixel(&dest[stride * i    ], av_clip_uintp2(((int)(R + Y1) >> 14) + (1<<15), 16));
@@ -1172,12 +1183,15 @@ static av_always_inline void
 output_pixel_rgba_full(uint16_t *dest, int i, unsigned Y, int R, int G, int B, int A,
                        enum AVPixelFormat target, int eightbytes, int is_be)
 {
-    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE) {
+    if (target == AV_PIX_FMT_RGBF32LE || target == AV_PIX_FMT_RGBF32BE ||
+        target == AV_PIX_FMT_RGBAF32LE || target == AV_PIX_FMT_RGBAF32BE) {
         static const float float_mult = 1.0f / 65535.0f;
-        ptrdiff_t stride = 6;
+        ptrdiff_t stride = eightbytes ? 8 : 6;
         output_pixel32(&dest[stride * i     ], av_float2int(float_mult * av_clip_uintp2(((int)(R + Y) >> 14) + (1<<15), 16)));
         output_pixel32(&dest[stride * i +  2], av_float2int(float_mult * av_clip_uintp2(((int)(G + Y) >> 14) + (1<<15), 16)));
         output_pixel32(&dest[stride * i +  4], av_float2int(float_mult * av_clip_uintp2(((int)(B + Y) >> 14) + (1<<15), 16)));
+        if (eightbytes)
+            output_pixel32(&dest[stride * i + 6], av_float2int(float_mult * (av_clip_uintp2(A, 30) >> 14)));
     } else {
         ptrdiff_t stride = eightbytes ? 4 : 3;
         output_pixel(&dest[stride * i    ], av_clip_uintp2(((int)(R + (unsigned)Y) >> 14) + (1<<15), 16));
@@ -1620,6 +1634,10 @@ YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64be, AV_PIX_FMT_BGRA64, BE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, bgrx64le, AV_PIX_FMT_BGRA64, LE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64, rgbf32be, AV_PIX_FMT_RGBF32, BE, 0, 0)
 YUV2PACKED16WRAPPER(yuv2, rgba64, rgbf32le, AV_PIX_FMT_RGBF32, LE, 0, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbaf32be, AV_PIX_FMT_RGBAF32, BE, 1, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbaf32le, AV_PIX_FMT_RGBAF32, LE, 1, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbxf32be, AV_PIX_FMT_RGBAF32, BE, 0, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64, rgbxf32le, AV_PIX_FMT_RGBAF32, LE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16be, AV_PIX_FMT_YA16, BE, 1, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, ya16le, AV_PIX_FMT_YA16, LE, 1, 0)
 YUV2PACKED16WRAPPER(yuv2, ya16, yaf32be, AV_PIX_FMT_YAF32, BE, 1, 0)
@@ -1639,6 +1657,10 @@ YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgrx64be_full, AV_PIX_FMT_BGRA64, BE, 0, 
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, bgrx64le_full, AV_PIX_FMT_BGRA64, LE, 0, 1)
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbf32be_full, AV_PIX_FMT_RGBF32, BE, 0, 0)
 YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbf32le_full, AV_PIX_FMT_RGBF32, LE, 0, 0)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbaf32be_full, AV_PIX_FMT_RGBAF32, BE, 1, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbaf32le_full, AV_PIX_FMT_RGBAF32, LE, 1, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbxf32be_full, AV_PIX_FMT_RGBAF32, BE, 0, 1)
+YUV2PACKED16WRAPPER(yuv2, rgba64_full, rgbxf32le_full, AV_PIX_FMT_RGBAF32, LE, 0, 1)
 
 /*
  * Write out 2 RGB pixels in the target pixel format. This function takes a
@@ -3488,6 +3510,34 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
                 *yuv2packed1 = yuv2bgrx64be_full_1_c;
             }
             break;
+        case AV_PIX_FMT_RGBAF32LE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->needAlpha) {
+                *yuv2packedX = yuv2rgbaf32le_full_X_c;
+                *yuv2packed2 = yuv2rgbaf32le_full_2_c;
+                *yuv2packed1 = yuv2rgbaf32le_full_1_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packedX = yuv2rgbxf32le_full_X_c;
+                *yuv2packed2 = yuv2rgbxf32le_full_2_c;
+                *yuv2packed1 = yuv2rgbxf32le_full_1_c;
+            }
+            break;
+        case AV_PIX_FMT_RGBAF32BE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->needAlpha) {
+                *yuv2packedX = yuv2rgbaf32be_full_X_c;
+                *yuv2packed2 = yuv2rgbaf32be_full_2_c;
+                *yuv2packed1 = yuv2rgbaf32be_full_1_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packedX = yuv2rgbxf32be_full_X_c;
+                *yuv2packed2 = yuv2rgbxf32be_full_2_c;
+                *yuv2packed1 = yuv2rgbxf32be_full_1_c;
+            }
+            break;
 
         case AV_PIX_FMT_RGB24:
             *yuv2packedX = yuv2rgb24_full_X_c;
@@ -3655,6 +3705,34 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
                 *yuv2packed1 = yuv2bgrx64be_1_c;
                 *yuv2packed2 = yuv2bgrx64be_2_c;
                 *yuv2packedX = yuv2bgrx64be_X_c;
+            }
+            break;
+        case AV_PIX_FMT_RGBAF32LE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->needAlpha) {
+                *yuv2packed1 = yuv2rgbaf32le_1_c;
+                *yuv2packed2 = yuv2rgbaf32le_2_c;
+                *yuv2packedX = yuv2rgbaf32le_X_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packed1 = yuv2rgbxf32le_1_c;
+                *yuv2packed2 = yuv2rgbxf32le_2_c;
+                *yuv2packedX = yuv2rgbxf32le_X_c;
+            }
+            break;
+        case AV_PIX_FMT_RGBAF32BE:
+#if CONFIG_SWSCALE_ALPHA
+            if (c->needAlpha) {
+                *yuv2packed1 = yuv2rgbaf32be_1_c;
+                *yuv2packed2 = yuv2rgbaf32be_2_c;
+                *yuv2packedX = yuv2rgbaf32be_X_c;
+            } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+            {
+                *yuv2packed1 = yuv2rgbxf32be_1_c;
+                *yuv2packed2 = yuv2rgbxf32be_2_c;
+                *yuv2packedX = yuv2rgbxf32be_X_c;
             }
             break;
         case AV_PIX_FMT_RGB48LE:
