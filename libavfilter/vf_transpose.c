@@ -219,7 +219,7 @@ static int config_props_output(AVFilterLink *outlink)
     else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < s->planes; i++) {
         TransVtable *v = &s->vtables[i];
         switch (s->pixsteps[i]) {
         case 1: v->transpose_block = transpose_block_8_c;
@@ -234,6 +234,8 @@ static int config_props_output(AVFilterLink *outlink)
                 v->transpose_8x8   = transpose_8x8_48_c; break;
         case 8: v->transpose_block = transpose_block_64_c;
                 v->transpose_8x8   = transpose_8x8_64_c; break;
+        default:
+            return AVERROR_BUG;
         }
     }
 
