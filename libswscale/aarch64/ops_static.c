@@ -143,11 +143,10 @@ static void asmgen_set_load_cont_node(SwsAArch64Context *s)
 }
 
 /*********************************************************************/
-/* gather raw pixels from planes */
-/* SWS_UOP_READ_BIT */
-/* SWS_UOP_READ_NIBBLE */
-/* SWS_UOP_READ_PACKED */
-/* SWS_UOP_READ_PLANAR */
+/* SWS_UOP_READ_BIT:    fractional read (1 bit) from single plane */
+/* SWS_UOP_READ_NIBBLE: fractional read (4 bits) from single plane */
+/* SWS_UOP_READ_PACKED: simple packed byte-aligned read */
+/* SWS_UOP_READ_PLANAR: simple planar byte-aligned read */
 
 static void asmgen_setup_read_bit(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                                   SwsAArch64OpRegs *regs)

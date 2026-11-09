@@ -206,11 +206,10 @@ static void asmgen_process(SwsAArch64Context *s, SwsCompMask imask, SwsCompMask 
 }
 
 /*********************************************************************/
-/* gather raw pixels from planes */
-/* SWS_UOP_READ_BIT */
-/* SWS_UOP_READ_NIBBLE */
-/* SWS_UOP_READ_PACKED */
-/* SWS_UOP_READ_PLANAR */
+/* SWS_UOP_READ_BIT:    fractional read (1 bit) from single plane */
+/* SWS_UOP_READ_NIBBLE: fractional read (4 bits) from single plane */
+/* SWS_UOP_READ_PACKED: simple packed byte-aligned read */
+/* SWS_UOP_READ_PLANAR: simple planar byte-aligned read */
 
 static void asmgen_op_read_bit(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                                SwsAArch64OpRegs *regs)
@@ -301,11 +300,10 @@ static void asmgen_op_read_planar(SwsAArch64Context *s, const SwsAArch64OpImplPa
 }
 
 /*********************************************************************/
-/* write raw pixels to planes */
-/* SWS_UOP_WRITE_BIT */
-/* SWS_UOP_WRITE_NIBBLE */
-/* SWS_UOP_WRITE_PACKED */
-/* SWS_UOP_WRITE_PLANAR */
+/* SWS_UOP_WRITE_BIT:    fractional write (1 bit) to single plane */
+/* SWS_UOP_WRITE_NIBBLE: fractional write (4 bits) to single plane */
+/* SWS_UOP_WRITE_PACKED: simple packed byte-aligned write */
+/* SWS_UOP_WRITE_PLANAR: simple planar byte-aligned write */
 
 static void asmgen_op_write_bit(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                                 SwsAArch64OpRegs *regs)
@@ -392,8 +390,7 @@ static void asmgen_op_write_planar(SwsAArch64Context *s, const SwsAArch64OpImplP
 }
 
 /*********************************************************************/
-/* swap byte order (for differing endianness) */
-/* SWS_UOP_SWAP_BYTES */
+/* SWS_UOP_SWAP_BYTES: swap byte order in components */
 
 static void asmgen_op_swap_bytes(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                                  SwsAArch64OpRegs *regs)
@@ -417,9 +414,8 @@ static void asmgen_op_swap_bytes(SwsAArch64Context *s, const SwsAArch64OpImplPar
 }
 
 /*********************************************************************/
-/* rearrange channel order, or duplicate channels */
-/* SWS_UOP_PERMUTE */
-/* SWS_UOP_COPY */
+/* SWS_UOP_PERMUTE: permute pointers (no duplicates) */
+/* SWS_UOP_COPY:    permute data (may contain duplicates) */
 
 static const char *print_swizzle_v(char buf[8], int8_t n, uint8_t vh)
 {
@@ -461,8 +457,7 @@ static void asmgen_op_move(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
 }
 
 /*********************************************************************/
-/* split tightly packed data into components */
-/* SWS_UOP_UNPACK */
+/* SWS_UOP_UNPACK: mask = nonzero components in pack pattern */
 
 static void asmgen_op_unpack(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
@@ -503,8 +498,7 @@ static void asmgen_op_unpack(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
-/* compress components into tightly packed data */
-/* SWS_UOP_PACK */
+/* SWS_UOP_PACK: mask = nonzero components in pack pattern */
 
 static void asmgen_op_pack(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                            SwsAArch64OpRegs *regs)
@@ -551,8 +545,7 @@ static void asmgen_op_pack(SwsAArch64Context *s, const SwsAArch64OpImplParams *p
 }
 
 /*********************************************************************/
-/* logical left shift of raw pixel values */
-/* SWS_UOP_LSHIFT */
+/* SWS_UOP_LSHIFT: mask = components to shift */
 
 static void asmgen_op_lshift(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
@@ -569,8 +562,7 @@ static void asmgen_op_lshift(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
-/* right shift of raw pixel values */
-/* SWS_UOP_RSHIFT */
+/* SWS_UOP_RSHIFT: mask = components to shift */
 
 static void asmgen_op_rshift(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
@@ -587,8 +579,7 @@ static void asmgen_op_rshift(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
-/* clear pixel values */
-/* SWS_UOP_CLEAR */
+/* SWS_UOP_CLEAR: mask = components to clear */
 
 static void emit_clear(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                        RasmOp *vx, RasmOp *vk, int i, const char *vx_str)
@@ -621,11 +612,10 @@ static void asmgen_op_clear(SwsAArch64Context *s, const SwsAArch64OpImplParams *
 }
 
 /*********************************************************************/
-/* convert (cast) between formats */
-/* SWS_UOP_TO_U8 */
-/* SWS_UOP_TO_U16 */
-/* SWS_UOP_TO_U32 */
-/* SWS_UOP_TO_F32 */
+/* SWS_UOP_TO_U8:  cast pixel values to SWS_PIXEL_U8 */
+/* SWS_UOP_TO_U16: cast pixel values to SWS_PIXEL_U16 */
+/* SWS_UOP_TO_U32: cast pixel values to SWS_PIXEL_U32 */
+/* SWS_UOP_TO_F32: cast pixel values to SWS_PIXEL_F32 */
 
 static void asmgen_op_convert(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                               SwsAArch64OpRegs *regs)
@@ -721,9 +711,8 @@ static void asmgen_op_convert(SwsAArch64Context *s, const SwsAArch64OpImplParams
 }
 
 /*********************************************************************/
-/* expand integers to the full range */
-/* SWS_UOP_EXPAND_PAIR */
-/* SWS_UOP_EXPAND_QUAD */
+/* SWS_UOP_EXPAND_PAIR: expand bytes in pairs (16 bit) */
+/* SWS_UOP_EXPAND_QUAD: expand bytes in quads (32 bit) */
 
 static void asmgen_op_expand(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
@@ -765,8 +754,7 @@ static void asmgen_op_expand(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
-/* numeric minimum */
-/* SWS_UOP_MIN */
+/* SWS_UOP_MIN: min(x, vec4) on masked components */
 
 static void asmgen_op_min(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                           SwsAArch64OpRegs *regs)
@@ -788,8 +776,7 @@ static void asmgen_op_min(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
 }
 
 /*********************************************************************/
-/* numeric maximum */
-/* SWS_UOP_MAX */
+/* SWS_UOP_MAX: max(x, vec4) on masked components */
 
 static void asmgen_op_max(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                           SwsAArch64OpRegs *regs)
@@ -811,8 +798,7 @@ static void asmgen_op_max(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
 }
 
 /*********************************************************************/
-/* multiplication by scalar */
-/* SWS_UOP_SCALE */
+/* SWS_UOP_SCALE: multiply masked components by scalar */
 
 static void asmgen_op_scale(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                             SwsAArch64OpRegs *regs)
@@ -834,9 +820,8 @@ static void asmgen_op_scale(SwsAArch64Context *s, const SwsAArch64OpImplParams *
 }
 
 /*********************************************************************/
-/* generalized linear affine transform */
-/* SWS_UOP_LINEAR */
-/* SWS_UOP_LINEAR_FMA */
+/* SWS_UOP_LINEAR:     mask = non-trivial output rows */
+/* SWS_UOP_LINEAR_FMA: with SWS_UOP_FLAG_FMA */
 
 static void linear_pass(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                         SwsAArch64OpRegs *regs, bool vh_pass)
@@ -921,8 +906,7 @@ static void asmgen_op_linear(SwsAArch64Context *s, const SwsAArch64OpImplParams 
 }
 
 /*********************************************************************/
-/* add dithering noise */
-/* SWS_UOP_DITHER */
+/* SWS_UOP_DITHER: mask = components to dither */
 
 static void asmgen_op_dither(SwsAArch64Context *s, const SwsAArch64OpImplParams *p,
                              SwsAArch64OpRegs *regs)
