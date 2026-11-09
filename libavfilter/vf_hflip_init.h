@@ -87,6 +87,30 @@ static void hflip_qword_c(const uint8_t *ssrc, uint8_t *ddst, int w)
         dst[j] = src[-j];
 }
 
+static void hflip_b96_c(const uint8_t *src, uint8_t *dst, int w)
+{
+    const uint8_t *in  = src;
+    uint8_t *out = dst;
+
+    for (int j = 0; j < w; j++, out += 12, in -= 12) {
+        int64_t v1 = AV_RB48(in);
+        int64_t v2 = AV_RB48(in+6);
+
+        AV_WB48(out, v1);
+        AV_WB48(out+6, v2);
+    }
+}
+
+static void hflip_dqword_c(const uint8_t *src, uint8_t *dst, int w)
+{
+    const uint8_t *in  = src;
+    uint8_t *out = dst;
+
+    for (int j = 0; j < w; j++, out += 16, in -= 16) {
+        AV_COPY128U(out, in);
+    }
+}
+
 av_unused static int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
 {
     for (int i = 0; i < nb_planes; i++) {
@@ -98,6 +122,8 @@ av_unused static int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
         case 4: s->flip_line[i] = hflip_dword_c; break;
         case 6: s->flip_line[i] = hflip_b48_c;   break;
         case 8: s->flip_line[i] = hflip_qword_c; break;
+        case 12: s->flip_line[i] = hflip_b96_c; break;
+        case 16: s->flip_line[i] = hflip_dqword_c; break;
         default:
             return AVERROR_BUG;
         }
