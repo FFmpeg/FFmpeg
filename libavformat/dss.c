@@ -57,6 +57,8 @@ typedef struct DSSDemuxContext {
     int64_t block_pos;      /* offset of the current audio block header */
     int frames_left;        /* frames still to come from that block */
     int dss_sp_swap_byte;
+    AVPacket *seek_pkt;     /* frame a seek stopped at, returned next */
+    int seek_end;           /* then what ended the read past it, if anything */
     int64_t frames_read;    /* index of the next frame */
 
     int dss_header_size;
@@ -128,6 +130,24 @@ static int dss_read_metadata_string(AVFormatContext *s, unsigned int offset,
 
 static int dss_read_packet(AVFormatContext *s, AVPacket *pkt);
 
+/* Go back to the first audio block, where reading starts after the header. */
+static int dss_rewind(AVFormatContext *s)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+    int64_t ret = avio_seek(s->pb, ctx->dss_header_size, SEEK_SET);
+
+    if (ret < 0)
+        return (int)ret;
+
+    ctx->swap        = 0;
+    ctx->frames_left = 0;
+    ctx->frames_read = 0;
+    ctx->dss_sp_swap_byte = -1;
+    /* dss_next_block steps forward first, so start one block short. */
+    ctx->block_pos   = ctx->dss_header_size - DSS_BLOCK_SIZE;
+    return 0;
+}
+
 /* Frames in the file, or 0 if the input cannot seek. Each block header states
  * how many frames start in the block, but the reader takes them from where the
  * first one starts, on into the next blocks when the block states more than it
@@ -135,7 +155,6 @@ static int dss_read_packet(AVFormatContext *s, AVPacket *pkt);
  * frames are counted by reading them all. */
 static int64_t dss_count_frames(AVFormatContext *s)
 {
-    DSSDemuxContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t frames = 0;
     int ret;
@@ -143,15 +162,13 @@ static int64_t dss_count_frames(AVFormatContext *s)
 
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
+    if ((ret = dss_rewind(s)) < 0)
+        return ret;
 
     pkt = av_packet_alloc();
     if (!pkt)
         return AVERROR(ENOMEM);
 
-    /* dss_next_block steps forward first, so start one block short. */
-    ctx->block_pos        = ctx->dss_header_size - DSS_BLOCK_SIZE;
-    ctx->frames_left      = 0;
-    ctx->dss_sp_swap_byte = -1;
     while ((ret = dss_read_packet(s, pkt)) >= 0 || ret == FFERROR_REDO) {
         if (ret >= 0)
             frames++;
@@ -171,7 +188,7 @@ static int dss_read_header(AVFormatContext *s)
     DSSDemuxContext *ctx = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int64_t ret64, frames;
+    int64_t frames;
     int ret, version;
 
     st = avformat_new_stream(s, NULL);
@@ -231,19 +248,7 @@ static int dss_read_header(AVFormatContext *s)
         st->duration  = frames * (ctx->audio_codec == DSS_ACODEC_G723_1 ? 240 : 264);
     }
 
-    /* Jump over header */
-
-    if ((ret64 = avio_seek(pb, ctx->dss_header_size, SEEK_SET)) < 0)
-        return (int)ret64;
-
-    ctx->swap        = 0;
-    ctx->frames_left = 0;
-    ctx->frames_read = 0;
-    ctx->dss_sp_swap_byte = -1;
-    /* dss_next_block steps forward first, so start one block short. */
-    ctx->block_pos   = ctx->dss_header_size - DSS_BLOCK_SIZE;
-
-    return 0;
+    return dss_rewind(s);
 }
 
 static int dss_seek_block(AVFormatContext *s, int64_t pos)
@@ -519,47 +524,81 @@ static int dss_read_packet(AVFormatContext *s, AVPacket *pkt)
         return dss_723_1_read_packet(s, pkt);
 }
 
+/* Return the frame a seek stopped at, and if the read ended after it, what
+ * ended it; then go on reading. */
+static int dss_read_next_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+
+    if (ctx->seek_pkt && ctx->seek_pkt->size) {
+        av_packet_move_ref(pkt, ctx->seek_pkt);
+        return 0;
+    }
+    if (ctx->seek_end) {
+        int ret = ctx->seek_end;
+
+        ctx->seek_end = 0;
+        return ret;
+    }
+    return dss_read_packet(s, pkt);
+}
+
+/* Read from the first frame up to the one that holds the timestamp, and keep
+ * that one to be returned next, or past the end the last one. Only reading
+ * tells where the frames are, as for the duration: a block that states more
+ * frames than it holds sends the reader on into the next blocks, and a frame
+ * that does not parse ends the stream. So the frame found, its timestamp and
+ * the frames after it are those of a read from the start. Like opening the
+ * file, this reads the input up to the target. */
 static int dss_read_seek(AVFormatContext *s, int stream_index,
                          int64_t timestamp, int flags)
 {
     DSSDemuxContext *ctx = s->priv_data;
-    int samples = ctx->audio_codec == DSS_ACODEC_G723_1 ? 240 : 264;
-    int64_t ret, seekto, target = timestamp / samples, frames = 0;
-    uint8_t header[DSS_AUDIO_BLOCK_HEADER_SIZE];
-    int count;
+    AVPacket *pkt;
+    int ret;
 
-    /* Frame sizes vary, and a block can hold fewer frames than would fit, so
-     * find the block from the per-block frame counts, taken as in
-     * dss_next_block(). */
-    for (seekto = ctx->dss_header_size; ; seekto += DSS_BLOCK_SIZE) {
-        ret = avio_seek(s->pb, seekto, SEEK_SET);
-        if (ret >= 0)
-            ret = ffio_read_size(s->pb, header, DSS_AUDIO_BLOCK_HEADER_SIZE);
-        if (ret < 0) {
-            if (s->pb->error < 0 && s->pb->error != AVERROR_EOF)
-                return s->pb->error;
-            /* Past the end: scan again for the block with the last frame. */
-            if (!frames)
-                return ret;
-            target = frames - 1;
-            frames = 0;
-            seekto = ctx->dss_header_size - DSS_BLOCK_SIZE;
+    if (!ctx->seek_pkt && !(ctx->seek_pkt = av_packet_alloc()))
+        return AVERROR(ENOMEM);
+    av_packet_unref(ctx->seek_pkt);
+    ctx->seek_end = 0;
+    if ((ret = dss_rewind(s)) < 0)
+        return ret;
+
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return AVERROR(ENOMEM);
+
+    while ((ret = dss_read_packet(s, pkt)) >= 0 || ret == FFERROR_REDO) {
+        if (ret < 0)
             continue;
-        }
-        count = dss_block_frames(header);
-        if (frames + count > target)
+        av_packet_unref(ctx->seek_pkt);
+        av_packet_move_ref(ctx->seek_pkt, pkt);
+        if (ctx->seek_pkt->pts + ctx->seek_pkt->duration > timestamp)
             break;
-        frames += count;
     }
+    av_packet_free(&pkt);
 
-    ctx->frames_read = frames;
-    ctx->swap        = !!(header[0] & 0x80);
-    ctx->frames_left = 0;
-    ctx->block_pos   = seekto - DSS_BLOCK_SIZE;
-    ctx->dss_sp_swap_byte = -1;
-    return 0;
+    if (ret < 0) {
+        if (s->pb->error < 0 && s->pb->error != AVERROR_EOF)
+            ret = s->pb->error;
+        else if ((ret == AVERROR_EOF || ret == AVERROR_INVALIDDATA) &&
+                 ctx->seek_pkt->size) {
+            ctx->seek_end = ret;
+            ret = 0;
+        }
+        if (ret < 0)
+            av_packet_unref(ctx->seek_pkt);
+    }
+    return ret;
 }
 
+static int dss_read_close(AVFormatContext *s)
+{
+    DSSDemuxContext *ctx = s->priv_data;
+
+    av_packet_free(&ctx->seek_pkt);
+    return 0;
+}
 
 const FFInputFormat ff_dss_demuxer = {
     .p.name         = "dss",
@@ -569,6 +608,7 @@ const FFInputFormat ff_dss_demuxer = {
     .priv_data_size = sizeof(DSSDemuxContext),
     .read_probe     = dss_probe,
     .read_header    = dss_read_header,
-    .read_packet    = dss_read_packet,
+    .read_packet    = dss_read_next_packet,
     .read_seek      = dss_read_seek,
+    .read_close     = dss_read_close,
 };
