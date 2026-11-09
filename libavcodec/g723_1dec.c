@@ -586,16 +586,40 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
 static void formant_filter(const int16_t *fir_coef, const int16_t *iir_coef,
                            const int16_t *src, int *dest)
 {
+    int16_t rounded_buf[LPC_ORDER + SUBFRAME_LEN];
+    int16_t *rounded = rounded_buf + LPC_ORDER;
+    int fir_sum = 0, iir_sum = 0, src_max = 0, out_max = 0;
+
+    for (int n = 1; n <= LPC_ORDER; n++) {
+        fir_sum    += FFABS(fir_coef[n - 1]);
+        iir_sum    += FFABS(iir_coef[n - 1]);
+        rounded[-n] = av_sat_add32(dest[-n], 1 << 15) >> 16;
+        out_max     = FFMAX(out_max, FFABS(rounded[-n]));
+    }
+    for (int m = -LPC_ORDER; m < SUBFRAME_LEN; m++)
+        src_max = FFMAX(src_max, FFABS(src[m]));
+
     for (int m = 0; m < SUBFRAME_LEN; m++) {
         int sum = src[m] * (1 << 14);
 
-        for (int n = 1; n <= LPC_ORDER; n++)
-            sum = av_sat_dsub32(sum, fir_coef[n - 1] * src[m - n]);
-        for (int n = 1; n <= LPC_ORDER; n++)
-            sum = av_sat_dadd32(sum, iir_coef[n - 1] *
-                                     (av_sat_add32(dest[m - n], 1 << 15) >> 16));
+        /* The reference saturates after every product, which only matters
+         * if the absolute values of the terms can add up to 32 bits. */
+        if ((int64_t)src_max * ((1 << 14) + 2 * fir_sum) +
+            (int64_t)out_max * 2 * iir_sum <= INT32_MAX) {
+            for (int n = 1; n <= LPC_ORDER; n++)
+                sum -= 2 * (fir_coef[n - 1] * src[m - n]);
+            for (int n = 1; n <= LPC_ORDER; n++)
+                sum += 2 * (iir_coef[n - 1] * rounded[m - n]);
+        } else {
+            for (int n = 1; n <= LPC_ORDER; n++)
+                sum = av_sat_dsub32(sum, fir_coef[n - 1] * src[m - n]);
+            for (int n = 1; n <= LPC_ORDER; n++)
+                sum = av_sat_dadd32(sum, iir_coef[n - 1] * rounded[m - n]);
+        }
 
-        dest[m] = av_clipl_int32((int64_t)sum * 4);
+        dest[m]    = av_clipl_int32((int64_t)sum * 4);
+        rounded[m] = av_sat_add32(dest[m], 1 << 15) >> 16;
+        out_max    = FFMAX(out_max, FFABS(rounded[m]));
     }
 }
 
@@ -928,14 +952,30 @@ static void generate_noise(G723_1_ChannelContext *p)
 static void lp_synthesis_filter(int16_t *out, const int16_t *lpc,
                                 const int16_t *in)
 {
+    int lpc_sum = 0, out_max = 0;
+
+    for (int i = 0; i < LPC_ORDER; i++) {
+        lpc_sum += FFABS(lpc[i]);
+        out_max  = FFMAX(out_max, FFABS(out[-1 - i]));
+    }
+
     for (int n = 0; n < SUBFRAME_LEN; n++) {
         int sum = in[n] * (1 << 13);
 
-        for (int i = 0; i < LPC_ORDER; i++)
-            sum = av_sat_dsub32(sum, lpc[i] * out[n - 1 - i]);
+        /* As in formant_filter(): the reference saturates after every
+         * product, which only matters if the terms can add up to 32 bits. */
+        if ((int64_t)FFABS(in[n]) * (1 << 13) +
+            (int64_t)out_max * 2 * lpc_sum <= INT32_MAX) {
+            for (int i = 0; i < LPC_ORDER; i++)
+                sum -= 2 * (lpc[i] * out[n - 1 - i]);
+        } else {
+            for (int i = 0; i < LPC_ORDER; i++)
+                sum = av_sat_dsub32(sum, lpc[i] * out[n - 1 - i]);
+        }
 
-        sum    = av_clipl_int32((int64_t)sum * 4);
-        out[n] = av_sat_add32(sum, 1 << 15) >> 16;
+        sum     = av_clipl_int32((int64_t)sum * 4);
+        out[n]  = av_sat_add32(sum, 1 << 15) >> 16;
+        out_max = FFMAX(out_max, FFABS(out[n]));
     }
 }
 
