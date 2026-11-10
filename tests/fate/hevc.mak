@@ -381,6 +381,11 @@ fate-hevc-12bit-qp74: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/12bit-444-qp74.he
 fate-hevc-12bit-qp75: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/12bit-444-qp75.hevc -pix_fmt yuv444p12le -vf scale
 FATE_HEVC-$(call FRAMEMD5, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += fate-hevc-12bit-qp74 fate-hevc-12bit-qp75
 
+# Several slices per tile: the slices are collected and decoded in CTB row order.
+fate-hevc-tile-row-order-multislice: CMD = framecrc -tile_interleave 1 -i $(TARGET_SAMPLES)/hevc/tile_row_order_multislice.hevc -pix_fmt yuv420p
+fate-hevc-tile-row-order-multislice: THREADS = 2
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-tile-row-order-multislice
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
