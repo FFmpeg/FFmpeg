@@ -107,6 +107,24 @@ FATE_FFMPEG-$(call FILTERDEMDEC, AMIX ARESAMPLE SINE, RAWVIDEO, \
 fate-shortest: tests/data/vsynth1.yuv
 fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
 
+# -shortest used to stall when the audio frames reaching the sync queue were
+# smaller than the encoder frame size: the audio FIFO grew until
+# av_fifo_write() returned ENOSPC. Both sources share one lavfi input:
+# video produces two frames, but input EOF waits for the audio sink too,
+# so audio can run ahead without -re. d=45 (360000 frames at n=1) leaves
+# room for frames drained by the heartbeat over the 1 MiB / sizeof(void*)
+# FIFO limit (262144 entries on 32-bit, 131072 on 64-bit).
+FATE_FFMPEG-$(call ALLYES, LAVFI_INDEV COLOR_FILTER ANULLSRC_FILTER \
+                           ARESAMPLE_FILTER AFORMAT_FILTER \
+                           FORMAT_FILTER PCM_U8_DECODER \
+                           WRAPPED_AVFRAME_DECODER MPEG4_ENCODER \
+                           AAC_ENCODER NULL_MUXER) \
+                           += fate-ffmpeg-shortest-small-audio-frames
+fate-ffmpeg-shortest-small-audio-frames: CMP = null
+fate-ffmpeg-shortest-small-audio-frames: CMD = ffmpeg -auto_conversion_filters \
+    -f lavfi -i "color=s=16x16:r=1:d=2[out0];anullsrc=r=8000:cl=mono:n=1:d=45[out1]" \
+    -map 0:v -map 0:a -c:v mpeg4 -c:a aac -shortest -shortest_buf_duration 0.1 -f null -
+
 # test interleaving video with a sparse subtitle stream
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MATROSKA,, COLOR_FILTER VOBSUB_DEMUXER \
                            RAWVIDEO_ENCODER MATROSKA_MUXER) += fate-shortest-sub
