@@ -838,6 +838,7 @@ library:
 @item SoX native format         @tab X @tab X
 @item SUN AU format             @tab X @tab X
 @item SUP raw PGS subtitles     @tab X @tab X
+@item Super Audio CD (SACD)     @tab   @tab X
 @item SVAG                      @tab   @tab X
     @tab Audio format used in Konami PS2 games.
 @item TDSC                      @tab   @tab X

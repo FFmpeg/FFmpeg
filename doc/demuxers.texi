@@ -1151,6 +1151,18 @@ Note that the SCC format does not support all of the possible CC extensions
 that can be stored in RCWT (such as EIA-708).
 @end itemize
 
+@section sacd
+
+Super Audio CD (SACD) demuxer.
+
+It reads a disc image or a device. The multi channel and the 2-channel stereo
+version of a disc are programs with one audio stream each. The chapters are
+the tracks of the first program.
+
+Images with 2048 bytes per sector are detected automatically. Images that
+hold the raw sectors of 2064 bytes need the format to be forced with
+@code{-f sacd}, or a @option{formatprobesize} of at least 2M.
+
 @section sbg
 
 SBaGen script demuxer.
