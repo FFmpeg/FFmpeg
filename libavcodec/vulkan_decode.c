@@ -733,12 +733,6 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
                                      AVVulkanDeviceContext *hwctx,
                                      FFVulkanFunctions *vk,
                                      const FFVulkanDecodeDescriptor *vk_desc,
-                                     VkVideoDecodeH264CapabilitiesKHR *h264_caps,
-                                     VkVideoDecodeH265CapabilitiesKHR *h265_caps,
-#if CONFIG_VP9_VULKAN_HWACCEL
-                                     VkVideoDecodeVP9CapabilitiesKHR *vp9_caps,
-#endif
-                                     VkVideoDecodeAV1CapabilitiesKHR *av1_caps,
                                      VkVideoCapabilitiesKHR *caps,
                                      VkVideoDecodeCapabilitiesKHR *dec_caps,
                                      int cur_profile)
@@ -759,7 +753,6 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
         return AVERROR(EINVAL);
 
     if (avctx->codec_id == AV_CODEC_ID_H264) {
-        dec_caps->pNext = h264_caps;
         usage->pNext = h264_profile;
         h264_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
 
@@ -775,19 +768,16 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
             h264_profile->pictureLayout =
                 VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
     } else if (avctx->codec_id == AV_CODEC_ID_H265) {
-        dec_caps->pNext = h265_caps;
         usage->pNext = h265_profile;
         h265_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR;
         h265_profile->stdProfileIdc = cur_profile;
 #if CONFIG_VP9_VULKAN_HWACCEL
     } else if (avctx->codec_id == AV_CODEC_ID_VP9) {
-        dec_caps->pNext = vp9_caps;
         usage->pNext = vp9_profile;
         vp9_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR;
         vp9_profile->stdProfile = cur_profile;
 #endif
     } else if (avctx->codec_id == AV_CODEC_ID_AV1) {
-        dec_caps->pNext = av1_caps;
         usage->pNext = av1_profile;
         av1_profile->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;
         av1_profile->stdProfile = cur_profile;
@@ -822,6 +812,12 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
 
     return vk->GetPhysicalDeviceVideoCapabilitiesKHR(hwctx->phys_dev, profile,
                                                      caps);
+}
+
+static int profile_unsupported(VkResult ret)
+{
+    return ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
+           ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR;
 }
 
 static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_ref,
@@ -883,18 +879,20 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                    avctx->codec_id == AV_CODEC_ID_AV1  ? STD_VIDEO_AV1_PROFILE_MAIN :
                    0;
 
-    ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc,
-                               &h264_caps,
-                               &h265_caps,
+    if (avctx->codec_id == AV_CODEC_ID_H264)
+        dec_caps->pNext = &h264_caps;
+    else if (avctx->codec_id == AV_CODEC_ID_H265)
+        dec_caps->pNext = &h265_caps;
 #if CONFIG_VP9_VULKAN_HWACCEL
-                               &vp9_caps,
+    else if (avctx->codec_id == AV_CODEC_ID_VP9)
+        dec_caps->pNext = &vp9_caps;
 #endif
-                               &av1_caps,
-                               caps,
-                               dec_caps,
+    else if (avctx->codec_id == AV_CODEC_ID_AV1)
+        dec_caps->pNext = &av1_caps;
+
+    ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc, caps, dec_caps,
                                cur_profile);
-    if ((ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
-         ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR) &&
+    if (profile_unsupported(ret) &&
         avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH &&
         avctx->profile != base_profile) {
         av_log(avctx, AV_LOG_VERBOSE, "%s profile %s not supported, attempting "
@@ -903,20 +901,11 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                avcodec_profile_name(avctx->codec_id, cur_profile),
                avcodec_profile_name(avctx->codec_id, base_profile));
         cur_profile = base_profile;
-        ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc,
-                                   &h264_caps,
-                                   &h265_caps,
-#if CONFIG_VP9_VULKAN_HWACCEL
-                                   &vp9_caps,
-#endif
-                                   &av1_caps,
-                                   caps,
-                                   dec_caps,
-                                   cur_profile);
+        ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc, caps,
+                                   dec_caps, cur_profile);
     }
 
-    if (ret == VK_ERROR_VIDEO_PROFILE_OPERATION_NOT_SUPPORTED_KHR ||
-        ret == VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR) {
+    if (profile_unsupported(ret)) {
         av_log(avctx, AV_LOG_VERBOSE, "Unable to initialize video session: "
                "%s profile \"%s\" not supported!\n",
                avcodec_get_name(avctx->codec_id),
