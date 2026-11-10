@@ -253,13 +253,12 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
             if (list < sl->list_count && i < sl->ref_count[list]) {
                 const H264Picture *r = sl->ref_list[list][i].parent;
                 unsigned plane;
-                unsigned index;
+                unsigned index = ff_dxva2_get_surface_index(avctx, ctx, r->f, 0);
+                unsigned flag = sl->ref_list[list][i].reference == PICT_BOTTOM_FIELD;
                 if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
-                    index = ff_dxva2_get_surface_index(avctx, ctx, r->f, 0);
+                    fill_picture_entry(&slice->RefPicList[list][i], index, flag);
                 else
-                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, r->f, 0));
-                fill_picture_entry(&slice->RefPicList[list][i], index,
-                                   sl->ref_list[list][i].reference == PICT_BOTTOM_FIELD);
+                    slice->RefPicList[list][i].bPicEntry = get_refpic_index(pp, index) | (flag << 7);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
                     if (plane == 0 && sl->pwt.luma_weight_flag[list]) {
