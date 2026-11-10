@@ -569,8 +569,10 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
         return AVERROR(ENOMEM);
 
     while ((ret = dss_read_packet(s, pkt)) >= 0 || ret == FFERROR_REDO) {
-        if (ret < 0)
+        if (ret < 0) {
+            av_packet_unref(pkt);
             continue;
+        }
         av_packet_unref(ctx->seek_pkt);
         av_packet_move_ref(ctx->seek_pkt, pkt);
         if (ctx->seek_pkt->pts + ctx->seek_pkt->duration > timestamp)
