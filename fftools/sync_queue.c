@@ -298,8 +298,18 @@ static int overflow_heartbeat(SyncQueue *sq, int stream_idx)
 
     /* get the chosen stream's tail timestamp */
     for (size_t i = 0; tail_ts == AV_NOPTS_VALUE &&
-                       av_container_fifo_peek(st->fifo, (void**)&frame, i) >= 0; i++)
-        tail_ts = frame_end(sq, frame, 0);
+                       av_container_fifo_peek(st->fifo, (void**)&frame, i) >= 0; i++) {
+        int nb_samples = 0;
+
+        /* Use the chunk end from receive_for_stream() only when the queued
+         * frame is shorter than the encoder frame size; otherwise keep the
+         * frame's own end timestamp. */
+        if (sq->type == SYNC_QUEUE_FRAMES &&
+            frame.f->nb_samples < st->frame_samples)
+            nb_samples = st->frame_samples;
+
+        tail_ts = frame_end(sq, frame, nb_samples);
+    }
 
     /* overflow triggers when the tail is over specified duration behind the head */
     if (tail_ts == AV_NOPTS_VALUE || tail_ts >= st->head_ts ||
