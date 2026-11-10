@@ -251,6 +251,26 @@ static int dss_read_header(AVFormatContext *s)
     return dss_rewind(s);
 }
 
+/* A seek callback can report an operational error without setting pb->error.
+ * Some callbacks also reject positions at or past EOF. Preserve that case
+ * when the input size establishes that there is no data at the target. */
+static int dss_seek_to(AVIOContext *pb, int64_t pos)
+{
+    int64_t ret = avio_seek(pb, pos, SEEK_SET);
+    int64_t size;
+
+    if (ret >= 0)
+        return 0;
+    if (pb->error < 0)
+        return pb->error;
+    if (ret == AVERROR_EOF)
+        return ret;
+    size = avio_size(pb);
+    if (size >= 0 && pos >= size)
+        return AVERROR_EOF;
+    return ret;
+}
+
 static int dss_seek_block(AVFormatContext *s, int64_t pos)
 {
     DSSDemuxContext *ctx = s->priv_data;
@@ -259,15 +279,13 @@ static int dss_seek_block(AVFormatContext *s, int64_t pos)
     int ret;
 
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
-        if (avio_seek(pb, keep, SEEK_SET) < 0)
-            return pb->error < 0 ? pb->error : AVERROR_EOF;
+        if ((ret = dss_seek_to(pb, keep)) < 0)
+            return ret;
         ret = ffio_ensure_seekback(pb, pos - keep + 2 * DSS_BLOCK_SIZE);
         if (ret < 0)
             return ret;
     }
-    if (avio_seek(pb, pos, SEEK_SET) < 0)
-        return pb->error < 0 ? pb->error : AVERROR_EOF;
-    return 0;
+    return dss_seek_to(pb, pos);
 }
 
 /* Read `size` bytes of frame payload, stepping over any block header met on
@@ -284,8 +302,10 @@ static int dss_read_payload(AVFormatContext *s, uint8_t *buf, int size)
         int chunk;
 
         if (off < DSS_AUDIO_BLOCK_HEADER_SIZE) {
-            if (avio_skip(pb, DSS_AUDIO_BLOCK_HEADER_SIZE - off) < 0)
-                return pb->error < 0 ? pb->error : AVERROR_EOF;
+            ret = dss_seek_to(pb, avio_tell(pb) +
+                              DSS_AUDIO_BLOCK_HEADER_SIZE - off);
+            if (ret < 0)
+                return ret;
             continue;
         }
         chunk = FFMIN(size, (int)(DSS_BLOCK_SIZE - off));
@@ -352,8 +372,9 @@ static int dss_next_block(AVFormatContext *s)
 
             if (cont >= 2)
                 at += DSS_AUDIO_BLOCK_HEADER_SIZE;
-            if (at >= ctx->dss_header_size + DSS_AUDIO_BLOCK_HEADER_SIZE &&
-                avio_seek(pb, at, SEEK_SET) >= 0) {
+            if (at >= ctx->dss_header_size + DSS_AUDIO_BLOCK_HEADER_SIZE) {
+                if ((ret = dss_seek_to(pb, at)) < 0)
+                    goto fail;
                 ctx->dss_sp_swap_byte = avio_r8(pb);
                 if (pb->error < 0) {
                     ret = pb->error;
@@ -362,11 +383,9 @@ static int dss_next_block(AVFormatContext *s)
             }
         }
 
-        if (avio_seek(pb, ctx->block_pos + DSS_AUDIO_BLOCK_HEADER_SIZE + cont,
-                      SEEK_SET) < 0) {
-            ret = pb->error < 0 ? pb->error : AVERROR_EOF;
+        ret = dss_seek_to(pb, ctx->block_pos + DSS_AUDIO_BLOCK_HEADER_SIZE + cont);
+        if (ret < 0)
             goto fail;
-        }
         return 0;
     }
 
