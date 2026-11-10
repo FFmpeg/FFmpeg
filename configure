@@ -4364,7 +4364,7 @@ avutil_extralibs="d3d11va_extralibs d3d12va_extralibs mediacodec_extralibs nanos
 ffmpeg_deps="avcodec avfilter avformat threads"
 ffmpeg_select="aformat_filter alphamerge_filter anull_filter atrim_filter crop_filter
                format_filter hflip_filter null_filter rotate_filter
-               transpose_filter trim_filter vflip_filter"
+               transpose_filter trim_filter vflip_filter xstack_filter"
 ffmpeg_suggest="ole32 psapi shell32"
 ffplay_deps="avcodec avformat avfilter swscale swresample sdl2"
 ffplay_select="crop_filter transpose_filter hflip_filter vflip_filter rotate_filter lcevc_merge_bsf"
