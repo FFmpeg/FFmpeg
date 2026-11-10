@@ -864,6 +864,9 @@ static int http_open(URLContext *h, const char *uri, int flags,
     ret = http_open_cnx(h, options, 0);
 bail_out:
     if (ret < 0) {
+#if CONFIG_ZLIB
+        inflateEnd(&s->inflate_stream);
+#endif
         av_dict_free(&s->chained_options);
         av_dict_free(&s->cookie_dict);
         av_dict_free(&s->redirect_cache);
