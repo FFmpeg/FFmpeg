@@ -99,6 +99,9 @@ fate-paf-audio: CMD = framecrc -i $(TARGET_SAMPLES)/paf/hod1-partial.paf -vn
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, WAV, ADPCM_RHETOREX) += fate-rhetorex
 fate-rhetorex: CMD = framecrc -i $(TARGET_SAMPLES)/rhetorex/rhetorex-mono-4bit-8000.wav
 
+FATE_SAMPLES_AUDIO-$(call FRAMECRC, SACD, DST, DSD_MSBF_ENCODER) += fate-sacd-dst
+fate-sacd-dst: CMD = framecrc -request_sample_fmt dsd -i $(TARGET_SAMPLES)/sacd/2ch-dsd_5ch-dst.iso -map 0:p:1 -c:a dsd_msbf
+
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, VMD, VMDAUDIO, ARESAMPLE_FILTER) += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -vn -af aresample
 

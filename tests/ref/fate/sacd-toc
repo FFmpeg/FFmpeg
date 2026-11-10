@@ -1,0 +1,68 @@
+[PROGRAM]
+program_id=1
+nb_streams=1
+TAG:title=Multi Channel
+TAG:description=MC area
+[STREAM]
+index=0
+codec_name=dst
+sample_rate=352800
+channel_layout=5.0(side)
+duration_ts=324576
+[/STREAM]
+[/PROGRAM]
+[PROGRAM]
+program_id=2
+nb_streams=1
+TAG:title=2-Channel Stereo
+TAG:description=2ch area
+TAG:copyright=(c) stereo
+[STREAM]
+index=1
+codec_name=dsd_msbf
+sample_rate=352800
+channel_layout=stereo
+duration_ts=188160
+[/STREAM]
+[/PROGRAM]
+[STREAM]
+index=0
+codec_name=dst
+sample_rate=352800
+channel_layout=5.0(side)
+duration_ts=324576
+[/STREAM]
+[STREAM]
+index=1
+codec_name=dsd_msbf
+sample_rate=352800
+channel_layout=stereo
+duration_ts=188160
+[/STREAM]
+[CHAPTER]
+id=1
+time_base=1/75
+start=0
+end=34
+TAG:title=Surround one
+[/CHAPTER]
+[CHAPTER]
+id=2
+time_base=1/75
+start=36
+end=69
+TAG:title=Surround two
+[/CHAPTER]
+[FORMAT]
+TAG:disc=1/2
+TAG:album_catalog_number=0123456789012
+TAG:catalog_number=TEST-0001
+TAG:genre=Sound Effects
+TAG:date=2026-11-10
+TAG:title=Test disc
+TAG:artist=Disc artist
+TAG:album=Test album
+TAG:album_artist=Album artist
+TAG:publisher=Album publisher
+TAG:copyright=© Album
+[/FORMAT]

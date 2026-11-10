@@ -130,6 +130,13 @@ fate-rsd-demux: CMD = crc -i $(TARGET_SAMPLES)/rsd/hum01_partial.rsd -c:a copy
 FATE_SAMPLES_DEMUX-$(call CRC, REDSPARK) += fate-redspark-demux
 fate-redspark-demux: CMD = crc -i $(TARGET_SAMPLES)/redspark/jingle04_partial.rsd -c:a copy
 
+FATE_SAMPLES_DEMUX-$(call FRAMECRC, SACD) += fate-sacd-demux
+fate-sacd-demux: CMD = framecrc -i $(TARGET_SAMPLES)/sacd/2ch-dsd_5ch-dst.iso -map 0 -c:a copy
+
+SACD_TOC_ENTRIES = format_tags:program=program_id,nb_streams:program_tags:chapter=id,time_base,start,end:chapter_tags:stream=index,codec_name,sample_rate,channel_layout,duration_ts
+FATE_FFPROBE_DEMUX-$(CONFIG_SACD_DEMUXER) += fate-sacd-toc
+fate-sacd-toc: CMD = probe -show_entries $(SACD_TOC_ENTRIES) $(TARGET_SAMPLES)/sacd/2ch-dsd_5ch-dst.iso
+
 FATE_SAMPLES_DEMUX-$(call FRAMECRC, STR) += fate-psx-str-demux
 fate-psx-str-demux: CMD = framecrc -i $(TARGET_SAMPLES)/psx-str/descent-partial.str -c copy
 
