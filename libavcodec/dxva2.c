@@ -692,6 +692,11 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
     return 0;
 }
 
+/* The H.264, HEVC and VP9 picture parameters index surfaces with 7 bits and
+ * reserve 127 as the invalid index. The AV1 specification uses 8 bits with 255
+ * as the invalid index, but indices >= 127 don't work on real hardware. */
+#define DXVA_MAX_SURFACES 127
+
 int ff_dxva2_decode_init(AVCodecContext *avctx)
 {
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
@@ -716,6 +721,13 @@ int ff_dxva2_decode_init(AVCodecContext *avctx)
 
     if (frames_ctx->format != sctx->pix_fmt) {
         av_log(avctx, AV_LOG_ERROR, "Invalid pixfmt for hwaccel!\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    if (frames_ctx->initial_pool_size > DXVA_MAX_SURFACES) {
+        av_log(avctx, AV_LOG_ERROR, "The pool has %d surfaces, DXVA can address at most %d\n",
+               frames_ctx->initial_pool_size, DXVA_MAX_SURFACES);
         ret = AVERROR(EINVAL);
         goto fail;
     }
