@@ -44,7 +44,7 @@ struct dxva2_picture_context {
 static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
                                unsigned index, unsigned flag)
 {
-    av_assert0((index&0x7f) == index && (flag&0x01) == flag);
+    av_assert0(index < 0x7f && (flag&0x01) == flag);
     pic->bPicEntry = index | (flag << 7);
 }
 
