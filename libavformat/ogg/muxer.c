@@ -699,6 +699,22 @@ static int ogg_write_header(AVFormatContext *s)
 }
 
 /**
+ * Whether Theora headers set a frame rate other than the stream time base,
+ * which packets keep across links.
+ */
+static int ogg_theora_rate_changed(const AVStream *st, const uint8_t *extradata, size_t size)
+{
+    const uint8_t *header[3];
+    int header_len[3];
+
+    if (size > INT_MAX ||
+        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0)
+        return 0;
+    return av_cmp_q(st->time_base,
+                    (AVRational){ AV_RB32(header[0] + 26), AV_RB32(header[0] + 22) }) != 0;
+}
+
+/**
  * Keep the current link when a new one cannot be started. New metadata is
  * then dropped, while new extradata ends the output, as the packets that
  * follow need its headers.
@@ -749,9 +765,18 @@ static int ogg_check_new_link(AVFormatContext *s, AVPacket *pkt)
 
     if (par->codec_id != AV_CODEC_ID_VORBIS &&
         par->codec_id != AV_CODEC_ID_FLAC &&
-        par->codec_id != AV_CODEC_ID_OPUS)
+        par->codec_id != AV_CODEC_ID_OPUS &&
+        par->codec_id != AV_CODEC_ID_THEORA)
         return ogg_skip_new_link(s, new_extradata,
-                                 "New links are only supported for vorbis, flac and opus streams");
+                                 "New links are only supported for vorbis, flac, opus and theora streams");
+
+    if (par->codec_id == AV_CODEC_ID_THEORA && !new_extradata &&
+        !(pkt->flags & AV_PKT_FLAG_KEY))
+        return ogg_skip_new_link(s, NULL, "New Theora links must start on a keyframe");
+
+    if (par->codec_id == AV_CODEC_ID_THEORA && new_extradata &&
+        ogg_theora_rate_changed(st, new_extradata, extradata_size))
+        return ogg_skip_new_link(s, new_extradata, "New Theora links cannot change the frame rate");
 
     ret = ogg_write_trailer(s);
     if (ret < 0)

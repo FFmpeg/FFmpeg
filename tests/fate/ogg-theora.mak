@@ -26,11 +26,13 @@ OGG_THEORA_DECODE = ffmpeg -i $(1) -noautoscale -fps_mode passthrough -f rawvide
 # $(1).1.ogg and $(1).2.ogg chained must give what decoding them one by one
 # does, written to $(1).raw as the reference. $(2) holds further options for
 # the second link.
-OGG_THEORA_CHAINED = \
+OGG_THEORA_CHAINED_LINKS = \
     $(call OGG_THEORA_LINK,160x120,,$(1).1.ogg) && \
     $(call OGG_THEORA_LINK,320x240,-serial_offset 1 $(2),$(1).2.ogg) && \
     { $(call OGG_THEORA_DECODE,$(1).1.ogg) && $(call OGG_THEORA_DECODE,$(1).2.ogg); } > $(1).raw && \
-    test -s $(1).raw && \
+    test -s $(1).raw
+OGG_THEORA_CHAINED = \
+    $(call OGG_THEORA_CHAINED_LINKS,$(1),$(2)) && \
     cat $(1).1.ogg $(1).2.ogg | $(call OGG_THEORA_DECODE,pipe:)
 
 OGG_THEORA_CHAINED_CONTENT_DEPS = LAVFI_INDEV TESTSRC_FILTER SCALE_FILTER WRAPPED_AVFRAME_DECODER RAWVIDEO_MUXER
@@ -66,6 +68,20 @@ fate-ogg-theora-chained-large-comment: CLEANFILES = $(addprefix $(OGG_THEORA_CHA
 fate-ogg-theora-chained-large-comment: CMP = stddev
 fate-ogg-theora-chained-large-comment: CMP_TARGET = 0
 fate-ogg-theora-chained-large-comment: FUZZ = 0
+
+# The chain stream copied must decode as its links do.
+OGG_THEORA_CHAINED_COPY_LINKS = tests/data/fate/ogg-theora-chained-copy.links
+FATE_OGG_THEORA_CONTENT-$(call TRANSCODE, LIBTHEORA THEORA, OGG, $(OGG_THEORA_CHAINED_CONTENT_DEPS)) += fate-ogg-theora-chained-copy
+fate-ogg-theora-chained-copy: CMD = \
+    $(call OGG_THEORA_CHAINED_LINKS,$(OGG_THEORA_CHAINED_COPY_LINKS)) && \
+    cat $(OGG_THEORA_CHAINED_COPY_LINKS).1.ogg $(OGG_THEORA_CHAINED_COPY_LINKS).2.ogg | \
+    ffmpeg -i pipe: -c copy -fflags +bitexact -f ogg -y $(OGG_THEORA_CHAINED_COPY_LINKS).copy.ogg && \
+    $(call OGG_THEORA_DECODE,$(OGG_THEORA_CHAINED_COPY_LINKS).copy.ogg)
+fate-ogg-theora-chained-copy: REF = $(OGG_THEORA_CHAINED_COPY_LINKS).raw
+fate-ogg-theora-chained-copy: CLEANFILES = $(addprefix $(OGG_THEORA_CHAINED_COPY_LINKS),.1.ogg .2.ogg .copy.ogg .raw)
+fate-ogg-theora-chained-copy: CMP = stddev
+fate-ogg-theora-chained-copy: CMP_TARGET = 0
+fate-ogg-theora-chained-copy: FUZZ = 0
 
 FATE_FFMPEG += $(FATE_OGG_THEORA_CONTENT-yes)
 
