@@ -6,6 +6,6 @@ flags=--e
 cut
 flags=-b-
 flags=--e
-copy headers: different
+copy headers: same
 cut headers: different
-decoded copy: different
+decoded copy: same

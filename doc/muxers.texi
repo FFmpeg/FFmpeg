@@ -3425,6 +3425,13 @@ ffmpeg -i INPUT -f_strict experimental -syncpoints none - | processor
 
 Ogg container muxer.
 
+A new link is started on new metadata or extradata of a single Vorbis, FLAC or
+Opus stream.
+Other outputs ignore new metadata.
+New extradata ends them at the current link, and the packets that follow are
+dropped.
+New extradata on the first packet is ignored.
+
 @table @option
 @item -page_duration @var{duration}
 Preferred page duration, in microseconds. The muxer will attempt to create
@@ -3446,8 +3453,8 @@ number, without ruling it out.
 Links with identical headers and tags always share one, which separately muxed
 outputs avoid with explicit offsets.
 
-A link the muxer starts itself on new stream metadata keeps the offset of the
-link before it.
+A link the muxer starts itself on new stream metadata or extradata keeps the
+offset of the link before it.
 With an explicit offset it then reuses its serial number.
 With the default it does so when its headers and tags are unchanged.
 

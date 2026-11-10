@@ -80,6 +80,7 @@ typedef struct OGGContext {
     int64_t pref_duration;      ///< preferred page duration (0 => fill all segments)
     int serial_offset;
     int failed; // if true all packet submission will fail.
+    int ended;  ///< a new link could not be started, the packets that follow are dropped
 } OGGContext;
 
 #define OFFSET(x) offsetof(OGGContext, x)
@@ -697,42 +698,82 @@ static int ogg_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int ogg_check_new_metadata(AVFormatContext *s, AVPacket *pkt)
+/**
+ * Keep the current link when a new one cannot be started. New metadata is
+ * then dropped, while new extradata ends the output, as the packets that
+ * follow need its headers.
+ */
+static int ogg_skip_new_link(AVFormatContext *s, const uint8_t *new_extradata,
+                             const char *reason)
+{
+    OGGContext *ogg = s->priv_data;
+
+    if (!new_extradata) {
+        av_log(s, AV_LOG_WARNING, "%s: new metadata ignored\n", reason);
+        return 0;
+    }
+
+    av_log(s, AV_LOG_WARNING, "%s: ending the output at the current link\n", reason);
+    ogg->ended = 1;
+    return 0;
+}
+
+static int ogg_check_new_link(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0;
-    size_t size;
+    size_t metadata_size, extradata_size;
     OGGContext *oggcontext = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
+    AVCodecParameters *par = st->codecpar;
     OGGStreamContext *oggstream = st->priv_data;
-    const uint8_t *side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &size);
+    const uint8_t *side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &metadata_size);
+    const uint8_t *new_extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &extradata_size);
 
-    if (!side_metadata)
+    if (new_extradata && extradata_size == par->extradata_size &&
+        !memcmp(new_extradata, par->extradata, extradata_size))
+        new_extradata = NULL;
+
+    if (!side_metadata && !new_extradata)
         return 0;
 
-    // Don't restart on first packet.
-    if (!oggstream->packet_seen)
-        return 0;
-
-    if (s->nb_streams > 1) {
-        av_log(s, AV_LOG_WARNING, "Multiple streams present: cannot insert new metadata!\n");
-        return 0;
-    }
-
-    if (st->codecpar->codec_id != AV_CODEC_ID_VORBIS &&
-        st->codecpar->codec_id != AV_CODEC_ID_FLAC &&
-        st->codecpar->codec_id != AV_CODEC_ID_OPUS) {
-        av_log(s, AV_LOG_WARNING, "Inserting metadata is only supported for vorbis, flac and opus streams!\n");
+    /* The headers of the first link are written from codecpar before any packet. */
+    if (!oggstream->packet_seen) {
+        if (new_extradata)
+            av_log(s, AV_LOG_WARNING, "New extradata on the first packet ignored: "
+                   "the stream headers are already written!\n");
         return 0;
     }
+
+    if (s->nb_streams > 1)
+        return ogg_skip_new_link(s, new_extradata, "Multiple streams present");
+
+    if (par->codec_id != AV_CODEC_ID_VORBIS &&
+        par->codec_id != AV_CODEC_ID_FLAC &&
+        par->codec_id != AV_CODEC_ID_OPUS)
+        return ogg_skip_new_link(s, new_extradata,
+                                 "New links are only supported for vorbis, flac and opus streams");
 
     ret = ogg_write_trailer(s);
     if (ret < 0)
         goto end;
 
-    av_dict_free(&st->metadata);
-    ret = av_packet_unpack_dictionary(side_metadata, size, &st->metadata);
-    if (ret < 0)
-        goto end;
+    if (side_metadata) {
+        av_dict_free(&st->metadata);
+        ret = av_packet_unpack_dictionary(side_metadata, metadata_size, &st->metadata);
+        if (ret < 0)
+            goto end;
+    }
+
+    if (new_extradata) {
+        if (extradata_size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
+        ret = ff_alloc_extradata(par, extradata_size);
+        if (ret < 0)
+            goto end;
+        memcpy(par->extradata, new_extradata, extradata_size);
+    }
 
     ret = ogg_init(s);
     if (ret < 0)
@@ -755,9 +796,11 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
     if (oggcontext->failed)
         return AVERROR_INVALIDDATA;
+    if (oggcontext->ended)
+        return 0;
 
-    ret = ogg_check_new_metadata(s, pkt);
-    if (ret < 0)
+    ret = ogg_check_new_link(s, pkt);
+    if (ret < 0 || oggcontext->ended)
         return ret;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
@@ -773,10 +816,8 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         }
         granule = (oggstream->last_kf_pts<<oggstream->kfgshift) | pframe_count;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS)
-        granule = pkt->pts + pkt->duration +
-                  av_rescale_q(st->codecpar->initial_padding,
-                               (AVRational){ 1, st->codecpar->sample_rate },
-                               st->time_base);
+        /* The pre-skip of the link's OpusHead, in the 48 kHz time base. */
+        granule = pkt->pts + pkt->duration + AV_RL16(oggstream->header[0] + 10);
     else if (st->codecpar->codec_id == AV_CODEC_ID_VP8) {
         int64_t pts, invcnt, dist;
         int visible;
