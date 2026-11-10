@@ -37,6 +37,21 @@
 
 #if HAVE_INLINE_ASM
 
+/*
+ * refill shift = tzcnt(low) - 16
+ * low is never 0 here, so this also works on CPUs without BMI1, which
+ * execute tzcnt as bsf.
+ */
+#define BRANCHLESS_GET_CABAC_REFILL(low, tmp) \
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
+        "tzcnt  "low"       , %%ecx                                     \n\t"\
+        "bswap  "tmp"                                                   \n\t"\
+        "shr    $15         , "tmp"                                     \n\t"\
+        "sub    $16         , %%ecx                                     \n\t"\
+        "sub    $0xFFFF     , "tmp"                                     \n\t"\
+        "shl    %%cl        , "tmp"                                     \n\t"\
+        "add    "tmp"       , "low"                                     \n\t"
+
 #ifndef UNCHECKED_BITSTREAM_READER
 #define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
 #endif
@@ -53,21 +68,6 @@
 #define TABLES_ARG , [tables]"r"(tables)
 #define CABAC_TMP_DECL int cabac_t1, cabac_t2;
 #define CABAC_TMP_OPERANDS , [cabac_t1]"=&r"(cabac_t1), [cabac_t2]"=&r"(cabac_t2)
-
-/*
- * refill shift = tzcnt(low) - 16
- * low is never 0 here, so this also works on CPUs without BMI1, which
- * execute tzcnt as bsf.
- */
-#define BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables) \
-        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
-        "tzcnt  "low"       , %%ecx                                     \n\t"\
-        "bswap  "tmp"                                                   \n\t"\
-        "shr    $15         , "tmp"                                     \n\t"\
-        "sub    $16         , %%ecx                                     \n\t"\
-        "sub    $0xFFFF     , "tmp"                                     \n\t"\
-        "shl    %%cl        , "tmp"                                     \n\t"\
-        "add    "tmp"       , "low"                                     \n\t"
 
 #define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, t2, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
@@ -101,7 +101,7 @@
         END_CHECK(end)\
         "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables)              \
+        BRANCHLESS_GET_CABAC_REFILL(low, tmp)                                \
         "2:                                                             \n\t"
 
 #else /* ARCH_X86_64 */
@@ -142,15 +142,6 @@
 #define BRANCHLESS_GET_CABAC_RENORM(range, rangeq, norm_off, tables) \
         "movzbl "MANGLE(ff_h264_cabac_tables)"+"norm_off"("range"), %%ecx    \n\t"
 #endif /* __LZCNT__ */
-#define BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables) \
-        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
-        "tzcnt  "low"       , %%ecx                                     \n\t"\
-        "bswap  "tmp"                                                   \n\t"\
-        "shr    $15         , "tmp"                                     \n\t"\
-        "sub    $16         , %%ecx                                     \n\t"\
-        "sub    $0xFFFF     , "tmp"                                     \n\t"\
-        "shl    %%cl        , "tmp"                                     \n\t"\
-        "add    "tmp"       , "low"                                     \n\t"
 
 #define BRANCHLESS_GET_CABAC(ret, retq, statep, low, lowword, range, rangeq, tmp, tmpbyte, t1, t1q, t2, byte, end, norm_off, lps_off, mlps_off, tables) \
         "movzbl "statep"    , "ret"                                     \n\t"\
@@ -170,7 +161,7 @@
         END_CHECK(end)\
         "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        BRANCHLESS_GET_CABAC_REFILL(low, tmp, norm_off, tables)              \
+        BRANCHLESS_GET_CABAC_REFILL(low, tmp)                                \
         "2:                                                             \n\t"
 
 #endif /* ARCH_X86_64 */
