@@ -255,10 +255,12 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 unsigned plane;
                 unsigned index = ff_dxva2_get_surface_index(avctx, ctx, r->f, 0);
                 unsigned flag = sl->ref_list[list][i].reference == PICT_BOTTOM_FIELD;
-                if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
+                if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO) {
                     fill_picture_entry(&slice->RefPicList[list][i], index, flag);
-                else
-                    slice->RefPicList[list][i].bPicEntry = get_refpic_index(pp, index) | (flag << 7);
+                } else {
+                    unsigned pos = get_refpic_index(pp, index);
+                    slice->RefPicList[list][i].bPicEntry = pos == 0x7f ? 0x7f : pos | (flag << 7);
+                }
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
                     if (plane == 0 && sl->pwt.luma_weight_flag[list]) {
