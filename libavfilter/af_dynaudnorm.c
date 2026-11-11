@@ -936,7 +936,7 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     DynamicAudioNormalizerContext *s = ctx->priv;
     AVFrame *in = NULL;
-    int ret = 0, status;
+    int ret = 0, status, frame_len;
     int64_t pts;
 
     ret = av_channel_layout_copy(&s->ch_layout, &inlink->ch_layout);
@@ -946,6 +946,19 @@ static int activate(AVFilterContext *ctx)
         av_channel_layout_from_string(&s->ch_layout, s->channels_to_filter);
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
+    if (frame_len < 0)
+        return frame_len;
+    if (frame_len != s->frame_len) {
+        AVFrame *window = ff_get_audio_buffer(outlink, frame_len * 2);
+        if (!window)
+            return AVERROR(ENOMEM);
+        av_frame_free(&s->window);
+        s->window = window;
+        s->frame_len = frame_len;
+    }
+    s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
 
     if (!s->eof) {
         ret = ff_inlink_consume_samples(inlink, s->sample_advance, s->sample_advance, &in);
@@ -986,9 +999,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     DynamicAudioNormalizerContext *s = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
     int prev_filter_size = s->filter_size;
-    int frame_len, ret;
+    int ret;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
@@ -1005,18 +1017,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         }
     }
 
-    frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
-    if (frame_len < 0)
-        return frame_len;
-    if (frame_len != s->frame_len) {
-        AVFrame *window = ff_get_audio_buffer(ctx->outputs[0], frame_len * 2);
-        if (!window)
-            return AVERROR(ENOMEM);
-        av_frame_free(&s->window);
-        s->window = window;
-        s->frame_len = frame_len;
-    }
-    s->sample_advance = FFMAX(1, lrint(s->frame_len * (1. - s->overlap)));
     if (s->expr_str) {
         ret = av_expr_parse(&s->expr, s->expr_str, var_names, NULL, NULL,
                             NULL, NULL, 0, ctx);
