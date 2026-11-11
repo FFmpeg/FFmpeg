@@ -42,6 +42,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/attributes_internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
@@ -493,6 +494,9 @@ typedef struct MXFContext {
     int cbr_index;           ///< use a constant bitrate index
     uint8_t unused_tags[MXF_NUM_TAGS];  ///< local tags that we know will not be used
     MXFStreamContext timecode_track_priv;
+    PacketList anc_queue;    ///< ANC packets not yet assigned to an edit unit
+    AVPacket *anc_pkt;
+    int64_t start_pts;       ///< pts of the first displayed video frame
 } MXFContext;
 
 static void mxf_write_uuid(AVIOContext *pb, enum MXFMetadataSetType type, int value)
@@ -2955,6 +2959,11 @@ static int mxf_init(AVFormatContext *s)
     if (!av_dict_get(s->metadata, "comment_", NULL, AV_DICT_IGNORE_SUFFIX))
         mxf->store_user_comments = 0;
 
+    mxf->start_pts = AV_NOPTS_VALUE;
+    mxf->anc_pkt = av_packet_alloc();
+    if (!mxf->anc_pkt)
+        return AVERROR(ENOMEM);
+
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MXFStreamContext *sc = av_mallocz(sizeof(*sc));
@@ -3103,10 +3112,11 @@ static int mxf_init(AVFormatContext *s)
                 return -1;
             }
             if (st->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
-                char bsf_arg[64] = "";
+                // an ANC element only holds the captions of one frame
+                char bsf_arg[64] = "split=1";
                 if (mxf->time_base.num != 0 && mxf->time_base.den != 0) {
                     // frame rate is reciprocal of time base
-                    snprintf(bsf_arg, sizeof(bsf_arg), "cdp_frame_rate=%d/%d", mxf->time_base.den, mxf->time_base.num);
+                    snprintf(bsf_arg, sizeof(bsf_arg), "split=1:cdp_frame_rate=%d/%d", mxf->time_base.den, mxf->time_base.num);
                 }
                 ret = ff_stream_add_bitstream_filter(st, "eia608_to_smpte436m", bsf_arg);
                 if (ret < 0)
@@ -3559,6 +3569,8 @@ static void mxf_deinit(AVFormatContext *s)
     av_freep(&mxf->index_entries);
     av_freep(&mxf->body_partition_offset);
     av_freep(&mxf->timecode_track);
+    ff_packet_list_free(&mxf->anc_queue);
+    av_packet_free(&mxf->anc_pkt);
 }
 
 static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, int flush)
@@ -3622,16 +3634,76 @@ static int mxf_compare_timestamps(AVFormatContext *s, const AVPacket *next,
         (next->dts == pkt->dts && sc->order < sc2->order);
 }
 
-static int mxf_interleave(AVFormatContext *s, AVPacket *pkt,
-                          int flush, int has_packet)
+/**
+ * Every edit unit needs an ANC element: the queued ANC packets go in the
+ * edit unit of their pts, and the edit units without one get an empty one.
+ */
+static int mxf_interleave_anc(AVFormatContext *s, int flush)
 {
+    MXFContext *mxf = s->priv_data;
+    AVStream *st = s->streams[s->nb_streams - 1];
+    MXFStreamContext *sc = st->priv_data;
+    MXFStreamContext *video_sc = s->streams[0]->priv_data;
+    AVPacket *pkt = mxf->anc_pkt;
+    int64_t max_delay = s->max_interleave_delta > 0 ?
+        av_rescale_q(s->max_interleave_delta, AV_TIME_BASE_Q, mxf->time_base) : INT64_MAX;
     int ret;
-    if (has_packet) {
-        MXFStreamContext *sc = s->streams[pkt->stream_index]->priv_data;
+
+    // the first displayed frame is among the first video_delay + 1 packets
+    if (!flush && video_sc->pkt_cnt <= s->streams[0]->codecpar->video_delay)
+        return 0;
+    if (mxf->start_pts == AV_NOPTS_VALUE)
+        mxf->start_pts = 0;
+
+    while (sc->pkt_cnt < video_sc->pkt_cnt) {
+        PacketListEntry *pktl = mxf->anc_queue.head;
+
+        if (pktl && (pktl->pkt.pts == AV_NOPTS_VALUE ||
+                     av_rescale_q(pktl->pkt.pts, st->time_base, mxf->time_base) - mxf->start_pts <= sc->pkt_cnt)) {
+            ff_packet_list_get(&mxf->anc_queue, pkt);
+        } else if (pktl || flush || video_sc->pkt_cnt - sc->pkt_cnt > max_delay) {
+            if ((ret = av_new_packet(pkt, 2)) < 0)
+                return ret;
+            AV_WB16(pkt->data, 0); // number of ANC packets
+            pkt->stream_index = st->index;
+        } else // the ANC packet of this edit unit may still come
+            break;
         pkt->pts = pkt->dts = sc->pkt_cnt++;
         if ((ret = ff_interleave_add_packet(s, pkt, mxf_compare_timestamps)) < 0)
             return ret;
     }
+    return 0;
+}
+
+static int mxf_interleave(AVFormatContext *s, AVPacket *pkt,
+                          int flush, int has_packet)
+{
+    MXFContext *mxf = s->priv_data;
+    MXFStreamContext *video_sc = s->streams[0]->priv_data;
+    MXFStreamContext *anc_sc = s->streams[s->nb_streams - 1]->priv_data;
+    int has_anc = s->nb_streams > 1 && anc_sc->index == INDEX_S436M;
+    int ret;
+
+    if (has_packet) {
+        MXFStreamContext *sc = s->streams[pkt->stream_index]->priv_data;
+
+        if (has_anc && sc == anc_sc) {
+            if ((ret = ff_packet_list_put(&mxf->anc_queue, pkt, NULL, 0)) < 0) {
+                av_packet_unref(pkt);
+                return ret;
+            }
+        } else {
+            if (sc == video_sc && sc->pkt_cnt <= s->streams[0]->codecpar->video_delay &&
+                pkt->pts != AV_NOPTS_VALUE &&
+                (mxf->start_pts == AV_NOPTS_VALUE || pkt->pts < mxf->start_pts))
+                mxf->start_pts = pkt->pts;
+            pkt->pts = pkt->dts = sc->pkt_cnt++;
+            if ((ret = ff_interleave_add_packet(s, pkt, mxf_compare_timestamps)) < 0)
+                return ret;
+        }
+    }
+    if (has_anc && (ret = mxf_interleave_anc(s, flush)) < 0)
+        return ret;
     return mxf_interleave_get_packet(s, pkt, flush);
 }
 
