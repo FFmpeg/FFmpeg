@@ -360,7 +360,10 @@ static int setup_mb_info(AVCodecContext *ctx, x264_picture_t *pic,
     mbinfo_rects = (const AVVideoRect *)av_video_hint_rects(info);
     nb_rects = info->nb_rects;
 
-    mbinfo = av_calloc(mb_width * mb_height, sizeof(*mbinfo));
+    /* x264 rounds the macroblock row count up to an even number for
+     * interlaced and fake-interlaced encoding and reads mb_info over
+     * that grid, so size the map for it. The extra row stays 0. */
+    mbinfo = av_calloc(mb_width * FFALIGN(mb_height, 2), sizeof(*mbinfo));
     if (!mbinfo)
         return AVERROR(ENOMEM);
 
