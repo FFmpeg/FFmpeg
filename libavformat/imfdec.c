@@ -946,16 +946,8 @@ static int imf_probe(const AVProbeData *p)
 
 static int coherent_ts(int64_t ts, AVRational in_tb, AVRational out_tb)
 {
-    int dst_num;
-    int dst_den;
-    int ret;
-
-    ret = av_reduce(&dst_num, &dst_den, ts * in_tb.num * out_tb.den,
-                    in_tb.den * out_tb.num, INT64_MAX);
-    if (!ret || dst_den != 1)
-        return 0;
-
-    return 1;
+    return av_rescale_q_rnd(ts, in_tb, out_tb, AV_ROUND_DOWN) ==
+           av_rescale_q_rnd(ts, in_tb, out_tb, AV_ROUND_UP);
 }
 
 static int imf_seek(AVFormatContext *s, int stream_index, int64_t min_ts,
