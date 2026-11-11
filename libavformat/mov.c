@@ -11270,6 +11270,8 @@ static int read_image_grid(AVFormatContext *s, const HEIFGroup *grid,
 
     if (coded_width > INT_MAX || coded_height > INT_MAX)
         return AVERROR_INVALIDDATA;
+    if (coded_width == 0 || coded_height == 0)
+        return AVERROR_INVALIDDATA;
 
     tile_grid->coded_width  = coded_width;
     tile_grid->coded_height = coded_height;
