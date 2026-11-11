@@ -284,7 +284,7 @@ static int extract_header(AVCodecContext *const avctx,
             return AVERROR(ENOMEM);
 
         ham_count = 8 * (1 << s->ham);
-        s->ham_palbuf = av_malloc(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
+        s->ham_palbuf = av_mallocz(extra_space * (ham_count << !!(s->masking == MASK_HAS_MASK)) * sizeof (uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!s->ham_palbuf)
             return AVERROR(ENOMEM);
 
