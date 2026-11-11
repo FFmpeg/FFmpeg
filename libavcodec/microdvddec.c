@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
+#include "decode.h"
 
 static int indexof(const char *s, int c)
 {
@@ -283,31 +284,32 @@ static int microdvd_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
                                  int *got_sub_ptr, const AVPacket *avpkt)
 {
     AVBPrint new_line;
-    char *line = avpkt->data;
-    char *end = avpkt->data + avpkt->size;
+    char *line = (char *)ff_decode_subtitle_text(avctx, avpkt);
     FFASSDecoderContext *s = avctx->priv_data;
     struct microdvd_tag tags[sizeof(MICRODVD_TAGS) - 1] = {{0}};
 
     if (avpkt->size <= 0)
         return avpkt->size;
+    if (!line)
+        return AVERROR(ENOMEM);
 
     av_bprint_init(&new_line, 0, 2048);
 
     // subtitle content
-    while (line < end && *line) {
+    while (*line) {
 
         // parse MicroDVD tags, and open them in ASS
         line = microdvd_load_tags(tags, line);
         microdvd_open_tags(&new_line, tags);
 
         // simple copy until EOL or forced carriage return
-        while (line < end && *line && *line != '|') {
+        while (*line && *line != '|') {
             av_bprint_chars(&new_line, *line, 1);
             line++;
         }
 
         // line split
-        if (line < end && *line == '|') {
+        if (*line == '|') {
             microdvd_close_no_persistent_tags(&new_line, tags);
             av_bprintf(&new_line, "\\N");
             line++;
