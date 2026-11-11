@@ -29,7 +29,6 @@ FATE_MXF_PROBE-$(call DEMDEC, MXF, H264, H264_PARSER EXTRACT_EXTRADATA_BSF) += f
 fate-mxf-probe-h264-extradata: SRC = $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF
 fate-mxf-probe-h264-extradata: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -v 0 -fflags +discardcorrupt -select_streams v -show_entries stream=avg_frame_rate,extradata,extradata_size,extradata_hash -show_data_hash md5 -i "$(SRC)"
 
-# The companion paired-field parser fix changes the reference to 25/1.
 # Keep the truncated final packet to exercise corrupt-packet FPS accounting.
 FATE_MXF_PROBE-$(call DEMDEC, MXF, H264, H264_PARSER EXTRACT_EXTRADATA_BSF) += fate-mxf-probe-h264-corrupt
 fate-mxf-probe-h264-corrupt: SRC = $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF
