@@ -296,7 +296,6 @@ typedef struct PESContext {
     uint8_t header[MAX_PES_HEADER_SIZE];
     AVBufferRef *buffer;
     SLConfigDescr sl;
-    int merged_st;
 } PESContext;
 
 EXTERN const FFInputFormat ff_mpegts_demuxer;
@@ -2897,7 +2896,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
-                    pes->merged_st = 1;
                 }
             }
             if (!pes->st) {
@@ -2916,7 +2914,6 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
-                    pes->merged_st = 1;
                 }
             }
             if (pes && !pes->st) {
