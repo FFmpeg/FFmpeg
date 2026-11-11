@@ -1021,7 +1021,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     dc_count = AV_RL64(src + 72);
     ac_compression = AV_RL64(src + 80);
 
-    if (   compressed_size < (uint64_t)(lo_size | ac_size | dc_size | rle_csize) || compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize
+    if (   compressed_size < (uint64_t)(lo_size | ac_size | dc_size | rle_csize)
         || ac_count > (uint64_t)INT_MAX/2
     )
         return AVERROR_INVALIDDATA;
@@ -1042,7 +1042,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
 
     bytestream2_init(&gb, src + 88, compressed_size - 88);
     skip = bytestream2_get_le16(&gb);
-    if (skip < 2)
+    if (skip < 2 || compressed_size < 88LL + skip + lo_size + ac_size + dc_size + rle_csize)
         return AVERROR_INVALIDDATA;
 
     bytestream2_skip(&gb, skip - 2);
