@@ -254,7 +254,7 @@ static int extract_header(AVCodecContext *const avctx,
             s->mask_buf = av_malloc((s->planesize * 32) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->mask_buf)
                 return AVERROR(ENOMEM);
-            s->mask_palbuf = av_malloc((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
+            s->mask_palbuf = av_mallocz((2 << s->bpp) * sizeof(uint32_t) + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!s->mask_palbuf)
                 return AVERROR(ENOMEM);
         }
