@@ -354,6 +354,18 @@ static int activate(AVFilterContext *ctx)
             av_frame_free(&in);
             return ret;
         }
+
+        LCEVC_PictureDesc desc;
+        if (LCEVC_PeekDecoderPictureDesc(lcevc->decoder, in->pts, &desc) != LCEVC_Success ||
+            desc.colorFormat != map_format(outlink->format)) {
+            av_log(ctx, AV_LOG_ERROR, "Unsupported enhanced picture\n");
+            LCEVC_SkipDecoder(lcevc->decoder, in->pts);
+            LCEVC_SynchronizeDecoder(lcevc->decoder, 0);
+            flush_bases(ctx);
+            return AVERROR_EXTERNAL;
+        }
+        lcevc->w = desc.width;
+        lcevc->h = desc.height;
     }
 
     out = ff_get_video_buffer(outlink, lcevc->w, lcevc->h);
