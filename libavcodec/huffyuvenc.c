@@ -372,7 +372,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (s->predictor == MEDIAN && s->version <= 2 &&
         (avctx->width < 4 ||
-         AV_CEIL_RSHIFT(avctx->height, s->chroma_v_shift) < 2 + s->interlaced)) {
+         avctx->height < (2 + s->interlaced) << s->chroma_v_shift)) {
         av_log(avctx, AV_LOG_ERROR, "Frame too small for the median predictor\n");
         return AVERROR(EINVAL);
     }
