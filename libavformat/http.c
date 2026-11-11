@@ -343,6 +343,9 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
 
+    if (s->hd && strcmp(s->hd->filename, buf))
+        ffurl_closep(&s->hd);
+
     if (!s->hd) {
         s->nb_connections++;
         err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
