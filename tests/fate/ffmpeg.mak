@@ -125,6 +125,21 @@ fate-ffmpeg-shortest-small-audio-frames: CMD = ffmpeg -auto_conversion_filters \
     -f lavfi -i "color=s=16x16:r=1:d=2[out0];anullsrc=r=8000:cl=mono:n=1:d=45[out1]" \
     -map 0:v -map 0:a -c:v mpeg4 -c:a aac -shortest -shortest_buf_duration 0.1 -f null -
 
+# The audio frame extending past the end of a frame-limited video stream is
+# cut there, it used to be dropped, making the audio up to a frame too short.
+FATE_FFMPEG-$(call ALLYES, LAVFI_INDEV COLOR_FILTER SINE_FILTER \
+                           WRAPPED_AVFRAME_DECODER PCM_S16LE_DECODER \
+                           RAWVIDEO_ENCODER PCM_S16LE_ENCODER FRAMECRC_MUXER \
+                           PIPE_PROTOCOL) \
+                           += fate-ffmpeg-frames-cut-audio fate-ffmpeg-frames-cut-audio-round
+fate-ffmpeg-frames-cut-audio: CMD = framecrc \
+    -f lavfi -i "color=s=16x16:r=30000/1001:d=2[out0];sine=r=48000:samples_per_frame=4800:d=2[out1]" \
+    -map 0:v -map 0:a -frames:v 10
+# the end, 1601.6 samples, rounds to the whole frame
+fate-ffmpeg-frames-cut-audio-round: CMD = framecrc \
+    -f lavfi -i "color=s=16x16:r=30000/1001:d=2[out0];sine=r=48000:samples_per_frame=1602:d=2[out1]" \
+    -map 0:v -map 0:a -frames:v 1
+
 # test interleaving video with a sparse subtitle stream
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MATROSKA,, COLOR_FILTER VOBSUB_DEMUXER \
                            RAWVIDEO_ENCODER MATROSKA_MUXER) += fate-shortest-sub
