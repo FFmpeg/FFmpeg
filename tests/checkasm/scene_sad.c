@@ -59,7 +59,7 @@ static void check_scene_sad(int depth)
                     depth, (unsigned long long) sum1, (unsigned long long) sum2);
             fail();
         }
-        bench_new(src1, STRIDE, src2, STRIDE, WIDTH, HEIGHT, &sum2);
+        bench_new(src1, STRIDE, src2, STRIDE, width, HEIGHT, &sum2);
     }
 }
 
