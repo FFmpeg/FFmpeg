@@ -43,6 +43,8 @@ X86ASM-OBJS-$(CONFIG_MASKEDCLAMP_FILTER)     += x86/vf_maskedclamp.o          \
                                                 x86/vf_maskedclamp_init.o
 X86ASM-OBJS-$(CONFIG_MASKEDMERGE_FILTER)     += x86/vf_maskedmerge.o          \
                                                 x86/vf_maskedmerge_init.o
+X86ASM-OBJS-$(CONFIG_MPDECIMATE_FILTER)      += x86/vf_mpdecimate.o           \
+                                                x86/vf_mpdecimate_init.o
 X86ASM-OBJS-$(CONFIG_NLMEANS_FILTER)         += x86/vf_nlmeans.o              \
                                                 x86/vf_nlmeans_init.o
 X86ASM-OBJS-$(CONFIG_OVERLAY_FILTER)         += x86/vf_overlay.o              \

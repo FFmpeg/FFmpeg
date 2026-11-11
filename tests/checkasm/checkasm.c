@@ -285,6 +285,9 @@ static const CheckasmTest tests[] = {
     #if CONFIG_IDET_FILTER
         { "vf_idet", checkasm_check_idet },
     #endif
+    #if CONFIG_MPDECIMATE_FILTER
+        { "vf_mpdecimate", checkasm_check_mpdecimate },
+    #endif
     #if CONFIG_NLMEANS_FILTER
         { "vf_nlmeans", checkasm_check_nlmeans },
     #endif

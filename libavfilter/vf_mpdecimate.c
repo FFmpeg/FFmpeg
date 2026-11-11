@@ -25,6 +25,8 @@
  * Rich Felker.
  */
 
+#include "config.h"
+
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -32,6 +34,7 @@
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "filters.h"
+#include "mpdecimate.h"
 #include "video.h"
 
 typedef enum {
@@ -99,6 +102,17 @@ static int sad_8x8_16(const uint8_t *src1, ptrdiff_t stride1,
     }
 
     return sum;
+}
+
+av_pixelutils_sad_fn ff_mpdecimate_get_sad16_fn(void)
+{
+    av_pixelutils_sad_fn sad = NULL;
+
+#if ARCH_X86 && HAVE_X86ASM
+    sad = ff_mpdecimate_get_sad16_fn_x86();
+#endif
+
+    return sad ? sad : sad_8x8_16;
 }
 
 /**
@@ -271,7 +285,7 @@ static int config_input(AVFilterLink *inlink)
     decimate->lo_thr = av_clip64(decimate->lo * scale, INT_MIN, INT_MAX);
 
     if (depth > 8)
-        decimate->sad = sad_8x8_16;
+        decimate->sad = ff_mpdecimate_get_sad16_fn();
     else
         decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, ctx); // 8x8, not aligned on blocksize
     if (!decimate->sad)

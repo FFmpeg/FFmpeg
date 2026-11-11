@@ -88,6 +88,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-vf_hflip                                  \
                 fate-checkasm-vf_idet                                   \
 				fate-checkasm-vf_limiter                                \
+                fate-checkasm-vf_mpdecimate                             \
                 fate-checkasm-vf_nlmeans                                \
                 fate-checkasm-vf_pp7                                    \
                 fate-checkasm-vf_threshold                              \
