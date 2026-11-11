@@ -953,6 +953,9 @@ static int decode_slice(VVCContext *s, VVCFrameContext *fc, AVBufferRef *buf_ref
     SliceContext *sc;
     const int is_first_slice = !fc->nb_slices;
 
+    if (fc->nb_slices >= VVC_MAX_SLICES)
+        return AVERROR_INVALIDDATA;
+
     ret = slices_realloc(fc);
     if (ret < 0)
         return ret;
