@@ -572,7 +572,7 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 
 time_t av_timegm(struct tm *tm)
 {
-    time_t t;
+    int64_t t;
 
     int y = tm->tm_year + 1900, m = tm->tm_mon + 1, d = tm->tm_mday;
 
@@ -585,6 +585,12 @@ time_t av_timegm(struct tm *tm)
         (d + (153 * m - 457) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 719469);
 
     t += 3600 * tm->tm_hour + 60 * tm->tm_min + tm->tm_sec;
+
+    // saturate if time_t cannot hold the result
+    if ((time_t)t != t) {
+        const time_t max = (time_t)-1 < 0 ? (time_t)(INT64_MAX >> (64 - 8 * sizeof(time_t))) : (time_t)-1;
+        return t > 0 ? max : (time_t)-1 < 0 ? -max - 1 : 0;
+    }
 
     return t;
 }

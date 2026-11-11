@@ -190,7 +190,8 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
 char *av_small_strptime(const char *p, const char *fmt, struct tm *dt);
 
 /**
- * Convert the decomposed UTC time in tm to a time_t value.
+ * Convert the decomposed UTC time in tm to a time_t value, saturated to the
+ * range of time_t.
  */
 time_t av_timegm(struct tm *tm);
 
