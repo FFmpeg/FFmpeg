@@ -2562,6 +2562,9 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     path = pathbuf;
     if (*path == '/')
         path++;
+    for (const char *p = path; *p; p++)
+        if ((uint8_t)*p <= ' ' || *p == 0x7f)
+            return AVERROR(EINVAL);
 
     ff_url_join(lower_url, sizeof(lower_url), "tcp", NULL, hostname, port,
                 NULL);
