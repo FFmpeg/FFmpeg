@@ -1353,6 +1353,7 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
+    s->hop_size = FFMAX(1, s->win_size * (1. - s->overlap));
     ret = ff_inlink_consume_samples(inlink, s->hop_size, s->hop_size, &in);
     if (ret < 0)
         return ret;
@@ -1416,14 +1417,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
-    AudioSurroundContext *s = ctx->priv;
     int ret;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
         return ret;
-
-    s->hop_size = FFMAX(1, s->win_size * (1. - s->overlap));
 
     allchannels_spread(ctx);
     set_input_levels(ctx);
