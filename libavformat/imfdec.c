@@ -482,9 +482,8 @@ static int open_track_file_resource(AVFormatContext *s,
            AV_UUID_ARG(asset_locator->uuid),
            asset_locator->absolute_uri);
 
-    if (track->resource_count > INT32_MAX - track_file_resource->base.repeat_count
-        || (track->resource_count + track_file_resource->base.repeat_count)
-            > INT_MAX / sizeof(IMFVirtualTrackResourcePlaybackCtx))
+    if (track_file_resource->base.repeat_count
+            > INT_MAX / sizeof(IMFVirtualTrackResourcePlaybackCtx) - track->resource_count)
         return AVERROR(ENOMEM);
     tmp = av_fast_realloc(track->resources,
                           &track->resources_alloc_sz,
