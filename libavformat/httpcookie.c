@@ -166,6 +166,11 @@ int ff_http_parse_set_cookie(const char *set_cookie, AVDictionary **cookie, AVDi
         // an invalid Max-Age is ignored (RFC 6265 5.2.2)
         if (!av_strcasecmp(param, "max-age") && (!value || !is_delta_seconds(value)))
             continue;
+        // an Expires without a valid date and an empty Domain are ignored (RFC 6265 5.2.1, 5.2.3)
+        if (!av_strcasecmp(param, "expires") && (!value || ff_http_parse_date(value, &(struct tm){ 0 }) < 0))
+            continue;
+        if (!av_strcasecmp(param, "domain") && (!value || !*value))
+            continue;
         if (*param)
             ret = av_dict_set(attributes, param, value ? value : "", 0);
     }
