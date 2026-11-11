@@ -27,6 +27,8 @@
 #include "defs.h"
 #include "libavutil/refstruct.h"
 
+#define MAX_FRAGMENT_OBUS (1 << 16)
+
 
 #if CBS_READ
 static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
@@ -784,6 +786,12 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU length: "
                    "%"PRIu64", but only %zu bytes remaining in fragment.\n",
                    obu_length, size);
+            err = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
+        if (frag->nb_units >= MAX_FRAGMENT_OBUS) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many OBUs in a fragment.\n");
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
