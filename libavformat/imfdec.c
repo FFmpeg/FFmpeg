@@ -996,9 +996,7 @@ static int imf_seek(AVFormatContext *s, int stream_index, int64_t min_ts,
                          st->time_base))
             av_log(s, AV_LOG_WARNING, "Seek position is not coherent across tracks\n");
 
-        dts = av_rescale(ts,
-                         st->time_base.den * c->cpl->edit_rate.den,
-                         st->time_base.num * c->cpl->edit_rate.num);
+        dts = av_rescale_q(ts, av_inv_q(c->cpl->edit_rate), st->time_base);
 
         av_log(s, AV_LOG_DEBUG, "Seeking to dts=%" PRId64 " on stream_index=%d\n",
                dts, i);
