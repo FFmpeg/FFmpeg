@@ -238,10 +238,8 @@ static FFBigNum dh_generate_key(FF_DH *dh)
     bn_random(dh->priv_key, 8 * num_bytes);
 
     bn_new(dh->pub_key);
-    if (!dh->pub_key) {
-        bn_free(dh->priv_key);
+    if (!dh->pub_key)
         return NULL;
-    }
 
     if (bn_modexp(dh->pub_key, dh->g, dh->priv_key, dh->p) < 0)
         return NULL;
