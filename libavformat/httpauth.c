@@ -292,7 +292,8 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         if (!username)
             return NULL;
 
-        if ((password = strchr(username, ':'))) {
+        if ((password = strchr(username, ':')) &&
+            !strpbrk(username, "\r\n") && !strpbrk(path, "\r\n")) {
             *password++ = 0;
             authstr = make_digest_auth(state, username, password, path, method);
         }
