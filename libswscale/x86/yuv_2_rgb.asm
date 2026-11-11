@@ -296,8 +296,21 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
 
 add imageq, 8 * depth * time_num
 add indexq, 4 * time_num
-js .loop0
+jns .end
+cmp indexq, -4 * time_num
+jle .loop0
+; less than a block is left, convert the last block of the row
+add indexq, 4 * time_num
+imul indexq, 2 * depth
+sub imageq, indexq
+%ifidn %2, gbrp
+sub dst_bq, indexq
+sub dst_rq, indexq
+%endif
+mov indexq, -4 * time_num
+jmp .loop0
 
+.end:
 RET
 
 %endmacro
