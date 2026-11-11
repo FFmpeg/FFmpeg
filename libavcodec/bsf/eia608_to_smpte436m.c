@@ -42,6 +42,15 @@ typedef struct EIA608ToSMPTE436MContext {
     AVSmpte436mPayloadSampleCoding sample_coding;
     AVRational                     cdp_frame_rate;
     uint8_t                        cdp_frame_rate_byte;
+    AVPacket                      *in;          ///< input packet being split
+    int                            in_pos;      ///< number of bytes of in already output
+    int                            in_frames;   ///< number of frames of in already output
+    int                            in_delayed;  ///< in was delayed by the split of the previous packets
+    int64_t                        next_pts;    ///< pts of the frame following the last split packet
+    int                            split;
+    int64_t                        field_credit;      ///< fraction of a byte pair a field can still carry, in field_credit_den units
+    int64_t                        field_credit_step; ///< byte pairs of one field carried by a frame, in field_credit_den units
+    int64_t                        field_credit_den;
 } EIA608ToSMPTE436MContext;
 
 // clang-format off
@@ -122,17 +131,86 @@ static av_cold int ff_eia608_to_smpte436m_init(AVBSFContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    // EIA-608 sends one byte pair per field at 30000/1001 frames per second,
+    // so a frame carries 30000/1001 / cdp_frame_rate byte pairs of each field
+    priv->field_credit_step = 30000LL * priv->cdp_frame_rate.den;
+    priv->field_credit_den  =  1001LL * priv->cdp_frame_rate.num;
+    priv->next_pts          = AV_NOPTS_VALUE;
+
     return 0;
+}
+
+static int64_t frames_to_ts(AVBSFContext *ctx, int frames)
+{
+    EIA608ToSMPTE436MContext *priv = ctx->priv_data;
+
+    if (ctx->time_base_in.num <= 0 || ctx->time_base_in.den <= 0)
+        return 0;
+    return av_rescale_q(frames, av_inv_q(priv->cdp_frame_rate), ctx->time_base_in);
+}
+
+/**
+ * Return the number of leading byte triples of data going in the next frame,
+ * and skip the frames which cannot carry any EIA-608 byte pair.
+ */
+static int split_cc_count(EIA608ToSMPTE436MContext *priv, const uint8_t *data, int count)
+{
+    int field_count[2] = { 0 };
+    int limit, i;
+
+    // CTA-708 byte triples are only found in packets already holding
+    // the data of a single frame
+    for (i = 0; i < count; i++)
+        if ((data[i * 3] & 3) >= 2)
+            return count;
+
+    for (;;) {
+        priv->field_credit += priv->field_credit_step;
+        limit               = priv->field_credit / priv->field_credit_den;
+        priv->field_credit -= limit * priv->field_credit_den;
+        if (limit)
+            break;
+        priv->in_frames++;
+    }
+
+    for (i = 0; i < count; i++) {
+        int cc_valid = data[i * 3] & 4;
+        int cc_type  = data[i * 3] & 3;
+        if (cc_valid && field_count[cc_type]++ == limit)
+            break;
+    }
+    return i;
 }
 
 static int ff_eia608_to_smpte436m_filter(AVBSFContext *ctx, AVPacket *out)
 {
     EIA608ToSMPTE436MContext *priv = ctx->priv_data;
-    AVPacket                 *in;
+    AVPacket                 *in   = priv->in;
+    int ret;
 
-    int ret = ff_bsf_get_packet(ctx, &in);
-    if (ret < 0)
-        return ret;
+    if (!in) {
+        ret = ff_bsf_get_packet(ctx, &priv->in);
+        if (ret < 0)
+            return ret;
+        in              = priv->in;
+        priv->in_pos    = 0;
+        priv->in_frames = 0;
+        // the previous packets were split over the frames up to next_pts
+        priv->in_delayed = priv->next_pts != AV_NOPTS_VALUE && in->pts != AV_NOPTS_VALUE &&
+                           in->pts < priv->next_pts;
+        if (priv->in_delayed) {
+            if (in->dts != AV_NOPTS_VALUE)
+                in->dts += priv->next_pts - in->pts;
+            in->pts = priv->next_pts;
+        } else {
+            // the first frame of a packet carries at least one byte pair
+            priv->field_credit = FFMAX(priv->field_credit_den - priv->field_credit_step, 0);
+        }
+        priv->next_pts = AV_NOPTS_VALUE;
+    }
+
+    const uint8_t *data = in->data + priv->in_pos;
+    int in_count        = (in->size - priv->in_pos) / 3;
 
     AVSmpte291mAnc8bit anc;
     anc.did         = 0x61;
@@ -165,10 +243,14 @@ static int ff_eia608_to_smpte436m_filter(AVBSFContext *ctx, AVPacket *out)
     const uint8_t CC_COUNT_MASK   = 0x1F;
     const int     CDP_FOOTER_SIZE = 4;
 
-    int cc_count           = in->size / 3;
+    int cc_count           = in_count;
     int space_left         = AV_SMPTE_291M_ANC_PAYLOAD_CAPACITY - (p - anc.payload);
     int cc_data_space_left = space_left - CDP_FOOTER_SIZE;
-    int max_cc_count       = FFMAX(cc_data_space_left / 3, CC_COUNT_MASK);
+    int max_cc_count       = FFMIN(cc_data_space_left / 3, CC_COUNT_MASK);
+
+    // the byte pairs a frame cannot carry go in the following frames
+    if (priv->split)
+        cc_count = split_cc_count(priv, data, in_count);
 
     if (cc_count > max_cc_count) {
         av_log(ctx,
@@ -176,16 +258,16 @@ static int ff_eia608_to_smpte436m_filter(AVBSFContext *ctx, AVPacket *out)
                "cc_count (%d) is bigger than the maximum supported (%d), truncating captions packet\n",
                cc_count,
                max_cc_count);
-        cc_count = max_cc_count;
+        cc_count = in_count = max_cc_count;
     }
 
     *cc_count_p = cc_count | ~CC_COUNT_MASK; // other bits are reserved and set to ones
 
     for (size_t i = 0; i < cc_count; i++) {
         size_t start = i * 3;
-        *p++         = in->data[start] | 0xF8; // fill reserved bits with ones
-        *p++         = in->data[start + 1];
-        *p++         = in->data[start + 2];
+        *p++         = data[start] | 0xF8; // fill reserved bits with ones
+        *p++         = data[start + 1];
+        *p++         = data[start + 2];
     }
 
     const uint8_t CDP_FOOTER_ID = 0x74;
@@ -236,13 +318,46 @@ static int ff_eia608_to_smpte436m_filter(AVBSFContext *ctx, AVPacket *out)
     if (ret < 0)
         goto fail;
 
+    // the timestamps are only changed when splitting
+    if (priv->split) {
+        if (in->pts != AV_NOPTS_VALUE)
+            out->pts += frames_to_ts(ctx, priv->in_frames);
+        if (in->dts != AV_NOPTS_VALUE)
+            out->dts += frames_to_ts(ctx, priv->in_frames);
+
+        if (cc_count < in_count || priv->in_frames || priv->in_delayed) {
+            if (cc_count < in_count || priv->in_frames)
+                out->duration = frames_to_ts(ctx, 1);
+            priv->in_pos += cc_count * 3;
+            priv->in_frames++;
+            if (in->pts != AV_NOPTS_VALUE)
+                priv->next_pts = in->pts + frames_to_ts(ctx, priv->in_frames);
+        }
+    }
+
     ret = 0;
 
 fail:
     if (ret < 0)
         av_packet_unref(out);
-    av_packet_free(&in);
+    if (ret < 0 || cc_count == in_count)
+        av_packet_free(&priv->in);
     return ret;
+}
+
+static void ff_eia608_to_smpte436m_flush(AVBSFContext *ctx)
+{
+    EIA608ToSMPTE436MContext *priv = ctx->priv_data;
+
+    av_packet_free(&priv->in);
+    priv->next_pts = AV_NOPTS_VALUE;
+}
+
+static av_cold void ff_eia608_to_smpte436m_close(AVBSFContext *ctx)
+{
+    EIA608ToSMPTE436MContext *priv = ctx->priv_data;
+
+    av_packet_free(&priv->in);
 }
 
 #define OFFSET(x) offsetof(EIA608ToSMPTE436MContext, x)
@@ -256,6 +371,7 @@ static const AVOption options[] = {
     FF_SMPTE_436M_PAYLOAD_SAMPLE_CODING_ANC_AVOPTIONS(FLAGS, "sample_coding"),
     { "initial_cdp_sequence_cntr", "initial cdp_*_sequence_cntr value", OFFSET(cdp_sequence_cntr), AV_OPT_TYPE_UINT, { .i64 = 0 }, 0, 0xFFFF, FLAGS },
     { "cdp_frame_rate", "set the `cdp_frame_rate` fields", OFFSET(cdp_frame_rate), AV_OPT_TYPE_VIDEO_RATE, { .str = "30000/1001" }, 0, INT_MAX, FLAGS },
+    { "split", "split the packets holding the byte pairs of several frames", OFFSET(split), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL },
 };
 // clang-format on
@@ -274,4 +390,6 @@ const FFBitStreamFilter ff_eia608_to_smpte436m_bsf = {
     .priv_data_size = sizeof(EIA608ToSMPTE436MContext),
     .init           = ff_eia608_to_smpte436m_init,
     .filter         = ff_eia608_to_smpte436m_filter,
+    .flush          = ff_eia608_to_smpte436m_flush,
+    .close          = ff_eia608_to_smpte436m_close,
 };

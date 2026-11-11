@@ -259,7 +259,17 @@ It accepts the values:
 @item initial_cdp_sequence_cntr
 The initial value of the CDP's 16-bit unsigned integer @code{cdp_hdr_sequence_cntr} and @code{cdp_ftr_sequence_cntr} fields. Defaults to 0.
 @item cdp_frame_rate
-Set the CDP's @code{cdp_frame_rate} field. This doesn't actually change the timing of the data stream, it just changes the values inserted in that field in the generated CDP packets. Defaults to @samp{30000/1001}.
+Set the CDP's @code{cdp_frame_rate} field. When @option{split} is enabled, it
+also sets the duration and the EIA-608 capacity of each output packet,
+otherwise the timing of the data stream is not changed. Defaults to
+@samp{30000/1001}.
+@item split
+Split the packets holding more EIA-608 byte pairs than one frame can carry,
+like the ones of an SCC file, into one packet per frame, and delay the
+following packets when needed. A frame lasts @code{1/cdp_frame_rate} and carries
+@code{30000/1001/cdp_frame_rate} byte pairs of each field on average. Packets
+holding CTA-708 data are not split. The timestamps are left untouched when
+disabled, which is the default.
 @end table
 
 @section extract_extradata
