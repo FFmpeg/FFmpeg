@@ -1987,6 +1987,13 @@ static rgbConvFn findRgbConvFn(SwsInternal *c)
     return conv;
 }
 
+static inline void rgb_pixel_to_alt32(rgbConvFn conv, const uint8_t *src, uint8_t *dst, int src_bpp)
+{
+    uint32_t pixel;
+    conv(src, (uint8_t *)&pixel, src_bpp);
+    AV_WL32(dst, AV_RL32(&pixel) << 8 | 0xFF);
+}
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                            int srcSliceY, int srcSliceH, uint8_t *const dst[],
@@ -2009,6 +2016,7 @@ static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
               uint8_t *dstPtr = dst[0];
         int src_bswap = IS_NOT_NE(srcBpp, desc_src);
         int dst_bswap = IS_NOT_NE(dstBpp, desc_dst);
+        int row_ending_plane = -1;
 
         if ((srcFormat == AV_PIX_FMT_RGB32_1 || srcFormat == AV_PIX_FMT_BGR32_1) &&
             !isRGBA32(dstFormat))
@@ -2021,25 +2029,35 @@ static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
             for (i = 0; i < srcSliceH; i++)
                 dstPtr[dstStride[0] * (srcSliceY + i)] = 255;
             dstPtr += ALT32_CORR;
+            row_ending_plane = dstStride[0] > 0 ? c->opts.src_h - 1 : 0;
         }
 
         if (dstStride[0] * srcBpp == srcStride[0] * dstBpp && srcStride[0] > 0 &&
-            !(srcStride[0] % srcBpp) && !dst_bswap && !src_bswap)
-            conv(srcPtr, dstPtr + dstStride[0] * srcSliceY,
-                 (srcSliceH - 1) * srcStride[0] + c->opts.src_w * srcBpp);
-        else {
+            !(srcStride[0] % srcBpp) && !dst_bswap && !src_bswap) {
+            const int last_row = srcSliceY + srcSliceH - 1;
+            const int src_size = (srcSliceH - 1) * srcStride[0] + c->opts.src_w * srcBpp;
+            const int cut      = last_row == row_ending_plane ? srcBpp : 0;
+
+            conv(srcPtr, dstPtr + dstStride[0] * srcSliceY, src_size - cut);
+            if (cut)
+                rgb_pixel_to_alt32(conv, srcPtr + src_size - cut,
+                                   dstPtr + dstStride[0] * last_row + (c->opts.src_w - 1) * 4 - ALT32_CORR, srcBpp);
+        } else {
             int i, j;
             dstPtr += dstStride[0] * srcSliceY;
 
             for (i = 0; i < srcSliceH; i++) {
                 const uint8_t *row = srcPtr;
+                const int conv_w   = c->opts.src_w - (srcSliceY + i == row_ending_plane);
 
                 if(src_bswap) {
                     for(j=0; j<c->opts.src_w; j++)
                         ((uint16_t*)c->formatConvBuffer)[j] = av_bswap16(((uint16_t*)srcPtr)[j]);
                     row = c->formatConvBuffer;
                 }
-                conv(row, dstPtr, c->opts.src_w * srcBpp);
+                conv(row, dstPtr, conv_w * srcBpp);
+                if (conv_w < c->opts.src_w)
+                    rgb_pixel_to_alt32(conv, row + conv_w * srcBpp, dstPtr + conv_w * 4 - ALT32_CORR, srcBpp);
                 if(dst_bswap)
                     for(j=0; j<c->opts.src_w; j++)
                         ((uint16_t*)dstPtr)[j] = av_bswap16(((uint16_t*)dstPtr)[j]);
