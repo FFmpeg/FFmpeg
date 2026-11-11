@@ -5201,7 +5201,8 @@ static int mov_update_iamf_streams(MOVContext *c, const AVStream *st)
             out_sti->index_entries_allocated_size = sti->index_entries_allocated_size;
             out_sti->nb_index_entries = sti->nb_index_entries;
             out_sti->skip_samples = sti->skip_samples;
-            memcpy(out_sti->index_entries, sti->index_entries, sti->index_entries_allocated_size);
+            if (sti->index_entries_allocated_size)
+                memcpy(out_sti->index_entries, sti->index_entries, sti->index_entries_allocated_size);
         }
     }
 
