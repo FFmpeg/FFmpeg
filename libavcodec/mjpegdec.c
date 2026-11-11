@@ -1118,6 +1118,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
         if (s->rct || s->pegasus_rct)
             return AVERROR_INVALIDDATA;
     }
+    if ((s->rct || s->pegasus_rct) && nb_components != s->nb_components)
+        return AVERROR_INVALIDDATA;
 
 
     for (i = 0; i < 6; i++)
