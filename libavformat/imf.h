@@ -183,7 +183,7 @@ void ff_imf_cpl_free(FFIMFCPL *cpl);
 int ff_imf_xml_read_uint32(xmlNodePtr element, uint32_t *number);
 
 /**
- * Reads an AVRational from an XML element
+ * Reads a positive AVRational from an XML element
  * @return 0 on success, < 0 AVERROR code on error.
  */
 int ff_imf_xml_read_rational(xmlNodePtr element, AVRational *rational);

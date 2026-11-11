@@ -90,7 +90,8 @@ int ff_imf_xml_read_rational(xmlNodePtr element, AVRational *rational)
     int ret = 0;
 
     xmlChar *element_text = xmlNodeListGetString(element->doc, element->xmlChildrenNode, 1);
-    if (element_text == NULL || sscanf(element_text, "%i %i", &rational->num, &rational->den) != 2)
+    if (element_text == NULL || sscanf(element_text, "%i %i", &rational->num, &rational->den) != 2
+        || rational->num <= 0 || rational->den <= 0)
         ret = AVERROR_INVALIDDATA;
     xmlFree(element_text);
 
