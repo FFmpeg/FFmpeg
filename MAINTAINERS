@@ -69,7 +69,7 @@ Trac bug tracker                    [X] (W: https://trac.ffmpeg.org) Alexander S
 Forgejo issue tracker                   (W: https://code.ffmpeg.org/FFmpeg/FFmpeg/issues)
 Patchwork                           [2] (W: https://patchwork.ffmpeg.org) Andriy Gelman
 mailing lists                           (W: https://ffmpeg.org/contact.html#MailingLists) Baptiste Coudurier
-Twitter                                 Reynaldo H. Verdejo Pinochet
+Twitter                                 Michael Niedermayer, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
 ffmpeg-security                     [2] (L: ffmpeg-security@ffmpeg.org) (W: https://ffmpeg.org/security.html) Michael Niedermayer, Reimar Doeffinger
 YesWeHack Security reports          [2] Timo Rothenpieler, Michael Niedermayer
