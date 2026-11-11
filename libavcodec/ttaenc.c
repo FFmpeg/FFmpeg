@@ -54,6 +54,11 @@ static av_cold int tta_encode_init(AVCodecContext *avctx)
         avctx->bits_per_raw_sample = 24;
     }
 
+    if (avctx->sample_rate > 0x7FFFFF) {
+        av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
+        return AVERROR(EINVAL);
+    }
+
     s->bps = avctx->bits_per_raw_sample >> 3;
     avctx->frame_size = 256 * avctx->sample_rate / 245;
 
