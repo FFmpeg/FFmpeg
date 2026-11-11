@@ -28,6 +28,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/bprint.h"
 #include "avcodec.h"
@@ -342,7 +343,11 @@ static av_cold int microdvd_init(AVCodecContext *avctx)
     av_bprintf(&font_buf, "%s", ASS_DEFAULT_FONT);
 
     if (avctx->extradata) {
-        microdvd_load_tags(tags, avctx->extradata);
+        char *default_tags = av_strndup(avctx->extradata, avctx->extradata_size);
+
+        if (!default_tags)
+            return AVERROR(ENOMEM);
+        microdvd_load_tags(tags, default_tags);
         for (i = 0; i < sizeof(MICRODVD_TAGS) - 1; i++) {
             switch (av_tolower(tags[i].key)) {
             case 'y':
@@ -368,6 +373,7 @@ static av_cold int microdvd_init(AVCodecContext *avctx)
                 break;
             }
         }
+        av_free(default_tags);
     }
     return ff_ass_subtitle_header(avctx, font_buf.str, font_size, color,
                                   ASS_DEFAULT_BACK_COLOR, bold, italic,
