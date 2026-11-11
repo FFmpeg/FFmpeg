@@ -1481,6 +1481,8 @@ int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
 
     if (!rt->rtsp_hd_out)
         return AVERROR(ENOTCONN);
+    if (strpbrk(url, "\r\n"))
+        return AVERROR(EINVAL);
 
     /* Add in RTSP headers */
     out_buf = buf;
