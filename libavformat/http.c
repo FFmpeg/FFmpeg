@@ -267,6 +267,8 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  hostname, sizeof(hostname), &port,
                  path1, sizeof(path1), s->location);
+    if (strpbrk(hostname, "\r\n"))
+        return AVERROR(EINVAL);
 
     av_freep(&s->host);
     s->host = av_strdup(hostname);
