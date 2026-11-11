@@ -55,22 +55,23 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *outlink = ctx->outputs[0];
     ASNSContext *s = ctx->priv;
     AVFrame *frame = NULL, *pad_frame;
+    const int nb_samples = ctx->is_disabled ? 0 : s->nb_out_samples;
     int ret;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (ctx->is_disabled)
+    if (!nb_samples)
         ret = ff_inlink_consume_frame(inlink, &frame);
     else
-        ret = ff_inlink_consume_samples(inlink, s->nb_out_samples, s->nb_out_samples, &frame);
+        ret = ff_inlink_consume_samples(inlink, nb_samples, nb_samples, &frame);
     if (ret < 0)
         return ret;
 
     if (ret > 0) {
-        if (!s->pad || ctx->is_disabled || frame->nb_samples == s->nb_out_samples)
+        if (!s->pad || ctx->is_disabled || frame->nb_samples >= nb_samples)
             return ff_filter_frame(outlink, frame);
 
-        pad_frame = ff_get_audio_buffer(outlink, s->nb_out_samples);
+        pad_frame = ff_get_audio_buffer(outlink, nb_samples);
         if (!pad_frame) {
             av_frame_free(&frame);
             return AVERROR(ENOMEM);
@@ -86,7 +87,7 @@ static int activate(AVFilterContext *ctx)
         av_samples_copy(pad_frame->extended_data, frame->extended_data,
                         0, 0, frame->nb_samples, frame->ch_layout.nb_channels, frame->format);
         av_samples_set_silence(pad_frame->extended_data, frame->nb_samples,
-                               s->nb_out_samples - frame->nb_samples, frame->ch_layout.nb_channels,
+                               nb_samples - frame->nb_samples, frame->ch_layout.nb_channels,
                                frame->format);
         av_frame_free(&frame);
         return ff_filter_frame(outlink, pad_frame);
