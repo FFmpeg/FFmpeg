@@ -77,6 +77,7 @@
 
 #define AVRATIONAL_FORMAT "%d/%d"
 #define AVRATIONAL_ARG(rational) rational.num, rational.den
+#define MAX_RESOURCES FFMIN(1 << 20, INT_MAX / (int)sizeof(IMFVirtualTrackResourcePlaybackCtx))
 
 /**
  * IMF Asset locator
@@ -125,6 +126,7 @@ typedef struct IMFContext {
     IMFAssetLocatorMap asset_locator_map;
     uint32_t track_count;
     IMFVirtualTrackPlaybackCtx **tracks;
+    uint32_t total_resource_count;
 } IMFContext;
 
 static int imf_uri_is_url(const char *string)
@@ -483,8 +485,9 @@ static int open_track_file_resource(AVFormatContext *s,
            asset_locator->absolute_uri);
 
     if (track_file_resource->base.repeat_count
-            > INT_MAX / sizeof(IMFVirtualTrackResourcePlaybackCtx) - track->resource_count)
+            > MAX_RESOURCES - c->total_resource_count)
         return AVERROR(ENOMEM);
+    c->total_resource_count += track_file_resource->base.repeat_count;
     tmp = av_fast_realloc(track->resources,
                           &track->resources_alloc_sz,
                           (track->resource_count + track_file_resource->base.repeat_count)
