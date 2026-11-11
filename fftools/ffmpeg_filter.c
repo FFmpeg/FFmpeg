@@ -3030,7 +3030,7 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
         if (ret < 0)
             return ret;
     } else {
-        if (ifp->format < 0) {
+        if (ifp->format < 0 && ifp->opts.fallback) {
             // the filtergraph was never configured, use the fallback parameters
             ifp->format                 = ifp->opts.fallback->format;
             ifp->sample_rate            = ifp->opts.fallback->sample_rate;
