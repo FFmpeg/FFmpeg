@@ -1120,6 +1120,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
         if (s->rct || s->pegasus_rct)
             return AVERROR_INVALIDDATA;
     }
+    if ((s->rct || s->pegasus_rct) && nb_components != s->nb_components)
+        return AVERROR_INVALIDDATA;
 
     av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
                    (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
