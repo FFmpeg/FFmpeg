@@ -53,12 +53,12 @@ static int insert_datetime(AVBPrint *dst, const char *in, const char *arg)
 
 static int insert_color(AVBPrint *dst, const char *in, const char *arg)
 {
-    return 1; // skip id
+    return !!*in; // skip id
 }
 
 static int insert_font(AVBPrint *dst, const char *in, const char *arg)
 {
-    return 1; // skip id
+    return !!*in; // skip id
 }
 
 static const struct {
