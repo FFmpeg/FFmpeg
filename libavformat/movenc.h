@@ -140,6 +140,7 @@ typedef struct MOVTrack {
     int64_t     elst_end_pts;
     int         end_reliable;
     int64_t     dts_shift;
+    int64_t     start_delay; ///< presentation delay kept in the composition offsets
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         nb_src_track;
