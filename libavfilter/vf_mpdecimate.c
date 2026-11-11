@@ -61,6 +61,8 @@ typedef struct DecimateContext {
     int dup_count;                 ///< for mode 1: number of duplicated frames
 
     int hsub, vsub;                ///< chroma subsampling values
+    int bpp;                       ///< bytes per sample
+    int hi_thr, lo_thr;            ///< hi and lo scaled to the input bit depth
     AVFrame *ref;                  ///< reference picture
     av_pixelutils_sad_fn sad;      ///< sum of absolute difference function
 } DecimateContext;
@@ -84,32 +86,48 @@ static const AVOption mpdecimate_options[] = {
 
 AVFILTER_DEFINE_CLASS(mpdecimate);
 
+static int sad_8x8_16(const uint8_t *src1, ptrdiff_t stride1,
+                      const uint8_t *src2, ptrdiff_t stride2)
+{
+    int sum = 0;
+
+    for (int y = 0; y < 8; y++) {
+        const uint16_t *s1 = (const uint16_t *)(src1 + y * stride1);
+        const uint16_t *s2 = (const uint16_t *)(src2 + y * stride2);
+        for (int x = 0; x < 8; x++)
+            sum += FFABS(s1[x] - s2[x]);
+    }
+
+    return sum;
+}
+
 /**
  * Return 1 if the two planes are different, 0 otherwise.
  * The reason is appended to bp, which the caller prints with the frame's
  * keep/drop decision in a single av_log() call.
  */
-static int diff_planes(AVFilterContext *ctx, AVBPrint *bp,
-                       uint8_t *cur, int cur_linesize,
-                       uint8_t *ref, int ref_linesize,
-                       int w, int h)
+static av_always_inline int diff_planes(AVFilterContext *ctx, AVBPrint *bp,
+                                        uint8_t *cur, int cur_linesize,
+                                        uint8_t *ref, int ref_linesize,
+                                        int w, int h, int bpp)
 {
     DecimateContext *decimate = ctx->priv;
 
     int x, y;
     int d, c = 0;
     int t = (w/16)*(h/16)*decimate->frac;
+    int hi_thr = decimate->hi_thr, lo_thr = decimate->lo_thr;
 
-    /* compute difference for blocks of 8x8 bytes */
+    /* compute difference for blocks of 8x8 samples */
     for (y = 0; y < h-7; y += 4) {
         for (x = 8; x < w-7; x += 4) {
-            d = decimate->sad(cur + y*cur_linesize + x, cur_linesize,
-                              ref + y*ref_linesize + x, ref_linesize);
-            if (d > decimate->hi) {
+            d = decimate->sad(cur + y*cur_linesize + x*bpp, cur_linesize,
+                              ref + y*ref_linesize + x*bpp, ref_linesize);
+            if (d > hi_thr) {
                 av_bprintf(bp, "%d>=hi ", d);
                 return 1;
             }
-            if (d > decimate->lo) {
+            if (d > lo_thr) {
                 c++;
                 if (c > t) {
                     av_bprintf(bp, "lo:%d>=%d ", c, t);
@@ -123,6 +141,20 @@ static int diff_planes(AVFilterContext *ctx, AVBPrint *bp,
     return 0;
 }
 
+static int diff_planes_8(AVFilterContext *ctx, AVBPrint *bp,
+                         uint8_t *cur, int cur_linesize,
+                         uint8_t *ref, int ref_linesize, int w, int h)
+{
+    return diff_planes(ctx, bp, cur, cur_linesize, ref, ref_linesize, w, h, 1);
+}
+
+static int diff_planes_16(AVFilterContext *ctx, AVBPrint *bp,
+                          uint8_t *cur, int cur_linesize,
+                          uint8_t *ref, int ref_linesize, int w, int h)
+{
+    return diff_planes(ctx, bp, cur, cur_linesize, ref, ref_linesize, w, h, 2);
+}
+
 /**
  * Tell if the frame is different with respect to the reference frame ref.
  */
@@ -130,6 +162,10 @@ static int is_frame_different(AVFilterContext *ctx, AVBPrint *bp,
                               AVFrame *cur, AVFrame *ref)
 {
     DecimateContext *decimate = ctx->priv;
+    int (*diff)(AVFilterContext *ctx, AVBPrint *bp,
+                uint8_t *cur, int cur_linesize,
+                uint8_t *ref, int ref_linesize, int w, int h) =
+        decimate->bpp == 2 ? diff_planes_16 : diff_planes_8;
     int plane;
 
     for (plane = 0; ref->data[plane] && ref->linesize[plane]; plane++) {
@@ -140,11 +176,11 @@ static int is_frame_different(AVFilterContext *ctx, AVBPrint *bp,
          */
         int vsub = plane == 1 || plane == 2 ? decimate->vsub : 0;
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
-        if (diff_planes(ctx, bp,
-                        cur->data[plane], cur->linesize[plane],
-                        ref->data[plane], ref->linesize[plane],
-                        AV_CEIL_RSHIFT(ref->width, hsub),
-                        AV_CEIL_RSHIFT(ref->height, vsub)))
+        if (diff(ctx, bp,
+                 cur->data[plane], cur->linesize[plane],
+                 ref->data[plane], ref->linesize[plane],
+                 AV_CEIL_RSHIFT(ref->width, hsub),
+                 AV_CEIL_RSHIFT(ref->height, vsub)))
             return 1;
     }
 
@@ -181,25 +217,6 @@ static DecimateResult decimate_frame(AVFilterContext *ctx, AVBPrint *bp,
     return DECIMATE_DROP;
 }
 
-static av_cold int init(AVFilterContext *ctx)
-{
-    DecimateContext *decimate = ctx->priv;
-
-    decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, ctx); // 8x8, not aligned on blocksize
-    if (!decimate->sad)
-        return AVERROR(EINVAL);
-
-    if (decimate->mode == 1) {
-        av_log(ctx, AV_LOG_VERBOSE, "min_dup_count:%d hi:%d lo:%d frac:%f\n",
-           decimate->min_dup_count, decimate->hi, decimate->lo,
-           decimate->frac);
-    } else {
-        av_log(ctx, AV_LOG_VERBOSE, "max_drop_count:%d hi:%d lo:%d frac:%f\n",
-           decimate->max_drop_count, decimate->hi, decimate->lo, decimate->frac);
-    }
-    return 0;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
@@ -219,6 +236,21 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUVA444P,
     AV_PIX_FMT_YUVA422P,
 
+    AV_PIX_FMT_YUV420P9,     AV_PIX_FMT_YUV422P9,     AV_PIX_FMT_YUV444P9,
+    AV_PIX_FMT_YUV420P10,    AV_PIX_FMT_YUV422P10,    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV420P12,    AV_PIX_FMT_YUV422P12,    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_YUV420P14,    AV_PIX_FMT_YUV422P14,    AV_PIX_FMT_YUV444P14,
+    AV_PIX_FMT_YUV420P16,    AV_PIX_FMT_YUV422P16,    AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_YUV440P10,    AV_PIX_FMT_YUV440P12,
+
+    AV_PIX_FMT_YUVA420P9,    AV_PIX_FMT_YUVA422P9,    AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUVA420P10,   AV_PIX_FMT_YUVA422P10,   AV_PIX_FMT_YUVA444P10,
+                             AV_PIX_FMT_YUVA422P12,   AV_PIX_FMT_YUVA444P12,
+    AV_PIX_FMT_YUVA420P16,   AV_PIX_FMT_YUVA422P16,   AV_PIX_FMT_YUVA444P16,
+
+    AV_PIX_FMT_GBRP9,        AV_PIX_FMT_GBRP10,       AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_GBRP14,       AV_PIX_FMT_GBRP16,
+
     AV_PIX_FMT_NONE
 };
 
@@ -227,8 +259,28 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     DecimateContext *decimate = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
+    int depth = pix_desc->comp[0].depth;
+    /* hi and lo are expressed in 8-bit units */
+    int64_t scale = 1LL << (depth - 8);
+
     decimate->hsub = pix_desc->log2_chroma_w;
     decimate->vsub = pix_desc->log2_chroma_h;
+    decimate->bpp  = depth > 8 ? 2 : 1;
+    /* an 8x8 SAD is at most 64 * 65535, so clipping to int keeps the decisions */
+    decimate->hi_thr = av_clip64(decimate->hi * scale, INT_MIN, INT_MAX);
+    decimate->lo_thr = av_clip64(decimate->lo * scale, INT_MIN, INT_MAX);
+
+    if (depth > 8)
+        decimate->sad = sad_8x8_16;
+    else
+        decimate->sad = av_pixelutils_get_sad_fn(3, 3, 0, ctx); // 8x8, not aligned on blocksize
+    if (!decimate->sad)
+        return AVERROR(EINVAL);
+
+    av_log(ctx, AV_LOG_VERBOSE, "%s:%d depth:%d hi:%"PRId64" lo:%"PRId64" frac:%f\n",
+           decimate->mode == 1 ? "min_dup_count" : "max_drop_count",
+           decimate->mode == 1 ? decimate->min_dup_count : decimate->max_drop_count,
+           depth, decimate->hi * scale, decimate->lo * scale, decimate->frac);
 
     return 0;
 }
@@ -355,7 +407,6 @@ const FFFilter ff_vf_mpdecimate = {
     .p.name        = "mpdecimate",
     .p.description = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
     .p.priv_class  = &mpdecimate_class,
-    .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(DecimateContext),
     FILTER_INPUTS(mpdecimate_inputs),

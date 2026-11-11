@@ -508,6 +508,18 @@ fate-filter-mpdecimate-mode-1: CMD = framecrc -lavfi testsrc2=r=4:d=5,fps=5,mpde
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FPS MPDECIMATE) += fate-filter-mpdecimate-mode-1-min-3
 fate-filter-mpdecimate-mode-1-min-3: CMD = framecrc -lavfi testsrc2=r=2:d=7,fps=7,mpdecimate=mode=1:min=3 -pix_fmt yuv420p
 
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FPS FORMAT SCALE MPDECIMATE) += fate-filter-mpdecimate-yuv422p10le
+fate-filter-mpdecimate-yuv422p10le: CMD = framecrc -lavfi testsrc2=r=2:d=10,fps=3,format=yuv422p10le,scale,mpdecimate,scale -pix_fmt yuv422p10le
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FPS FORMAT SCALE MPDECIMATE) += fate-filter-mpdecimate-yuv444p16le
+fate-filter-mpdecimate-yuv444p16le: CMD = framecrc -lavfi testsrc2=r=2:d=7,fps=7,format=yuv444p16le,scale,mpdecimate=mode=1:min=3,scale -pix_fmt yuv444p16le
+
+FATE_FILTER-$(call FILTERFRAMECRC, NULLSRC SCALE FORMAT GEQ MPDECIMATE) += fate-filter-mpdecimate-hi-10bit
+fate-filter-mpdecimate-hi-10bit: CMD = framecrc -lavfi nullsrc=s=32x16:r=1:d=6,scale,format=yuv444p10,geq=lum=400+24*N:cb=512:cr=512,mpdecimate=hi=768:lo=2147483647,scale -pix_fmt yuv444p10le
+
+FATE_FILTER-$(call FILTERFRAMECRC, NULLSRC SCALE FORMAT GEQ MPDECIMATE) += fate-filter-mpdecimate-lo-10bit
+fate-filter-mpdecimate-lo-10bit: CMD = framecrc -lavfi nullsrc=s=32x16:r=1:d=6,scale,format=yuv444p10,geq=lum=400+20*N:cb=512:cr=512,mpdecimate=hi=2147483647:lo=320,scale -pix_fmt yuv444p10le
+
 FATE_FILTER-$(call FILTERFRAMECRC, FPS TESTSRC2) += $(addprefix fate-filter-fps-, up up-round-down up-round-up down down-round-down down-round-up down-eof-pass start-drop start-fill single)
 fate-filter-fps-up: CMD = framecrc -lavfi testsrc2=r=3:d=2,fps=7
 fate-filter-fps-up-round-down: CMD = framecrc -lavfi testsrc2=r=3:d=2,fps=7:round=down
