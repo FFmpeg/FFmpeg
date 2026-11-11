@@ -910,11 +910,12 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int nb_frames, disposition;
     int version, ret;
 
+    st = get_curr_st(c);
+    if (!st)
+        return 0;
+
     if (atom.size < 5)
         return AVERROR_INVALIDDATA;
-
-    if (c->fc->nb_streams < 1)
-        return 0;
 
     version = avio_r8(pb);
     if (version != 1) {
@@ -927,7 +928,6 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!descriptors_size || descriptors_size > INT_MAX)
         return AVERROR_INVALIDDATA;
 
-    st = c->fc->streams[c->fc->nb_streams - 1];
     sc = st->priv_data;
 
     if (st->codecpar->extradata) {
