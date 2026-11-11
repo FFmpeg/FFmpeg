@@ -21,6 +21,7 @@
  * Scene SAD functions
  */
 
+#include "libavutil/bswap.h"
 #include "scene_sad.h"
 
 void ff_scene_sad16_c(SCENE_SAD_PARAMS)
@@ -36,6 +37,25 @@ void ff_scene_sad16_c(SCENE_SAD_PARAMS)
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             sad += FFABS(src1w[x] - src2w[x]);
+        src1w += stride1;
+        src2w += stride2;
+    }
+    *sum = sad;
+}
+
+void ff_scene_sad16_bswap_c(SCENE_SAD_PARAMS)
+{
+    uint64_t sad = 0;
+    const uint16_t *src1w = (const uint16_t *)src1;
+    const uint16_t *src2w = (const uint16_t *)src2;
+    int x, y;
+
+    stride1 /= 2;
+    stride2 /= 2;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++)
+            sad += FFABS(av_bswap16(src1w[x]) - av_bswap16(src2w[x]));
         src1w += stride1;
         src2w += stride2;
     }
@@ -72,4 +92,9 @@ ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
             sad = ff_scene_sad16_c;
     }
     return sad;
+}
+
+ff_scene_sad_fn ff_scene_sad_bswap_get_fn(void)
+{
+    return ff_scene_sad16_bswap_c;
 }

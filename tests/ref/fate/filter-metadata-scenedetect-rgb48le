@@ -1,0 +1,11 @@
+pts=1620|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000
+pts=4140|pix_fmt=rgb48|tag:lavfi.scene_score=0.872199
+pts=5800|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000
+pts=6720|pix_fmt=rgb48|tag:lavfi.scene_score=0.461832
+pts=8160|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000
+pts=9760|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000
+pts=14080|pix_fmt=rgb48|tag:lavfi.scene_score=0.841219
+pts=15700|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000
+pts=18500|pix_fmt=rgb48|tag:lavfi.scene_score=0.474949
+pts=20040|pix_fmt=rgb48|tag:lavfi.scene_score=0.380118
+pts=21760|pix_fmt=rgb48|tag:lavfi.scene_score=1.000000

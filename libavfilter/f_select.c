@@ -272,7 +272,12 @@ static int config_input(AVFilterLink *inlink)
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
     if (CONFIG_SELECT_FILTER && select->do_scene_detect) {
-        select->sad = ff_scene_sad_get_fn(select->bitdepth);
+        int is_be = !!(desc->flags & AV_PIX_FMT_FLAG_BE);
+
+        if (select->bitdepth > 8 && is_be != HAVE_BIGENDIAN)
+            select->sad = ff_scene_sad_bswap_get_fn();
+        else
+            select->sad = ff_scene_sad_get_fn(select->bitdepth);
         if (!select->sad)
             return AVERROR(EINVAL);
     }
@@ -518,6 +523,29 @@ const FFFilter ff_af_aselect = {
 
 #if CONFIG_SELECT_FILTER
 
+/**
+ * The scene score of a gray or YUV frame only looks at the luma plane, so
+ * any subsampling works as long as luma is a plane of its own holding
+ * LSB-aligned samples of 8 to 16 bits.
+ */
+static int is_scene_luma_format(const AVPixFmtDescriptor *desc)
+{
+    const AVComponentDescriptor *luma = &desc->comp[0];
+
+    if (desc->flags & (AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM |
+                       AV_PIX_FMT_FLAG_PAL     | AV_PIX_FMT_FLAG_RGB       |
+                       AV_PIX_FMT_FLAG_FLOAT   | AV_PIX_FMT_FLAG_BAYER))
+        return 0;
+    if (desc->nb_components != 1 &&
+        (!(desc->flags & AV_PIX_FMT_FLAG_PLANAR) || desc->nb_components < 3))
+        return 0;
+    if (luma->depth < 8 || luma->depth > 16)
+        return 0;
+
+    return luma->plane == 0 && luma->offset == 0 && luma->shift == 0 &&
+           luma->step == (luma->depth > 8 ? 2 : 1);
+}
+
 static int query_formats(const AVFilterContext *ctx,
                          AVFilterFormatsConfig **cfg_in,
                          AVFilterFormatsConfig **cfg_out)
@@ -525,15 +553,28 @@ static int query_formats(const AVFilterContext *ctx,
     const SelectContext *select = ctx->priv;
 
     if (select->do_scene_detect) {
-        static const enum AVPixelFormat pix_fmts[] = {
+        static const enum AVPixelFormat rgb_fmts[] = {
             AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24, AV_PIX_FMT_RGBA,
-            AV_PIX_FMT_ABGR, AV_PIX_FMT_BGRA, AV_PIX_FMT_GRAY8,
-            AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
-            AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
-            AV_PIX_FMT_YUV420P10,
-            AV_PIX_FMT_NONE
+            AV_PIX_FMT_ABGR, AV_PIX_FMT_BGRA,
+            AV_PIX_FMT_RGB48LE, AV_PIX_FMT_RGB48BE,
+            AV_PIX_FMT_BGR48LE, AV_PIX_FMT_BGR48BE,
+            AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,
+            AV_PIX_FMT_BGRA64LE, AV_PIX_FMT_BGRA64BE,
         };
-        return ff_set_pixel_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
+        const AVPixFmtDescriptor *desc = NULL;
+        AVFilterFormats *formats = NULL;
+        int ret;
+
+        for (int i = 0; i < FF_ARRAY_ELEMS(rgb_fmts); i++)
+            if ((ret = ff_add_format(&formats, rgb_fmts[i])) < 0)
+                return ret;
+
+        while ((desc = av_pix_fmt_desc_next(desc))) {
+            if (is_scene_luma_format(desc) &&
+                (ret = ff_add_format(&formats, av_pix_fmt_desc_get_id(desc))) < 0)
+                return ret;
+        }
+        return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
     }
     return 0;
 }

@@ -37,10 +37,17 @@ void ff_scene_sad_c(SCENE_SAD_PARAMS);
 
 void ff_scene_sad16_c(SCENE_SAD_PARAMS);
 
+/**
+ * SAD of 9 to 16 bit samples stored in the byte order the CPU does not use.
+ */
+void ff_scene_sad16_bswap_c(SCENE_SAD_PARAMS);
+
 ff_scene_sad_fn ff_scene_sad_get_fn_x86(int depth);
 
 ff_scene_sad_fn ff_scene_sad_get_fn_riscv(int depth);
 
 ff_scene_sad_fn ff_scene_sad_get_fn(int depth);
+
+ff_scene_sad_fn ff_scene_sad_bswap_get_fn(void);
 
 #endif /* AVFILTER_SCENE_SAD_H */

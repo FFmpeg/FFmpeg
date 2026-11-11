@@ -917,6 +917,14 @@ FATE_METADATA_FILTER-$(call ALLYES, $(SCENEDETECT_DEPS)) += fate-filter-metadata
 fate-filter-metadata-scenedetect: SRC = $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
 fate-filter-metadata-scenedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',select=gt(scene\,.25)"
 
+define FATE_SCENEDETECT_PIXFMT
+FATE_METADATA_FILTER-$$(call ALLYES, $$(SCENEDETECT_DEPS) FORMAT_FILTER) += fate-filter-metadata-scenedetect-$(1)
+fate-filter-metadata-scenedetect-$(1): SRC = $$(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov
+fate-filter-metadata-scenedetect-$(1): CMD = run ffprobe$$(PROGSSUF)$$(EXESUF) -of compact=p=0 -show_entries frame=pts,pix_fmt:frame_tags -bitexact -f lavfi "sws_flags=+accurate_rnd+bitexact;movie='$$(SRC)',format=$(1),select=gt(scene\,.25)"
+endef
+
+$(foreach FMT,gray10le rgb48le rgb48be yuv422p10be yuv422p10le yuv444p16le,$(eval $(call FATE_SCENEDETECT_PIXFMT,$(FMT))))
+
 SCDET_DEPS = LAVFI_INDEV MOVIE_FILTER SCDET_FILTER SCALE_FILTER \
                    MOV_DEMUXER SVQ3_DECODER ZLIB
 FATE_METADATA_FILTER-$(call ALLYES, $(SCDET_DEPS)) += fate-filter-metadata-scdet
