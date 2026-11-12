@@ -694,31 +694,18 @@ static int param_init(AVFilterContext *ctx)
                 s->size[i] = s->matrix_length[i];
             } else if (s->matrix_length[i] == 9) {
                 s->size[i] = 3;
-
-                if (!memcmp(matrix, same3x3, sizeof(same3x3))) {
-                    s->copy[i] = 1;
-                } else {
-                    s->filter[i] = filter_3x3;
-                    s->copy[i] = 0;
-                }
+                s->filter[i] = filter_3x3;
+                s->copy[i] = !memcmp(matrix, same3x3, sizeof(same3x3));
                 s->setup[i] = setup_3x3;
             } else if (s->matrix_length[i] == 25) {
                 s->size[i] = 5;
-                if (!memcmp(matrix, same5x5, sizeof(same5x5))) {
-                    s->copy[i] = 1;
-                } else {
-                    s->filter[i] = filter_5x5;
-                    s->copy[i] = 0;
-                }
+                s->filter[i] = filter_5x5;
+                s->copy[i] = !memcmp(matrix, same5x5, sizeof(same5x5));
                 s->setup[i] = setup_5x5;
             } else if (s->matrix_length[i] == 49) {
                 s->size[i] = 7;
-                if (!memcmp(matrix, same7x7, sizeof(same7x7))) {
-                    s->copy[i] = 1;
-                } else {
-                    s->filter[i] = filter_7x7;
-                    s->copy[i] = 0;
-                }
+                s->filter[i] = filter_7x7;
+                s->copy[i] = !memcmp(matrix, same7x7, sizeof(same7x7));
                 s->setup[i] = setup_7x7;
             } else {
                 return AVERROR(EINVAL);
@@ -731,6 +718,19 @@ static int param_init(AVFilterContext *ctx)
 
             if (s->copy[i] && (s->rdiv[i] != 1. || s->bias[i] != 0.))
                 s->copy[i] = 0;
+
+            if (s->depth > 8) {
+                if (s->mode[i] == MATRIX_ROW)
+                    s->filter[i] = filter16_row;
+                else if (s->mode[i] == MATRIX_COLUMN)
+                    s->filter[i] = filter16_column;
+                else if (s->size[i] == 3)
+                    s->filter[i] = filter16_3x3;
+                else if (s->size[i] == 5)
+                    s->filter[i] = filter16_5x5;
+                else if (s->size[i] == 7)
+                    s->filter[i] = filter16_7x7;
+            }
         }
     } else if (!strcmp(ctx->filter->name, "prewitt")) {
         for (i = 0; i < 4; i++) {
@@ -775,20 +775,6 @@ static int param_init(AVFilterContext *ctx)
     }
 
     if (!strcmp(ctx->filter->name, "convolution")) {
-        if (s->depth > 8) {
-            for (p = 0; p < s->nb_planes; p++) {
-                if (s->mode[p] == MATRIX_ROW)
-                    s->filter[p] = filter16_row;
-                else if (s->mode[p] == MATRIX_COLUMN)
-                    s->filter[p] = filter16_column;
-                else if (s->size[p] == 3)
-                    s->filter[p] = filter16_3x3;
-                else if (s->size[p] == 5)
-                    s->filter[p] = filter16_5x5;
-                else if (s->size[p] == 7)
-                    s->filter[p] = filter16_7x7;
-            }
-        }
 #if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64 && HAVE_X86ASM
         ff_convolution_init_x86(s);
 #endif
