@@ -557,6 +557,15 @@ done:
 
     if ((ret = av_frame_ref(rframe, s->frame)) < 0)
         return ret;
+
+    /* The bitstream has no frame type, so trust the container's sync samples. */
+    if (avpkt->flags & AV_PKT_FLAG_KEY) {
+        rframe->flags    |= AV_FRAME_FLAG_KEY;
+        rframe->pict_type = AV_PICTURE_TYPE_I;
+    } else {
+        rframe->flags    &= ~AV_FRAME_FLAG_KEY;
+        rframe->pict_type = AV_PICTURE_TYPE_P;
+    }
     *got_frame      = 1;
 
     /* always report that the buffer was completely consumed */

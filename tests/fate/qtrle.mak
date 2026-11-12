@@ -22,5 +22,12 @@ fate-qtrle-32bit: CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/ultra_demo_720_480_3
 FATE_QTRLE-$(call FRAMECRC, MOV, QTRLE) += $(FATE_QTRLE)
 FATE_QTRLE-$(call FRAMECRC, MOV, QTRLE, SCALE_FILTER) += $(FATE_QTRLE_SCALE)
 
+FATE_QTRLE_FFPROBE-$(call DEMDEC, MOV, QTRLE) += fate-qtrle-frame-flags fate-qtrle-duplicate-frame-flags
+fate-qtrle-frame-flags: CMD = probeframes -select_streams v:0 -show_entries frame=key_frame,pict_type \
+    -of csv $(TARGET_SAMPLES)/qtrle/Animation-16Greys.mov
+fate-qtrle-duplicate-frame-flags: CMD = probeframes -select_streams v:0 -read_intervals %+\#4 \
+    -show_entries frame=key_frame,pict_type -of csv $(TARGET_SAMPLES)/qtrle/criticalpath-credits.mov
+
 FATE_SAMPLES_FFMPEG += $(FATE_QTRLE-yes)
-fate-qtrle: $(FATE_QTRLE-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_QTRLE_FFPROBE-yes)
+fate-qtrle: $(FATE_QTRLE-yes) $(FATE_QTRLE_FFPROBE-yes)
