@@ -586,8 +586,10 @@ static int compile_single(const CompileArgs *args, const SwsOpList *ops,
     p->pixel_bits_out = rw_pixel_bits(write);
     p->palette_idx    = -1;
     p->num_blocks     = (dst->width + comp->block_size - 1) / comp->block_size;
-    if (p->num_blocks * comp->block_size < (unsigned) dst->width)
-        return AVERROR(ERANGE);
+    if (p->num_blocks * comp->block_size < (unsigned) dst->width) {
+        ret = AVERROR(ERANGE);
+        goto fail;
+    }
 
     SwsOpExec *exec = &p->exec_base;
     *exec = (SwsOpExec) {
