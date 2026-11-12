@@ -1508,7 +1508,9 @@ static int decode_ics_info(AACDecContext *ac, IndividualChannelStream *ics,
                 ics->tns_max_bands =  ff_tns_max_bands_512[sampling_index];
             }
             if (!ics->num_swb || !ics->swb_offset) {
-                ret_fail = AVERROR_BUG;
+                av_log(ac->avctx, AV_LOG_ERROR,
+                       "Unsupported sample rate index %d for LD/ELD\n",
+                       sampling_index);
                 goto fail;
             }
         } else {
