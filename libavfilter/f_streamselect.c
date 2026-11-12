@@ -225,7 +225,7 @@ static int parse_mapping(AVFilterContext *ctx, const char *map)
         new_map[new_nb_map++] = n;
     }
 
-    if (!new_nb_map) {
+    if (!new_nb_map || new_nb_map > ctx->nb_outputs) {
         av_log(ctx, AV_LOG_ERROR, "invalid mapping\n");
         av_free(new_map);
         return AVERROR(EINVAL);
