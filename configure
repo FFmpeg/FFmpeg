@@ -8225,10 +8225,9 @@ flatten_extralibs(){
     list_name=$1
     eval list=\$${1}
     for entry in $list; do
-        entry_copy=$entry
-        resolve entry_copy
+        eval entry_value=\$$entry
         flat_entries=
-        for e in $entry_copy; do
+        for e in $entry_value; do
             case $e in
                 *_extralibs) nested_entries="$nested_entries$e ";;
                           *) flat_entries="$flat_entries$e ";;
