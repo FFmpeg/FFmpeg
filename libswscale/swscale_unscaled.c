@@ -2032,12 +2032,14 @@ static int rgbToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
             dstPtr += dstStride[0] * srcSliceY;
 
             for (i = 0; i < srcSliceH; i++) {
+                const uint8_t *row = srcPtr;
+
                 if(src_bswap) {
                     for(j=0; j<c->opts.src_w; j++)
                         ((uint16_t*)c->formatConvBuffer)[j] = av_bswap16(((uint16_t*)srcPtr)[j]);
-                    conv(c->formatConvBuffer, dstPtr, c->opts.src_w * srcBpp);
-                }else
-                    conv(srcPtr, dstPtr, c->opts.src_w * srcBpp);
+                    row = c->formatConvBuffer;
+                }
+                conv(row, dstPtr, c->opts.src_w * srcBpp);
                 if(dst_bswap)
                     for(j=0; j<c->opts.src_w; j++)
                         ((uint16_t*)dstPtr)[j] = av_bswap16(((uint16_t*)dstPtr)[j]);
