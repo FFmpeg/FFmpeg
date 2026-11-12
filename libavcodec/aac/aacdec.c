@@ -2338,6 +2338,15 @@ static int aac_decode_er_frame(AVCodecContext *avctx, AVFrame *frame,
 
     spectral_to_sample(ac, samples);
 
+    if (avctx->sample_rate <= 0)
+        avctx->sample_rate = m4ac->sample_rate;
+
+    if (avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Cannot output a frame without a valid sample rate\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!ac->frame->data[0] && samples) {
         av_log(avctx, AV_LOG_ERROR, "no frame data found\n");
         return AVERROR_INVALIDDATA;
