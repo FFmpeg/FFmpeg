@@ -38,6 +38,7 @@ typedef struct ConvolutionContext {
     float user_rdiv[4];
     float bias[4];
     int mode[4];
+    int active_mode[4];
     float scale;
     float delta;
     int planes;
