@@ -120,8 +120,6 @@ static int activate(AVFilterContext *ctx)
     int status, ret;
     int64_t pts;
 
-    adjust_pos(ctx, s);
-
     for (int i = 0; i < ctx->nb_outputs; i++)
         FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[i], ctx);
 
@@ -135,6 +133,7 @@ static int activate(AVFilterContext *ctx)
         AVFrame *src = s->feed;
         AVFrame *dst = NULL;
 
+        adjust_pos(ctx, s);
         av_fifo_read(s->fifo, &dst, 1);
         if (!dst)
             return AVERROR_BUG;
@@ -198,6 +197,7 @@ static int activate(AVFilterContext *ctx)
         if (ret > 0) {
             AVFrame *frame;
 
+            adjust_pos(ctx, s);
             ret = av_fifo_write(s->fifo, &in, 1);
             if (ret < 0) {
                 av_frame_free(&in);
