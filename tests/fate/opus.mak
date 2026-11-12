@@ -22,7 +22,7 @@ $(FATE_OPUS): CMP = stddev
 $(FATE_OPUS): CMP_UNIT = s16
 $(FATE_OPUS): FUZZ = 3
 fate-opus-testvector01:      CMP_TARGET = 0
-fate-opus-testvector02:      CMP_TARGET = 191
+fate-opus-testvector02:      CMP_TARGET = 190
 fate-opus-testvector03:      CMP_TARGET = 139
 fate-opus-testvector04:      CMP_TARGET = 119
 fate-opus-testvector05:      CMP_TARGET = 108
@@ -34,7 +34,7 @@ fate-opus-testvector10:      CMP_TARGET = 38
 fate-opus-testvector11:      CMP_TARGET = 0
 fate-opus-testvector12:      CMP_TARGET = 160
 fate-opus-silk-lbrr:         CMP_TARGET = 0
-fate-opus-silk-lbrr-mono:    CMP_TARGET = 0
+fate-opus-silk-lbrr-mono:    CMP_TARGET = 37
 fate-opus-tron.6ch.tinypkts: CMP_SHIFT = 1440
 fate-opus-tron.6ch.tinypkts: CMP_TARGET = 0
 

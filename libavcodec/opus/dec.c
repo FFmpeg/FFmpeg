@@ -72,6 +72,13 @@ static const int silk_resample_delay[] = {
     4, 8, 11, 11, 11
 };
 
+/* filter size of the resampler for each bandwidth, chosen so that the
+ * resampler needs no more input samples of lookahead than the silence
+ * above provides, so it does not hold back output samples */
+static const int silk_resample_filter_size[] = {
+    8, 16, 16, 16, 16
+};
+
 typedef struct OpusStreamContext {
     AVCodecContext *avctx;
     int output_channels;
@@ -197,6 +204,8 @@ static int opus_init_resample(OpusStreamContext *s)
     int ret;
 
     av_opt_set_int(s->swr, "in_sample_rate", s->silk_samplerate, 0);
+    av_opt_set_int(s->swr, "filter_size",
+                   silk_resample_filter_size[s->packet.bandwidth], 0);
     ret = swr_init(s->swr);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error opening the resampler.\n");
@@ -578,7 +587,6 @@ static av_cold int opus_init_streams(AVCodecContext *avctx,
         av_opt_set_chlayout(s->swr, "in_chlayout",   &layout,            0);
         av_opt_set_chlayout(s->swr, "out_chlayout",  &layout,            0);
         av_opt_set_int(s->swr, "out_sample_rate",    48000,              0);
-        av_opt_set_int(s->swr, "filter_size",        16,                 0);
 
         ret = ff_silk_init(avctx, &s->silk, s->output_channels);
         if (ret < 0)
