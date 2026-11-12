@@ -1,0 +1,30 @@
+25fc54505ebfad5b7a3b54fd3464089d *tests/data/fate/mov-3gp-udta-metadata.3gp
+939 tests/data/fate/mov-3gp-udta-metadata.3gp
+#extradata 0:       30, 0x4299048c
+#tb 0: 1/16384
+#media_type 0: video
+#codec_id 0: mpeg4
+#dimensions 0: 32x32
+#sar 0: 1/1
+0,          0,          0,    16384,       26, 0x4a08091f
+[FORMAT]
+TAG:major_brand=3gp4
+TAG:minor_version=512
+TAG:compatible_brands=3gp4isomiso2
+TAG:artist=Artist
+TAG:artist-eng=Artist
+TAG:title=Title
+TAG:title-eng=Title
+TAG:author=Author
+TAG:author-eng=Author
+TAG:genre=Genre
+TAG:genre-eng=Genre
+TAG:comment=Comment
+TAG:comment-eng=Comment
+TAG:album=Album
+TAG:album-eng=Album
+TAG:track=7
+TAG:copyright=Copyright
+TAG:copyright-eng=Copyright
+TAG:date=2024
+[/FORMAT]

@@ -336,6 +336,56 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     return av_dict_set(&c->fc->metadata, key, buf, 0);
 }
 
+// 3GPP TS 26.244 user data box, after its version and flags
+static int mov_metadata_3gp(MOVContext *c, AVIOContext *pb, int64_t len,
+                            const char *key, AVDictionary **metadata)
+{
+    char language[4], *str;
+    int size, ch, ret;
+
+    c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+    if (!strcmp(key, "date"))
+        return len < 2 ? 0 : av_dict_set_int(metadata, key, avio_rb16(pb), 0);
+
+    if (len < 3 || len >= INT_MAX / 2)
+        return 0;
+    ff_mov_lang_to_iso639(avio_rb16(pb), language);
+    len -= 2;
+
+    size = 2 * len + 1;
+    str = av_malloc(size);
+    if (!str)
+        return AVERROR(ENOMEM);
+    ch = avio_r8(pb);
+    if (ch == 0xFE || ch == 0xFF) { // UTF-16 byte order mark, never in UTF-8
+        if (len < 2) {
+            av_free(str);
+            return 0;
+        }
+        avio_skip(pb, 1);
+        len -= 2 + (ch == 0xFE ? avio_get_str16be(pb, len - 2, str, size)
+                               : avio_get_str16le(pb, len - 2, str, size));
+    } else {
+        str[0] = ch;
+        len -= 1 + (ch ? avio_get_str(pb, len - 1, str + 1, size - 1) : 0);
+    }
+
+    ret = av_dict_set(metadata, key, str, 0);
+    if (ret >= 0 && *language && strcmp(language, "und")) {
+        char key2[32];
+        snprintf(key2, sizeof(key2), "%s-%s", key, language);
+        ret = av_dict_set(metadata, key2, str, 0);
+    }
+    av_free(str);
+
+    if (ret >= 0 && len > 0 && !strcmp(key, "album")) {
+        int track = avio_r8(pb);
+        if (track)
+            ret = av_dict_set_int(metadata, "track", track, 0);
+    }
+    return ret;
+}
+
 static int mov_metadata_hmmt(MOVContext *c, AVIOContext *pb, unsigned len)
 {
     int i, n_hmmt;
@@ -369,6 +419,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
     int raw = 0;
     int num = 0;
+    int tgp = 0;
     AVDictionary **metadata;
 
     if (c->trak_index >= 0 && c->trak_index < c->fc->nb_streams)
@@ -384,18 +435,21 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 'a','A','R','T'): key = "album_artist";    break;
     case MKTAG( 'a','k','I','D'): key = "account_type";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'a','l','b','m'): key = "album"; tgp = 1; break;
     case MKTAG( 'a','p','I','D'): key = "account_id"; break;
+    case MKTAG( 'a','u','t','h'): key = "author"; tgp = 1; break;
     case MKTAG( 'c','a','t','g'): key = "category"; break;
     case MKTAG( 'c','p','i','l'): key = "compilation";
         parse = mov_metadata_int8_no_padding; break;
-    case MKTAG( 'c','p','r','t'): key = "copyright"; break;
+    case MKTAG( 'c','p','r','t'): key = "copyright"; tgp = 1; break;
     case MKTAG( 'd','e','s','c'): key = "description"; break;
     case MKTAG( 'd','i','s','k'): key = "disc";
         parse = mov_metadata_track_or_disc_number; break;
+    case MKTAG( 'd','s','c','p'): key = "comment"; tgp = 1; break;
     case MKTAG( 'e','g','i','d'): key = "episode_uid";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'F','I','R','M'): key = "firmware"; raw = 1; break;
-    case MKTAG( 'g','n','r','e'): key = "genre";
+    case MKTAG( 'g','n','r','e'): key = "genre"; tgp = 1;
         parse = mov_metadata_gnre; break;
     case MKTAG( 'h','d','v','d'): key = "hd_video";
         parse = mov_metadata_int8_no_padding; break;
@@ -410,6 +464,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 'n','a','m','e'): key = "name"; break;
     case MKTAG( 'p','c','s','t'): key = "podcast";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'p','e','r','f'): key = "artist"; tgp = 1; break;
     case MKTAG( 'p','g','a','p'): key = "gapless_playback";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'p','u','r','d'): key = "purchase_date"; break;
@@ -423,6 +478,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 's','o','s','n'): key = "sort_show";    break;
     case MKTAG( 's','t','i','k'): key = "media_type";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 't','i','t','l'): key = "title"; tgp = 1; break;
     case MKTAG( 't','r','k','n'): key = "track";
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 't','v','e','n'): key = "episode_id"; break;
@@ -432,6 +488,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 't','v','s','h'): key = "show";      break;
     case MKTAG( 't','v','s','n'): key = "season_number";
         parse = mov_metadata_int8_bypass_padding; break;
+    case MKTAG( 'y','r','r','c'): key = "date"; tgp = 1; break;
     case MKTAG(0xa9,'A','R','T'): key = "artist";    break;
     case MKTAG(0xa9,'P','R','D'): key = "producer";  break;
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
@@ -512,6 +569,8 @@ retry:
         langcode = avio_rb16(pb);
         ff_mov_lang_to_iso639(langcode, language);
         atom.size -= 4;
+        if (tgp && !str_size && !langcode) // 3GPP version and flags
+            return mov_metadata_3gp(c, pb, atom.size, key, metadata);
     } else
         str_size = atom.size;
 
