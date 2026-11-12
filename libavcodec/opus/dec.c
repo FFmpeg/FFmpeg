@@ -41,6 +41,7 @@
 #include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/frame.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
@@ -507,6 +508,23 @@ static int opus_drain_subpacket(OpusStreamContext *s, int decoded_samples)
     return ret < 0 ? ret : decoded_samples + ret;
 }
 
+/**
+ * Whether a packet ends the sequence it belongs to: it is flagged so, or
+ * samples are to be discarded from the end of its output. Nothing can
+ * follow the latter, so the samples held back belong before that padding.
+ */
+static int opus_packet_ends_sequence(const AVPacket *pkt)
+{
+    const uint8_t *sd;
+    size_t sd_size;
+
+    if (pkt->flags & AV_PKT_FLAG_EOS)
+        return 1;
+
+    sd = av_packet_get_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, &sd_size);
+    return sd && sd_size >= 8 && AV_RL32(sd + 4);
+}
+
 static av_cold void opus_free_streams(OpusContext *c)
 {
     for (int i = 0; i < c->p.nb_streams; i++) {
@@ -749,7 +767,7 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
         }
 
         ret = opus_decode_subpacket(&c->streams[i], buf);
-        if (ret >= 0 && buf && (avpkt->flags & AV_PKT_FLAG_EOS))
+        if (ret >= 0 && buf && opus_packet_ends_sequence(avpkt))
             ret = opus_drain_subpacket(s, ret);
         if (ret < 0)
             return ret;
