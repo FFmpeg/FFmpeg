@@ -25,6 +25,7 @@
 #include "libavutil/iamf.h"
 #include "libavutil/mem.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/opus/tab.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -123,7 +124,9 @@ static int fill_codec_config(IAMFContext *iamf, const AVStreamGroup *stg,
     switch (codec_config->codec_id) {
     case AV_CODEC_ID_OPUS:
         codec_config->sample_rate = 48000;
-        codec_config->nb_samples = av_rescale(st->codecpar->frame_size, 48000, st->codecpar->sample_rate);
+        codec_config->nb_samples = av_rescale(st->codecpar->frame_size,
+                                              OPUS_TIMESTAMP_RATE,
+                                              st->codecpar->sample_rate);
         break;
     default:
         codec_config->sample_rate = st->codecpar->sample_rate;
@@ -1292,9 +1295,10 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
         // IAMF's num_samples_to_trim_at_start is the same as Opus's pre-skip.
         if (!skip_samples)
             skip_samples = pkt->dts < 0
-                ? av_rescale(-pkt->dts, 48000, pkt->time_base.den)
+                ? av_rescale(-pkt->dts, OPUS_TIMESTAMP_RATE, pkt->time_base.den)
                 : 0;
-        discard_padding = av_rescale(discard_padding, 48000, pkt->time_base.den);
+        discard_padding = av_rescale(discard_padding, OPUS_TIMESTAMP_RATE,
+                                     pkt->time_base.den);
     }
 
     ret = avio_open_dyn_buf(&dyn_bc);

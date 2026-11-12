@@ -47,6 +47,7 @@
 #include "libavcodec/get_bits.h"
 
 #include "libavcodec/internal.h"
+#include "libavcodec/opus/tab.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
 #include "libavcodec/raw.h"
@@ -1551,7 +1552,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         if (track->tag == MKTAG('i','a','m','f'))
             avio_wb16(pb, 0); /* samplerate must be 0 for IAMF */
         else if (track->par->codec_id == AV_CODEC_ID_OPUS)
-            avio_wb16(pb, 48000);
+            avio_wb16(pb, OPUS_TIMESTAMP_RATE);
         else if (track->par->codec_id == AV_CODEC_ID_TRUEHD)
             avio_wb32(pb, track->par->sample_rate);
         else
@@ -3453,7 +3454,8 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
             int duration = get_cluster_duration(track, i);
 #if CONFIG_IAMFENC
             if (track->iamf && track->par->codec_id == AV_CODEC_ID_OPUS)
-                duration = av_rescale(duration, 48000, track->par->sample_rate);
+                duration = av_rescale(duration, OPUS_TIMESTAMP_RATE,
+                                      track->par->sample_rate);
 #endif
             if (i && duration == stts_entries[entries].duration) {
                 stts_entries[entries].count++; /* compress */
@@ -3509,7 +3511,7 @@ static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
     const int OPUS_SEEK_PREROLL_MS = 80;
     int roll_samples = av_rescale_q(OPUS_SEEK_PREROLL_MS,
                                     (AVRational){1, 1000},
-                                    (AVRational){1, 48000});
+                                    (AVRational){1, OPUS_TIMESTAMP_RATE});
 
     if (!track->entry)
         return 0;
@@ -4446,7 +4448,8 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
 
 #if CONFIG_IAMFENC
         if (track->iamf && track->par->codec_id == AV_CODEC_ID_OPUS)
-            start_ct = av_rescale(start_ct, 48000, track->par->sample_rate);
+            start_ct = av_rescale(start_ct, OPUS_TIMESTAMP_RATE,
+                                  track->par->sample_rate);
 #endif
         /* Note, this delay is calculated from the pts of the first sample,
          * ensuring that we don't reduce the duration for cases with

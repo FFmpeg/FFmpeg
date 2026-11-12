@@ -2876,8 +2876,9 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         if (ret >= 0) {
             /* If the packet's duration is inconsistent with the coded duration,
              * add an explicit duration element. */
-            uint64_t parsed_duration = av_rescale_q(ret, (AVRational){1, 48000},
-                                                    st->time_base);
+            uint64_t parsed_duration =
+                av_rescale_q(ret, (AVRational){1, OPUS_TIMESTAMP_RATE},
+                             st->time_base);
             if (parsed_duration != duration)
                 ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
         }

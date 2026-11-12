@@ -29,6 +29,7 @@
 #include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
 #include "libavutil/mem.h"
+#include "libavcodec/opus/tab.h"
 
 #define FRAME_SIZE_OFFSET 40
 
@@ -94,7 +95,7 @@ static uint32_t samples_per_packet(const AVCodecParameters *par) {
     case AV_CODEC_ID_MP1:
         return 384;
     case AV_CODEC_ID_OPUS:
-        return frame_size * 48000 / sample_rate;
+        return frame_size * OPUS_TIMESTAMP_RATE / sample_rate;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         return 1152;
@@ -169,7 +170,7 @@ static int caf_write_header(AVFormatContext *s)
     }
 
     if (par->codec_id == AV_CODEC_ID_OPUS)
-        sample_rate = 48000;
+        sample_rate = OPUS_TIMESTAMP_RATE;
 
     ffio_wfourcc(pb, "caff"); //< mFileType
     avio_wb16(pb, 1);         //< mFileVersion

@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+#include "libavcodec/opus/tab.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavformat/ogg/mapping.h"
@@ -75,7 +76,7 @@ static int parse_opus_header(AVFormatContext *avf, AVStream *st, struct ogg_stre
     st->codecpar->sample_rate = 48000;
     st->codecpar->seek_preroll = av_rescale(OPUS_SEEK_PREROLL_MS,
                                             st->codecpar->sample_rate, 1000);
-    avpriv_set_pts_info(st, 64, 1, 48000);
+    avpriv_set_pts_info(st, 64, 1, OPUS_TIMESTAMP_RATE);
 
     priv->need_comments = 1;
 

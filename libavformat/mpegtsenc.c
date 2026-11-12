@@ -33,6 +33,7 @@
 #include "libavcodec/defs.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/hevc/hevc.h"
+#include "libavcodec/opus/tab.h"
 #include "libavcodec/vvc.h"
 #include "libavcodec/startcode.h"
 
@@ -1341,7 +1342,9 @@ static int mpegts_init(AVFormatContext *s)
                 return ret;
         }
         if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
-            ts_st->opus_pending_trim_start = st->codecpar->initial_padding * 48000 / st->codecpar->sample_rate;
+            ts_st->opus_pending_trim_start = st->codecpar->initial_padding *
+                                             OPUS_TIMESTAMP_RATE /
+                                             st->codecpar->sample_rate;
         }
     }
 
@@ -2221,7 +2224,8 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
                                                 &side_data_size);
 
             if (side_data && side_data_size >= 10) {
-                trim_end = AV_RL32(side_data + 4) * 48000 / st->codecpar->sample_rate;
+                trim_end = AV_RL32(side_data + 4) * OPUS_TIMESTAMP_RATE /
+                           st->codecpar->sample_rate;
             }
 
             if (pkt->size > INT_MAX - 7 - pkt->size / 255)

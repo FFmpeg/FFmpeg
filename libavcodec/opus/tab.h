@@ -28,13 +28,19 @@
 #include "libavutil/attributes_internal.h"
 #include "libavutil/error.h"
 
+/**
+ * The clock of Opus: packet lengths, pre-skip and trimming count samples at
+ * 48 kHz whatever the sample rate of the stream.
+ */
+#define OPUS_TIMESTAMP_RATE 48000
+
 FF_VISIBILITY_PUSH_HIDDEN
 extern const uint16_t ff_opus_frame_duration[32];
 
 /**
- * @return the duration of an Opus packet in samples at 48 kHz, read from
- *         its TOC, or AVERROR_INVALIDDATA if the packet is too short or
- *         longer than 120 ms
+ * @return the duration of an Opus packet in samples at OPUS_TIMESTAMP_RATE,
+ *         read from its TOC, or AVERROR_INVALIDDATA if the packet is too
+ *         short or longer than 120 ms
  */
 static inline int ff_opus_packet_samples(const uint8_t *buf, int buf_size)
 {
@@ -57,7 +63,8 @@ static inline int ff_opus_packet_samples(const uint8_t *buf, int buf_size)
     }
     samples = frame_count * ff_opus_frame_duration[buf[0] >> 3];
     // A packet holds at most 120 ms.
-    return samples > 120 * 48 ? AVERROR_INVALIDDATA : samples;
+    return samples > 120 * OPUS_TIMESTAMP_RATE / 1000 ? AVERROR_INVALIDDATA
+                                                    : samples;
 }
 
 extern const uint8_t  ff_celt_band_end[];

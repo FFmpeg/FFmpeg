@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
+#include "libavcodec/opus/tab.h"
 
 #include "rtpenc.h"
 
@@ -300,7 +301,7 @@ static int rtp_write_header(AVFormatContext *s1)
         /* The opus RTP RFC says that all opus streams should use 48000 Hz
          * as clock rate, since all opus sample rates can be expressed in
          * this clock rate, and sample rate changes on the fly are supported. */
-        avpriv_set_pts_info(st, 32, 1, 48000);
+        avpriv_set_pts_info(st, 32, 1, OPUS_TIMESTAMP_RATE);
         break;
     case AV_CODEC_ID_ILBC:
         if (st->codecpar->block_align != 38 && st->codecpar->block_align != 50) {

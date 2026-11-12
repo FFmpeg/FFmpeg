@@ -71,6 +71,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/opus/tab.h"
 #include "id3v1.h"
 #include "mov_chan.h"
 #include "replaygain.h"
@@ -9201,9 +9202,9 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AV_WL16A(st->codecpar->extradata + 16, AV_RB16A(st->codecpar->extradata + 16));
 
     st->codecpar->initial_padding = pre_skip;
-    st->codecpar->seek_preroll = av_rescale_q(OPUS_SEEK_PREROLL_MS,
-                                              (AVRational){1, 1000},
-                                              (AVRational){1, 48000});
+    st->codecpar->seek_preroll =
+        av_rescale_q(OPUS_SEEK_PREROLL_MS, (AVRational){1, 1000},
+                     (AVRational){1, OPUS_TIMESTAMP_RATE});
 
     return 0;
 }

@@ -31,6 +31,7 @@
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/flac.h"
+#include "libavcodec/opus/tab.h"
 #include "libavformat/avformat.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
@@ -534,8 +535,7 @@ static int ogg_init(AVFormatContext *s)
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codecpar->codec_id == AV_CODEC_ID_OPUS)
-                /* Opus requires a fixed 48kHz clock */
-                avpriv_set_pts_info(st, 64, 1, 48000);
+                avpriv_set_pts_info(st, 64, 1, OPUS_TIMESTAMP_RATE);
             else
                 avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
         }
