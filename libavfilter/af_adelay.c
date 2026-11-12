@@ -118,17 +118,22 @@ static int resize_samples_## name ##p(ChanDelay *d, int64_t new_delay)          
         return 0;                                                                                       \
     }                                                                                                   \
                                                                                                         \
+    if (new_delay > SIZE_MAX / sizeof(type)) {                                                          \
+        return AVERROR(ENOMEM);                                                                         \
+    }                                                                                                   \
+                                                                                                        \
     samples = (type *) av_fast_realloc(d->samples, &d->samples_size, new_delay * sizeof(type));         \
     if (!samples) {                                                                                     \
         return AVERROR(ENOMEM);                                                                         \
     }                                                                                                   \
                                                                                                         \
     if (new_delay < d->delay) {                                                                         \
-        if (d->index > new_delay) {                                                                     \
-            d->index -= new_delay;                                                                      \
-            memmove(samples, &samples[new_delay], d->index * sizeof(type));                             \
+        const size_t newest_end = d->delay_index < d->delay ? d->delay_index : d->index;                \
+        if (newest_end >= new_delay) {                                                                  \
+            memmove(samples, &samples[newest_end - new_delay], new_delay * sizeof(type));               \
+            d->index = 0;                                                                               \
             d->delay_index = new_delay;                                                                 \
-        } else if (d->delay_index > d->index) {                                                         \
+        } else if (d->delay_index >= d->delay) {                                                        \
             memmove(&samples[d->index], &samples[d->index+(d->delay-new_delay)],                        \
                     (new_delay - d->index) * sizeof(type));                                             \
             d->delay_index -= d->delay - new_delay;                                                     \
@@ -139,11 +144,9 @@ static int resize_samples_## name ##p(ChanDelay *d, int64_t new_delay)          
             block_size = (d->delay - d->index) * sizeof(type);                                          \
             memmove(&samples[d->index+(new_delay - d->delay)], &samples[d->index], block_size);         \
             d->delay_index = new_delay;                                                                 \
-        } else {                                                                                        \
-            d->delay_index += new_delay - d->delay;                                                     \
+            block_size = (new_delay - d->delay) * sizeof(type);                                         \
+            memset(&samples[d->index], fill, block_size);                                               \
         }                                                                                               \
-        block_size = (new_delay - d->delay) * sizeof(type);                                             \
-        memset(&samples[d->index], fill, block_size);                                                   \
     }                                                                                                   \
     d->delay = new_delay;                                                                               \
     d->samples = (void *) samples;                                                                      \
