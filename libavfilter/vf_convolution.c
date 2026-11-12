@@ -570,7 +570,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int plane;
 
     for (plane = 0; plane < s->nb_planes; plane++) {
-        const int mode = s->mode[plane];
+        const int mode = s->active_mode[plane];
         const int bpc = s->bpc;
         const int radius = s->size[plane] / 2;
         const int height = s->planeheight[plane];
@@ -710,6 +710,7 @@ static int param_init(AVFilterContext *ctx)
             } else {
                 return AVERROR(EINVAL);
             }
+            s->active_mode[i] = s->mode[i];
 
             if (sum == 0)
                 sum = 1;
