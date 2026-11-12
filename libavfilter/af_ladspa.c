@@ -452,14 +452,15 @@ static int set_control(AVFilterContext *ctx, unsigned long port, LADSPA_Data val
 {
     LADSPAContext *s = ctx->priv;
     const char *label = s->desc->Label;
-    LADSPA_PortRangeHint *h = (LADSPA_PortRangeHint *)s->desc->PortRangeHints +
-                              s->icmap[port];
+    LADSPA_PortRangeHint *h;
 
     if (port >= s->nb_inputcontrols) {
         av_log(ctx, AV_LOG_ERROR, "Control c%ld is out of range [0 - %lu].\n",
                port, s->nb_inputcontrols);
         return AVERROR(EINVAL);
     }
+
+    h = (LADSPA_PortRangeHint *)s->desc->PortRangeHints + s->icmap[port];
 
     if (LADSPA_IS_HINT_BOUNDED_BELOW(h->HintDescriptor) &&
             value < h->LowerBound) {
