@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/ffmath.h"
@@ -944,31 +945,35 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             }
 
             if (ebur128->loglevel != AV_LOG_QUIET) {
-            if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
-                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
-                       av_ts2timestr(pts, &outlink->time_base),
-                       ebur128->target, loudness_400, loudness_3000,
-                       ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
-            } else {
-                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
-                       av_ts2timestr(pts, &outlink->time_base),
-                       ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
-                       ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
-            }
+                AVBPrint bp;
+
+                av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+                if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
+                    av_bprintf(&bp, "t: %-10s " LOG_FMT,
+                               av_ts2timestr(pts, &outlink->time_base),
+                               ebur128->target, loudness_400, loudness_3000,
+                               ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
+                } else {
+                    av_bprintf(&bp, "t: %-10s " LOG_FMT,
+                               av_ts2timestr(pts, &outlink->time_base),
+                               ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
+                               ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
+                }
 
 #define PRINT_PEAKS(str, sp, ptype) do {                            \
     if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {       \
-        av_log(ctx, ebur128->loglevel, "  " str ":");               \
+        av_bprintf(&bp, "  " str ":");                              \
         for (int ch = 0; ch < nb_channels; ch++)                    \
-            av_log(ctx, ebur128->loglevel, " %5.1f", DBFS(sp[ch])); \
-        av_log(ctx, ebur128->loglevel, " dBFS");                    \
+            av_bprintf(&bp, " %5.1f", DBFS(sp[ch]));                \
+        av_bprintf(&bp, " dBFS");                                   \
     }                                                               \
 } while (0)
 
-            PRINT_PEAKS("SPK", ebur128->sample_peaks, SAMPLES);
-            PRINT_PEAKS("FTPK", ebur128->true_peaks_per_frame, TRUE);
-            PRINT_PEAKS("TPK", ebur128->true_peaks,   TRUE);
-            av_log(ctx, ebur128->loglevel, "\n");
+                PRINT_PEAKS("SPK", ebur128->sample_peaks, SAMPLES);
+                PRINT_PEAKS("FTPK", ebur128->true_peaks_per_frame, TRUE);
+                PRINT_PEAKS("TPK", ebur128->true_peaks,   TRUE);
+                ff_filter_log_lines(ctx, ebur128->loglevel, &bp);
+                av_bprint_finalize(&bp, NULL);
             }
         }
     }
@@ -1060,29 +1065,33 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     if (ebur128->nb_channels > 0) {
-    av_log(ctx, AV_LOG_INFO, "Summary:\n\n"
-           "  Integrated loudness:\n"
-           "    I:         %5.1f LUFS\n"
-           "    Threshold: %5.1f LUFS\n\n"
-           "  Loudness range:\n"
-           "    LRA:       %5.1f LU\n"
-           "    Threshold: %5.1f LUFS\n"
-           "    LRA low:   %5.1f LUFS\n"
-           "    LRA high:  %5.1f LUFS",
-           ebur128->integrated_loudness, ebur128->i400.rel_threshold,
-           ebur128->loudness_range,      ebur128->i3000.rel_threshold,
-           ebur128->lra_low, ebur128->lra_high);
+        AVBPrint bp;
+
+        av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+        av_bprintf(&bp, "Summary:\n\n"
+                   "  Integrated loudness:\n"
+                   "    I:         %5.1f LUFS\n"
+                   "    Threshold: %5.1f LUFS\n\n"
+                   "  Loudness range:\n"
+                   "    LRA:       %5.1f LU\n"
+                   "    Threshold: %5.1f LUFS\n"
+                   "    LRA low:   %5.1f LUFS\n"
+                   "    LRA high:  %5.1f LUFS",
+                   ebur128->integrated_loudness, ebur128->i400.rel_threshold,
+                   ebur128->loudness_range,      ebur128->i3000.rel_threshold,
+                   ebur128->lra_low, ebur128->lra_high);
 
 #define PRINT_PEAK_SUMMARY(str, value, ptype) do {               \
     if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {    \
-        av_log(ctx, AV_LOG_INFO, "\n\n  " str " peak:\n"         \
-               "    Peak:      %5.1f dBFS", value);              \
+        av_bprintf(&bp, "\n\n  " str " peak:\n"                  \
+                   "    Peak:      %5.1f dBFS", value);          \
     }                                                            \
 } while (0)
 
-    PRINT_PEAK_SUMMARY("Sample", ebur128->sample_peak, SAMPLES);
-    PRINT_PEAK_SUMMARY("True",   ebur128->true_peak,   TRUE);
-    av_log(ctx, AV_LOG_INFO, "\n");
+        PRINT_PEAK_SUMMARY("Sample", ebur128->sample_peak, SAMPLES);
+        PRINT_PEAK_SUMMARY("True",   ebur128->true_peak,   TRUE);
+        av_log(ctx, AV_LOG_INFO, "%s\n", bp.str);
+        av_bprint_finalize(&bp, NULL);
     }
 
     av_freep(&ebur128->y_line_ref);
