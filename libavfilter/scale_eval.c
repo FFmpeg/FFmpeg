@@ -55,6 +55,21 @@ enum var_name {
     VARS_NB
 };
 
+static int eval_dimension(void *log_ctx, const char *expr, const double *var_values,
+                          int in_dimension, int *out_dimension)
+{
+    double res;
+    int ret = av_expr_parse_and_eval(&res, expr, var_names, var_values,
+                                     NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
+    if (ret < 0)
+        return ret;
+    if (!(res >= INT32_MIN && res <= INT32_MAX))
+        return AVERROR(EINVAL);
+
+    *out_dimension = (int) res == 0 ? in_dimension : (int) res;
+    return 0;
+}
+
 int ff_scale_eval_dimensions(void *log_ctx,
     const char *w_expr, const char *h_expr,
     AVFilterLink *inlink, AVFilterLink *outlink,
@@ -86,26 +101,13 @@ int ff_scale_eval_dimensions(void *log_ctx,
                            NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
     var_values[VAR_OUT_W] = var_values[VAR_OW] = res == 0 ? inlink->w : trunc(res);
 
-    if ((ret = av_expr_parse_and_eval(&res, (expr = h_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
+    if ((ret = eval_dimension(log_ctx, (expr = h_expr), var_values, inlink->h, &eval_h)) < 0)
         goto fail;
-    if (!(res >= INT32_MIN && res <= INT32_MAX)) {
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
 
-    eval_h = var_values[VAR_OUT_H] = var_values[VAR_OH] = (int) res == 0 ? inlink->h : (int) res;
+    var_values[VAR_OUT_H] = var_values[VAR_OH] = eval_h;
     /* evaluate again the width, as it may depend on the output height */
-    if ((ret = av_expr_parse_and_eval(&res, (expr = w_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
+    if ((ret = eval_dimension(log_ctx, (expr = w_expr), var_values, inlink->w, &eval_w)) < 0)
         goto fail;
-    if (!(res >= INT32_MIN && res <= INT32_MAX)) {
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
-    eval_w = (int) res == 0 ? inlink->w : (int) res;
 
     *ret_w = eval_w;
     *ret_h = eval_h;
