@@ -973,6 +973,16 @@ resolve(){
     eval $1=\$resolve_out
 }
 
+# removes the names of empty variables from the list
+drop_empty(){
+    drop_empty_out=
+    eval drop_empty_in=\$$1
+    for v in $drop_empty_in; do
+        eval test -n \"\$$v\" && drop_empty_out="$drop_empty_out$v "
+    done
+    eval $1=\$drop_empty_out
+}
+
 add_cppflags(){
     append CPPFLAGS "$@"
 }
@@ -8237,6 +8247,7 @@ flatten_extralibs(){
 flatten_extralibs_wrapper(){
     list_name=$1
     flatten_extralibs $list_name
+    drop_empty $list_name
     unique $list_name
     resolve $list_name
     eval $list_name=\$\(\$ldflags_filter \$$list_name\)
