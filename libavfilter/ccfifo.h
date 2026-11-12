@@ -46,6 +46,7 @@ typedef struct CCFifo {
     int cc_detected;
     int passthrough;
     int passthrough_warning;
+    int overflow_warning;
     void *log_ctx;
 } CCFifo;
 
@@ -76,7 +77,8 @@ void ff_ccfifo_uninit(CCFifo *ccf);
  * @param af          CCFifo to write to
  * @param frame       AVFrame with the video frame to operate on
  * @return            Zero on success, or negative AVERROR
- *                    code on failure.
+ *                    code on failure. On failure, the tuples that fit are
+ *                    still queued and the side data is still removed.
  */
 int ff_ccfifo_extract(CCFifo *ccf, AVFrame *frame);
 

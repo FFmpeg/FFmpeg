@@ -22,9 +22,13 @@
  */
 
 #include "ccfifo.h"
+#include "libavutil/error.h"
 #include "libavutil/fifo.h"
 
 #define MAX_CC_ELEMENTS 128
+/* Cap each queue at 6000 tuples, at least 10 seconds at the maximum
+   CEA-708 transport rate of 600 tuples per second. */
+#define MAX_CC_ELEMENTS_LIMIT (600 * 10)
 
 struct cc_lookup {
     int num;
@@ -58,11 +62,16 @@ int ff_ccfifo_init(CCFifo *ccf, AVRational framerate, void *log_ctx)
     ccf->log_ctx = log_ctx;
     ccf->framerate = framerate;
 
-    if (!(ccf->cc_708_fifo = av_fifo_alloc2(MAX_CC_ELEMENTS, CC_BYTES_PER_ENTRY, 0)))
+    if (!(ccf->cc_708_fifo = av_fifo_alloc2(MAX_CC_ELEMENTS, CC_BYTES_PER_ENTRY,
+                                            AV_FIFO_FLAG_AUTO_GROW)))
         goto error;
 
-    if (!(ccf->cc_608_fifo = av_fifo_alloc2(MAX_CC_ELEMENTS, CC_BYTES_PER_ENTRY, 0)))
+    if (!(ccf->cc_608_fifo = av_fifo_alloc2(MAX_CC_ELEMENTS, CC_BYTES_PER_ENTRY,
+                                            AV_FIFO_FLAG_AUTO_GROW)))
         goto error;
+
+    av_fifo_auto_grow_limit(ccf->cc_708_fifo, MAX_CC_ELEMENTS_LIMIT);
+    av_fifo_auto_grow_limit(ccf->cc_608_fifo, MAX_CC_ELEMENTS_LIMIT);
 
     /* Based on the target FPS, figure out the expected cc_count and number of
        608 tuples per packet.  See ANSI/CTA-708-E Sec 4.3.6.1. */
@@ -154,6 +163,7 @@ int ff_ccfifo_inject(CCFifo *ccf, AVFrame *frame)
 int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *cc_bytes, size_t len)
 {
     int cc_count = len / CC_BYTES_PER_ENTRY;
+    int err = 0;
 
     if (ccf->passthrough == 1) {
         av_log_once(ccf->log_ctx, AV_LOG_WARNING, AV_LOG_DEBUG, &ccf->passthrough_warning,
@@ -168,13 +178,20 @@ int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *cc_bytes, size_t len)
         /* See ANSI/CTA-708-E Sec 4.3, Table 3 */
         uint8_t cc_valid = (cc_bytes[CC_BYTES_PER_ENTRY*i] & 0x04) >> 2;
         uint8_t cc_type = cc_bytes[CC_BYTES_PER_ENTRY*i] & 0x03;
+        int ret = 0;
         if (cc_type == 0x00 || cc_type == 0x01) {
-            av_fifo_write(ccf->cc_608_fifo, &cc_bytes[CC_BYTES_PER_ENTRY*i], 1);
+            ret = av_fifo_write(ccf->cc_608_fifo, &cc_bytes[CC_BYTES_PER_ENTRY*i], 1);
         } else if (cc_valid && (cc_type == 0x02 || cc_type == 0x03)) {
-            av_fifo_write(ccf->cc_708_fifo, &cc_bytes[CC_BYTES_PER_ENTRY*i], 1);
+            ret = av_fifo_write(ccf->cc_708_fifo, &cc_bytes[CC_BYTES_PER_ENTRY*i], 1);
+        }
+        if (ret < 0) {
+            av_log_once(ccf->log_ctx, AV_LOG_WARNING, AV_LOG_DEBUG, &ccf->overflow_warning,
+                        "cc_fifo could not queue captions, dropping tuples: %s\n",
+                        av_err2str(ret));
+            err = ret;
         }
     }
-    return 0;
+    return err;
 }
 
 /* Read the A53 side data, discard padding, and put 608/708 into
@@ -183,13 +200,14 @@ int ff_ccfifo_extractbytes(CCFifo *ccf, uint8_t *cc_bytes, size_t len)
 int ff_ccfifo_extract(CCFifo *ccf, AVFrame *frame)
 {
     AVFrameSideData *side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
+    int ret = 0;
     if (side_data) {
-        ff_ccfifo_extractbytes(ccf, side_data->data, side_data->size);
+        ret = ff_ccfifo_extractbytes(ccf, side_data->data, side_data->size);
 
         /* Remove the side data, as we will re-create it on the
            output as needed */
         if (!ccf->passthrough)
             av_frame_remove_side_data(frame, AV_FRAME_DATA_A53_CC);
     }
-    return 0;
+    return ret;
 }
