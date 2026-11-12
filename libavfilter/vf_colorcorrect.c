@@ -55,8 +55,6 @@ typedef struct ColorCorrectContext {
 
     float (*analyzeret)[4];
 
-    int (*do_analyze)(AVFilterContext *s, void *arg,
-                      int jobnr, int nb_jobs);
     int (*do_slice)(AVFilterContext *s, void *arg,
                     int jobnr, int nb_jobs);
 } ColorCorrectContext;
@@ -393,6 +391,13 @@ static int colorcorrect_slice16(AVFilterContext *ctx, void *arg, int jobnr, int 
     return 0;
 }
 
+static int (*const analyze_slice[NB_ANALYZE][2])(AVFilterContext *s, void *arg,
+                                                 int jobnr, int nb_jobs) = {
+    [AVERAGE] = { average_slice8, average_slice16 },
+    [MINMAX]  = { minmax_slice8,  minmax_slice16  },
+    [MEDIAN]  = { median_8,       median_16       },
+};
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -403,7 +408,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         const int nb_athreads = s->analyze == MEDIAN ? 1 : nb_threads;
         float bl = 0.f, rl = 0.f, bh = 0.f, rh = 0.f;
 
-        ff_filter_execute(ctx, s->do_analyze, frame, NULL, nb_athreads);
+        ff_filter_execute(ctx, analyze_slice[s->analyze][s->depth > 8], frame, NULL, nb_athreads);
 
         for (int i = 0; i < nb_athreads; i++) {
             bl += s->analyzeret[i][0];
@@ -466,22 +471,6 @@ static av_cold int config_input(AVFilterLink *inlink)
     s->analyzeret = av_calloc(inlink->h, sizeof(*s->analyzeret));
     if (!s->analyzeret)
         return AVERROR(ENOMEM);
-
-    switch (s->analyze) {
-    case MANUAL:
-        break;
-    case AVERAGE:
-        s->do_analyze = s->depth <= 8 ? average_slice8 : average_slice16;
-        break;
-    case MINMAX:
-        s->do_analyze = s->depth <= 8 ? minmax_slice8  : minmax_slice16;
-        break;
-    case MEDIAN:
-        s->do_analyze = s->depth <= 8 ? median_8       : median_16;
-        break;
-    default:
-        return AVERROR_BUG;
-    }
 
     s->chroma_w = 1 << desc->log2_chroma_w;
     s->chroma_h = 1 << desc->log2_chroma_h;
