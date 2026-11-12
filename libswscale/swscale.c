@@ -1071,7 +1071,7 @@ static int scale_internal(SwsContext *sws,
     }
 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
-    if (srcSliceH == 0)
+    if (srcSliceH == 0 || dstSliceH == 0)
         return 0;
 
     if (sws->gamma_flag && c->cascaded_context[0])
