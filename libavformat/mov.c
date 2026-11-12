@@ -286,7 +286,8 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     char language[4] = { 0 };
     char buf[200], place[100];
     uint16_t langcode = 0;
-    double longitude, latitude, altitude;
+    int32_t longitude, latitude, altitude;
+    int64_t lat, lon, alt;
     const char *key = "location";
 
     if (len < 4 + 2 + 1 + 1 + 4 + 4 + 4) {
@@ -312,15 +313,19 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
                "loci too short (%u bytes left, need at least %d)\n", len, 12);
         return AVERROR_INVALIDDATA;
     }
-    longitude = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
-    latitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
-    altitude  = ((int32_t) avio_rb32(pb)) / (float) (1 << 16);
+    longitude = avio_rb32(pb);
+    latitude  = avio_rb32(pb);
+    altitude  = avio_rb32(pb);
 
-    // Try to output in the same format as the ?xyz field
-    snprintf(buf, sizeof(buf), "%+08.4f%+09.4f",  latitude, longitude);
-    if (altitude)
-        av_strlcatf(buf, sizeof(buf), "%+f", altitude);
-    av_strlcatf(buf, sizeof(buf), "/%s", place);
+    // ISO 6709 string as written by QuickTime, independently of the locale
+    lat = llrint(fabs(latitude  * (10000.0 / (1 << 16))));
+    lon = llrint(fabs(longitude * (10000.0 / (1 << 16))));
+    alt = llrint(fabs(altitude  * (1000.0  / (1 << 16))));
+    snprintf(buf, sizeof(buf), "%c%02"PRId64".%04"PRId64"%c%03"PRId64".%04"PRId64
+             "%c%03"PRId64".%03"PRId64"/%s",
+             latitude  < 0 ? '-' : '+', lat / 10000, lat % 10000,
+             longitude < 0 ? '-' : '+', lon / 10000, lon % 10000,
+             altitude  < 0 ? '-' : '+', alt / 1000,  alt % 1000, place);
 
     if (*language && strcmp(language, "und")) {
         char key2[16];

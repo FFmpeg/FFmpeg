@@ -428,6 +428,18 @@ fate-mov-composer-metadata: CMD = transcode wav ./tests/data/asynth-44100-2.wav 
     "-af aresample -c:a pcm_s16le -t 0.05 -metadata composer=Bach" \
     "-af aresample -c:a pcm_s16le" "-show_entries format_tags"
 
+# 3GPP loci location: ties rounded to even, the altitude clipped to its
+# 16.16 range, and a missing altitude written as zero.
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S16LE, MP4 MOV, WAV_DEMUXER ARESAMPLE_FILTER) \
+                       += fate-mov-mp4-loci fate-mov-mp4-loci-no-altitude
+fate-mov-mp4-loci fate-mov-mp4-loci-no-altitude: tests/data/asynth-44100-2.wav
+fate-mov-mp4-loci: CMD = transcode wav ./tests/data/asynth-44100-2.wav mp4 \
+    "-af aresample -c:a pcm_s16le -t 0.05 -metadata location=+00.03125-000.15625+32767.999999/Place" \
+    "-af aresample -c:a pcm_s16le" "-show_entries format_tags=location"
+fate-mov-mp4-loci-no-altitude: CMD = transcode wav ./tests/data/asynth-44100-2.wav mp4 \
+    "-af aresample -c:a pcm_s16le -t 0.05 -metadata location=-33.8568+151.2153/" \
+    "-af aresample -c:a pcm_s16le" "-show_entries format_tags=location"
+
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER \
                                       MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
                                       += fate-mov-vfr-bframes-derived-duration

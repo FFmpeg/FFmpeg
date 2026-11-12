@@ -4861,36 +4861,30 @@ static int mov_write_loci_tag(AVFormatContext *s, AVIOContext *pb)
 {
     int lang;
     int64_t pos = avio_tell(pb);
-    double latitude, longitude, altitude;
+    double latitude, longitude, altitude = 0;
     int32_t latitude_fix, longitude_fix, altitude_fix;
     AVDictionaryEntry *t = get_metadata_lang(s, "location", &lang);
     const char *ptr, *place = "";
-    char *end;
+    int n = 0;
     static const char *astronomical_body = "earth";
     if (!t)
         return 0;
 
     ptr = t->value;
-    latitude = strtod(ptr, &end);
-    if (end == ptr) {
+    if (av_sscanf(ptr, "%lf%lf%n", &latitude, &longitude, &n) < 2) {
         av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
         return 0;
     }
-    ptr = end;
-    longitude = strtod(ptr, &end);
-    if (end == ptr) {
-        av_log(s, AV_LOG_WARNING, "malformed location metadata\n");
-        return 0;
-    }
-    ptr = end;
-    altitude = strtod(ptr, &end);
+    ptr += n;
     /* If no altitude was present, the default 0 should be fine */
-    if (*end == '/')
-        place = end + 1;
+    if (av_sscanf(ptr, "%lf%n", &altitude, &n) == 1)
+        ptr += n;
+    if (*ptr == '/')
+        place = ptr + 1;
 
-    latitude_fix  = (int32_t) ((1 << 16) * latitude);
-    longitude_fix = (int32_t) ((1 << 16) * longitude);
-    altitude_fix  = (int32_t) ((1 << 16) * altitude);
+    latitude_fix  = lrint(av_clipd((1 << 16) * latitude,  INT32_MIN, INT32_MAX));
+    longitude_fix = lrint(av_clipd((1 << 16) * longitude, INT32_MIN, INT32_MAX));
+    altitude_fix  = lrint(av_clipd((1 << 16) * altitude,  INT32_MIN, INT32_MAX));
 
     avio_wb32(pb, 0);         /* size */
     ffio_wfourcc(pb, "loci"); /* type */

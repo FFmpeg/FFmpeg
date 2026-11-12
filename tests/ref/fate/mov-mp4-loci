@@ -1,0 +1,13 @@
+354a338c45ee40362460a8f6e950289a *tests/data/fate/mov-mp4-loci.mp4
+9570 tests/data/fate/mov-mp4-loci.mp4
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     1024,     4096, 0x29e3eecf
+0,       1024,       1024,     1024,     4096, 0x18390b96
+0,       2048,       2048,      157,      628, 0x4db5381d
+[FORMAT]
+TAG:location=+00.0312-000.1562+32768.000/Place
+[/FORMAT]
