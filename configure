@@ -8225,6 +8225,8 @@ flatten_extralibs(){
     list_name=$1
     eval list=\$${1}
     for entry in $list; do
+        eval test -n \"\$${entry}_flattened\" && continue
+        eval ${entry}_flattened=1
         eval entry_value=\$$entry
         flat_entries=
         for e in $entry_value; do
