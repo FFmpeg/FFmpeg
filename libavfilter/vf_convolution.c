@@ -685,10 +685,12 @@ static int param_init(AVFilterContext *ctx)
             }
 
             if (s->mode[i] == MATRIX_ROW) {
+                s->copy[i] = 0;
                 s->filter[i] = filter_row;
                 s->setup[i] = setup_row;
                 s->size[i] = s->matrix_length[i];
             } else if (s->mode[i] == MATRIX_COLUMN) {
+                s->copy[i] = 0;
                 s->filter[i] = filter_column;
                 s->setup[i] = setup_column;
                 s->size[i] = s->matrix_length[i];
