@@ -53,6 +53,9 @@ fate-mov-vpcc-reserved-color-tags: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v erro
     -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1 \
     $(TARGET_SAMPLES)/mov/vpcc-reserved-color-tags.mp4
 
+FATE_MOV-$(call DEMDEC, MOV, RAWVIDEO) += fate-mov-uncv-rgb24
+fate-mov-uncv-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/mov/uncv-rgb24.mp4
+
 FATE_MOV_FFPROBE-$(CONFIG_MOV_DEMUXER) += fate-ffprobe-stream-entries-tmcd \
                                        fate-ffprobe-group-stream-entries-tmcd \
                                        fate-ffprobe-show-groups-tmcd

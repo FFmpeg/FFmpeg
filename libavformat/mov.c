@@ -10330,6 +10330,46 @@ static int mov_read_mhac(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ret;
 }
 
+static int mov_read_uncc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    int version;
+    uint32_t profile;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams - 1];
+
+    if (atom.size < 8)
+        return AVERROR_INVALIDDATA;
+
+    version = avio_r8(pb);
+    avio_rb24(pb); /* flags */
+    profile = avio_rl32(pb);
+
+    if (version == 1) {
+        switch (profile) {
+            case MKTAG('r','g','b','3'):
+                st->codecpar->format = AV_PIX_FMT_RGB24;
+                break;
+            case MKTAG('r','g','b','a'):
+                st->codecpar->format = AV_PIX_FMT_RGBA;
+                break;
+            default:
+                avpriv_request_sample(c->fc, "Unknown uncC profile %s", av_fourcc2str(profile));
+                return AVERROR_INVALIDDATA;
+        }
+    } else if (version == 0) {
+        avpriv_request_sample(c->fc, "uncC version 0 not yet implemented");
+        return AVERROR_PATCHWELCOME;
+    } else {
+        av_log(c->fc, AV_LOG_WARNING, "Unknown uncC version %d\n", version);
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -10366,6 +10406,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','M','I',' '), mov_read_svq3 },
 { MKTAG('a','l','a','c'), mov_read_alac }, /* alac specific atom */
 { MKTAG('a','v','c','C'), mov_read_glbl },
+{ MKTAG('u','n','c','C'), mov_read_uncc },
 { MKTAG('p','a','s','p'), mov_read_pasp },
 { MKTAG('c','l','a','p'), mov_read_clap },
 { MKTAG('c','d','s','c'), mov_read_cdsc_rndr },
