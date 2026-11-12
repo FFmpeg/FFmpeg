@@ -283,34 +283,6 @@ typedef struct MatroskaMuxContext {
 /** Seek preroll value for opus */
 #define OPUS_SEEK_PREROLL 80000000
 
-/**
- * Returns the duration of an Opus packet in samples.
- */
-static int parse_opus_packet_duration(const uint8_t *buf, int buf_size)
-{
-    int code   = buf[0] & 0x3;
-    int config = buf[0] >> 3;
-    int frame_count;
-
-    switch (code) {
-    default:
-        av_unreachable("code is in 0..3");
-    case 0:
-        frame_count = 1;
-        break;
-    case 1:
-    case 2:
-        frame_count = 2;
-        break;
-    case 3:
-        if (buf_size <= 1)
-            return AVERROR_INVALIDDATA;
-        frame_count = buf[1] & 0x3F;
-        break;
-    }
-    return frame_count * ff_opus_frame_duration[config];
-}
-
 static int ebml_id_size(uint32_t id)
 {
     return (av_log2(id) + 7U) / 8;
@@ -2900,7 +2872,7 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
         duration != track->default_duration_low))
         ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
     else if (par->codec_id == AV_CODEC_ID_OPUS) {
-        ret = parse_opus_packet_duration(pkt->data, pkt->size);
+        ret = ff_opus_packet_samples(pkt->data, pkt->size);
         if (ret >= 0) {
             /* If the packet's duration is inconsistent with the coded duration,
              * add an explicit duration element. */
