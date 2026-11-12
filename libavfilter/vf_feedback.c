@@ -46,10 +46,8 @@ typedef struct FeedbackContext {
 
 static void adjust_pos(AVFilterContext *ctx, FeedbackContext *s)
 {
-    if (s->x + s->w > ctx->inputs[0]->w)
-        s->x = ctx->inputs[0]->w - s->w;
-    if (s->y + s->h > ctx->inputs[0]->h)
-        s->y = ctx->inputs[0]->h - s->h;
+    s->x = FFMIN(s->x, ctx->inputs[0]->w - s->w);
+    s->y = FFMIN(s->y, ctx->inputs[0]->h - s->h);
 }
 
 static void adjust_parameters(AVFilterContext *ctx, FeedbackContext *s)
