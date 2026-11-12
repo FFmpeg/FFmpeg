@@ -313,6 +313,10 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
+    /* read_header() builds no index when the frame count is zero */
+    if (!vsti->index_entries)
+        return AVERROR(EINVAL);
+
     /* seek to the first frame */
     ret = avio_seek(s->pb, vsti->index_entries[0].pos + bink->smush_size, SEEK_SET);
     if (ret < 0)
