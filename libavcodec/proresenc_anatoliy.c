@@ -56,13 +56,6 @@ static const int qp_start_table[] = {  8, 3, 2, 1, 1, 1};
 static const int qp_end_table[]   = { 13, 9, 6, 6, 5, 4};
 static const int bitrate_table[]  = { 1000, 2100, 3500, 5400, 7000, 10000};
 
-static const int valid_primaries[]  = { AVCOL_PRI_RESERVED0, AVCOL_PRI_BT709, AVCOL_PRI_UNSPECIFIED, AVCOL_PRI_BT470BG,
-                                        AVCOL_PRI_SMPTE170M, AVCOL_PRI_BT2020, AVCOL_PRI_SMPTE431, AVCOL_PRI_SMPTE432, INT_MAX };
-static const int valid_trc[]        = { AVCOL_TRC_RESERVED0, AVCOL_TRC_BT709, AVCOL_TRC_UNSPECIFIED, AVCOL_TRC_SMPTE2084,
-                                        AVCOL_TRC_ARIB_STD_B67, INT_MAX };
-static const int valid_colorspace[] = { AVCOL_SPC_BT709, AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_SMPTE170M,
-                                        AVCOL_SPC_BT2020_NCL, INT_MAX };
-
 static const uint8_t QMAT_LUMA[6][64] = {
     {
          4,  7,  9, 11, 13, 14, 15, 63,
@@ -198,35 +191,6 @@ typedef struct {
 
     char *vendor;
 } ProresContext;
-
-/**
- * Check if a value is in the list. If not, return the default value
- *
- * @param ctx                Context for the log msg
- * @param val_name           Name of the checked value, for log msg
- * @param array_valid_values Array of valid int, ended with INT_MAX
- * @param default_value      Value return if checked value is not in the array
- * @return                   Value or default_value.
- */
-static int int_from_list_or_default(void *ctx, const char *val_name, int val,
-                                    const int *array_valid_values, int default_value)
-{
-    int i = 0;
-
-    while (1) {
-        int ref_val = array_valid_values[i];
-        if (ref_val == INT_MAX)
-            break;
-        if (val == ref_val)
-            return val;
-        i++;
-    }
-    /* val is not a valid value */
-    av_log(ctx, AV_LOG_DEBUG,
-           "%s %d are not supported. Set to default value : %d\n",
-           val_name, val, default_value);
-    return default_value;
-}
 
 static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 {
@@ -769,13 +733,9 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     *buf++ = frame_flags;
     *buf++ = 0; /* reserved */
-    /* only write color properties, if valid value. set to unspecified otherwise */
-    *buf++ = int_from_list_or_default(avctx, "frame color primaries",
-                                      pict->color_primaries, valid_primaries, 0);
-    *buf++ = int_from_list_or_default(avctx, "frame color trc",
-                                      pict->color_trc, valid_trc, 0);
-    *buf++ = int_from_list_or_default(avctx, "frame colorspace",
-                                      pict->colorspace, valid_colorspace, 0);
+    *buf++ = ff_prores_color_primaries(pict->color_primaries);
+    *buf++ = ff_prores_color_trc(pict->color_trc);
+    *buf++ = ff_prores_colorspace(pict->colorspace);
     *buf++ = ctx->need_alpha ? 0x2 /* 16-bit alpha */ : 0;
     *buf++ = 0; /* reserved */
     *buf++ = 3; /* luma and chroma matrix present */

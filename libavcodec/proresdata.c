@@ -51,3 +51,54 @@ const uint8_t ff_prores_run_to_cb[16] = { 0x06, 0x06, 0x05, 0x05, 0x04, 0x29,
 
 const uint8_t ff_prores_level_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28,
         0x28, 0x28, 0x28, 0x4C };
+
+int ff_prores_color_primaries(enum AVColorPrimaries color_primaries)
+{
+    switch (color_primaries) {
+    case AVCOL_PRI_RESERVED0:
+    case AVCOL_PRI_BT709:
+    case AVCOL_PRI_UNSPECIFIED:
+    case AVCOL_PRI_BT470BG:
+    case AVCOL_PRI_SMPTE170M:
+    case AVCOL_PRI_BT2020:
+    case AVCOL_PRI_SMPTE431:
+    case AVCOL_PRI_SMPTE432:
+        return color_primaries;
+    default:
+        return AVCOL_PRI_UNSPECIFIED;
+    }
+}
+
+int ff_prores_color_trc(enum AVColorTransferCharacteristic color_trc)
+{
+    switch (color_trc) {
+    case AVCOL_TRC_RESERVED0:
+    case AVCOL_TRC_BT709:
+    case AVCOL_TRC_UNSPECIFIED:
+    case AVCOL_TRC_SMPTE2084:
+    case AVCOL_TRC_ARIB_STD_B67:
+        return color_trc;
+    case AVCOL_TRC_SMPTE170M:
+    case AVCOL_TRC_BT2020_10:
+    case AVCOL_TRC_BT2020_12:
+        return AVCOL_TRC_BT709;
+    default:
+        return AVCOL_TRC_UNSPECIFIED;
+    }
+}
+
+int ff_prores_colorspace(enum AVColorSpace colorspace)
+{
+    switch (colorspace) {
+    case AVCOL_SPC_RGB:
+    case AVCOL_SPC_BT709:
+    case AVCOL_SPC_UNSPECIFIED:
+    case AVCOL_SPC_SMPTE170M:
+    case AVCOL_SPC_BT2020_NCL:
+        return colorspace;
+    case AVCOL_SPC_BT470BG:
+        return AVCOL_SPC_SMPTE170M;
+    default:
+        return AVCOL_SPC_UNSPECIFIED;
+    }
+}

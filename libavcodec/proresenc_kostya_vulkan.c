@@ -621,9 +621,9 @@ static uint8_t *write_frame_header(AVCodecContext *avctx, ProresContext *ctx,
     bytestream_put_byte  (&buf, frame_flags);
 
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, color_primaries);
-    bytestream_put_byte  (&buf, color_trc);
-    bytestream_put_byte  (&buf, colorspace);
+    bytestream_put_byte  (&buf, ff_prores_color_primaries(color_primaries));
+    bytestream_put_byte  (&buf, ff_prores_color_trc(color_trc));
+    bytestream_put_byte  (&buf, ff_prores_colorspace(colorspace));
     bytestream_put_byte  (&buf, ctx->alpha_bits >> 3);
     bytestream_put_byte  (&buf, 0);             // reserved
     if (ctx->quant_sel != QUANT_MAT_DEFAULT) {

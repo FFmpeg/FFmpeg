@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/pixfmt.h"
+
 #define FRAME_ID MKBETAG('i', 'c', 'p', 'f')
 
 extern const uint8_t ff_prores_progressive_scan[64];
@@ -34,5 +36,13 @@ extern const uint8_t ff_prores_run_to_cb[16];
 extern const uint8_t ff_prores_level_to_cb[10];
 
 #define FIRST_DC_CB 0xB8 // rice_order = 5, exp_golomb_order = 6, switch_bits = 0
+
+/**
+ * Map color properties to the codes a frame header can carry (SMPTE RDD 36),
+ * substituting an equivalent code or unspecified for the others.
+ */
+int ff_prores_color_primaries(enum AVColorPrimaries color_primaries);
+int ff_prores_color_trc(enum AVColorTransferCharacteristic color_trc);
+int ff_prores_colorspace(enum AVColorSpace colorspace);
 
 #endif /* AVCODEC_PRORESDATA_H */

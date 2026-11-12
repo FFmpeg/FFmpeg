@@ -1,0 +1,11 @@
+a8f6ac525b5969628b57ea7790b0a6dc *tests/data/fate/prores-aw-color-tags.mov
+101914 tests/data/fate/prores-aw-color-tags.mov
+#tb 0: 1/12800
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 352x288
+#sar 0: 0/1
+0,          0,          0,      512,   101203, 0x8c33d3ee
+color_space=smpte170m
+color_primaries=unknown
+color_transfer=bt709
