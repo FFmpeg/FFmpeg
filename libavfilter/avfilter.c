@@ -235,6 +235,39 @@ void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
     ctxi->ready = FFMAX(ctxi->ready, priority);
 }
 
+void ff_filter_log_lines(void *ctx, int level, const AVBPrint *bp)
+{
+    const char *p, *end;
+
+    if (!bp->size)
+        return;
+
+    p   = bp->str;
+    end = bp->str + FFMIN(bp->len, bp->size - 1);
+    while (p < end) {
+        /* Look no further than the next chunk, so long lines stay linear. */
+        const char *nl = memchr(p, '\n', FFMIN(end - p, FF_FILTER_LOG_LINE_MAX + 1));
+        size_t len  = nl ? nl - p : end - p;
+        size_t skip = 1;
+
+        if (len > FF_FILTER_LOG_LINE_MAX) {
+            len  = FF_FILTER_LOG_LINE_MAX;
+            skip = 0;
+            for (size_t i = len; i > len / 2; i--) {
+                if (p[i] == ' ') {
+                    len = i;
+                    break;
+                }
+            }
+        }
+        av_log(ctx, level, "%.*s\n", (int)len, p);
+        p += len + skip;
+    }
+
+    if (!av_bprint_is_complete(bp))
+        av_log(ctx, AV_LOG_WARNING, "Log output truncated, out of memory\n");
+}
+
 /**
  * Clear frame_blocked_in on all outputs.
  * This is necessary whenever something changes on input.

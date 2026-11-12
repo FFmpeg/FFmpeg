@@ -510,6 +510,30 @@ static inline const FFFilter *fffilter(const AVFilter *f)
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority);
 
 /**
+ * Longest line, in bytes, that ff_filter_log_lines() passes to a single
+ * av_log() call. It leaves room for the log prefix in fixed-size line
+ * buffers such as the 1024-byte one of ffmpeg's -report callback.
+ */
+#define FF_FILTER_LOG_LINE_MAX 896
+
+struct AVBPrint;
+
+/**
+ * Log text built in an AVBPrint with one av_log() call per line, so that
+ * output from other threads cannot land in the middle of a line and every
+ * line gets its own prefix. Lines longer than FF_FILTER_LOG_LINE_MAX bytes
+ * are split before a space if there is one near the limit; no byte is lost.
+ *
+ * If the buffer is incomplete, the text it holds is logged, followed by a
+ * warning.
+ *
+ * @param ctx   logging context
+ * @param level log level of the text
+ * @param bp    text to log; a missing final newline is supplied
+ */
+void ff_filter_log_lines(void *ctx, int level, const struct AVBPrint *bp);
+
+/**
  * Get the number of frames available on the link.
  * @return the number of frames available in the link fifo.
  */
