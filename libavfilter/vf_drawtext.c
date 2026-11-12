@@ -1222,6 +1222,8 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
         }
 
         ret = init(ctx);
+        if (ret >= 0)
+            ret = config_input(ctx->inputs[0]);
         if (ret < 0) {
             uninit(ctx);
             ctx->priv = old;
@@ -1236,7 +1238,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
         av_freep(&old);
 
         ctx->priv = new;
-        return config_input(ctx->inputs[0]);
+        return 0;
     } else {
         int old_borderw = old->borderw;
         if ((ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags)) < 0) {
