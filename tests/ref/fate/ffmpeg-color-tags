@@ -1,0 +1,11 @@
+2db1ebde9012eca6c8f07a780d2d17e3 *tests/data/fate/ffmpeg-color-tags.mpeg2video
+2760 tests/data/fate/ffmpeg-color-tags.mpeg2video
+#extradata 0:       34, 0x8989064b
+#tb 0: 1/1200000
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 64x64
+#sar 0: 1/1
+0,          0, -9223372036854775808,    48000,     2760, 0xba51e968
+color_transfer=linear
+color_primaries=bt470bg

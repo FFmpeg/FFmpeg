@@ -1,0 +1,11 @@
+615e34ec9ea35c28f5acbb846d7e9f6b *tests/data/fate/ffmpeg-color-tags-unknown.mpeg2video
+2760 tests/data/fate/ffmpeg-color-tags-unknown.mpeg2video
+#extradata 0:       34, 0x89500642
+#tb 0: 1/1200000
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 64x64
+#sar 0: 1/1
+0,          0, -9223372036854775808,    48000,     2760, 0x5a42e95f
+color_transfer=unknown
+color_primaries=unknown

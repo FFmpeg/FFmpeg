@@ -244,6 +244,12 @@ static int enc_reopen(void *opaque, const AVFrame *frame,
     if (ret < 0)
         return ret;
 
+    // Use frame tags as defaults for properties the output filter does not negotiate.
+    if (frame && enc->type == AVMEDIA_TYPE_VIDEO) {
+        enc_ctx->color_primaries = frame->color_primaries;
+        enc_ctx->color_trc       = frame->color_trc;
+    }
+
     threads_manual = !!av_dict_get(encoder_opts, "threads", NULL, 0);
     ret = apply_enc_options(e, &encoder_opts);
     av_dict_free(&encoder_opts);
@@ -334,8 +340,6 @@ static int enc_reopen(void *opaque, const AVFrame *frame,
          * requested values, since we forward them to the filter graph.
          */
         enc_ctx->color_range            = frame->color_range;
-        enc_ctx->color_primaries        = frame->color_primaries;
-        enc_ctx->color_trc              = frame->color_trc;
         enc_ctx->colorspace             = frame->colorspace;
         enc_ctx->alpha_mode             = frame->alpha_mode;
         enc_ctx->chroma_sample_location = frame->chroma_location;

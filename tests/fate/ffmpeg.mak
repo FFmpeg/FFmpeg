@@ -22,6 +22,21 @@ fate-ffmpeg-chroma-location: CMD = framecrc -auto_conversion_filters -f lavfi -i
 FATE_FFMPEG-$(call FILTERFRAMECRC, TESTSRC2 FORMAT, LAVFI_INDEV WRAPPED_AVFRAME_DECODER SPEEDHQ_ENCODER) += fate-ffmpeg-speedhq-444-psnr
 fate-ffmpeg-speedhq-444-psnr: CMD = framecrc -f lavfi -i testsrc2=s=128x64:r=25:d=1,format=yuv444p -flags +bitexact+psnr -idct simple -dct fastint -threads 1 -c:v speedhq -qscale:v 3 -frames:v 1
 
+# Explicit -color_primaries and -color_trc override the frame defaults in the encoder context.
+FATE_FFMPEG_FFPROBE-$(call REMUX, MPEG2VIDEO MPEGVIDEO, \
+    MPEG2VIDEO_ENCODER LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER \
+    FORMAT_FILTER SETPARAMS_FILTER MPEG1VIDEO_DECODER MPEGVIDEO_PARSER \
+    EXTRACT_EXTRADATA_BSF) += \
+    fate-ffmpeg-color-tags fate-ffmpeg-color-tags-primaries fate-ffmpeg-color-tags-unknown
+fate-ffmpeg-color-tags:           COLOR_OPTS = -color_primaries bt470bg -color_trc linear
+fate-ffmpeg-color-tags-primaries: COLOR_OPTS = -color_primaries bt470bg
+# Keep the colour description present to check the explicit unspecified codes.
+fate-ffmpeg-color-tags-unknown:   COLOR_OPTS = -color_primaries unknown -color_trc unknown -seq_disp_ext always
+fate-ffmpeg-color-tags fate-ffmpeg-color-tags-primaries fate-ffmpeg-color-tags-unknown: CMD = transcode lavfi "testsrc2=s=64x64:r=25:d=0.04,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709" mpeg2video \
+    "-c:v mpeg2video -qscale:v 2 -frames:v 1 $(COLOR_OPTS)" "-c copy" \
+    "-show_entries stream=color_primaries,color_transfer -of default=nw=1"
+FATE_FFMPEG_FFPROBE += $(FATE_FFMPEG_FFPROBE-yes)
+
 FATE_FFMPEG-$(if $(CONFIG_SMALL),no,$(call ALLYES, TESTSRC2_FILTER SCALE_FILTER FORMAT_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER RAWVIDEO_ENCODER NULL_MUXER)) += fate-ffmpeg-print-graphs-compact
 fate-ffmpeg-print-graphs-compact: CMD = ffmpeg -f lavfi -i testsrc2=s=64x64:r=25:d=0.08 -filter_complex "[0:v]scale=32:32,format=yuv420p[v]" -map "[v]" -c:v rawvideo -print_graphs_file - -print_graphs_format compact -f null -
 
