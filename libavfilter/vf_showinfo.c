@@ -27,6 +27,7 @@
 
 #include "libavutil/bswap.h"
 #include "libavutil/adler32.h"
+#include "libavutil/bprint.h"
 #include "libavutil/display.h"
 #include "libavutil/dovi_meta.h"
 #include "libavutil/imgutils.h"
@@ -70,69 +71,100 @@ static const AVOption showinfo_options[] = {
 
 AVFILTER_DEFINE_CLASS(showinfo);
 
-static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSideData *sd)
+/**
+ * Log a diagnostic at its own level. The complete lines buffered in bp are
+ * logged first, and the line in progress becomes the start of the
+ * diagnostic, so the output keeps its order.
+ */
+static av_printf_format(4, 5)
+void log_diag(AVFilterContext *ctx, AVBPrint *bp, int level, const char *fmt, ...)
+{
+    AVBPrint msg;
+    va_list vl;
+
+    av_bprint_init(&msg, 0, AV_BPRINT_SIZE_UNLIMITED);
+    if (av_bprint_is_complete(bp)) {
+        unsigned start = bp->len;
+
+        while (start && bp->str[start - 1] != '\n')
+            start--;
+        av_bprint_append_data(&msg, bp->str + start, bp->len - start);
+        bp->len = start;
+        bp->str[start] = 0;
+    }
+    va_start(vl, fmt);
+    av_vbprintf(&msg, fmt, vl);
+    va_end(vl);
+
+    ff_filter_log_lines(ctx, AV_LOG_INFO, bp);
+    av_bprint_clear(bp);
+    ff_filter_log_lines(ctx, level, &msg);
+    av_bprint_finalize(&msg, NULL);
+}
+
+static void dump_spherical(AVBPrint *bp, AVFrame *frame, const AVFrameSideData *sd)
 {
     const AVSphericalMapping *spherical = (const AVSphericalMapping *)sd->data;
     double yaw, pitch, roll;
 
-    av_log(ctx, AV_LOG_INFO, "%s ", av_spherical_projection_name(spherical->projection));
+    av_bprintf(bp, "%s ", av_spherical_projection_name(spherical->projection));
 
     if (spherical->yaw || spherical->pitch || spherical->roll) {
         yaw = ((double)spherical->yaw) / (1 << 16);
         pitch = ((double)spherical->pitch) / (1 << 16);
         roll = ((double)spherical->roll) / (1 << 16);
-        av_log(ctx, AV_LOG_INFO, "(%f/%f/%f) ", yaw, pitch, roll);
+        av_bprintf(bp, "(%f/%f/%f) ", yaw, pitch, roll);
     }
 
     if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
         size_t l, t, r, b;
         av_spherical_tile_bounds(spherical, frame->width, frame->height,
                                  &l, &t, &r, &b);
-        av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ",
-               l, t, r, b);
+        av_bprintf(bp, "[%zu, %zu, %zu, %zu] ",
+                   l, t, r, b);
     } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
-        av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
+        av_bprintf(bp, "[pad %"PRIu32"] ", spherical->padding);
     }
 }
 
-static void dump_stereo3d(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_stereo3d(AVBPrint *bp, const AVFrameSideData *sd)
 {
     const AVStereo3D *stereo = (const AVStereo3D *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "type - %s", av_stereo3d_type_name(stereo->type));
+    av_bprintf(bp, "type - %s", av_stereo3d_type_name(stereo->type));
 
     if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
-        av_log(ctx, AV_LOG_INFO, " (inverted)");
+        av_bprintf(bp, " (inverted)");
 
-    av_log(ctx, AV_LOG_INFO, ", view - %s, primary_eye - %s", av_stereo3d_view_name(stereo->view),
-                                                              av_stereo3d_primary_eye_name(stereo->primary_eye));
+    av_bprintf(bp, ", view - %s, primary_eye - %s", av_stereo3d_view_name(stereo->view),
+                                                    av_stereo3d_primary_eye_name(stereo->primary_eye));
     if (stereo->baseline)
-        av_log(ctx, AV_LOG_INFO, ", baseline: %"PRIu32"", stereo->baseline);
+        av_bprintf(bp, ", baseline: %"PRIu32"", stereo->baseline);
     if (stereo->horizontal_disparity_adjustment.num && stereo->horizontal_disparity_adjustment.den)
-        av_log(ctx, AV_LOG_INFO, ", horizontal_disparity_adjustment: %0.4f",
-               av_q2d(stereo->horizontal_disparity_adjustment));
+        av_bprintf(bp, ", horizontal_disparity_adjustment: %0.4f",
+                   av_q2d(stereo->horizontal_disparity_adjustment));
     if (stereo->horizontal_field_of_view.num && stereo->horizontal_field_of_view.den)
-        av_log(ctx, AV_LOG_INFO, ", horizontal_field_of_view: %0.3f", av_q2d(stereo->horizontal_field_of_view));
+        av_bprintf(bp, ", horizontal_field_of_view: %0.3f", av_q2d(stereo->horizontal_field_of_view));
 }
 
-static void dump_s12m_timecode(AVFilterContext *ctx, AVFilterLink *inlink, const AVFrameSideData *sd)
+static void dump_s12m_timecode(AVBPrint *bp, AVFilterLink *inlink, const AVFrameSideData *sd)
 {
     FilterLink      *l = ff_filter_link(inlink);
     const uint32_t *tc = (const uint32_t *)sd->data;
 
     if ((sd->size != sizeof(uint32_t) * 4) || (tc[0] > 3)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        log_diag(inlink->dst, bp, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
     for (int j = 1; j <= tc[0]; j++) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
         av_timecode_make_smpte_tc_string2(tcbuf, l->frame_rate, tc[j], 0, 0);
-        av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0]  ? ", " : "");
+        av_bprintf(bp, "timecode - %s%s", tcbuf, j != tc[0]  ? ", " : "");
     }
 }
 
-static void dump_roi(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_roi(AVFilterContext *ctx, AVBPrint *bp, const AVFrameSideData *sd)
 {
     int nb_rois;
     const AVRegionOfInterest *roi;
@@ -141,27 +173,27 @@ static void dump_roi(AVFilterContext *ctx, const AVFrameSideData *sd)
     roi = (const AVRegionOfInterest *)sd->data;
     roi_size = roi->self_size;
     if (!roi_size || sd->size % roi_size != 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
+        log_diag(ctx, bp, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
         return;
     }
     nb_rois = sd->size / roi_size;
 
     for (int i = 0; i < nb_rois; i++) {
         roi = (const AVRegionOfInterest *)(sd->data + roi_size * i);
-        av_log(ctx, AV_LOG_INFO, "index: %d, region: (%d, %d) -> (%d, %d), qp offset: %d/%d.\n",
-               i, roi->left, roi->top, roi->right, roi->bottom, roi->qoffset.num, roi->qoffset.den);
+        av_bprintf(bp, "index: %d, region: (%d, %d) -> (%d, %d), qp offset: %d/%d.\n",
+                   i, roi->left, roi->top, roi->right, roi->bottom, roi->qoffset.num, roi->qoffset.den);
     }
 }
 
-static void dump_tdrdi(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_tdrdi(AVBPrint *bp, const AVFrameSideData *sd)
 {
     const AV3DReferenceDisplaysInfo *tdrdi = (const AV3DReferenceDisplaysInfo *)sd->data;
 
 
-    av_log(ctx, AV_LOG_INFO, "number of reference displays: %u", tdrdi->num_ref_displays);
+    av_bprintf(bp, "number of reference displays: %u", tdrdi->num_ref_displays);
 }
 
-static void dump_detection_bbox(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_detection_bbox(AVBPrint *bp, const AVFrameSideData *sd)
 {
     int nb_bboxes;
     const AVDetectionBBoxHeader *header;
@@ -169,284 +201,304 @@ static void dump_detection_bbox(AVFilterContext *ctx, const AVFrameSideData *sd)
 
     header = (const AVDetectionBBoxHeader *)sd->data;
     nb_bboxes = header->nb_bboxes;
-    av_log(ctx, AV_LOG_INFO, "source: %.*s\n", (int)sizeof(header->source), header->source);
+    av_bprintf(bp, "source: %.*s\n", (int)sizeof(header->source), header->source);
 
     for (int i = 0; i < nb_bboxes; i++) {
         bbox = av_get_detection_bbox(header, i);
-        av_log(ctx, AV_LOG_INFO, "index: %d,\tregion: (%d, %d) -> (%d, %d), label: %.*s, confidence: %d/%d.\n",
-                                 i, bbox->x, bbox->y, bbox->x + bbox->w, bbox->y + bbox->h,
-                                 (int)sizeof(bbox->detect_label), bbox->detect_label,
-                                 bbox->detect_confidence.num, bbox->detect_confidence.den);
+        av_bprintf(bp, "index: %d,\tregion: (%d, %d) -> (%d, %d), label: %.*s, confidence: %d/%d.\n",
+                   i, bbox->x, bbox->y, bbox->x + bbox->w, bbox->y + bbox->h,
+                   (int)sizeof(bbox->detect_label), bbox->detect_label,
+                   bbox->detect_confidence.num, bbox->detect_confidence.den);
         if (bbox->classify_count > 0) {
             for (int j = 0; j < bbox->classify_count; j++) {
-                av_log(ctx, AV_LOG_INFO, "\t\tclassify:  label: %.*s, confidence: %d/%d.\n",
-                       (int)sizeof(bbox->classify_labels[j]), bbox->classify_labels[j],
-                       bbox->classify_confidences[j].num, bbox->classify_confidences[j].den);
+                av_bprintf(bp, "\t\tclassify:  label: %.*s, confidence: %d/%d.\n",
+                           (int)sizeof(bbox->classify_labels[j]), bbox->classify_labels[j],
+                           bbox->classify_confidences[j].num, bbox->classify_confidences[j].den);
             }
         }
     }
 }
 
-static void dump_mastering_display(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_mastering_display(AVFilterContext *ctx, AVBPrint *bp,
+                                   const AVFrameSideData *sd)
 {
     const AVMasteringDisplayMetadata *mastering_display;
 
     if (sd->size < sizeof(*mastering_display)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
     mastering_display = (const AVMasteringDisplayMetadata *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "has_primaries:%d has_luminance:%d "
-           "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
-           "min_luminance=%f, max_luminance=%f",
-           mastering_display->has_primaries, mastering_display->has_luminance,
-           av_q2d(mastering_display->display_primaries[0][0]),
-           av_q2d(mastering_display->display_primaries[0][1]),
-           av_q2d(mastering_display->display_primaries[1][0]),
-           av_q2d(mastering_display->display_primaries[1][1]),
-           av_q2d(mastering_display->display_primaries[2][0]),
-           av_q2d(mastering_display->display_primaries[2][1]),
-           av_q2d(mastering_display->white_point[0]), av_q2d(mastering_display->white_point[1]),
-           av_q2d(mastering_display->min_luminance), av_q2d(mastering_display->max_luminance));
+    av_bprintf(bp, "has_primaries:%d has_luminance:%d "
+               "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f) "
+               "min_luminance=%f, max_luminance=%f",
+               mastering_display->has_primaries, mastering_display->has_luminance,
+               av_q2d(mastering_display->display_primaries[0][0]),
+               av_q2d(mastering_display->display_primaries[0][1]),
+               av_q2d(mastering_display->display_primaries[1][0]),
+               av_q2d(mastering_display->display_primaries[1][1]),
+               av_q2d(mastering_display->display_primaries[2][0]),
+               av_q2d(mastering_display->display_primaries[2][1]),
+               av_q2d(mastering_display->white_point[0]), av_q2d(mastering_display->white_point[1]),
+               av_q2d(mastering_display->min_luminance), av_q2d(mastering_display->max_luminance));
 }
 
-static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVFrameSideData *sd)
+static void dump_dynamic_hdr_plus(AVFilterContext *ctx, AVBPrint *bp, AVFrameSideData *sd)
 {
     AVDynamicHDRPlus *hdr_plus;
 
     if (sd->size < sizeof(*hdr_plus)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
     hdr_plus = (AVDynamicHDRPlus *)sd->data;
-    av_log(ctx, AV_LOG_INFO, "application version: %d, ", hdr_plus->application_version);
-    av_log(ctx, AV_LOG_INFO, "num_windows: %d, ", hdr_plus->num_windows);
+    av_bprintf(bp, "application version: %d, ", hdr_plus->application_version);
+    av_bprintf(bp, "num_windows: %d, ", hdr_plus->num_windows);
     for (int w = 1; w < hdr_plus->num_windows; w++) {
         AVHDRPlusColorTransformParams *params = &hdr_plus->params[w];
-        av_log(ctx, AV_LOG_INFO, w > 1 ? ", window %d { " : "window %d { ", w);
-        av_log(ctx, AV_LOG_INFO, "window_upper_left_corner: (%5.4f,%5.4f),",
-               av_q2d(params->window_upper_left_corner_x),
-               av_q2d(params->window_upper_left_corner_y));
-        av_log(ctx, AV_LOG_INFO, "window_lower_right_corner: (%5.4f,%5.4f), ",
-               av_q2d(params->window_lower_right_corner_x),
-               av_q2d(params->window_lower_right_corner_y));
-        av_log(ctx, AV_LOG_INFO, "window_upper_left_corner: (%5.4f, %5.4f), ",
-               av_q2d(params->window_upper_left_corner_x),
-               av_q2d(params->window_upper_left_corner_y));
-        av_log(ctx, AV_LOG_INFO, "center_of_ellipse_x: (%d,%d), ",
-               params->center_of_ellipse_x,
-               params->center_of_ellipse_y);
-        av_log(ctx, AV_LOG_INFO, "rotation_angle: %d, ",
-               params->rotation_angle);
-        av_log(ctx, AV_LOG_INFO, "semimajor_axis_internal_ellipse: %d, ",
-               params->semimajor_axis_internal_ellipse);
-        av_log(ctx, AV_LOG_INFO, "semimajor_axis_external_ellipse: %d, ",
-               params->semimajor_axis_external_ellipse);
-        av_log(ctx, AV_LOG_INFO, "semiminor_axis_external_ellipse: %d, ",
-               params->semiminor_axis_external_ellipse);
-        av_log(ctx, AV_LOG_INFO, "overlap_process_option: %d}",
-               params->overlap_process_option);
+        av_bprintf(bp, w > 1 ? ", window %d { " : "window %d { ", w);
+        av_bprintf(bp, "window_upper_left_corner: (%5.4f,%5.4f),",
+                   av_q2d(params->window_upper_left_corner_x),
+                   av_q2d(params->window_upper_left_corner_y));
+        av_bprintf(bp, "window_lower_right_corner: (%5.4f,%5.4f), ",
+                   av_q2d(params->window_lower_right_corner_x),
+                   av_q2d(params->window_lower_right_corner_y));
+        av_bprintf(bp, "window_upper_left_corner: (%5.4f, %5.4f), ",
+                   av_q2d(params->window_upper_left_corner_x),
+                   av_q2d(params->window_upper_left_corner_y));
+        av_bprintf(bp, "center_of_ellipse_x: (%d,%d), ",
+                   params->center_of_ellipse_x,
+                   params->center_of_ellipse_y);
+        av_bprintf(bp, "rotation_angle: %d, ",
+                   params->rotation_angle);
+        av_bprintf(bp, "semimajor_axis_internal_ellipse: %d, ",
+                   params->semimajor_axis_internal_ellipse);
+        av_bprintf(bp, "semimajor_axis_external_ellipse: %d, ",
+                   params->semimajor_axis_external_ellipse);
+        av_bprintf(bp, "semiminor_axis_external_ellipse: %d, ",
+                   params->semiminor_axis_external_ellipse);
+        av_bprintf(bp, "overlap_process_option: %d}",
+                   params->overlap_process_option);
     }
-    av_log(ctx, AV_LOG_INFO, "targeted_system_display_maximum_luminance: %9.4f, ",
-           av_q2d(hdr_plus->targeted_system_display_maximum_luminance));
+    av_bprintf(bp, "targeted_system_display_maximum_luminance: %9.4f, ",
+               av_q2d(hdr_plus->targeted_system_display_maximum_luminance));
     if (hdr_plus->targeted_system_display_actual_peak_luminance_flag) {
-        av_log(ctx, AV_LOG_INFO, "targeted_system_display_actual_peak_luminance: {");
+        av_bprintf(bp, "targeted_system_display_actual_peak_luminance: {");
         for (int i = 0; i < hdr_plus->num_rows_targeted_system_display_actual_peak_luminance; i++) {
-            av_log(ctx, AV_LOG_INFO, "(");
+            av_bprintf(bp, "(");
             for (int j = 0; j < hdr_plus->num_cols_targeted_system_display_actual_peak_luminance; j++) {
-                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
-                       av_q2d(hdr_plus->targeted_system_display_actual_peak_luminance[i][j]));
+                av_bprintf(bp, i ? ",%5.4f" : "%5.4f",
+                           av_q2d(hdr_plus->targeted_system_display_actual_peak_luminance[i][j]));
             }
-            av_log(ctx, AV_LOG_INFO, ")");
+            av_bprintf(bp, ")");
         }
-        av_log(ctx, AV_LOG_INFO, "}, ");
+        av_bprintf(bp, "}, ");
     }
 
     for (int w = 0; w < hdr_plus->num_windows; w++) {
         AVHDRPlusColorTransformParams *params = &hdr_plus->params[w];
-        av_log(ctx, AV_LOG_INFO, "window %d {maxscl: {", w);
+        av_bprintf(bp, "window %d {maxscl: {", w);
         for (int i = 0; i < 3; i++) {
-            av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",av_q2d(params->maxscl[i]));
+            av_bprintf(bp, i ? ",%5.4f" : "%5.4f",av_q2d(params->maxscl[i]));
         }
-        av_log(ctx, AV_LOG_INFO, "}, average_maxrgb: %5.4f, ",
-               av_q2d(params->average_maxrgb));
-        av_log(ctx, AV_LOG_INFO, "distribution_maxrgb: {");
+        av_bprintf(bp, "}, average_maxrgb: %5.4f, ",
+                   av_q2d(params->average_maxrgb));
+        av_bprintf(bp, "distribution_maxrgb: {");
         for (int i = 0; i < params->num_distribution_maxrgb_percentiles; i++) {
-            av_log(ctx, AV_LOG_INFO, "(%d,%5.4f)",
-                   params->distribution_maxrgb[i].percentage,
-                   av_q2d(params->distribution_maxrgb[i].percentile));
+            av_bprintf(bp, "(%d,%5.4f)",
+                       params->distribution_maxrgb[i].percentage,
+                       av_q2d(params->distribution_maxrgb[i].percentile));
         }
-        av_log(ctx, AV_LOG_INFO, "}, fraction_bright_pixels: %5.4f",
-               av_q2d(params->fraction_bright_pixels));
+        av_bprintf(bp, "}, fraction_bright_pixels: %5.4f",
+                   av_q2d(params->fraction_bright_pixels));
         if (params->tone_mapping_flag) {
-            av_log(ctx, AV_LOG_INFO, ", knee_point: (%5.4f,%5.4f), ", av_q2d(params->knee_point_x), av_q2d(params->knee_point_y));
-            av_log(ctx, AV_LOG_INFO, "bezier_curve_anchors: {");
+            av_bprintf(bp, ", knee_point: (%5.4f,%5.4f), ", av_q2d(params->knee_point_x), av_q2d(params->knee_point_y));
+            av_bprintf(bp, "bezier_curve_anchors: {");
             for (int i = 0; i < params->num_bezier_curve_anchors; i++) {
-                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
-                       av_q2d(params->bezier_curve_anchors[i]));
+                av_bprintf(bp, i ? ",%5.4f" : "%5.4f",
+                           av_q2d(params->bezier_curve_anchors[i]));
             }
-            av_log(ctx, AV_LOG_INFO, "}");
+            av_bprintf(bp, "}");
         }
         if (params->color_saturation_mapping_flag) {
-            av_log(ctx, AV_LOG_INFO, ", color_saturation_weight: %5.4f",
-                   av_q2d(params->color_saturation_weight));
+            av_bprintf(bp, ", color_saturation_weight: %5.4f",
+                       av_q2d(params->color_saturation_weight));
         }
-        av_log(ctx, AV_LOG_INFO, "}");
+        av_bprintf(bp, "}");
     }
 
     if (hdr_plus->mastering_display_actual_peak_luminance_flag) {
-        av_log(ctx, AV_LOG_INFO, ", mastering_display_actual_peak_luminance: {");
+        av_bprintf(bp, ", mastering_display_actual_peak_luminance: {");
         for (int i = 0; i < hdr_plus->num_rows_mastering_display_actual_peak_luminance; i++) {
-            av_log(ctx, AV_LOG_INFO, "(");
+            av_bprintf(bp, "(");
             for (int j = 0; j <  hdr_plus->num_cols_mastering_display_actual_peak_luminance; j++) {
-                av_log(ctx, AV_LOG_INFO, i ? ",%5.4f" : "%5.4f",
-                       av_q2d(hdr_plus->mastering_display_actual_peak_luminance[i][j]));
+                av_bprintf(bp, i ? ",%5.4f" : "%5.4f",
+                           av_q2d(hdr_plus->mastering_display_actual_peak_luminance[i][j]));
             }
-            av_log(ctx, AV_LOG_INFO, ")");
+            av_bprintf(bp, ")");
         }
-        av_log(ctx, AV_LOG_INFO, "}");
+        av_bprintf(bp, "}");
     }
 }
 
-static void dump_dynamic_hdr_vivid(AVFilterContext *ctx, AVFrameSideData *sd)
+static void dump_dynamic_hdr_vivid(AVFilterContext *ctx, AVBPrint *bp,
+                                   AVFrameSideData *sd)
 {
     AVDynamicHDRVivid *hdr_vivid;
 
     if (sd->size < sizeof(*hdr_vivid)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid hdr vivid data\n");
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid hdr vivid data\n");
         return;
     }
 
     hdr_vivid = (AVDynamicHDRVivid *)sd->data;
-    av_log(ctx, AV_LOG_INFO, "system_start_code: %d, ", hdr_vivid->system_start_code);
-    av_log(ctx, AV_LOG_INFO, "num_windows: %d, ", hdr_vivid->num_windows);
+    av_bprintf(bp, "system_start_code: %d, ", hdr_vivid->system_start_code);
+    av_bprintf(bp, "num_windows: %d, ", hdr_vivid->num_windows);
     for (int w = 0; w < hdr_vivid->num_windows; w++) {
         const AVHDRVividColorTransformParams *params = &hdr_vivid->params[w];
 
-        av_log(ctx, AV_LOG_INFO, "minimum_maxrgb[%d]: %.4f, ", w, av_q2d(params->minimum_maxrgb));
-        av_log(ctx, AV_LOG_INFO, "average_maxrgb[%d]: %.4f, ", w, av_q2d(params->average_maxrgb));
-        av_log(ctx, AV_LOG_INFO, "variance_maxrgb[%d]:%.4f, ", w, av_q2d(params->variance_maxrgb));
-        av_log(ctx, AV_LOG_INFO, "maximum_maxrgb[%d]: %.4f, ", w, av_q2d(params->maximum_maxrgb));
+        av_bprintf(bp, "minimum_maxrgb[%d]: %.4f, ", w, av_q2d(params->minimum_maxrgb));
+        av_bprintf(bp, "average_maxrgb[%d]: %.4f, ", w, av_q2d(params->average_maxrgb));
+        av_bprintf(bp, "variance_maxrgb[%d]:%.4f, ", w, av_q2d(params->variance_maxrgb));
+        av_bprintf(bp, "maximum_maxrgb[%d]: %.4f, ", w, av_q2d(params->maximum_maxrgb));
     }
 
     for (int w = 0; w < hdr_vivid->num_windows; w++) {
         const AVHDRVividColorTransformParams *params = &hdr_vivid->params[w];
 
-        av_log(ctx, AV_LOG_INFO, "tone_mapping_mode_flag[%d]: %d, ", w, params->tone_mapping_mode_flag);
-        av_log(ctx, AV_LOG_INFO, "tone_mapping_param_num[%d]: %d, ", w, params->tone_mapping_param_num);
+        av_bprintf(bp, "tone_mapping_mode_flag[%d]: %d, ", w, params->tone_mapping_mode_flag);
+        av_bprintf(bp, "tone_mapping_param_num[%d]: %d, ", w, params->tone_mapping_param_num);
         if (params->tone_mapping_mode_flag) {
             for (int i = 0; i < params->tone_mapping_param_num; i++) {
                 const AVHDRVividColorToneMappingParams *tm_params = &params->tm_params[i];
 
-                av_log(ctx, AV_LOG_INFO, "targeted_system_display_maximum_luminance[%d][%d]: %.4f, ",
-                       w, i, av_q2d(tm_params->targeted_system_display_maximum_luminance));
-                av_log(ctx, AV_LOG_INFO, "base_enable_flag[%d][%d]: %d, ",
-                       w, i, tm_params->base_enable_flag);
+                av_bprintf(bp, "targeted_system_display_maximum_luminance[%d][%d]: %.4f, ",
+                           w, i, av_q2d(tm_params->targeted_system_display_maximum_luminance));
+                av_bprintf(bp, "base_enable_flag[%d][%d]: %d, ",
+                           w, i, tm_params->base_enable_flag);
                 if (tm_params->base_enable_flag) {
-                    av_log(ctx, AV_LOG_INFO, "base_param_m_p[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_p));
-                    av_log(ctx, AV_LOG_INFO, "base_param_m_m[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_m));
-                    av_log(ctx, AV_LOG_INFO, "base_param_m_a[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_a));
-                    av_log(ctx, AV_LOG_INFO, "base_param_m_b[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_b));
-                    av_log(ctx, AV_LOG_INFO, "base_param_m_n[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_n));
-                    av_log(ctx, AV_LOG_INFO, "base_param_k1[%d][%d]:  %d, ", w, i, tm_params->base_param_k1);
-                    av_log(ctx, AV_LOG_INFO, "base_param_k2[%d][%d]:  %d, ", w, i, tm_params->base_param_k2);
-                    av_log(ctx, AV_LOG_INFO, "base_param_k3[%d][%d]:  %d, ", w, i, tm_params->base_param_k3);
-                    av_log(ctx, AV_LOG_INFO, "base_param_Delta_enable_mode[%d][%d]: %d, ", w, i,
-                           tm_params->base_param_Delta_enable_mode);
-                    av_log(ctx, AV_LOG_INFO, "base_param_Delta[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_Delta));
+                    av_bprintf(bp, "base_param_m_p[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_p));
+                    av_bprintf(bp, "base_param_m_m[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_m));
+                    av_bprintf(bp, "base_param_m_a[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_a));
+                    av_bprintf(bp, "base_param_m_b[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_b));
+                    av_bprintf(bp, "base_param_m_n[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_m_n));
+                    av_bprintf(bp, "base_param_k1[%d][%d]:  %d, ", w, i, tm_params->base_param_k1);
+                    av_bprintf(bp, "base_param_k2[%d][%d]:  %d, ", w, i, tm_params->base_param_k2);
+                    av_bprintf(bp, "base_param_k3[%d][%d]:  %d, ", w, i, tm_params->base_param_k3);
+                    av_bprintf(bp, "base_param_Delta_enable_mode[%d][%d]: %d, ", w, i,
+                               tm_params->base_param_Delta_enable_mode);
+                    av_bprintf(bp, "base_param_Delta[%d][%d]: %.4f, ", w, i, av_q2d(tm_params->base_param_Delta));
                 }
-                av_log(ctx, AV_LOG_INFO, "3Spline_enable_flag[%d][%d]: %d, ",
-                       w, i, tm_params->three_Spline_enable_flag);
+                av_bprintf(bp, "3Spline_enable_flag[%d][%d]: %d, ",
+                           w, i, tm_params->three_Spline_enable_flag);
                 if (tm_params->three_Spline_enable_flag) {
                     for (int j = 0; j < tm_params->three_Spline_num; j++) {
                         const AVHDRVivid3SplineParams *three_spline = &tm_params->three_spline[j];
-                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_mode[%d][%d]:  %d, ", w, i, three_spline->th_mode);
+                        av_bprintf(bp, "3Spline_TH_mode[%d][%d]:  %d, ", w, i, three_spline->th_mode);
                         if (three_spline->th_mode == 0 || three_spline->th_mode == 2)
-                            av_log(ctx, AV_LOG_INFO, "3Spline_TH_enable_MB[%d][%d][%d]: %.4f, ",
-                                    w, i, j, av_q2d(three_spline->th_enable_mb));
-                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_enable[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(three_spline->th_enable));
-                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_Delta1[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(three_spline->th_delta1));
-                        av_log(ctx, AV_LOG_INFO, "3Spline_TH_Delta2[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(three_spline->th_delta2));
-                        av_log(ctx, AV_LOG_INFO, "3Spline_enable_Strength[%d][%d][%d]: %.4f, ",
-                                w, i, j, av_q2d(three_spline->enable_strength));
+                            av_bprintf(bp, "3Spline_TH_enable_MB[%d][%d][%d]: %.4f, ",
+                                       w, i, j, av_q2d(three_spline->th_enable_mb));
+                        av_bprintf(bp, "3Spline_TH_enable[%d][%d][%d]: %.4f, ",
+                                   w, i, j, av_q2d(three_spline->th_enable));
+                        av_bprintf(bp, "3Spline_TH_Delta1[%d][%d][%d]: %.4f, ",
+                                   w, i, j, av_q2d(three_spline->th_delta1));
+                        av_bprintf(bp, "3Spline_TH_Delta2[%d][%d][%d]: %.4f, ",
+                                   w, i, j, av_q2d(three_spline->th_delta2));
+                        av_bprintf(bp, "3Spline_enable_Strength[%d][%d][%d]: %.4f, ",
+                                   w, i, j, av_q2d(three_spline->enable_strength));
                     }
                 }
             }
         }
 
-        av_log(ctx, AV_LOG_INFO, "color_saturation_mapping_flag[%d]: %d",
-                w, params->color_saturation_mapping_flag);
+        av_bprintf(bp, "color_saturation_mapping_flag[%d]: %d",
+                   w, params->color_saturation_mapping_flag);
         if (params->color_saturation_mapping_flag) {
-            av_log(ctx, AV_LOG_INFO, ", color_saturation_num[%d]: %d",
-                   w, params->color_saturation_num);
+            av_bprintf(bp, ", color_saturation_num[%d]: %d",
+                       w, params->color_saturation_num);
             for (int i = 0; i < params->color_saturation_num; i++) {
-                av_log(ctx, AV_LOG_INFO, ", color_saturation_gain[%d][%d]: %.4f",
-                       w, i, av_q2d(params->color_saturation_gain[i]));
+                av_bprintf(bp, ", color_saturation_gain[%d][%d]: %.4f",
+                           w, i, av_q2d(params->color_saturation_gain[i]));
             }
         }
     }
 }
 
 
-static void dump_content_light_metadata(AVFilterContext *ctx, AVFrameSideData *sd)
+static void dump_content_light_metadata(AVBPrint *bp, AVFrameSideData *sd)
 {
     const AVContentLightMetadata *metadata = (const AVContentLightMetadata *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO,
-           "MaxCLL=%d, MaxFALL=%d",
-           metadata->MaxCLL, metadata->MaxFALL);
+    av_bprintf(bp,
+               "MaxCLL=%d, MaxFALL=%d",
+               metadata->MaxCLL, metadata->MaxFALL);
 }
 
-static void dump_video_enc_params(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_video_enc_params(AVBPrint *bp, const AVFrameSideData *sd)
 {
     const AVVideoEncParams *par = (const AVVideoEncParams *)sd->data;
     int plane, acdc;
 
-    av_log(ctx, AV_LOG_INFO, "type %d; ", par->type);
+    av_bprintf(bp, "type %d; ", par->type);
     if (par->qp)
-        av_log(ctx, AV_LOG_INFO, "qp=%d; ", par->qp);
+        av_bprintf(bp, "qp=%d; ", par->qp);
     for (plane = 0; plane < FF_ARRAY_ELEMS(par->delta_qp); plane++)
         for (acdc = 0; acdc < FF_ARRAY_ELEMS(par->delta_qp[plane]); acdc++) {
             int delta_qp = par->delta_qp[plane][acdc];
             if (delta_qp)
-                av_log(ctx, AV_LOG_INFO, "delta_qp[%d][%d]=%d; ",
-                       plane, acdc, delta_qp);
+                av_bprintf(bp, "delta_qp[%d][%d]=%d; ",
+                           plane, acdc, delta_qp);
         }
     if (par->nb_blocks)
-        av_log(ctx, AV_LOG_INFO, "%u blocks; ", par->nb_blocks);
+        av_bprintf(bp, "%u blocks; ", par->nb_blocks);
 }
 
-static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_sei_unregistered_metadata(AVFilterContext *ctx, AVBPrint *bp,
+                                           const AVFrameSideData *sd)
 {
+    static const char hex[] = "0123456789abcdef";
+    const ShowInfoContext *s = ctx->priv;
     const uint8_t *user_data = sd->data;
-    ShowInfoContext *s = ctx->priv;
+    size_t i = AV_UUID_LEN;
 
     if (sd->size < AV_UUID_LEN) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data (%zu < UUID(%d-bytes))\n",
-               sd->size, AV_UUID_LEN);
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid data (%zu < UUID(%d-bytes))\n",
+                 sd->size, AV_UUID_LEN);
         return;
     }
 
-    av_log(ctx, AV_LOG_INFO, "UUID=" AV_PRI_UUID "\n", AV_UUID_ARG(user_data));
+    av_bprintf(bp, "UUID=" AV_PRI_UUID "\n", AV_UUID_ARG(user_data));
 
-    av_log(ctx, AV_LOG_INFO, "User Data=");
-    for (size_t i = 16; i < sd->size; i++) {
-        const char *format = "%02x";
+    /* The payload can be large: encode it in chunks, not byte by byte. */
+    av_bprintf(bp, "User Data=");
+    while (i < sd->size) {
+        char buf[256];
+        unsigned n = 0;
 
-        if (s->udu_sei_as_ascii)
-            format = isprint(user_data[i]) ? "%c" : "\\x%02x";
-        av_log(ctx, AV_LOG_INFO, format, user_data[i]);
+        for (; i < sd->size && n <= sizeof(buf) - 4; i++) {
+            uint8_t c = user_data[i];
+
+            if (s->udu_sei_as_ascii && isprint(c)) {
+                buf[n++] = c;
+                continue;
+            }
+            if (s->udu_sei_as_ascii) {
+                buf[n++] = '\\';
+                buf[n++] = 'x';
+            }
+            buf[n++] = hex[c >> 4];
+            buf[n++] = hex[c & 15];
+        }
+        av_bprint_append_data(bp, buf, n);
     }
-    av_log(ctx, AV_LOG_INFO, "\n");
+    av_bprintf(bp, "\n");
 }
 
-static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, AVBPrint *bp,
+                                                const AVFrameSideData *sd)
 {
     const AVFilmGrainParams *fgp = (const AVFilmGrainParams *)sd->data;
     const char *const film_grain_type_names[] = {
@@ -461,22 +513,22 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
     const char *colorspace_str      = av_color_space_name(fgp->color_space);
 
     if (fgp->type >= FF_ARRAY_ELEMS(film_grain_type_names)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid data\n");
         return;
     }
 
-    av_log(ctx, AV_LOG_INFO, "type %s; ", film_grain_type_names[fgp->type]);
-    av_log(ctx, AV_LOG_INFO, "seed=%"PRIu64"; ", fgp->seed);
-    av_log(ctx, AV_LOG_INFO, "width=%d; ", fgp->width);
-    av_log(ctx, AV_LOG_INFO, "height=%d; ", fgp->height);
-    av_log(ctx, AV_LOG_INFO, "subsampling_x=%d; ", fgp->subsampling_x);
-    av_log(ctx, AV_LOG_INFO, "subsampling_y=%d; ", fgp->subsampling_y);
-    av_log(ctx, AV_LOG_INFO, "color_range=%s; ", color_range_str ? color_range_str : "unknown");
-    av_log(ctx, AV_LOG_INFO, "color_primaries=%s; ", color_primaries_str ? color_primaries_str : "unknown");
-    av_log(ctx, AV_LOG_INFO, "color_trc=%s; ", color_trc_str ? color_trc_str : "unknown");
-    av_log(ctx, AV_LOG_INFO, "color_space=%s; ", colorspace_str ? colorspace_str : "unknown");
-    av_log(ctx, AV_LOG_INFO, "bit_depth_luma=%d; ", fgp->bit_depth_luma);
-    av_log(ctx, AV_LOG_INFO, "bit_depth_chroma=%d; ", fgp->bit_depth_chroma);
+    av_bprintf(bp, "type %s; ", film_grain_type_names[fgp->type]);
+    av_bprintf(bp, "seed=%"PRIu64"; ", fgp->seed);
+    av_bprintf(bp, "width=%d; ", fgp->width);
+    av_bprintf(bp, "height=%d; ", fgp->height);
+    av_bprintf(bp, "subsampling_x=%d; ", fgp->subsampling_x);
+    av_bprintf(bp, "subsampling_y=%d; ", fgp->subsampling_y);
+    av_bprintf(bp, "color_range=%s; ", color_range_str ? color_range_str : "unknown");
+    av_bprintf(bp, "color_primaries=%s; ", color_primaries_str ? color_primaries_str : "unknown");
+    av_bprintf(bp, "color_trc=%s; ", color_trc_str ? color_trc_str : "unknown");
+    av_bprintf(bp, "color_space=%s; ", colorspace_str ? colorspace_str : "unknown");
+    av_bprintf(bp, "bit_depth_luma=%d; ", fgp->bit_depth_luma);
+    av_bprintf(bp, "bit_depth_chroma=%d; ", fgp->bit_depth_chroma);
 
     switch (fgp->type) {
     case AV_FILM_GRAIN_PARAMS_NONE:
@@ -485,52 +537,52 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
         const AVFilmGrainAOMParams *aom = &fgp->codec.aom;
         const int num_ar_coeffs_y = 2 * aom->ar_coeff_lag * (aom->ar_coeff_lag + 1);
         const int num_ar_coeffs_uv = num_ar_coeffs_y + !!aom->num_y_points;
-        av_log(ctx, AV_LOG_INFO, "y_points={ ");
+        av_bprintf(bp, "y_points={ ");
         for (int i = 0; i < aom->num_y_points; i++)
-            av_log(ctx, AV_LOG_INFO, "(%d,%d) ", aom->y_points[i][0], aom->y_points[i][1]);
-        av_log(ctx, AV_LOG_INFO, "}; chroma_scaling_from_luma=%d; ", aom->chroma_scaling_from_luma);
+            av_bprintf(bp, "(%d,%d) ", aom->y_points[i][0], aom->y_points[i][1]);
+        av_bprintf(bp, "}; chroma_scaling_from_luma=%d; ", aom->chroma_scaling_from_luma);
         for (int uv = 0; uv < 2; uv++) {
-            av_log(ctx, AV_LOG_INFO, "uv_points[%d]={ ", uv);
+            av_bprintf(bp, "uv_points[%d]={ ", uv);
             for (int i = 0; i < aom->num_uv_points[uv]; i++)
-                av_log(ctx, AV_LOG_INFO, "(%d,%d) ", aom->uv_points[uv][i][0], aom->uv_points[uv][i][1]);
-            av_log(ctx, AV_LOG_INFO, "}; ");
+                av_bprintf(bp, "(%d,%d) ", aom->uv_points[uv][i][0], aom->uv_points[uv][i][1]);
+            av_bprintf(bp, "}; ");
         }
-        av_log(ctx, AV_LOG_INFO, "scaling_shift=%d; ", aom->scaling_shift);
-        av_log(ctx, AV_LOG_INFO, "ar_coeff_lag=%d; ", aom->ar_coeff_lag);
+        av_bprintf(bp, "scaling_shift=%d; ", aom->scaling_shift);
+        av_bprintf(bp, "ar_coeff_lag=%d; ", aom->ar_coeff_lag);
         if (num_ar_coeffs_y) {
-            av_log(ctx, AV_LOG_INFO, "ar_coeffs_y={ ");
+            av_bprintf(bp, "ar_coeffs_y={ ");
             for (int i = 0; i < num_ar_coeffs_y; i++)
-                av_log(ctx, AV_LOG_INFO, "%d ", aom->ar_coeffs_y[i]);
-            av_log(ctx, AV_LOG_INFO, "}; ");
+                av_bprintf(bp, "%d ", aom->ar_coeffs_y[i]);
+            av_bprintf(bp, "}; ");
         }
         for (int uv = 0; num_ar_coeffs_uv && uv < 2; uv++) {
-            av_log(ctx, AV_LOG_INFO, "ar_coeffs_uv[%d]={ ", uv);
+            av_bprintf(bp, "ar_coeffs_uv[%d]={ ", uv);
             for (int i = 0; i < num_ar_coeffs_uv; i++)
-                av_log(ctx, AV_LOG_INFO, "%d ", aom->ar_coeffs_uv[uv][i]);
-            av_log(ctx, AV_LOG_INFO, "}; ");
+                av_bprintf(bp, "%d ", aom->ar_coeffs_uv[uv][i]);
+            av_bprintf(bp, "}; ");
         }
-        av_log(ctx, AV_LOG_INFO, "ar_coeff_shift=%d; ", aom->ar_coeff_shift);
-        av_log(ctx, AV_LOG_INFO, "grain_scale_shift=%d; ", aom->grain_scale_shift);
+        av_bprintf(bp, "ar_coeff_shift=%d; ", aom->ar_coeff_shift);
+        av_bprintf(bp, "grain_scale_shift=%d; ", aom->grain_scale_shift);
         for (int uv = 0; uv < 2; uv++) {
-            av_log(ctx, AV_LOG_INFO, "uv_mult[%d] = %d; ", uv, aom->uv_mult[uv]);
-            av_log(ctx, AV_LOG_INFO, "uv_mult_luma[%d] = %d; ", uv, aom->uv_mult_luma[uv]);
-            av_log(ctx, AV_LOG_INFO, "uv_offset[%d] = %d; ", uv, aom->uv_offset[uv]);
+            av_bprintf(bp, "uv_mult[%d] = %d; ", uv, aom->uv_mult[uv]);
+            av_bprintf(bp, "uv_mult_luma[%d] = %d; ", uv, aom->uv_mult_luma[uv]);
+            av_bprintf(bp, "uv_offset[%d] = %d; ", uv, aom->uv_offset[uv]);
         }
-        av_log(ctx, AV_LOG_INFO, "overlap_flag=%d; ", aom->overlap_flag);
-        av_log(ctx, AV_LOG_INFO, "limit_output_range=%d; ", aom->limit_output_range);
+        av_bprintf(bp, "overlap_flag=%d; ", aom->overlap_flag);
+        av_bprintf(bp, "limit_output_range=%d; ", aom->limit_output_range);
         break;
     }
     case AV_FILM_GRAIN_PARAMS_H274: {
         const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
-        av_log(ctx, AV_LOG_INFO, "model_id=%d; ", h274->model_id);
-        av_log(ctx, AV_LOG_INFO, "blending_mode_id=%d; ", h274->blending_mode_id);
-        av_log(ctx, AV_LOG_INFO, "log2_scale_factor=%d; ", h274->log2_scale_factor);
+        av_bprintf(bp, "model_id=%d; ", h274->model_id);
+        av_bprintf(bp, "blending_mode_id=%d; ", h274->blending_mode_id);
+        av_bprintf(bp, "log2_scale_factor=%d; ", h274->log2_scale_factor);
 
         for (int c = 0; c < 3; c++)
             if (h274->component_model_present[c] && (h274->num_model_values[c] > 6 ||
                                                      h274->num_intensity_intervals[c] < 1 ||
                                                      h274->num_intensity_intervals[c] > 256)) {
-                av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+                log_diag(ctx, bp, AV_LOG_ERROR, "invalid data\n");
                 return;
             }
 
@@ -538,16 +590,16 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
             if (!h274->component_model_present[c])
                 continue;
 
-            av_log(ctx, AV_LOG_INFO, "num_intensity_intervals[%d]=%u; ", c, h274->num_intensity_intervals[c]);
-            av_log(ctx, AV_LOG_INFO, "num_model_values[%d]=%u; ", c, h274->num_model_values[c]);
+            av_bprintf(bp, "num_intensity_intervals[%d]=%u; ", c, h274->num_intensity_intervals[c]);
+            av_bprintf(bp, "num_model_values[%d]=%u; ", c, h274->num_model_values[c]);
             for (int i = 0; i < h274->num_intensity_intervals[c]; i++) {
-                av_log(ctx, AV_LOG_INFO, "intensity_interval_lower_bound[%d][%d]=%u; ",
-                                         c, i, h274->intensity_interval_lower_bound[c][i]);
-                av_log(ctx, AV_LOG_INFO, "intensity_interval_upper_bound[%d][%d]=%u; ",
-                                         c, i, h274->intensity_interval_upper_bound[c][i]);
+                av_bprintf(bp, "intensity_interval_lower_bound[%d][%d]=%u; ",
+                           c, i, h274->intensity_interval_lower_bound[c][i]);
+                av_bprintf(bp, "intensity_interval_upper_bound[%d][%d]=%u; ",
+                           c, i, h274->intensity_interval_upper_bound[c][i]);
                 for (int j = 0; j < h274->num_model_values[c]; j++)
-                    av_log(ctx, AV_LOG_INFO, "comp_model_value[%d][%d][%d]=%d; ",
-                                             c, i, j, h274->comp_model_value[c][i][j]);
+                    av_bprintf(bp, "comp_model_value[%d][%d][%d]=%d; ",
+                               c, i, j, h274->comp_model_value[c][i][j]);
             }
         }
         break;
@@ -555,147 +607,148 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
     }
 }
 
-static void dump_dovi_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_dovi_metadata(AVBPrint *bp, const AVFrameSideData *sd)
 {
     const AVDOVIMetadata *dovi = (AVDOVIMetadata *) sd->data;
     const AVDOVIRpuDataHeader *hdr = av_dovi_get_header(dovi);
     const AVDOVIDataMapping *mapping = av_dovi_get_mapping(dovi);
     const AVDOVIColorMetadata *color = av_dovi_get_color(dovi);
 
-    av_log(ctx, AV_LOG_INFO, "    rpu_type=%"PRIu8"; ", hdr->rpu_type);
-    av_log(ctx, AV_LOG_INFO, "rpu_format=%"PRIu16"; ", hdr->rpu_format);
-    av_log(ctx, AV_LOG_INFO, "vdr_rpu_profile=%"PRIu8"; ", hdr->vdr_rpu_profile);
-    av_log(ctx, AV_LOG_INFO, "vdr_rpu_level=%"PRIu8"; ", hdr->vdr_rpu_level);
-    av_log(ctx, AV_LOG_INFO, "chroma_resampling_explicit_filter_flag=%"PRIu8"; ", hdr->chroma_resampling_explicit_filter_flag);
-    av_log(ctx, AV_LOG_INFO, "coef_data_type=%"PRIu8"; ", hdr->coef_data_type);
-    av_log(ctx, AV_LOG_INFO, "coef_log2_denom=%"PRIu8"; ", hdr->coef_log2_denom);
-    av_log(ctx, AV_LOG_INFO, "vdr_rpu_normalized_idc=%"PRIu8"; ", hdr->vdr_rpu_normalized_idc);
-    av_log(ctx, AV_LOG_INFO, "bl_video_full_range_flag=%"PRIu8"; ", hdr->bl_video_full_range_flag);
-    av_log(ctx, AV_LOG_INFO, "bl_bit_depth=%"PRIu8"; ", hdr->bl_bit_depth);
-    av_log(ctx, AV_LOG_INFO, "el_bit_depth=%"PRIu8"; ", hdr->el_bit_depth);
-    av_log(ctx, AV_LOG_INFO, "vdr_bit_depth=%"PRIu8"; ", hdr->vdr_bit_depth);
-    av_log(ctx, AV_LOG_INFO, "spatial_resampling_filter_flag=%"PRIu8"; ", hdr->spatial_resampling_filter_flag);
-    av_log(ctx, AV_LOG_INFO, "el_spatial_resampling_filter_flag=%"PRIu8"; ", hdr->el_spatial_resampling_filter_flag);
-    av_log(ctx, AV_LOG_INFO, "disable_residual_flag=%"PRIu8"\n", hdr->disable_residual_flag);
+    av_bprintf(bp, "    rpu_type=%"PRIu8"; ", hdr->rpu_type);
+    av_bprintf(bp, "rpu_format=%"PRIu16"; ", hdr->rpu_format);
+    av_bprintf(bp, "vdr_rpu_profile=%"PRIu8"; ", hdr->vdr_rpu_profile);
+    av_bprintf(bp, "vdr_rpu_level=%"PRIu8"; ", hdr->vdr_rpu_level);
+    av_bprintf(bp, "chroma_resampling_explicit_filter_flag=%"PRIu8"; ", hdr->chroma_resampling_explicit_filter_flag);
+    av_bprintf(bp, "coef_data_type=%"PRIu8"; ", hdr->coef_data_type);
+    av_bprintf(bp, "coef_log2_denom=%"PRIu8"; ", hdr->coef_log2_denom);
+    av_bprintf(bp, "vdr_rpu_normalized_idc=%"PRIu8"; ", hdr->vdr_rpu_normalized_idc);
+    av_bprintf(bp, "bl_video_full_range_flag=%"PRIu8"; ", hdr->bl_video_full_range_flag);
+    av_bprintf(bp, "bl_bit_depth=%"PRIu8"; ", hdr->bl_bit_depth);
+    av_bprintf(bp, "el_bit_depth=%"PRIu8"; ", hdr->el_bit_depth);
+    av_bprintf(bp, "vdr_bit_depth=%"PRIu8"; ", hdr->vdr_bit_depth);
+    av_bprintf(bp, "spatial_resampling_filter_flag=%"PRIu8"; ", hdr->spatial_resampling_filter_flag);
+    av_bprintf(bp, "el_spatial_resampling_filter_flag=%"PRIu8"; ", hdr->el_spatial_resampling_filter_flag);
+    av_bprintf(bp, "disable_residual_flag=%"PRIu8"\n", hdr->disable_residual_flag);
 
-    av_log(ctx, AV_LOG_INFO, "    data mapping: ");
-    av_log(ctx, AV_LOG_INFO, "vdr_rpu_id=%"PRIu8"; ", mapping->vdr_rpu_id);
-    av_log(ctx, AV_LOG_INFO, "mapping_color_space=%"PRIu8"; ", mapping->mapping_color_space);
-    av_log(ctx, AV_LOG_INFO, "mapping_chroma_format_idc=%"PRIu8"; ", mapping->mapping_chroma_format_idc);
-    av_log(ctx, AV_LOG_INFO, "nlq_method_idc=%d; ", (int) mapping->nlq_method_idc);
-    av_log(ctx, AV_LOG_INFO, "num_x_partitions=%"PRIu32"; ", mapping->num_x_partitions);
-    av_log(ctx, AV_LOG_INFO, "num_y_partitions=%"PRIu32"\n", mapping->num_y_partitions);
+    av_bprintf(bp, "    data mapping: ");
+    av_bprintf(bp, "vdr_rpu_id=%"PRIu8"; ", mapping->vdr_rpu_id);
+    av_bprintf(bp, "mapping_color_space=%"PRIu8"; ", mapping->mapping_color_space);
+    av_bprintf(bp, "mapping_chroma_format_idc=%"PRIu8"; ", mapping->mapping_chroma_format_idc);
+    av_bprintf(bp, "nlq_method_idc=%d; ", (int) mapping->nlq_method_idc);
+    av_bprintf(bp, "num_x_partitions=%"PRIu32"; ", mapping->num_x_partitions);
+    av_bprintf(bp, "num_y_partitions=%"PRIu32"\n", mapping->num_y_partitions);
 
     for (int c = 0; c < 3; c++) {
         const AVDOVIReshapingCurve *curve = &mapping->curves[c];
         const AVDOVINLQParams *nlq = &mapping->nlq[c];
-        av_log(ctx, AV_LOG_INFO, "      channel %d: ", c);
-        av_log(ctx, AV_LOG_INFO, "pivots={ ");
+        av_bprintf(bp, "      channel %d: ", c);
+        av_bprintf(bp, "pivots={ ");
         for (int i = 0; i < curve->num_pivots; i++)
-            av_log(ctx, AV_LOG_INFO, "%"PRIu16" ", curve->pivots[i]);
-        av_log(ctx, AV_LOG_INFO, "}; mapping_idc={ ");
+            av_bprintf(bp, "%"PRIu16" ", curve->pivots[i]);
+        av_bprintf(bp, "}; mapping_idc={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++)
-            av_log(ctx, AV_LOG_INFO, "%d ", (int) curve->mapping_idc[i]);
-        av_log(ctx, AV_LOG_INFO, "}; poly_order={ ");
+            av_bprintf(bp, "%d ", (int) curve->mapping_idc[i]);
+        av_bprintf(bp, "}; poly_order={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++)
-            av_log(ctx, AV_LOG_INFO, "%"PRIu8" ", curve->poly_order[i]);
-        av_log(ctx, AV_LOG_INFO, "}; poly_coef={ ");
+            av_bprintf(bp, "%"PRIu8" ", curve->poly_order[i]);
+        av_bprintf(bp, "}; poly_coef={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++) {
-            av_log(ctx, AV_LOG_INFO, "{%"PRIi64", %"PRIi64", %"PRIi64"} ",
-                   curve->poly_coef[i][0],
-                   curve->poly_coef[i][1],
-                   curve->poly_coef[i][2]);
+            av_bprintf(bp, "{%"PRIi64", %"PRIi64", %"PRIi64"} ",
+                       curve->poly_coef[i][0],
+                       curve->poly_coef[i][1],
+                       curve->poly_coef[i][2]);
         }
 
-        av_log(ctx, AV_LOG_INFO, "}; mmr_order={ ");
+        av_bprintf(bp, "}; mmr_order={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++)
-            av_log(ctx, AV_LOG_INFO, "%"PRIu8" ", curve->mmr_order[i]);
-        av_log(ctx, AV_LOG_INFO, "}; mmr_constant={ ");
+            av_bprintf(bp, "%"PRIu8" ", curve->mmr_order[i]);
+        av_bprintf(bp, "}; mmr_constant={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++)
-            av_log(ctx, AV_LOG_INFO, "%"PRIi64" ", curve->mmr_constant[i]);
-        av_log(ctx, AV_LOG_INFO, "}; mmr_coef={ ");
+            av_bprintf(bp, "%"PRIi64" ", curve->mmr_constant[i]);
+        av_bprintf(bp, "}; mmr_coef={ ");
         for (int i = 0; i < curve->num_pivots - 1; i++) {
-            av_log(ctx, AV_LOG_INFO, "{");
+            av_bprintf(bp, "{");
             for (int j = 0; j < curve->mmr_order[i]; j++) {
                 for (int k = 0; k < 7; k++)
-                    av_log(ctx, AV_LOG_INFO, "%"PRIi64" ", curve->mmr_coef[i][j][k]);
+                    av_bprintf(bp, "%"PRIi64" ", curve->mmr_coef[i][j][k]);
             }
-            av_log(ctx, AV_LOG_INFO, "} ");
+            av_bprintf(bp, "} ");
         }
 
-        av_log(ctx, AV_LOG_INFO, "}; nlq_offset=%"PRIu16"; ", nlq->nlq_offset);
-        av_log(ctx, AV_LOG_INFO, "vdr_in_max=%"PRIu64"; ", nlq->vdr_in_max);
+        av_bprintf(bp, "}; nlq_offset=%"PRIu16"; ", nlq->nlq_offset);
+        av_bprintf(bp, "vdr_in_max=%"PRIu64"; ", nlq->vdr_in_max);
         switch (mapping->nlq_method_idc) {
         case AV_DOVI_NLQ_LINEAR_DZ:
-            av_log(ctx, AV_LOG_INFO, "linear_deadzone_slope=%"PRIu64"; ", nlq->linear_deadzone_slope);
-            av_log(ctx, AV_LOG_INFO, "linear_deadzone_threshold=%"PRIu64"\n", nlq->linear_deadzone_threshold);
+            av_bprintf(bp, "linear_deadzone_slope=%"PRIu64"; ", nlq->linear_deadzone_slope);
+            av_bprintf(bp, "linear_deadzone_threshold=%"PRIu64"\n", nlq->linear_deadzone_threshold);
             break;
         }
     }
 
-    av_log(ctx, AV_LOG_INFO, "    color metadata: ");
-    av_log(ctx, AV_LOG_INFO, "dm_metadata_id=%"PRIu8"; ", color->dm_metadata_id);
-    av_log(ctx, AV_LOG_INFO, "scene_refresh_flag=%"PRIu8"; ", color->scene_refresh_flag);
-    av_log(ctx, AV_LOG_INFO, "ycc_to_rgb_matrix={ ");
+    av_bprintf(bp, "    color metadata: ");
+    av_bprintf(bp, "dm_metadata_id=%"PRIu8"; ", color->dm_metadata_id);
+    av_bprintf(bp, "scene_refresh_flag=%"PRIu8"; ", color->scene_refresh_flag);
+    av_bprintf(bp, "ycc_to_rgb_matrix={ ");
     for (int i = 0; i < 9; i++)
-        av_log(ctx, AV_LOG_INFO, "%f ", av_q2d(color->ycc_to_rgb_matrix[i]));
-    av_log(ctx, AV_LOG_INFO, "}; ycc_to_rgb_offset={ ");
+        av_bprintf(bp, "%f ", av_q2d(color->ycc_to_rgb_matrix[i]));
+    av_bprintf(bp, "}; ycc_to_rgb_offset={ ");
     for (int i = 0; i < 3; i++)
-        av_log(ctx, AV_LOG_INFO, "%f ", av_q2d(color->ycc_to_rgb_offset[i]));
-    av_log(ctx, AV_LOG_INFO, "}; rgb_to_lms_matrix={ ");
+        av_bprintf(bp, "%f ", av_q2d(color->ycc_to_rgb_offset[i]));
+    av_bprintf(bp, "}; rgb_to_lms_matrix={ ");
     for (int i = 0; i < 9; i++)
-        av_log(ctx, AV_LOG_INFO, "%f ", av_q2d(color->rgb_to_lms_matrix[i]));
-    av_log(ctx, AV_LOG_INFO, "}; signal_eotf=%"PRIu16"; ", color->signal_eotf);
-    av_log(ctx, AV_LOG_INFO, "signal_eotf_param0=%"PRIu16"; ", color->signal_eotf_param0);
-    av_log(ctx, AV_LOG_INFO, "signal_eotf_param1=%"PRIu16"; ", color->signal_eotf_param1);
-    av_log(ctx, AV_LOG_INFO, "signal_eotf_param2=%"PRIu32"; ", color->signal_eotf_param2);
-    av_log(ctx, AV_LOG_INFO, "signal_bit_depth=%"PRIu8"; ", color->signal_bit_depth);
-    av_log(ctx, AV_LOG_INFO, "signal_color_space=%"PRIu8"; ", color->signal_color_space);
-    av_log(ctx, AV_LOG_INFO, "signal_chroma_format=%"PRIu8"; ", color->signal_chroma_format);
-    av_log(ctx, AV_LOG_INFO, "signal_full_range_flag=%"PRIu8"; ", color->signal_full_range_flag);
-    av_log(ctx, AV_LOG_INFO, "source_min_pq=%"PRIu16"; ", color->source_min_pq);
-    av_log(ctx, AV_LOG_INFO, "source_max_pq=%"PRIu16"; ", color->source_max_pq);
-    av_log(ctx, AV_LOG_INFO, "source_diagonal=%"PRIu16"; ", color->source_diagonal);
+        av_bprintf(bp, "%f ", av_q2d(color->rgb_to_lms_matrix[i]));
+    av_bprintf(bp, "}; signal_eotf=%"PRIu16"; ", color->signal_eotf);
+    av_bprintf(bp, "signal_eotf_param0=%"PRIu16"; ", color->signal_eotf_param0);
+    av_bprintf(bp, "signal_eotf_param1=%"PRIu16"; ", color->signal_eotf_param1);
+    av_bprintf(bp, "signal_eotf_param2=%"PRIu32"; ", color->signal_eotf_param2);
+    av_bprintf(bp, "signal_bit_depth=%"PRIu8"; ", color->signal_bit_depth);
+    av_bprintf(bp, "signal_color_space=%"PRIu8"; ", color->signal_color_space);
+    av_bprintf(bp, "signal_chroma_format=%"PRIu8"; ", color->signal_chroma_format);
+    av_bprintf(bp, "signal_full_range_flag=%"PRIu8"; ", color->signal_full_range_flag);
+    av_bprintf(bp, "source_min_pq=%"PRIu16"; ", color->source_min_pq);
+    av_bprintf(bp, "source_max_pq=%"PRIu16"; ", color->source_max_pq);
+    av_bprintf(bp, "source_diagonal=%"PRIu16"; ", color->source_diagonal);
 }
 
-static void dump_gain_map_params(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_gain_map_params(AVFilterContext *ctx, AVBPrint *bp,
+                                 const AVFrameSideData *sd)
 {
     const AVGainMapParams *p = (const AVGainMapParams *) sd->data;
-    av_log(ctx, AV_LOG_INFO, "version=%d, nb_channels=%d, use_base_color_space=%d, "
-           "base_hdr_headroom=%f, alternate_hdr_headroom=%f, channels={ ",
-           p->version, p->nb_channels, p->use_base_color_space,
-           av_q2d(p->base_hdr_headroom), av_q2d(p->alternate_hdr_headroom));
+    av_bprintf(bp, "version=%d, nb_channels=%d, use_base_color_space=%d, "
+               "base_hdr_headroom=%f, alternate_hdr_headroom=%f, channels={ ",
+               p->version, p->nb_channels, p->use_base_color_space,
+               av_q2d(p->base_hdr_headroom), av_q2d(p->alternate_hdr_headroom));
 
     if (!(p->nb_channels == 1 || p->nb_channels == 3)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data }");
+        log_diag(ctx, bp, AV_LOG_ERROR, "invalid data }\n");
         return;
     }
 
     for (int c = 0; c < p->nb_channels; c++) {
         const struct AVGainMapChannel *ch = &p->channels[c];
-        av_log(ctx, AV_LOG_INFO,
-               "{ gain_map_min=%f, gain_map_max=%f, gamma=%f, "
-               "base_offset=%f, alternate_offset=%f } ",
-               av_q2d(ch->gain_map_min), av_q2d(ch->gain_map_max),
-               av_q2d(ch->gamma), av_q2d(ch->base_offset),
-               av_q2d(ch->alternate_offset));
+        av_bprintf(bp,
+                   "{ gain_map_min=%f, gain_map_max=%f, gamma=%f, "
+                   "base_offset=%f, alternate_offset=%f } ",
+                   av_q2d(ch->gain_map_min), av_q2d(ch->gain_map_max),
+                   av_q2d(ch->gamma), av_q2d(ch->base_offset),
+                   av_q2d(ch->alternate_offset));
     }
 
-    av_log(ctx, AV_LOG_INFO, "}");
+    av_bprintf(bp, "}");
 }
 
-static void dump_ambient_viewing_environment(AVFilterContext *ctx, const AVFrameSideData *sd)
+static void dump_ambient_viewing_environment(AVBPrint *bp, const AVFrameSideData *sd)
 {
     const AVAmbientViewingEnvironment *ambient_viewing_environment =
                                                (const AVAmbientViewingEnvironment *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "ambient_illuminance=%f, ambient_light_x=%f, ambient_light_y=%f",
-           av_q2d(ambient_viewing_environment->ambient_illuminance),
-           av_q2d(ambient_viewing_environment->ambient_light_x),
-           av_q2d(ambient_viewing_environment->ambient_light_y));
+    av_bprintf(bp, "ambient_illuminance=%f, ambient_light_x=%f, ambient_light_y=%f",
+               av_q2d(ambient_viewing_environment->ambient_illuminance),
+               av_q2d(ambient_viewing_environment->ambient_light_x),
+               av_q2d(ambient_viewing_environment->ambient_light_y));
 }
 
-static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
+static void dump_color_property(AVBPrint *bp, AVFrame *frame)
 {
     const char *color_range_str     = av_color_range_name(frame->color_range);
     const char *colorspace_str      = av_color_space_name(frame->colorspace);
@@ -703,29 +756,29 @@ static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
     const char *color_trc_str       = av_color_transfer_name(frame->color_trc);
 
     if (!color_range_str || frame->color_range == AVCOL_RANGE_UNSPECIFIED) {
-        av_log(ctx, AV_LOG_INFO, "color_range:unknown");
+        av_bprintf(bp, "color_range:unknown");
     } else {
-        av_log(ctx, AV_LOG_INFO, "color_range:%s", color_range_str);
+        av_bprintf(bp, "color_range:%s", color_range_str);
     }
 
     if (!colorspace_str || frame->colorspace == AVCOL_SPC_UNSPECIFIED) {
-        av_log(ctx, AV_LOG_INFO, " color_space:unknown");
+        av_bprintf(bp, " color_space:unknown");
     } else {
-        av_log(ctx, AV_LOG_INFO, " color_space:%s", colorspace_str);
+        av_bprintf(bp, " color_space:%s", colorspace_str);
     }
 
     if (!color_primaries_str || frame->color_primaries == AVCOL_PRI_UNSPECIFIED) {
-        av_log(ctx, AV_LOG_INFO, " color_primaries:unknown");
+        av_bprintf(bp, " color_primaries:unknown");
     } else {
-        av_log(ctx, AV_LOG_INFO, " color_primaries:%s", color_primaries_str);
+        av_bprintf(bp, " color_primaries:%s", color_primaries_str);
     }
 
     if (!color_trc_str || frame->color_trc == AVCOL_TRC_UNSPECIFIED) {
-        av_log(ctx, AV_LOG_INFO, " color_trc:unknown");
+        av_bprintf(bp, " color_trc:unknown");
     } else {
-        av_log(ctx, AV_LOG_INFO, " color_trc:%s", color_trc_str);
+        av_bprintf(bp, " color_trc:%s", color_trc_str);
     }
-    av_log(ctx, AV_LOG_INFO, "\n");
+    av_bprintf(bp, "\n");
 }
 
 static void update_sample_stats_8(const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
@@ -775,6 +828,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int be = desc->flags & AV_PIX_FMT_FLAG_BE;
     int i, plane, vsub = desc->log2_chroma_h;
     int calculate_checksums = s->calculate_checksums && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL);
+    AVBPrint bp;
 
     for (plane = 0; plane < 4 && calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
@@ -797,136 +851,143 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
     }
 
-    av_log(ctx, AV_LOG_INFO,
-           "n:%4"PRId64" pts:%7s pts_time:%-7s duration:%7"PRId64
-           " duration_time:%-7s "
-           "fmt:%s cl:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c ",
-           inl->frame_count_out,
-           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base),
-           frame->duration, av_ts2timestr(frame->duration, &inlink->time_base),
-           desc->name, av_chroma_location_name(frame->chroma_location),
-           frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
-           frame->width, frame->height,
-           !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :         /* Progressive  */
-           (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',    /* Top / Bottom */
-           !!(frame->flags & AV_FRAME_FLAG_KEY),
-           av_get_picture_type_char(frame->pict_type));
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprintf(&bp,
+               "n:%4"PRId64" pts:%7s pts_time:%-7s duration:%7"PRId64
+               " duration_time:%-7s "
+               "fmt:%s cl:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c ",
+               inl->frame_count_out,
+               av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base),
+               frame->duration, av_ts2timestr(frame->duration, &inlink->time_base),
+               desc->name, av_chroma_location_name(frame->chroma_location),
+               frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+               frame->width, frame->height,
+               !(frame->flags & AV_FRAME_FLAG_INTERLACED)     ? 'P' :         /* Progressive  */
+               (frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) ? 'T' : 'B',    /* Top / Bottom */
+               !!(frame->flags & AV_FRAME_FLAG_KEY),
+               av_get_picture_type_char(frame->pict_type));
 
     if (calculate_checksums) {
-        av_log(ctx, AV_LOG_INFO,
-               "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
-               checksum, plane_checksum[0]);
+        av_bprintf(&bp,
+                   "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
+                   checksum, plane_checksum[0]);
 
         for (plane = 1; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-            av_log(ctx, AV_LOG_INFO, " %08"PRIX32, plane_checksum[plane]);
-        av_log(ctx, AV_LOG_INFO, "] mean:[");
+            av_bprintf(&bp, " %08"PRIX32, plane_checksum[plane]);
+        av_bprintf(&bp, "] mean:[");
         for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-            av_log(ctx, AV_LOG_INFO, "%s%"PRId64,
-                   plane ? " ":"",
-                   (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
-        av_log(ctx, AV_LOG_INFO, "] stdev:[");
+            av_bprintf(&bp, "%s%"PRId64,
+                       plane ? " ":"",
+                       (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
+        av_bprintf(&bp, "] stdev:[");
         for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-            av_log(ctx, AV_LOG_INFO, "%s%3.1f",
-                   plane ? " ":"",
-                   sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
-        av_log(ctx, AV_LOG_INFO, "]");
+            av_bprintf(&bp, "%s%3.1f",
+                       plane ? " ":"",
+                       sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
+        av_bprintf(&bp, "]");
     }
-    av_log(ctx, AV_LOG_INFO, "\n");
+    av_bprintf(&bp, "\n");
 
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
         const char *name = av_frame_side_data_name(sd->type);
 
-        av_log(ctx, AV_LOG_INFO, "  side data - ");
-        if (name)
-            av_log(ctx, AV_LOG_INFO, "%s: ", name);
+        if (!name) {
+            log_diag(ctx, &bp, AV_LOG_WARNING,
+                     "  side data - unknown side data type %d (%zu bytes)\n",
+                     sd->type, sd->size);
+            continue;
+        }
+
+        av_bprintf(&bp, "  side data - %s: ", name);
         switch (sd->type) {
         case AV_FRAME_DATA_SPHERICAL:
-            dump_spherical(ctx, frame, sd);
+            dump_spherical(&bp, frame, sd);
             break;
         case AV_FRAME_DATA_STEREO3D:
-            dump_stereo3d(ctx, sd);
+            dump_stereo3d(&bp, sd);
             break;
         case AV_FRAME_DATA_S12M_TIMECODE: {
-            dump_s12m_timecode(ctx, inlink, sd);
+            dump_s12m_timecode(&bp, inlink, sd);
             break;
         }
         case AV_FRAME_DATA_DISPLAYMATRIX:
-            av_log(ctx, AV_LOG_INFO, "rotation of %.2f degrees",
-                   av_display_rotation_get((int32_t *)sd->data));
+            av_bprintf(&bp, "rotation of %.2f degrees",
+                       av_display_rotation_get((int32_t *)sd->data));
             break;
         case AV_FRAME_DATA_AFD:
-            av_log(ctx, AV_LOG_INFO, "value of %"PRIu8, sd->data[0]);
+            av_bprintf(&bp, "value of %"PRIu8, sd->data[0]);
             break;
         case AV_FRAME_DATA_REGIONS_OF_INTEREST:
-            dump_roi(ctx, sd);
+            dump_roi(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_DETECTION_BBOXES:
-            dump_detection_bbox(ctx, sd);
+            dump_detection_bbox(&bp, sd);
             break;
         case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:
-            dump_mastering_display(ctx, sd);
+            dump_mastering_display(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_DYNAMIC_HDR_PLUS:
-            dump_dynamic_hdr_plus(ctx, sd);
+            dump_dynamic_hdr_plus(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_DYNAMIC_HDR_VIVID:
-            dump_dynamic_hdr_vivid(ctx, sd);
+            dump_dynamic_hdr_vivid(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:
-            dump_content_light_metadata(ctx, sd);
+            dump_content_light_metadata(&bp, sd);
             break;
         case AV_FRAME_DATA_GOP_TIMECODE: {
             char tcbuf[AV_TIMECODE_STR_SIZE];
             av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
-            av_log(ctx, AV_LOG_INFO, "%s", tcbuf);
+            av_bprintf(&bp, "%s", tcbuf);
             break;
         }
         case AV_FRAME_DATA_VIDEO_ENC_PARAMS:
-            dump_video_enc_params(ctx, sd);
+            dump_video_enc_params(&bp, sd);
             break;
         case AV_FRAME_DATA_SEI_UNREGISTERED:
-            dump_sei_unregistered_metadata(ctx, sd);
+            dump_sei_unregistered_metadata(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_FILM_GRAIN_PARAMS:
-            dump_sei_film_grain_params_metadata(ctx, sd);
+            dump_sei_film_grain_params_metadata(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_DOVI_METADATA:
-            dump_dovi_metadata(ctx, sd);
+            dump_dovi_metadata(&bp, sd);
             break;
         case AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT:
-            dump_ambient_viewing_environment(ctx, sd);
+            dump_ambient_viewing_environment(&bp, sd);
             break;
         case AV_FRAME_DATA_GAIN_MAP_PARAMS:
-            dump_gain_map_params(ctx, sd);
+            dump_gain_map_params(ctx, &bp, sd);
             break;
         case AV_FRAME_DATA_VIEW_ID:
-            av_log(ctx, AV_LOG_INFO, "view id: %d\n", *(int*)sd->data);
+            av_bprintf(&bp, "view id: %d\n", *(int*)sd->data);
             break;
         case AV_FRAME_DATA_3D_REFERENCE_DISPLAYS:
-            dump_tdrdi(ctx, sd);
+            dump_tdrdi(&bp, sd);
             break;
         default:
-            if (name)
-                av_log(ctx, AV_LOG_INFO, "(%zu bytes)", sd->size);
-            else
-                av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
-                       "(%zu bytes)", sd->type, sd->size);
+            av_bprintf(&bp, "(%zu bytes)", sd->size);
             break;
         }
 
-        av_log(ctx, AV_LOG_INFO, "\n");
+        /* An empty buffer means a diagnostic has already ended the line. */
+        if (bp.len)
+            av_bprintf(&bp, "\n");
     }
 
-    dump_color_property(ctx, frame);
+    dump_color_property(&bp, frame);
 
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
         const char *alpha_mode_str = av_alpha_mode_name(frame->alpha_mode);
         if (!alpha_mode_str || frame->alpha_mode == AVALPHA_MODE_UNSPECIFIED)
-            av_log(ctx, AV_LOG_INFO, "alpha_mode:unspecified\n");
+            av_bprintf(&bp, "alpha_mode:unspecified\n");
         else
-            av_log(ctx, AV_LOG_INFO, "alpha_mode:%s\n", alpha_mode_str);
+            av_bprintf(&bp, "alpha_mode:%s\n", alpha_mode_str);
     }
+
+    ff_filter_log_lines(ctx, AV_LOG_INFO, &bp);
+    av_bprint_finalize(&bp, NULL);
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
