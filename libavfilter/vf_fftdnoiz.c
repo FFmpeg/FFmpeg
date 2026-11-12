@@ -20,6 +20,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -80,7 +81,7 @@ typedef struct FFTdnoizContext {
     av_tx_fn tx_fn, itx_fn;
     av_tx_fn tx_r_fn, itx_r_fn;
 
-    void (*import_row)(AVComplexFloat *dst, uint8_t *src, int rw, float scale, float *win, int off);
+    void (*import_row)(AVComplexFloat *dst, uint8_t *src, int rw, float scale, float *win, int off, int last);
     void (*export_row)(AVComplexFloat *src, uint8_t *dst, int rw, int depth, float *win);
 } FFTdnoizContext;
 
@@ -146,11 +147,16 @@ typedef struct ThreadData {
 } ThreadData;
 
 static void import_row8(AVComplexFloat *dst, uint8_t *src, int rw,
-                        float scale, float *win, int off)
+                        float scale, float *win, int off, int last)
 {
-    for (int j = 0; j < rw; j++) {
-        const int i = abs(j + off);
-        dst[j].re = src[i] * scale * win[j];
+    const int mirrored = FFMIN(-off, rw);
+
+    for (int j = 0; j < mirrored; j++) {
+        dst[j].re = src[avpriv_mirror(j + off, last)] * scale * win[j];
+        dst[j].im = 0.f;
+    }
+    for (int j = mirrored; j < rw; j++) {
+        dst[j].re = src[j + off] * scale * win[j];
         dst[j].im = 0.f;
     }
 }
@@ -162,13 +168,18 @@ static void export_row8(AVComplexFloat *src, uint8_t *dst, int rw, int depth, fl
 }
 
 static void import_row16(AVComplexFloat *dst, uint8_t *srcp, int rw,
-                         float scale, float *win, int off)
+                         float scale, float *win, int off, int last)
 {
     uint16_t *src = (uint16_t *)srcp;
 
-    for (int j = 0; j < rw; j++) {
-        const int i = abs(j + off);
-        dst[j].re = src[i] * scale * win[j];
+    const int mirrored = FFMIN(-off, rw);
+
+    for (int j = 0; j < mirrored; j++) {
+        dst[j].re = src[avpriv_mirror(j + off, last)] * scale * win[j];
+        dst[j].im = 0;
+    }
+    for (int j = mirrored; j < rw; j++) {
+        dst[j].re = src[j + off] * scale * win[j];
         dst[j].im = 0;
     }
 }
@@ -301,9 +312,9 @@ static void import_block(FFTdnoizContext *s,
     buffer_linesize /= sizeof(float);
 
     for (int i = 0; i < rh; i++) {
-        uint8_t *src = srcp + src_linesize * abs(y * size + i + hoff) + x * size * bpp;
+        uint8_t *src = srcp + src_linesize * avpriv_mirror(y * size + i + hoff, height - 1) + x * size * bpp;
 
-        s->import_row(dst, src, rw, scale, s->win[i], woff);
+        s->import_row(dst, src, rw, scale, s->win[i], woff, width - 1 - x * size);
         for (int j = rw; j < block; j++) {
             dst[j].re = dst[rw - 1].re;
             dst[j].im = 0.f;
