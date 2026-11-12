@@ -224,6 +224,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     const int nb_threads = ff_filter_get_nb_threads(ctx);
     ThreadData td;
 
+    s->radius = FFMIN(s->radius, AV_CEIL_RSHIFT(FFMIN(inlink->w, inlink->h), 1));
+
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
@@ -278,8 +280,6 @@ static int config_input(AVFilterLink *inlink)
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-
-    s->radius = FFMIN(s->radius, AV_CEIL_RSHIFT(FFMIN(inlink->w, inlink->h), 1));
 
     if (s->depth <= 8) {
         s->pre_calculate_row = pre_calculate_row_byte;
