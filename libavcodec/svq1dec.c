@@ -555,6 +555,7 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame, int *
     switch (get_bits(bitbuf, 2)) {
     case 0:
         frame->pict_type = AV_PICTURE_TYPE_I;
+        frame->flags    |= AV_FRAME_FLAG_KEY;
         break;
     case 2:
         s->nonref = 1;
