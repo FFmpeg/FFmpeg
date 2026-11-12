@@ -608,6 +608,11 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    /* x265 may adjust the B-frame settings when opening the encoder */
+    ctx->api->encoder_parameters(ctx->encoder, ctx->params);
+    avctx->has_b_frames = ctx->params->bframes ?
+                          ctx->params->bBPyramid ? 2 : 1 : 0;
+
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         x265_nal *nal;
         int nnal;
