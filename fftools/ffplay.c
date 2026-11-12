@@ -3067,16 +3067,17 @@ static int stream_component_open(VideoState *is, int stream_index)
             goto fail;
 
         is->audio_stream = stream_index;
-        is->audio_st = ic->streams[stream_index];
 
         if ((ret = decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread)) < 0)
             goto fail;
         if (is->ic->iformat->flags & AVFMT_NOTIMESTAMPS) {
-            is->auddec.start_pts = is->audio_st->start_time;
-            is->auddec.start_pts_tb = is->audio_st->time_base;
+            is->auddec.start_pts = ic->streams[stream_index]->start_time;
+            is->auddec.start_pts_tb = ic->streams[stream_index]->time_base;
         }
         if (!SDL_AtomicGet(&is->replacement) && (ret = audio_start(is)) < 0)
             stream_component_close(is, stream_index);
+        else
+            is->audio_st = ic->streams[stream_index];
         break;
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
