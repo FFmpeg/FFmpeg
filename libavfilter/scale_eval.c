@@ -99,7 +99,7 @@ int ff_scale_eval_dimensions(void *log_ctx,
     av_expr_parse_and_eval(&res, (expr = w_expr),
                            var_names, var_values,
                            NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
-    var_values[VAR_OUT_W] = var_values[VAR_OW] = res == 0 ? inlink->w : trunc(res);
+    var_values[VAR_OUT_W] = var_values[VAR_OW] = trunc(res) == 0 ? inlink->w : trunc(res);
 
     if ((ret = eval_dimension(log_ctx, (expr = h_expr), var_values, inlink->h, &eval_h)) < 0)
         goto fail;
