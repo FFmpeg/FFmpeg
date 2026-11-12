@@ -1443,6 +1443,9 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     pdst->progressive = psrc->progressive;
     pdst->planes = psrc->planes;
 
+    if (!psrc->plane[0].idwt_buf)
+        return 0;
+
     if (!pdst->plane[0].idwt_buf) {
         pdst->coded_width  = pdst->a_width;
         pdst->coded_height = pdst->a_height;
