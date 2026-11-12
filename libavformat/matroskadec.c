@@ -3168,6 +3168,18 @@ static int mkv_parse_subtitle_codec(MatroskaTrack *track, AVStream *st,
     return 0;
 }
 
+static int mkv_trust_default_duration(const MatroskaTrack *track,
+                                      const AVCodecParameters *par)
+{
+    if (!track->default_duration)
+        return 0;
+    // If this is needed for more codecs, then add them here
+    if (track->audio.samplerate == 8000 && par->codec_id == AV_CODEC_ID_AC3 &&
+        (track->audio.samplerate != par->sample_rate || !par->frame_size))
+        return 0;
+    return 1;
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -4303,7 +4315,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     uint32_t lace_size[256];
     int n, flags, laces = 0;
     uint64_t num;
-    int trust_default_duration;
 
     av_assert1(buf);
 
@@ -4373,16 +4384,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         return res;
     }
 
-    trust_default_duration = track->default_duration != 0;
-    if (track->audio.samplerate == 8000 && trust_default_duration) {
-        // If this is needed for more codecs, then add them here
-        if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-            if (track->audio.samplerate != st->codecpar->sample_rate || !st->codecpar->frame_size)
-                trust_default_duration = 0;
-        }
-    }
-
-    if (!block_duration && trust_default_duration)
+    if (!block_duration && mkv_trust_default_duration(track, st->codecpar))
         block_duration = av_rescale_q(track->default_duration * laces,
                                       (AVRational) { 1, 1000000000 },
                                       st->time_base);
