@@ -1150,6 +1150,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *s = ctx->priv;
+    AVExpr *x_pexpr = NULL, *y_pexpr = NULL, *a_pexpr = NULL;
     char *expr;
     int ret;
 
@@ -1175,20 +1176,24 @@ static int config_input(AVFilterLink *inlink)
 
     av_lfg_init(&s->prng, av_get_random_seed());
 
+    if ((ret = av_expr_parse(&x_pexpr, expr = s->x_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&y_pexpr, expr = s->y_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&a_pexpr, expr = s->a_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to parse expression: %s \n", expr);
+        av_expr_free(x_pexpr);
+        av_expr_free(y_pexpr);
+        return AVERROR(EINVAL);
+    }
+
     av_expr_free(s->x_pexpr);
     av_expr_free(s->y_pexpr);
     av_expr_free(s->a_pexpr);
-    s->x_pexpr = s->y_pexpr = s->a_pexpr = NULL;
-
-    if ((ret = av_expr_parse(&s->x_pexpr, expr = s->x_expr, var_names,
-                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
-        (ret = av_expr_parse(&s->y_pexpr, expr = s->y_expr, var_names,
-                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
-        (ret = av_expr_parse(&s->a_pexpr, expr = s->a_expr, var_names,
-                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to parse expression: %s \n", expr);
-        return AVERROR(EINVAL);
-    }
+    s->x_pexpr = x_pexpr;
+    s->y_pexpr = y_pexpr;
+    s->a_pexpr = a_pexpr;
 
     return 0;
 }
