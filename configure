@@ -7858,7 +7858,9 @@ check_warning -Wempty-body
 # Warn about excessive stack usage, using a 120 KiB per-function threshold.
 # This roughly matches the default thread stack size on Musl, which is 128 KiB,
 # leaving some headroom for caller frames.
-check_warning -Wstack-usage=122880
+if ! check_warning -Wstack-usage=122880; then
+    check_warning -Wframe-larger-than=122880
+fi
 
 # GCC accepts warning option level 5 here to warn about all fallthroughs
 # that are not explicitly marked with the appropriate attribute
