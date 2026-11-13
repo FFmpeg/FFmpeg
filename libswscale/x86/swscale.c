@@ -486,6 +486,8 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
     enum AVPixelFormat dst_format = c->opts.dst_format;
+    av_unused const int use_mmxext_packed_writers = !(c->opts.flags & SWS_FULL_CHR_H_INT) &&
+                                                    c->opts.dst_w >= 8 && !(c->opts.dst_w & 1);
 
     c->use_mmx_vfilter = 0;
 
@@ -495,7 +497,7 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
             && !(c->opts.flags & SWS_BITEXACT)) {
             if (c->opts.flags & SWS_ACCURATE_RND) {
 #if HAVE_MMXEXT_INLINE
-                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                if (use_mmxext_packed_writers) {
                     switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = yuv2rgb32_X_ar_mmxext;   break;
 #if HAVE_X86_6REGS
@@ -524,7 +526,7 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
                 }
 #endif /* HAVE_SSE2_EXTERNAL */
 #if HAVE_MMXEXT_INLINE
-                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                if (use_mmxext_packed_writers) {
                     switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = yuv2rgb32_X_mmxext;   break;
                     case AV_PIX_FMT_BGR32:   c->yuv2packedX = yuv2bgr32_X_mmxext;   break;
@@ -540,7 +542,7 @@ av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
 #endif
             }
 #if HAVE_MMXEXT_INLINE
-            if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+            if (use_mmxext_packed_writers) {
                 switch (c->opts.dst_format) {
                 case AV_PIX_FMT_RGB32:
                     c->yuv2packed1 = yuv2rgb32_1_mmxext;
