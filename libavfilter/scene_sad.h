@@ -48,6 +48,8 @@ ff_scene_sad_fn ff_scene_sad_get_fn_riscv(int depth);
 
 ff_scene_sad_fn ff_scene_sad_get_fn(int depth);
 
+ff_scene_sad_fn ff_scene_sad_bswap_get_fn_x86(void);
+
 ff_scene_sad_fn ff_scene_sad_bswap_get_fn(void);
 
 #endif /* AVFILTER_SCENE_SAD_H */

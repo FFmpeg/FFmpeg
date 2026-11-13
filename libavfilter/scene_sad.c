@@ -96,5 +96,9 @@ ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
 
 ff_scene_sad_fn ff_scene_sad_bswap_get_fn(void)
 {
-    return ff_scene_sad16_bswap_c;
+    ff_scene_sad_fn sad = NULL;
+#if ARCH_X86 && HAVE_X86ASM
+    sad = ff_scene_sad_bswap_get_fn_x86();
+#endif
+    return sad ? sad : ff_scene_sad16_bswap_c;
 }

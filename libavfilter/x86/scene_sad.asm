@@ -27,27 +27,47 @@
 SECTION_RODATA
 
 pw_1: times 32 dw 1
+pb_bswap16: times 4 db 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14
 
 SECTION .text
 
 
-%macro SAD_INIT 1 ; depth
+%macro SAD_INIT 1-2 0 ; depth, bswap
+%if %2
+cglobal scene_sad%1_bswap, 6, 7, 6, src1, stride1, src2, stride2, width, end, x
+    movu       m3, [pb_bswap16]
+    pxor       m5, m5
+%else
 cglobal scene_sad%1, 6, 7, 3, src1, stride1, src2, stride2, width, end, x
+%endif
     add     src1q, widthq
     add     src2q, widthq
     neg    widthq
     pxor       m1, m1
 %endmacro
 
-%macro PSADQ 4 ; depth, dst, [src2], tmp
+%macro PSADQ 4-5 0 ; depth, dst, [src2], tmp, bswap
 %if %1 == 8
         ; PSADBW requires an aligned memory operand.
         movu   %4, %3
         psadbw %2, %4
 %else
+    %if %5
+        ; byte-swapped samples, safe for the full 16-bit range
+        movu      %4, %3
+        pshufb    %2, m3
+        pshufb    %4, m3
+        pminuw    m4, %2, %4
+        pmaxuw    %2, %4
+        psubw     %2, m4
+        punpckhwd %4, %2, m5
+        punpcklwd %2, m5
+        paddd     %2, %4
+    %else
         psubw     %2, %3
         pabsw     %2, %2
         pmaddwd   %2, [pw_1]
+    %endif
     %if mmsize == 64
         vextracti32x8 ymm%4, %2, 1
         paddd     ymm%2, ymm%4
@@ -60,13 +80,13 @@ cglobal scene_sad%1, 6, 7, 3, src1, stride1, src2, stride2, width, end, x
 %endif
 %endmacro
 
-%macro SAD_LOOP 1 ; depth
+%macro SAD_LOOP 1-2 0 ; depth, bswap
 .nextrow:
     mov        xq, widthq
 
     .loop:
         movu            m0, [src1q + xq]
-        PSADQ %1,       m0, [src2q + xq], m2
+        PSADQ %1,       m0, [src2q + xq], m2, %2
         paddq           m1, m0
         add             xq, mmsize
     jl .loop
@@ -81,9 +101,9 @@ RET
 %endmacro
 
 
-%macro SAD_FRAMES 1 ; depth
-    SAD_INIT %1
-    SAD_LOOP %1
+%macro SAD_FRAMES 1-2 0 ; depth, bswap
+    SAD_INIT %1, %2
+    SAD_LOOP %1, %2
 %endmacro
 
 
@@ -95,6 +115,7 @@ SAD_FRAMES 8
 INIT_YMM avx2
 SAD_FRAMES 8
 SAD_FRAMES 16
+SAD_FRAMES 16, 1
 
 %endif
 
@@ -103,5 +124,6 @@ SAD_FRAMES 16
 INIT_ZMM avx512
 SAD_FRAMES 8
 SAD_FRAMES 16
+SAD_FRAMES 16, 1
 
 %endif
