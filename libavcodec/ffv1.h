@@ -70,6 +70,8 @@ typedef struct PlaneContext {
 
 #define MAX_SLICES 1024
 
+struct FFV1RemapBuffers;
+
 typedef struct FFV1SliceContext {
     int16_t *sample_buffer;
     int32_t *sample_buffer32;
@@ -117,6 +119,8 @@ typedef struct FFV1SliceContext {
         uint32_t val; //this is unneeded if you accept a dereference on each access
         uint32_t ndx;
     } *unit[4];
+
+    struct FFV1RemapBuffers *remap_buf; ///< encoder-only, allocated for 32-bit float remap
 } FFV1SliceContext;
 
 typedef struct FFV1Context {

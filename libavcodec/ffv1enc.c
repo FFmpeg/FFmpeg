@@ -42,6 +42,19 @@
 #include "ffv1.h"
 #include "ffv1enc.h"
 
+#define REMAP_MAX_LOG2_MUL_COUNT 10
+#define REMAP_MAX_MUL_COUNT      (1 << REMAP_MAX_LOG2_MUL_COUNT)
+#define REMAP_MAX_LOG2_MUL       22
+#define FFV1_MAX_MUL_COUNT       4096
+
+/* Scratch buffers for 32-bit float remap, kept off the stack (each ~152 KiB).
+ * Allocated per slice only when a 32-bit remap is actually used. */
+struct FFV1RemapBuffers {
+    int   mul_all[REMAP_MAX_LOG2_MUL_COUNT + 1][REMAP_MAX_MUL_COUNT + 1];
+    float score_tab_all[REMAP_MAX_MUL_COUNT + 1][REMAP_MAX_LOG2_MUL + 1];
+    int   mul[FFV1_MAX_MUL_COUNT + 1];
+};
+
 static const int8_t quant5_10bit[256] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,
      1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
@@ -1027,6 +1040,11 @@ static av_cold int encode_init_internal(AVCodecContext *avctx)
         }
         av_assert0(s->remap_mode >= 0);
         if (s->remap_mode) {
+            if (s->bits_per_raw_sample == 32) {
+                sc->remap_buf = av_mallocz(sizeof(*sc->remap_buf));
+                if (!sc->remap_buf)
+                    return AVERROR(ENOMEM);
+            }
             for (int p = 0; p < 1 + 2*s->chroma_planes + s->transparency ; p++) {
                 if (s->bits_per_raw_sample == 32) {
                     sc->unit[p] = av_malloc_array(sc->slice_width, sc->slice_height * sizeof(**sc->unit));
@@ -1291,7 +1309,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 {
     const int pixel_num = sc->slice_width * sc->slice_height;
     uint8_t state[2][3][32];
-    int mul[4096+1];
+    int *mul = sc->remap_buf->mul;
     RangeCoder rc = sc->c;
     int lu = 0;
     int run = 0;
@@ -1413,13 +1431,16 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
     const int stair_mode          = ((int[]){  0,  0,  0,  1,  0,   0})[f->remap_optimizer];
     const int magic_log2          = ((int[]){  1,  1,  1,  1,  0,   0})[f->remap_optimizer];
 
+    av_assert0(max_log2_mul_count <= REMAP_MAX_LOG2_MUL_COUNT);
+    av_assert0(max_log2_mul       <= REMAP_MAX_LOG2_MUL);
+
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int best_log2_mul_count = 0;
-        float score_sum[11] = {0};
-        int mul_all[11][1025];
-
+        float score_sum[REMAP_MAX_LOG2_MUL_COUNT + 1] = {0};
+        int (*mul_all)[REMAP_MAX_MUL_COUNT + 1] = sc->remap_buf->mul_all;
+        float (*score_tab_all)[REMAP_MAX_LOG2_MUL + 1] = sc->remap_buf->score_tab_all;
         for (int log2_mul_count= 0; log2_mul_count <= max_log2_mul_count; log2_mul_count += log2_mul_count_step) {
-            float score_tab_all[1025][23] = {0};
+            memset(score_tab_all, 0, sizeof(sc->remap_buf->score_tab_all));
             int64_t last_val = -1;
             int *mul_tab = mul_all[log2_mul_count];
             int last_mul_index = -1;
