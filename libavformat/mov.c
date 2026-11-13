@@ -336,7 +336,7 @@ static int mov_metadata_loci(MOVContext *c, AVIOContext *pb, unsigned len)
     return av_dict_set(&c->fc->metadata, key, buf, 0);
 }
 
-// 3GPP TS 26.244 user data box, after its version and flags
+// 3GPP TS 26.244 user data box or tnam, after its version and flags
 static int mov_metadata_3gp(MOVContext *c, AVIOContext *pb, int64_t len,
                             const char *key, AVDictionary **metadata)
 {
@@ -479,6 +479,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 's','t','i','k'): key = "media_type";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 't','i','t','l'): key = "title"; tgp = 1; break;
+    case MKTAG( 't','n','a','m'): key = "title"; tgp = 1; break;
     case MKTAG( 't','r','k','n'): key = "track";
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 't','v','e','n'): key = "episode_id"; break;
@@ -569,7 +570,7 @@ retry:
         langcode = avio_rb16(pb);
         ff_mov_lang_to_iso639(langcode, language);
         atom.size -= 4;
-        if (tgp && !str_size && !langcode) // 3GPP version and flags
+        if (tgp && !str_size && !langcode) // full box version and flags
             return mov_metadata_3gp(c, pb, atom.size, key, metadata);
     } else
         str_size = atom.size;
