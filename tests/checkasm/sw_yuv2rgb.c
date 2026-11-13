@@ -111,7 +111,7 @@ static void check_yuv2rgb(int src_pix_fmt)
 #define MAX_LINE_SIZE 1920
 #define SRC_STRIDE_PAD 32
 #define NUM_LINES 4
-    static const int input_sizes[] = {8, 128, 1080, MAX_LINE_SIZE};
+    static const int input_sizes[] = {8, 16, 17, 18, 31, 32, 33, 128, 1080, 1919, MAX_LINE_SIZE};
 
     declare_func(int, SwsInternal *c, const uint8_t *const src[],
                       const int srcStride[], int srcSliceY, int srcSliceH,
