@@ -44,6 +44,10 @@ typedef struct MedianContext {
     int bins;
     int t;
 
+    /* Per-thread row histograms for 16-bit input, replacing the ~129 KiB
+     * on-stack arrays in median_template.c. */
+    uint16_t **row_coarse, **row_fine, **row_luc;
+
     void (*hadd)(uint16_t *dst, const uint16_t *src, int bins);
     void (*hsub)(uint16_t *dst, const uint16_t *src, int bins);
     void (*hmuladd)(uint16_t *dst, const uint16_t *src, int f, int bins);
