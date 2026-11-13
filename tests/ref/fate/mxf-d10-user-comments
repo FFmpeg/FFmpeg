@@ -1,12 +1,12 @@
-d0dae277c0cb07f517ae2b456658f123 *tests/data/fate/mxf-d10-user-comments.mxf_d10
+ca2d9a476892e92928d48ada9e72b152 *tests/data/fate/mxf-d10-user-comments.mxf_d10
 3782189 tests/data/fate/mxf-d10-user-comments.mxf_d10
-#extradata 0:       34, 0x716b05c4
+#extradata 0:       34, 0x717105c5
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: mpeg2video
 #dimensions 0: 1280x720
 #sar 0: 3/4
-0,         -1,          0,        1,   150000, 0xa811adc1
+0,         -1,          0,        1,   150000, 0xf203adc2
 0,          0,          1,        1,   150000, 0x4952bac6, F=0x0
 0,          1,          2,        1,   150000, 0x6b437346, F=0x0
 0,          2,          3,        1,   150000, 0x36dbac43, F=0x0
