@@ -77,7 +77,7 @@ typedef struct EvalContext {
 static double val(void *priv, double ch)
 {
     EvalContext *eval = priv;
-    return eval->channel_values[FFMIN((int)ch, eval->nb_in_channels-1)];
+    return eval->channel_values[FFMIN((unsigned)(int)ch, eval->nb_in_channels-1)];
 }
 
 static double (* const aeval_func1[])(void *, double) = { val, NULL };
