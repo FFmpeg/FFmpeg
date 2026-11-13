@@ -61,6 +61,11 @@ static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_
     pixel *dst = (pixel *)ddst;
     const pixel *srcp;
     const pixel *p;
+#if DEPTH == 16
+    htype *coarse = s->row_coarse[jobnr];
+    htype (*fine)[BINS] = (htype (*)[BINS])s->row_fine[jobnr];
+    htype *luc = s->row_luc[jobnr];
+#endif
 
     src_linesize /= sizeof(pixel);
     dst_linesize /= sizeof(pixel);
@@ -88,9 +93,15 @@ static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_
     srcp = src;
 
     for (int i = slice_h_start; i < slice_h_end; i++) {
+#if DEPTH == 16
+        memset(coarse, 0, BINS * sizeof(*coarse));
+        memset(fine, 0, BINS * BINS * sizeof(**fine));
+        memset(luc, 0, BINS * sizeof(*luc));
+#else
         htype coarse[BINS] = { 0 };
         htype fine[BINS][BINS] = { { 0 } };
         htype luc[BINS] = { 0 };
+#endif
 
         p = srcp + src_linesize * FFMAX(0, i - radiusV - 1);
         for (int j = 0; j < width; j++) {
