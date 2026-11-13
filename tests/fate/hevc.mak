@@ -269,6 +269,10 @@ fate-hevc-skipframe-dslice: CMD = framecrc -skip_frame nointra -err_detect explo
 fate-hevc-skipframe-slices: CMD = framecrc -skip_frame nointra -err_detect explode -i $(TARGET_SAMPLES)/hevc-conformance/SLICES_A_Rovi_3.bit
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-skipframe-dslice fate-hevc-skipframe-slices
 
+# Skipped reference pictures still contribute to later picture order counts.
+fate-hevc-skipframe-poc: CMD = framecrc -skip_frame nokey -i $(TARGET_SAMPLES)/hevc-conformance/NUT_A_ericsson_5.bit
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += fate-hevc-skipframe-poc
+
 # this sample has two stsd entries and needs to reload extradata
 FATE_HEVC-$(call FRAMEMD5, MOV, HEVC, SCALE_FILTER) += fate-hevc-extradata-reload
 fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -sws_flags bitexact

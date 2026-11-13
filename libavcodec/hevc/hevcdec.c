@@ -4068,6 +4068,19 @@ static int find_finish_setup_nal(const HEVCContext *s)
     return nal_idx;
 }
 
+/* 8.3.1: whether the current picture is a candidate for prevTid0Pic */
+static int is_prev_tid0_pic(const HEVCContext *s)
+{
+    return s->temporal_id == 0 &&
+           s->nal_unit_type != HEVC_NAL_TRAIL_N &&
+           s->nal_unit_type != HEVC_NAL_TSA_N   &&
+           s->nal_unit_type != HEVC_NAL_STSA_N  &&
+           s->nal_unit_type != HEVC_NAL_RADL_N  &&
+           s->nal_unit_type != HEVC_NAL_RADL_R  &&
+           s->nal_unit_type != HEVC_NAL_RASL_N  &&
+           s->nal_unit_type != HEVC_NAL_RASL_R;
+}
+
 static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
                             unsigned nal_idx)
 {
@@ -4177,14 +4190,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
     }
 
     /* 8.3.1 */
-    if (s->temporal_id == 0 &&
-        s->nal_unit_type != HEVC_NAL_TRAIL_N &&
-        s->nal_unit_type != HEVC_NAL_TSA_N   &&
-        s->nal_unit_type != HEVC_NAL_STSA_N  &&
-        s->nal_unit_type != HEVC_NAL_RADL_N  &&
-        s->nal_unit_type != HEVC_NAL_RADL_R  &&
-        s->nal_unit_type != HEVC_NAL_RASL_N  &&
-        s->nal_unit_type != HEVC_NAL_RASL_R)
+    if (is_prev_tid0_pic(s))
         s->poc_tid0 = s->poc;
 
     if (pps->tiles_enabled_flag)
@@ -4436,8 +4442,12 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
         (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s)) ||
         ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
          s->no_rasl_output_flag)) {
-        if (s->sh.first_slice_in_pic_flag)
+        if (s->sh.first_slice_in_pic_flag) {
             s->skipping_frame = 1;
+            /* 8.3.1: a skipped picture can still be prevTid0Pic */
+            if (s->nuh_layer_id == 0 && is_prev_tid0_pic(s))
+                s->poc_tid0 = s->sh.poc;
+        }
         return 0;
     }
     if (s->sh.first_slice_in_pic_flag)
