@@ -4044,8 +4044,10 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     st->nb_frames= total_sample_count;
+    // The media duration can't be shorter than the sample table, so prefer
+    // the latter when they differ.
     if (duration)
-        st->duration= FFMIN(st->duration, duration);
+        st->duration = duration;
 
     // All samples have zero duration. They have higher chance be chose by
     // mov_find_next_sample, which leads to seek again and again.
