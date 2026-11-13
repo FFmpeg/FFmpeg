@@ -686,6 +686,11 @@ fate-filter-edgedetect-colormix: CMD = video_filter "scale,format=gbrp,perms=ran
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_MEDIAN_FILTER) += fate-filter-median
 fate-filter-median: CMD = video_filter "median=radius=5"
 
+# Exercise the 16-bit median template (DEPTH=16, BINS=256), whose
+# histogram scratch used to be a ~132 KiB on-stack array.
+FATE_FILTER-$(call FILTERFRAMECRC, MEDIAN TESTSRC2 FORMAT SCALE) += fate-filter-median16
+fate-filter-median16: CMD = framecrc -lavfi "testsrc2=size=64x64:rate=5:duration=1,format=gray16le,scale,format=gray16,median=radius=3,scale" -pix_fmt gray16le -frames:v 5
+
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue1 fate-filter-hue2 fate-filter-hue3
 fate-filter-hue1: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1" -frames:v 20
 fate-filter-hue2: CMD = video_filter "perms=random,hue=h=18*n" -frames:v 20
