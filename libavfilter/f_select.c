@@ -407,7 +407,8 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     } else if (isnan(res) || res < 0) {
         select->select_out = 0; /* first output */
     } else {
-        select->select_out = FFMIN(ceilf(res)-1, select->nb_outputs-1); /* other outputs */
+        unsigned u = ceil(FFMIN(res, select->nb_outputs));
+        select->select_out = FFMIN(u-1, select->nb_outputs-1); /* other outputs */
     }
 
     av_log(inlink->dst, AV_LOG_DEBUG, " -> select:%f select_out:%d\n", res, select->select_out);
