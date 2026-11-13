@@ -1592,6 +1592,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
     /* update codec info */
+    if (avctx->codec_id != AV_CODEC_ID_AHX)
+        avctx->sample_rate = s->hdr.sample_rate;
     av_channel_layout_uninit(&avctx->ch_layout);
     avctx->ch_layout = s->hdr.nb_channels == 1 ? (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO :
                                              (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
@@ -1612,9 +1614,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (ret >= 0) {
         s->frame->nb_samples = avctx->frame_size;
         *got_frame_ptr       = 1;
-        if (avctx->codec_id != AV_CODEC_ID_AHX)
-            avctx->sample_rate = s->hdr.sample_rate;
-        //FIXME maybe move the other codec info stuff from above here too
     } else {
         av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
         /* Only return an error if the bad frame makes up the whole packet or
