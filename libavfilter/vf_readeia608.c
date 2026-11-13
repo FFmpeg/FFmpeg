@@ -173,7 +173,7 @@ static void build_histogram(ReadEIA608Context *s, ScanItem *scan, const LineItem
     memset(scan->histogram, 0, (s->max + 1) * sizeof(*scan->histogram));
 
     for (int i = LAG; i < len + LAG; i++)
-        scan->histogram[line[i].input]++;
+        scan->histogram[FFMIN(line[i].input, s->max)]++;
 }
 
 static void find_black_and_white(ReadEIA608Context *s, ScanItem *scan)
