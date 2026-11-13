@@ -299,6 +299,19 @@ int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size)
                 sps->sar = avc_sample_aspect_ratio[aspect_ratio_idc];
             }
         }
+        if (get_bits1(&gb)) // overscan_info_present_flag
+            skip_bits1(&gb); // overscan_appropriate_flag
+        sps->video_signal_type_present_flag = get_bits1(&gb);
+        if (sps->video_signal_type_present_flag) {
+            skip_bits(&gb, 3); // video_format
+            sps->video_full_range_flag = get_bits1(&gb);
+            sps->colour_description_present_flag = get_bits1(&gb);
+            if (sps->colour_description_present_flag) {
+                sps->colour_primaries         = get_bits(&gb, 8);
+                sps->transfer_characteristics = get_bits(&gb, 8);
+                sps->matrix_coefficients      = get_bits(&gb, 8);
+            }
+        }
     }
 
     if (!sps->sar.den) {

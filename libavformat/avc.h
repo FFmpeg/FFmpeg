@@ -39,6 +39,12 @@ typedef struct {
     uint8_t bit_depth_chroma;
     uint8_t frame_mbs_only_flag;
     AVRational sar;
+    uint8_t video_signal_type_present_flag;
+    uint8_t video_full_range_flag;
+    uint8_t colour_description_present_flag;
+    uint8_t colour_primaries;
+    uint8_t transfer_characteristics;
+    uint8_t matrix_coefficients;
 } H264SPS;
 
 int ff_avc_decode_sps(H264SPS *sps, const uint8_t *buf, int buf_size);
