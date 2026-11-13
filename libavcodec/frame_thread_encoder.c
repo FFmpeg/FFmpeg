@@ -44,6 +44,7 @@
 typedef struct{
     AVFrame  *indata;
     AVPacket *outdata;
+    int64_t   frame_num;
     int       return_code;
     int       finished;
     int       got_packet;
@@ -64,6 +65,7 @@ typedef struct{
     unsigned next_task_index;
     unsigned task_index;
     unsigned finished_task_index;
+    int64_t  frame_num;              ///< number of frames submitted
 
     pthread_t worker[MAX_THREADS];
     atomic_int exit;
@@ -104,6 +106,7 @@ static void * attribute_align_arg worker(void *v){
         task  = &c->tasks[task_index];
         frame = task->indata;
         pkt   = task->outdata;
+        avctx->frame_num = task->frame_num;
 
         ret = ff_encode_encode_cb(avctx, pkt, frame, &task->got_packet);
         pthread_mutex_lock(&c->finished_task_mutex);
@@ -308,6 +311,7 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if(frame){
         av_frame_move_ref(c->tasks[c->task_index].indata, frame);
+        c->tasks[c->task_index].frame_num = c->frame_num++;
 
         pthread_mutex_lock(&c->task_fifo_mutex);
         c->task_index = (c->task_index + 1) % c->max_tasks;
