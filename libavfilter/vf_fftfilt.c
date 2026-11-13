@@ -107,7 +107,8 @@ AVFILTER_DEFINE_CLASS(fftfilt);
 static inline double lum(void *priv, double x, double y, int plane)
 {
     FFTFILTContext *s = priv;
-    return s->rdft_vdata_out[plane][(int)x * s->rdft_vstride[plane] + (int)y];
+    return s->rdft_vdata_out[plane][((int)x & (s->rdft_hlen[plane] - 1)) * s->rdft_vstride[plane] +
+                                    ((int)y & (s->rdft_vlen[plane] - 1))];
 }
 
 static double weight_Y(void *priv, double x, double y) { return lum(priv, x, y, Y); }
