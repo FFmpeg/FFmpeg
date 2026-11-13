@@ -78,3 +78,30 @@ fate-mpegaudiodecheader-libmp3lame: CMD = run_with_temp "$(FFMPEG) -nostdin -hid
 FATE_SAMPLES_FFMPEG += $(FATE_MPA_HEADER-yes)
 FATE_FFMPEG += $(FATE_MPA_HEADER_LAME-yes)
 fate-mpegaudiodecheader: $(FATE_MPA_HEADER-yes) $(FATE_MPA_HEADER_LAME-yes)
+
+# The reference keeps only the rate of each frame from the ashowinfo log.
+MPA_RATE_CHANGE = tests/data/fate/mpegaudiodec-sample-rate-change
+MPA_RATE_CHANGE_44100 = $(TARGET_PATH)/$(MPA_RATE_CHANGE).44100.mp2
+MPA_RATE_CHANGE_48000 = $(TARGET_PATH)/$(MPA_RATE_CHANGE).48000.mp2
+MPA_RATE_CHANGE_DEPS = LAVFI_INDEV ANULLSRC_FILTER AFORMAT_FILTER \
+                       ARESAMPLE_FILTER ASHOWINFO_FILTER PCM_U8_DECODER \
+                       MP2_ENCODER MP2_DECODER MP2_MUXER MP3_DEMUXER \
+                       MPEGAUDIO_PARSER PCM_S16LE_ENCODER NULL_MUXER \
+                       FILE_PROTOCOL CONCAT_PROTOCOL
+FATE_MPA_RATE_CHANGE-$(call ALLYES, $(MPA_RATE_CHANGE_DEPS)) += \
+    fate-mpegaudiodec-sample-rate-change
+fate-mpegaudiodec-sample-rate-change: CMD = \
+    ffmpeg -auto_conversion_filters -v error -f lavfi \
+           -i anullsrc=r=44100:cl=stereo:n=1152:d=0.07 \
+           -c:a mp2 -b:a 128k -f mp2 -y $(MPA_RATE_CHANGE_44100) && \
+    ffmpeg -auto_conversion_filters -v error -f lavfi \
+           -i anullsrc=r=48000:cl=stereo:n=1152:d=0.07 \
+           -c:a mp2 -b:a 128k -f mp2 -y $(MPA_RATE_CHANGE_48000) && \
+    ffmpeg -auto_conversion_filters -hide_banner \
+           -probesize 32 -analyzeduration 1 -c:a mp2 \
+           -i "concat:$(MPA_RATE_CHANGE_44100)|$(MPA_RATE_CHANGE_48000)" \
+           -af ashowinfo -c:a pcm_s16le -f null - 2>$(MPA_RATE_CHANGE).log && \
+    sed -n "s/.* rate:\([0-9]*\) nb_samples:.*/\1/p" $(MPA_RATE_CHANGE).log
+fate-mpegaudiodec-sample-rate-change: CLEANFILES = \
+    $(addprefix $(MPA_RATE_CHANGE),.44100.mp2 .48000.mp2 .log)
+FATE_FFMPEG += $(FATE_MPA_RATE_CHANGE-yes)
