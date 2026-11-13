@@ -192,6 +192,10 @@ typedef struct {
     int64_t origin;
 } MXFTrack;
 
+#define MXF_BLACK_REF_LEVEL_PRESENT (1 << 0)
+#define MXF_WHITE_REF_LEVEL_PRESENT (1 << 1)
+#define MXF_COLOR_RANGE_PRESENT     (1 << 2)
+
 typedef struct MXFDescriptor {
     MXFMetadataSet meta;
     UID essence_container_ul;
@@ -214,6 +218,8 @@ typedef struct MXFDescriptor {
     unsigned int black_ref_level;
     unsigned int white_ref_level;
     unsigned int color_range;
+    unsigned int range_items;  ///< MXF_*_PRESENT flags of the range items that were read
+    int signal_standard;
     unsigned int horiz_subsampling;
     unsigned int vert_subsampling;
     UID *file_descriptors_refs;
@@ -1410,12 +1416,18 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         break;
     case 0x3304:
         descriptor->black_ref_level = avio_rb32(pb);
+        descriptor->range_items |= MXF_BLACK_REF_LEVEL_PRESENT;
         break;
     case 0x3305:
         descriptor->white_ref_level = avio_rb32(pb);
+        descriptor->range_items |= MXF_WHITE_REF_LEVEL_PRESENT;
         break;
     case 0x3306:
         descriptor->color_range = avio_rb32(pb);
+        descriptor->range_items |= MXF_COLOR_RANGE_PRESENT;
+        break;
+    case 0x3215:
+        descriptor->signal_standard = avio_r8(pb);
         break;
     case 0x3308:
         descriptor->vert_subsampling = avio_rb32(pb);
@@ -2528,24 +2540,47 @@ static int mxf_add_metadata_stream(MXFContext *mxf, MXFTrack *track)
 
 static enum AVColorRange mxf_get_color_range(MXFContext *mxf, MXFDescriptor *descriptor)
 {
-    if (descriptor->black_ref_level || descriptor->white_ref_level || descriptor->color_range) {
-        /* CDCI range metadata */
-        if (!descriptor->component_depth)
-            return AVCOL_RANGE_UNSPECIFIED;
-        if (descriptor->black_ref_level == 0 && descriptor->component_depth < 31 &&
-            descriptor->white_ref_level == ((1<<descriptor->component_depth) - 1) &&
-            (descriptor->color_range    == (1<<descriptor->component_depth) ||
-             descriptor->color_range    == ((1<<descriptor->component_depth) - 1)))
+    unsigned depth = descriptor->component_depth;
+    unsigned black = descriptor->black_ref_level;
+    unsigned white = descriptor->white_ref_level;
+    unsigned range = descriptor->color_range;
+
+    /* CDCI range metadata */
+    if (!descriptor->range_items || !depth)
+        return AVCOL_RANGE_UNSPECIFIED;
+
+    if (depth < 31) {
+        unsigned def_black, def_white, def_range;
+
+        /* defaults for absent items, SMPTE ST 377-1 G.2.32 to G.2.34 */
+        if (descriptor->signal_standard >= 1 && descriptor->signal_standard <= 6 && depth >= 8) {
+            /* the interface standards of G.2.3 all use these levels */
+            def_black = 16  << (depth - 8);
+            def_white = 235 << (depth - 8);
+            def_range = (224 << (depth - 8)) + 1;
+        } else {
+            def_black = depth == 8 ? 16  : depth == 10 ? 64  : 0;
+            def_white = depth == 8 ? 235 : depth == 10 ? 940 : (1U << depth) - 1;
+            def_range = (1U << depth) - 1;
+        }
+        if (!(descriptor->range_items & MXF_BLACK_REF_LEVEL_PRESENT))
+            black = def_black;
+        if (!(descriptor->range_items & MXF_WHITE_REF_LEVEL_PRESENT))
+            white = def_white;
+        if (!(descriptor->range_items & MXF_COLOR_RANGE_PRESENT))
+            range = def_range;
+
+        if (black == 0 && white == (1U << depth) - 1 &&
+            (range == 1U << depth || range == (1U << depth) - 1))
             return AVCOL_RANGE_JPEG;
-        if (descriptor->component_depth >= 8 && descriptor->component_depth < 31 &&
-            descriptor->black_ref_level == (1  <<(descriptor->component_depth - 4)) &&
-            descriptor->white_ref_level == (235<<(descriptor->component_depth - 8)) &&
-            descriptor->color_range     == ((14<<(descriptor->component_depth - 4)) + 1))
+        if (depth >= 8 &&
+            black == 16  << (depth - 8) &&
+            white == 235 << (depth - 8) &&
+            range == (224 << (depth - 8)) + 1)
             return AVCOL_RANGE_MPEG;
-        avpriv_request_sample(mxf->fc, "Unrecognized CDCI color range (color diff range %d, b %d, w %d, depth %d)",
-                              descriptor->color_range, descriptor->black_ref_level,
-                              descriptor->white_ref_level, descriptor->component_depth);
     }
+    avpriv_request_sample(mxf->fc, "Unrecognized CDCI color range (color diff range %u, b %u, w %u, depth %u)",
+                          range, black, white, depth);
 
     return AVCOL_RANGE_UNSPECIFIED;
 }
