@@ -7832,8 +7832,8 @@ enabled debug && add_allcflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 check_warning(){
     warning_flag=$1
     flag_to_add=${2:-$1}
-    test_cflags -Werror $warning_flag && add_cflags $flag_to_add
     test_cxxflags -Werror $warning_flag && add_cxxflags $flag_to_add
+    test_cflags -Werror $warning_flag && add_cflags $flag_to_add
 }
 
 check_disable_warning(){
