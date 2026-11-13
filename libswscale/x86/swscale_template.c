@@ -30,11 +30,21 @@
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
-#define REAL_NEXT_PIXEL_BLOCK(dstw, index) \
-    "add       $8, "#index"     \n\t"\
+#define REAL_NEXT_PIXEL_BLOCK(dstw, index, step_back) \
+    "add      $16, "#index"     \n\t"\
     "cmp   "dstw", "#index"     \n\t"\
-    " jb       1b               \n\t"
-#define NEXT_PIXEL_BLOCK(dstw, index)  REAL_NEXT_PIXEL_BLOCK(dstw, index)
+    "lea -8("#index"), "#index" \n\t"\
+    " jbe      1b               \n\t"\
+    "cmp   "dstw", "#index"     \n\t"\
+    " jae      3f               \n\t"\
+    "add       $8, "#index"     \n\t"\
+    "sub   "dstw", "#index"     \n\t"\
+    step_back \
+    "mov   "dstw", "#index"     \n\t"\
+    "sub       $8, "#index"     \n\t"\
+    " jmp      1b               \n\t"\
+    "3:                         \n\t"
+#define NEXT_PIXEL_BLOCK(dstw, index, step_back)  REAL_NEXT_PIXEL_BLOCK(dstw, index, step_back)
 
 #define YSCALEYUV2PACKEDX_UV \
     __asm__ volatile(\
@@ -248,7 +258,7 @@
     MOVNTQ(   q2, 16(dst, index, 4))\
     MOVNTQ(   q3, 24(dst, index, 4))\
 \
-    NEXT_PIXEL_BLOCK(dstw, index)
+    NEXT_PIXEL_BLOCK(dstw, index, )
 #define WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)  REAL_WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)
 
 static void RENAME(yuv2rgb32_X_ar)(SwsInternal *c, const int16_t *lumFilter,
@@ -365,7 +375,7 @@ static void RENAME(yuv2bgr32_X)(SwsInternal *c, const int16_t *lumFilter,
     MOVNTQ(%%mm2,  (dst, index, 2))\
     MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
-    NEXT_PIXEL_BLOCK(dstw, index)
+    NEXT_PIXEL_BLOCK(dstw, index, )
 #define WRITERGB16(dst, dstw, index)  REAL_WRITERGB16(dst, dstw, index)
 
 static void RENAME(yuv2rgb565_X_ar)(SwsInternal *c, const int16_t *lumFilter,
@@ -436,7 +446,7 @@ static void RENAME(yuv2rgb565_X)(SwsInternal *c, const int16_t *lumFilter,
     MOVNTQ(%%mm2,  (dst, index, 2))\
     MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
-    NEXT_PIXEL_BLOCK(dstw, index)
+    NEXT_PIXEL_BLOCK(dstw, index, )
 #define WRITERGB15(dst, dstw, index)  REAL_WRITERGB15(dst, dstw, index)
 
 static void RENAME(yuv2rgb555_X_ar)(SwsInternal *c, const int16_t *lumFilter,
@@ -527,7 +537,9 @@ static void RENAME(yuv2rgb555_X)(SwsInternal *c, const int16_t *lumFilter,
 \
     "add      $24, "#dst"       \n\t"\
 \
-    NEXT_PIXEL_BLOCK(dstw, index)
+    NEXT_PIXEL_BLOCK(dstw, index, "sub "#index", "#dst" \n\t"\
+                                  "sub "#index", "#dst" \n\t"\
+                                  "sub "#index", "#dst" \n\t")
 
 #undef WRITEBGR24
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMXEXT(dst, dstw, index)
@@ -596,7 +608,7 @@ static void RENAME(yuv2bgr24_X)(SwsInternal *c, const int16_t *lumFilter,
     MOVNTQ(%%mm1, (dst, index, 2))\
     MOVNTQ(%%mm7, 8(dst, index, 2))\
 \
-    NEXT_PIXEL_BLOCK(dstw, index)
+    NEXT_PIXEL_BLOCK(dstw, index, )
 #define WRITEYUY2(dst, dstw, index)  REAL_WRITEYUY2(dst, dstw, index)
 
 static void RENAME(yuv2yuyv422_X_ar)(SwsInternal *c, const int16_t *lumFilter,
@@ -1325,13 +1337,15 @@ static void RENAME(yuv2yuyv422_1)(SwsInternal *c, const int16_t *buf0,
 static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
 {
     enum AVPixelFormat dstFormat = c->opts.dst_format;
+    av_unused const int use_mmxext_packed_writers = !(c->opts.flags & SWS_FULL_CHR_H_INT) &&
+                                                    c->opts.dst_w >= 8 && !(c->opts.dst_w & 1);
 
     c->use_mmx_vfilter= 0;
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) && !isSemiPlanarYUV(dstFormat)
         && dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE
         && !(c->opts.flags & SWS_BITEXACT)) {
             if (c->opts.flags & SWS_ACCURATE_RND) {
-                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                if (use_mmxext_packed_writers) {
                     switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
 #if HAVE_6REGS
@@ -1345,7 +1359,7 @@ static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
                 }
             } else {
                 c->use_mmx_vfilter= 1;
-                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                if (use_mmxext_packed_writers) {
                     switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
                     case AV_PIX_FMT_BGR32:   c->yuv2packedX = RENAME(yuv2bgr32_X);   break;
@@ -1359,7 +1373,7 @@ static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
                     }
                 }
             }
-        if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+        if (use_mmxext_packed_writers) {
             switch (c->opts.dst_format) {
             case AV_PIX_FMT_RGB32:
                 c->yuv2packed1 = RENAME(yuv2rgb32_1);
