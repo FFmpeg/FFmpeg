@@ -122,9 +122,12 @@ static int resize_samples_## name ##p(ChanDelay *d, int64_t new_delay)          
         return AVERROR(ENOMEM);                                                                         \
     }                                                                                                   \
                                                                                                         \
-    samples = (type *) av_fast_realloc(d->samples, &d->samples_size, new_delay * sizeof(type));         \
-    if (!samples) {                                                                                     \
-        return AVERROR(ENOMEM);                                                                         \
+    samples = (type *) d->samples;                                                                      \
+    if (new_delay > d->delay) {                                                                         \
+        samples = (type *) av_fast_realloc(d->samples, &d->samples_size, new_delay * sizeof(type));     \
+        if (!samples) {                                                                                 \
+            return AVERROR(ENOMEM);                                                                     \
+        }                                                                                               \
     }                                                                                                   \
                                                                                                         \
     if (new_delay < d->delay) {                                                                         \
