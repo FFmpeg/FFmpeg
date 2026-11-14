@@ -438,10 +438,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
+    DebandContext *s = ctx->priv;
     int ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
 
     if (ret < 0)
         return ret;
+
+    if (s->coupling && (s->shift[0] || s->shift[1])) {
+        av_log(ctx, AV_LOG_ERROR, "coupling needs a pixel format without chroma subsampling\n");
+        s->coupling = 0;
+        return AVERROR(EINVAL);
+    }
 
     return config_input(ctx->inputs[0]);
 }
