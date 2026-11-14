@@ -161,11 +161,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
         zmq->command_count++;
 
         /* parse command */
-        if (parse_command(&cmd, recv_buf, ctx) < 0) {
+        ret = parse_command(&cmd, recv_buf, ctx);
+        if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Could not parse command #%d\n", zmq->command_count);
-            goto end;
-        }
-
+            cmd_buf[0] = 0;
+        } else {
         /* process command */
         av_log(ctx, AV_LOG_VERBOSE,
                "Processing command #%d target:%s command:%s arg:%s\n",
@@ -174,6 +174,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
                                           cmd.target, cmd.command, cmd.arg,
                                           cmd_buf, sizeof(cmd_buf),
                                           AVFILTER_CMD_FLAG_ONE);
+        }
         send_buf = av_asprintf("%d %s%s%s",
                                -ret, av_err2str(ret), cmd_buf[0] ? "\n" : "", cmd_buf);
         if (!send_buf) {
