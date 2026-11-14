@@ -52,7 +52,8 @@ typedef struct TMidEqualizerContext {
                               int w, int h, float *histogram, size_t hsize);
     void (*apply_contrast_change)(const uint8_t *src, ptrdiff_t src_linesize,
                                   uint8_t *dst, ptrdiff_t dst_linesize,
-                                  int w, int h, float *change, float *orig);
+                                  int w, int h, float *change, float *orig,
+                                  size_t hsize);
 } TMidEqualizerContext;
 
 #define OFFSET(x) offsetof(TMidEqualizerContext, x)
@@ -135,7 +136,8 @@ static void compute_contrast_function(const float *const histograms[256],
 
 static void apply_contrast_change8(const uint8_t *src, ptrdiff_t src_linesize,
                                    uint8_t *dst, ptrdiff_t dst_linesize,
-                                   int w, int h, float *change, float *orig)
+                                   int w, int h, float *change, float *orig,
+                                   size_t hsize)
 {
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
@@ -148,14 +150,15 @@ static void apply_contrast_change8(const uint8_t *src, ptrdiff_t src_linesize,
 
 static void apply_contrast_change16(const uint8_t *ssrc, ptrdiff_t src_linesize,
                                     uint8_t *ddst, ptrdiff_t dst_linesize,
-                                    int w, int h, float *change, float *orig)
+                                    int w, int h, float *change, float *orig,
+                                    size_t hsize)
 {
     const uint16_t *src = (const uint16_t *)ssrc;
     uint16_t *dst = (uint16_t *)ddst;
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
-            dst[x] = lrintf(change[src[x]]);
+            dst[x] = lrintf(change[FFMIN(src[x], hsize - 1)]);
 
         dst += dst_linesize / 2;
         src += src_linesize / 2;
@@ -271,7 +274,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->apply_contrast_change(in->data[p], in->linesize[p],
                                      out->data[p], out->linesize[p],
                                      s->plane_width[p], s->plane_height[p],
-                                     s->change[p], s->histogram[p][idx]);
+                                     s->change[p], s->histogram[p][idx],
+                                     s->histogram_size);
         }
     }
 
@@ -309,7 +313,7 @@ static void compute_histogram16(const uint8_t *ssrc, ptrdiff_t linesize,
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
-            histogram[src[x]] += 1;
+            histogram[FFMIN(src[x], hsize - 1)] += 1;
         src += linesize / 2;
     }
 
