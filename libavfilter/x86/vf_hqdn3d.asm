@@ -38,6 +38,9 @@ SECTION .text
     movzx  %1, word [srcq+(%2)*2]
 %endif
 %if %3 != 16
+%if %3 != 8
+    and    %1, (1<<%3)-1
+%endif
     shl    %1, 16-%3
     add    %1, (1<<(15-%3))-1
 %endif
