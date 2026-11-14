@@ -2056,6 +2056,12 @@ static unsigned klv_fill_size(uint64_t size)
         return pad & (KAG_SIZE-1);
 }
 
+static int mxf_index_delta_count(AVFormatContext *s)
+{
+    // one delta entry per element, plus the system item except in OPAtom
+    return s->nb_streams + !IS_OPATOM(s);
+}
+
 static int mxf_check_frame_offset(AVFormatContext *s, int offset)
 {
     if (offset >= INT8_MIN && offset <= INT8_MAX)
@@ -2126,13 +2132,15 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     avio_w8(pb, !mxf->edit_unit_byte_count); // only one slice for CBR
 
     // delta entry array
-    mxf_write_local_tag(s, 8 + (s->nb_streams+1)*6, 0x3F09);
-    avio_wb32(pb, s->nb_streams+1); // num of entries
+    mxf_write_local_tag(s, 8 + mxf_index_delta_count(s)*6, 0x3F09);
+    avio_wb32(pb, mxf_index_delta_count(s)); // num of entries
     avio_wb32(pb, 6);               // size of one entry
-    // write system item delta entry
-    avio_w8(pb, 0);
-    avio_w8(pb, 0); // slice entry
-    avio_wb32(pb, 0); // element delta
+    if (!IS_OPATOM(s)) {
+        // write system item delta entry
+        avio_w8(pb, 0);
+        avio_w8(pb, 0); // slice entry
+        avio_wb32(pb, 0); // element delta
+    }
     // write each stream delta entry
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
@@ -2145,7 +2153,8 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             avio_wb32(pb, sc->slice_offset);
         } else if (i == 0) { // video track
             avio_w8(pb, 0); // slice number
-            avio_wb32(pb, KAG_SIZE); // system item size including klv fill
+            // system item size including klv fill, no system item in OPAtom
+            avio_wb32(pb, IS_OPATOM(s) ? 0 : KAG_SIZE);
         } else { // audio or data track
             if (!audio_frame_size) {
                 audio_frame_size = sc->frame_size;
@@ -2252,7 +2261,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     int err;
 
     if (!mxf->edit_unit_byte_count && mxf->edit_units_count)
-        index_byte_count = 85 + 12+(s->nb_streams+1)*6 +
+        index_byte_count = 85 + 12+mxf_index_delta_count(s)*6 +
             12+mxf->edit_units_count*15;
     else if (mxf->edit_unit_byte_count && indexsid)
         index_byte_count = 80;
