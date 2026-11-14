@@ -115,7 +115,7 @@ static int parse_command(Command *cmd, const char *command_str, void *log_ctx)
     return 0;
 }
 
-static int recv_msg(AVFilterContext *ctx, char **buf, int *buf_size)
+static int recv_msg(AVFilterContext *ctx, char **buf)
 {
     ZMQContext *zmq = ctx->priv;
     zmq_msg_t msg;
@@ -135,14 +135,9 @@ static int recv_msg(AVFilterContext *ctx, char **buf, int *buf_size)
         goto end;
     }
 
-    *buf_size = zmq_msg_size(&msg) + 1;
-    *buf = av_malloc(*buf_size);
-    if (!*buf) {
+    *buf = av_strndup(zmq_msg_data(&msg), zmq_msg_size(&msg));
+    if (!*buf)
         ret = AVERROR(ENOMEM);
-        goto end;
-    }
-    memcpy(*buf, zmq_msg_data(&msg), *buf_size - 1);
-    (*buf)[*buf_size-1] = 0;
 
 end:
     zmq_msg_close(&msg);
@@ -157,12 +152,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
     while (1) {
         char cmd_buf[1024];
         char *recv_buf = NULL, *send_buf = NULL;
-        int recv_buf_size;
         Command cmd = {0};
         int ret;
 
         /* receive command */
-        if (recv_msg(ctx, &recv_buf, &recv_buf_size) < 0)
+        if (recv_msg(ctx, &recv_buf) < 0)
             break;
         zmq->command_count++;
 
@@ -196,7 +190,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
     end:
         av_freep(&send_buf);
         av_freep(&recv_buf);
-        recv_buf_size = 0;
         av_freep(&cmd.target);
         av_freep(&cmd.command);
         av_freep(&cmd.arg);
