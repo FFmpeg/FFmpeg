@@ -413,7 +413,7 @@ fate-mov-mp4-pcm-float: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-441
 fate-mov-pcm-remux: tests/data/asynth-44100-1.wav
 fate-mov-pcm-remux: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -map 0 -c copy -fflags +bitexact -f mp4
 fate-mov-pcm-remux: CMP = oneline
-fate-mov-pcm-remux: REF = 389df40a487ac8397ba20bda472434d7
+fate-mov-pcm-remux: REF = ce5e16a7335763cdacdade35b2c50c8b
 
 FATE_MOV_FFMPEG-$(call TRANSCODE, RAWVIDEO, MOV, TESTSRC_FILTER SETPTS_FILTER) += fate-mov-vfr
 fate-mov-vfr: CMD = md5 -filter_complex testsrc=size=2x2:duration=1,setpts=N*N:strip_fps=1 -c rawvideo -fflags +bitexact -f mov

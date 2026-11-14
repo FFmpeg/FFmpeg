@@ -4158,7 +4158,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         const AVPacketSideData *sd;
         if (mov->per_stream_grouping)
             group = st->index;
-        else
+        else if (mov->mode != MODE_MP4 || mov->nb_streams > 1)
             group = st->codecpar->codec_type;
 
         sd = av_packet_side_data_get(st->codecpar->coded_side_data,
