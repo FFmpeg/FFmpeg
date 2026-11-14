@@ -258,6 +258,7 @@ static int lut2_##zname##_##xname##_##yname(AVFilterContext *ctx,               
     AVFrame *srcx = td->srcx;                                                    \
     AVFrame *srcy = td->srcy;                                                    \
     const int odepth = s->odepth;                                                \
+    const int lut_mask = sizeof(xtype) + sizeof(ytype) == 2 ? -1 : (1 << s->depth) - 1; \
     int p, y, x;                                                                 \
                                                                                  \
     for (p = 0; p < s->nb_planes; p++) {                                         \
@@ -274,7 +275,7 @@ static int lut2_##zname##_##xname##_##yname(AVFilterContext *ctx,               
                                                                                  \
         for (y = slice_start; y < slice_end; y++) {                              \
             for (x = 0; x < s->widthx[p]; x++) {                                 \
-                dst[x] = av_clip_uintp2_c(lut[(srcyy[x] << s->depthx) | srcxx[x]], odepth); \
+                dst[x] = av_clip_uintp2_c(lut[((srcyy[x] << s->depthx) | srcxx[x]) & lut_mask], odepth); \
             }                                                                    \
                                                                                  \
             dst   += out->linesize[p] / zdiv;                                    \
