@@ -1,4 +1,4 @@
-ca2d9a476892e92928d48ada9e72b152 *tests/data/fate/mxf-d10-user-comments.mxf_d10
+f4c03e7304d45b2f2b9b4727f115ed61 *tests/data/fate/mxf-d10-user-comments.mxf_d10
 3782189 tests/data/fate/mxf-d10-user-comments.mxf_d10
 #extradata 0:       34, 0x717105c5
 #tb 0: 1/25
@@ -12,7 +12,7 @@ ca2d9a476892e92928d48ada9e72b152 *tests/data/fate/mxf-d10-user-comments.mxf_d10
 0,          2,          3,        1,   150000, 0x36dbac43, F=0x0
 0,          3,          4,        1,   150000, 0xe1c2955a, F=0x0
 [FORMAT]
-TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
+TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010100
 TAG:uid=adab4424-2f25-4dc7-92ff-000c00000000
 TAG:generation_uid=adab4424-2f25-4dc7-92ff-000c00000001
 TAG:company_name=FATE-company

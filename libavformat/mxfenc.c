@@ -756,6 +756,20 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
         avio_write(pb, multiple_desc_ul, 16);
 }
 
+static void mxf_write_operational_pattern(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+
+    if (IS_OPATOM(s)) {
+        avio_write(pb, opatom_ul, 16);
+    } else {
+        avio_write(pb, op1a_ul, 14);
+        // qualifiers, ST 378 6.4: multi-track if more than one essence track
+        avio_w8(pb, s->nb_streams > 1 ? 0x09 : 0x01);
+        avio_w8(pb, op1a_ul[15]);
+    }
+}
+
 static void mxf_write_preface(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -793,10 +807,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // operational pattern
     mxf_write_local_tag(s, 16, 0x3B09);
-    if (IS_OPATOM(s))
-        avio_write(pb, opatom_ul, 16);
-    else
-        avio_write(pb, op1a_ul, 16);
+    mxf_write_operational_pattern(s);
 
     // write essence_container_refs
     mxf_write_local_tag(s, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
@@ -2301,10 +2312,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     avio_wb32(pb, bodysid); // bodySID
 
     // operational pattern
-    if (IS_OPATOM(s))
-        avio_write(pb, opatom_ul, 16);
-    else
-        avio_write(pb, op1a_ul, 16);
+    mxf_write_operational_pattern(s);
 
     // essence container
     mxf_write_essence_container_refs(s);
