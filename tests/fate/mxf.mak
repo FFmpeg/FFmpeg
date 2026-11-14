@@ -85,3 +85,10 @@ FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MXF_FFMPEG_FFPROBE-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MXF_PROBE-yes)
 
 fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes) $(FATE_MXF_FFMPEG_FFPROBE-yes)
+
+# Cross the 64 KiB IndexEntryArray limit, so that the index table is split.
+FATE_MXF_INDEX-$(call ENCMUX, MPEG2VIDEO, MXF_OPATOM, COLOR_FILTER FILE_PROTOCOL) += fate-mxf-opatom-index-segments
+fate-mxf-opatom-index-segments: CMD = md5 -filter_complex color=s=64x64:r=25 -frames:v 6000 -c:v mpeg2video -g 12 -bf 2 -threads 1 -dct fastint -flags +bitexact -fflags +bitexact -f mxf_opatom
+
+FATE_FFMPEG += $(FATE_MXF_INDEX-yes)
+fate-mxf: $(FATE_MXF_INDEX-yes)
