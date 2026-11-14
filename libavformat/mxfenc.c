@@ -745,7 +745,7 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
         // check first track of essence container type and only write it once
-        if (sc->track_essence_element_key[15] != 0)
+        if (sc->track_essence_element_key[15] != (sc->index == INDEX_S436M))
             continue;
         avio_write(pb, *sc->container_ul, 16);
         if (c->essence_container_count == 1)
@@ -3216,6 +3216,9 @@ static int mxf_init(AVFormatContext *s)
             // and produce mxf files with the most relevant flavour for opatom
             sc->track_essence_element_key[14] = 0x06;
         }
+        // ANC element numbers start at 1, ST 436-1
+        if (sc->index == INDEX_S436M)
+            sc->track_essence_element_key[15]++;
         PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
 
         if (!present[sc->index])
