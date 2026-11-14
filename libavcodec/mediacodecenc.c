@@ -75,6 +75,7 @@ typedef struct MediaCodecEncContext {
     uint8_t *extradata;
     int extradata_size;
     int eof_sent;
+    int flush_error;
 
     AVFrame *frame;
     AVBSFContext *bsf;
@@ -841,6 +842,9 @@ static int mediacodec_encode(AVCodecContext *avctx, AVPacket *pkt)
     MediaCodecEncContext *s = avctx->priv_data;
     int ret;
 
+    if (s->flush_error < 0)
+        return s->flush_error;
+
     // Return on three case:
     // 1. Serious error
     // 2. Got a packet success
@@ -1013,10 +1017,40 @@ static av_cold int mediacodec_close(AVCodecContext *avctx)
 static av_cold void mediacodec_flush(AVCodecContext *avctx)
 {
     MediaCodecEncContext *s = avctx->priv_data;
+
     if (s->bsf)
         av_bsf_flush(s->bsf);
     av_frame_unref(s->frame);
-    ff_AMediaCodec_flush(s->codec);
+
+    s->flush_error = ff_AMediaCodec_flush(s->codec);
+    if (s->flush_error < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to flush MediaCodec encoder\n");
+        return;
+    }
+
+    s->eof_sent = 0;
+
+    if (!s->async_mode)
+        return;
+
+    ff_mutex_lock(&s->input_mutex);
+    ff_mutex_lock(&s->output_mutex);
+
+    av_fifo_reset2(s->input_index);
+    av_fifo_reset2(s->async_output);
+    s->encode_status = 0;
+
+    ff_cond_signal(&s->output_cond);
+    ff_cond_signal(&s->input_cond);
+
+    ff_mutex_unlock(&s->output_mutex);
+    ff_mutex_unlock(&s->input_mutex);
+
+    // MediaCodec delivers input buffers only after start().
+    s->flush_error = ff_AMediaCodec_start(s->codec);
+    if (s->flush_error < 0)
+        av_log(avctx, AV_LOG_ERROR,
+               "Failed to resume MediaCodec after async flush\n");
 }
 
 static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
