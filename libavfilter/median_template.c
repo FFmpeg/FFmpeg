@@ -44,8 +44,8 @@
 #define fn2(a,b)   fn3(a,b)
 #define fn(a)      fn2(a, DEPTH)
 
-#define PICK_COARSE_BIN(x, y) (BINS * (x) + ((y) >> SHIFT))
-#define PICK_FINE_BIN(x, y, z) (BINS * ((x) * ((y) >> SHIFT) + (z)) + ((y) & MASK))
+#define PICK_COARSE_BIN(x, y) (BINS * (x) + (((y) >> SHIFT) & MASK))
+#define PICK_FINE_BIN(x, y, z) (BINS * ((x) * (((y) >> SHIFT) & MASK) + (z)) + ((y) & MASK))
 
 static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_linesize,
                              uint8_t *ddst, int dst_linesize, int width, int height,
