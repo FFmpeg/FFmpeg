@@ -2290,7 +2290,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
                            (uint64_t)mxf->edit_units_count * MXF_INDEX_ENTRY_SIZE +
                            (uint64_t)(nb_segments - 1) * klv_fill_size(full_segment_size);
     } else if (mxf->edit_unit_byte_count && indexsid)
-        index_byte_count = 16 + 4 + 80;
+        index_byte_count = 16 + 4 + mxf_index_header_size(s);
 
     if (index_byte_count)
         index_byte_count += klv_fill_size(index_byte_count);
