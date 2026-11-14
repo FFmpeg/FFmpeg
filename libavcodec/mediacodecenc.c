@@ -1003,6 +1003,7 @@ static av_cold int mediacodec_close(AVCodecContext *avctx)
 
     av_bsf_free(&s->bsf);
     av_frame_free(&s->frame);
+    av_freep(&s->extradata);
 
     mediacodec_uninit_async_state(avctx);
 
