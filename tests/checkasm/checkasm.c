@@ -386,6 +386,7 @@ static const CheckasmCpuInfo cpuflags[] = {
     { "FMA3",       "fma3",      AV_CPU_FLAG_FMA3 },
     { "FMA4",       "fma4",      AV_CPU_FLAG_FMA4 },
     { "AVX2",       "avx2",      AV_CPU_FLAG_AVX2 },
+    { "AVX-VNNI",   "avxvnni",   AV_CPU_FLAG_AVXVNNI },
     { "AVX-512",    "avx512",    AV_CPU_FLAG_AVX512 },
     { "AVX-512ICL", "avx512icl", AV_CPU_FLAG_AVX512ICL },
 #elif ARCH_LOONGARCH

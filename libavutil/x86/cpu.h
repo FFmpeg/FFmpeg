@@ -46,6 +46,7 @@
 #define X86_AESNI(flags)            CPUEXT(flags, AESNI)
 #define X86_CLMUL(flags)            CPUEXT(flags, CLMUL)
 #define X86_AVX512(flags)           CPUEXT(flags, AVX512)
+#define X86_AVXVNNI(flags)          CPUEXT(flags, AVXVNNI)
 
 #define EXTERNAL_MMX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, MMX)
 #define EXTERNAL_MMXEXT(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, MMXEXT)
@@ -76,6 +77,7 @@
 #define EXTERNAL_CLMUL(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, CLMUL)
 #define EXTERNAL_AVX512(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512)
 #define EXTERNAL_AVX512ICL(flags)   CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512ICL)
+#define EXTERNAL_AVXVNNI(flags)     CPUEXT_SUFFIX(flags, _EXTERNAL, AVXVNNI)
 
 #define INLINE_MMX(flags)           CPUEXT_SUFFIX(flags, _INLINE, MMX)
 #define INLINE_MMXEXT(flags)        CPUEXT_SUFFIX(flags, _INLINE, MMXEXT)
@@ -100,7 +102,7 @@
 #define INLINE_AVX2(flags)          CPUEXT_SUFFIX(flags, _INLINE, AVX2)
 #define INLINE_AESNI(flags)         CPUEXT_SUFFIX(flags, _INLINE, AESNI)
 
-void ff_cpu_cpuid(int index, int *eax, int *ebx, int *ecx, int *edx);
+void ff_cpu_cpuid(int index, int subleaf, int *eax, int *ebx, int *ecx, int *edx);
 void ff_cpu_xgetbv(int op, int *eax, int *edx);
 int  ff_cpu_cpuid_test(void);
 

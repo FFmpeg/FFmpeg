@@ -30,8 +30,8 @@
 
 #if HAVE_X86ASM
 
-#define cpuid(index, eax, ebx, ecx, edx)        \
-    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+#define cpuid_count(index, subleaf, eax, ebx, ecx, edx) \
+    ff_cpu_cpuid(index, subleaf, &eax, &ebx, &ecx, &edx)
 
 #define xgetbv(index, eax, edx)                 \
     ff_cpu_xgetbv(index, &eax, &edx)
@@ -39,13 +39,13 @@
 #elif HAVE_INLINE_ASM
 
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
-#define cpuid(index, eax, ebx, ecx, edx)                        \
+#define cpuid_count(index, subleaf, eax, ebx, ecx, edx)         \
     __asm__ volatile (                                          \
         "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
         "cpuid                       \n\t"                      \
         "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-        : "0" (index), "2"(0))
+        : "0" (index), "2" (subleaf))
 
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
@@ -61,6 +61,11 @@
                       :: "r"(x))
 
 #endif /* HAVE_INLINE_ASM */
+
+#ifdef cpuid_count
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    cpuid_count(index, 0, eax, ebx, ecx, edx)
+#endif
 
 #if ARCH_X86_64
 
@@ -168,6 +173,15 @@ int ff_get_cpu_flags_x86(void)
             if (ebx & 0x00000100)
                 rval |= AV_CPU_FLAG_BMI2;
         }
+#if HAVE_AVXVNNI
+        /* AVX-VNNI is VEX coded, so it needs the OS YMM state, like AVX2.
+         * eax of subleaf 0 is the highest subleaf. */
+        if ((rval & AV_CPU_FLAG_AVX) && eax >= 1) {
+            cpuid_count(7, 1, eax, ebx, ecx, edx);
+            if (eax & 0x00000010)
+                rval |= AV_CPU_FLAG_AVXVNNI;
+        }
+#endif /* HAVE_AVXVNNI */
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);

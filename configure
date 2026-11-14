@@ -471,6 +471,7 @@ Optimization options (experts only):
   --disable-avx2           disable AVX2 optimizations
   --disable-avx512         disable AVX-512 optimizations
   --disable-avx512icl      disable AVX-512ICL optimizations
+  --disable-avxvnni        disable AVX-VNNI optimizations
   --disable-aesni          disable AESNI optimizations
   --disable-clmul          disable CLMUL optimizations
   --disable-armv5te        disable armv5te optimizations
@@ -2359,6 +2360,7 @@ ARCH_EXT_LIST_X86_SIMD="
     avx2
     avx512
     avx512icl
+    avxvnni
     fma3
     fma4
     mmx
@@ -2985,6 +2987,7 @@ fma4_deps="avx"
 avx2_deps="avx"
 avx512_deps="avx2"
 avx512icl_deps="avx512"
+avxvnni_deps="avx2"
 
 mmx_external_deps="x86asm"
 mmx_inline_deps="inline_asm x86"
@@ -6762,6 +6765,7 @@ elif enabled x86; then
         enabled avx512    && check_x86asm avx512_external    "vmovdqa32 [eax]{k1}{z}, zmm0"
         enabled avx512icl && check_x86asm avx512icl_external "vpdpwssds zmm31{k1}{z}, zmm29, zmm28"
         enabled avx2      && check_x86asm avx2_external      "vextracti128 xmm0, ymm0, 0"
+        enabled avxvnni   && check_x86asm avxvnni_external   "{vex} vpdpwssd ymm0, ymm1, ymm2"
         enabled xop       && check_x86asm xop_external       "vpmacsdd xmm0, xmm1, xmm2, xmm3"
         enabled fma4      && check_x86asm fma4_external      "vfmaddps ymm0, ymm1, ymm2, ymm3"
         enabled avx       && check_x86asm avx_external       "vpermilpd ymm0, ymm1, 0x72"
@@ -8347,6 +8351,7 @@ if enabled x86; then
     echo "AVX2 enabled              ${avx2-no}"
     echo "AVX-512 enabled           ${avx512-no}"
     echo "AVX-512ICL enabled        ${avx512icl-no}"
+    echo "AVX-VNNI enabled          ${avxvnni-no}"
     echo "XOP enabled               ${xop-no}"
     echo "FMA3 enabled              ${fma3-no}"
     echo "FMA4 enabled              ${fma4-no}"

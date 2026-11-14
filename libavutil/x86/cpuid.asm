@@ -26,16 +26,16 @@
 SECTION .text
 
 ;-----------------------------------------------------------------------------
-; void ff_cpu_cpuid(int index, int *eax, int *ebx, int *ecx, int *edx)
+; void ff_cpu_cpuid(int index, int subleaf, int *eax, int *ebx, int *ecx, int *edx)
 ;-----------------------------------------------------------------------------
-cglobal cpu_cpuid, 5,7
+cglobal cpu_cpuid, 6,7
     push rbx
+    push  r5
     push  r4
     push  r3
     push  r2
-    push  r1
     mov  eax, r0d
-    xor  ecx, ecx
+    mov  ecx, r1d
     cpuid
     pop   r4
     mov [r4], eax
