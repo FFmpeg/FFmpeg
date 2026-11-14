@@ -23,19 +23,23 @@
 #undef pixel
 #undef cpixel
 #undef ROUND
+#undef MASK_TO_DEPTH
 #if DEPTH == 8
 #define pixel uint8_t
 #define cpixel int
 #define ROUND lrintf
+#define MASK_TO_DEPTH(x) (x)
 #elif DEPTH == 16
 #define pixel uint16_t
 #define cpixel int
 #define ROUND lrintf
+#define MASK_TO_DEPTH(x) ((x) & ((1 << depth) - 1))
 #else
 #define NOP(x) (x)
 #define pixel float
 #define cpixel float
 #define ROUND NOP
+#define MASK_TO_DEPTH NOP
 #endif
 
 #undef fn
@@ -67,10 +71,10 @@ static av_always_inline int fn(filter_slice_rgba_planar)(AVFilterContext *ctx, v
 
     for (int i = slice_start; i < slice_end; i++) {
         for (int j = 0; j < out->width; j++) {
-            const pixel rin = srcr[j];
-            const pixel gin = srcg[j];
-            const pixel bin = srcb[j];
-            const pixel ain = have_alpha ? srca[j] : 0;
+            const pixel rin = MASK_TO_DEPTH(srcr[j]);
+            const pixel gin = MASK_TO_DEPTH(srcg[j]);
+            const pixel bin = MASK_TO_DEPTH(srcb[j]);
+            const pixel ain = have_alpha ? MASK_TO_DEPTH(srca[j]) : 0;
             cpixel rout, gout, bout;
 
 #if DEPTH == 32
