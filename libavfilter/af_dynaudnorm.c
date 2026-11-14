@@ -261,14 +261,14 @@ static void cqueue_resize(cqueue *q, int new_size)
     av_assert2(q->max_size >= new_size);
     av_assert2(MIN_FILTER_SIZE <= new_size);
 
-    if (new_size > q->nb_elements) {
-        const int side = (new_size - q->nb_elements) / 2;
+    if (!cqueue_empty(q) && new_size > q->size) {
+        const int side = (new_size - q->size) / 2;
 
         memmove(q->elements + side, q->elements, sizeof(double) * q->nb_elements);
         for (int i = 0; i < side; i++)
             q->elements[i] = q->elements[side];
-        q->nb_elements = new_size - 1 - side;
-    } else {
+        q->nb_elements += side;
+    } else if (!cqueue_empty(q)) {
         int count = (q->size - new_size + 1) / 2;
 
         while (count-- > 0)
