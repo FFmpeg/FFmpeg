@@ -2081,7 +2081,7 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
     int i, j, temporal_reordering = 0;
     int key_index = mxf->last_key_index;
     int prev_non_b_picture = 0;
-    int audio_frame_size = 0;
+    unsigned element_delta = 0;
     int64_t pos;
     int err;
 
@@ -2156,12 +2156,11 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             // system item size including klv fill, no system item in OPAtom
             avio_wb32(pb, IS_OPATOM(s) ? 0 : KAG_SIZE);
         } else { // audio or data track
-            if (!audio_frame_size) {
-                audio_frame_size = sc->frame_size;
-                audio_frame_size += klv_fill_size(audio_frame_size);
-            }
             avio_w8(pb, 1);
-            avio_wb32(pb, (i-1)*audio_frame_size); // element delta
+            avio_wb32(pb, element_delta);
+            // each element is KAG aligned and starts with its 16 byte key and 4 byte length
+            element_delta += 16 + 4 + sc->frame_size;
+            element_delta += klv_fill_size(element_delta);
         }
     }
 
