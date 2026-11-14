@@ -161,10 +161,10 @@ static int config_output(AVFilterLink *outlink)
     s->vsub = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth;
     s->maxsize = 1 << s->depth;
-    s->histy = av_malloc_array(s->maxsize, sizeof(*s->histy));
-    s->histu = av_malloc_array(s->maxsize, sizeof(*s->histu));
-    s->histv = av_malloc_array(s->maxsize, sizeof(*s->histv));
-    s->histsat = av_malloc_array(s->maxsize, sizeof(*s->histsat));
+    s->histy = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histy));
+    s->histu = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histu));
+    s->histv = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histv));
+    s->histsat = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histsat));
 
     if (!s->histy || !s->histu || !s->histv || !s->histsat)
         return AVERROR(ENOMEM);
@@ -520,7 +520,7 @@ static int compute_sat_hue_metrics16(AVFilterContext *ctx, void *arg, int jobnr,
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = p_u[i];
             const int yuvv = p_v[i];
-            p_sat[i] = hypotf(yuvu - mid, yuvv - mid); // int or round?
+            p_sat[i] = (int)hypotf(yuvu - mid, yuvv - mid); // int or round?
             ((int16_t*)p_hue)[i] = fmodf(floorf((180.f / M_PI) * atan2f(yuvu-mid, yuvv-mid) + 180.f), 360.f);
         }
         p_u   += lsz_u;
