@@ -477,7 +477,6 @@ typedef struct MXFContext {
     MXFIndexEntry *index_entries;
     unsigned edit_units_count;
     uint64_t timestamp;   ///< timestamp, as year(16),month(8),day(8),hour(8),minutes(8),msec/4(8)
-    uint8_t slice_count;  ///< index slice count minus 1 (1 if no audio, 0 otherwise)
     int last_indexed_edit_unit;
     uint64_t *body_partition_offset;
     unsigned body_partitions_count;
@@ -2056,9 +2055,26 @@ static unsigned klv_fill_size(uint64_t size)
         return pad & (KAG_SIZE-1);
 }
 
-#define MXF_INDEX_ENTRY_SIZE 15
+/**
+ * Number of slices minus 1. Elements following the VBE picture are in slice 1,
+ * there should be no slices if the picture is the last element, ST 377-1 11.1.4.
+ */
+static int mxf_index_slice_count(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    return !mxf->edit_unit_byte_count && s->nb_streams > 1;
+}
+
+static int mxf_index_entry_size(AVFormatContext *s)
+{
+    return 11 + 4 * mxf_index_slice_count(s);
+}
+
 // largest IndexEntryArray fitting a 2 byte local set length
-#define MXF_INDEX_MAX_ENTRIES ((UINT16_MAX - 8) / MXF_INDEX_ENTRY_SIZE)
+static int mxf_index_max_entries(AVFormatContext *s)
+{
+    return (UINT16_MAX - 8) / mxf_index_entry_size(s);
+}
 
 static int mxf_index_delta_count(AVFormatContext *s)
 {
@@ -2093,7 +2109,7 @@ static void mxf_write_index_table_segment_header(AVFormatContext *s, int64_t sta
     int i;
 
     if (duration)
-        size += 12 + duration * MXF_INDEX_ENTRY_SIZE;
+        size += 12 + duration * mxf_index_entry_size(s);
     avio_write(pb, index_table_segment_key, 16);
     klv_encode_ber4_length(pb, size);
 
@@ -2128,7 +2144,7 @@ static void mxf_write_index_table_segment_header(AVFormatContext *s, int64_t sta
 
     // real slice count - 1
     mxf_write_local_tag(s, 1, 0x3F08);
-    avio_w8(pb, !mxf->edit_unit_byte_count); // only one slice for CBR
+    avio_w8(pb, mxf_index_slice_count(s));
 
     // delta entry array
     mxf_write_local_tag(s, 8 + mxf_index_delta_count(s)*6, 0x3F09);
@@ -2197,15 +2213,15 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             int temporal_offset = 0;
 
             // split the index table so that each segment fits 2 byte local set lengths
-            if (!(i % MXF_INDEX_MAX_ENTRIES)) {
-                int nb_entries = FFMIN(mxf->edit_units_count - i, MXF_INDEX_MAX_ENTRIES);
+            if (!(i % mxf_index_max_entries(s))) {
+                int nb_entries = FFMIN(mxf->edit_units_count - i, mxf_index_max_entries(s));
                 if (i)
                     mxf_write_klv_fill(s);
                 mxf_write_index_table_segment_header(s, mxf->last_indexed_edit_unit + i,
                                                      nb_entries);
-                mxf_write_local_tag(s, 8 + nb_entries*MXF_INDEX_ENTRY_SIZE, 0x3F0A);
+                mxf_write_local_tag(s, 8 + nb_entries*mxf_index_entry_size(s), 0x3F0A);
                 avio_wb32(pb, nb_entries);           // num of entries
-                avio_wb32(pb, MXF_INDEX_ENTRY_SIZE); // size of one entry
+                avio_wb32(pb, mxf_index_entry_size(s)); // size of one entry
             }
 
             if (!(mxf->index_entries[i].flags & 0x33)) { // I-frame
@@ -2255,10 +2271,8 @@ static int mxf_write_index_table_segment(AVFormatContext *s)
             avio_w8(pb, mxf->index_entries[i].flags);
             // stream offset
             avio_wb64(pb, mxf->index_entries[i].offset);
-            if (s->nb_streams > 1)
+            if (mxf_index_slice_count(s))
                 avio_wb32(pb, mxf->index_entries[i].slice_offset);
-            else
-                avio_wb32(pb, 0);
         }
 
         mxf->last_key_index = key_index - mxf->edit_units_count;
@@ -2281,13 +2295,13 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     int err;
 
     if (!mxf->edit_unit_byte_count && mxf->edit_units_count) {
-        unsigned nb_segments = 1 + (mxf->edit_units_count - 1) / MXF_INDEX_MAX_ENTRIES;
+        unsigned nb_segments = 1 + (mxf->edit_units_count - 1) / mxf_index_max_entries(s);
         // key and ber4 length, fixed sets, delta and index entry arrays per segment
         unsigned segment_header_size = 16 + 4 + mxf_index_header_size(s) + 12;
-        unsigned full_segment_size = segment_header_size + MXF_INDEX_MAX_ENTRIES * MXF_INDEX_ENTRY_SIZE;
+        unsigned full_segment_size = segment_header_size + mxf_index_max_entries(s) * mxf_index_entry_size(s);
         // segments are KAG aligned, the last one by the fill below
         index_byte_count = (uint64_t)nb_segments * segment_header_size +
-                           (uint64_t)mxf->edit_units_count * MXF_INDEX_ENTRY_SIZE +
+                           (uint64_t)mxf->edit_units_count * mxf_index_entry_size(s) +
                            (uint64_t)(nb_segments - 1) * klv_fill_size(full_segment_size);
     } else if (mxf->edit_unit_byte_count && indexsid)
         index_byte_count = 16 + 4 + mxf_index_header_size(s);
@@ -3199,7 +3213,6 @@ static int mxf_init(AVFormatContext *s)
                 mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->ch_layout.nb_channels) >> 3;
                 sc->index = INDEX_WAV;
             } else {
-                mxf->slice_count = 1;
                 sc->frame_size = st->codecpar->ch_layout.nb_channels *
                                  av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) *
                                  av_get_bits_per_sample(st->codecpar->codec_id) / 8;
