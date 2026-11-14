@@ -813,9 +813,9 @@ static void mxf_write_preface(AVFormatContext *s)
     mxf_write_local_tag(s, 8 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count), 0x3B0A);
     mxf_write_essence_container_refs(s);
 
-    // write dm_scheme_refs
+    // write dm_scheme_refs, empty batch of ULs
     mxf_write_local_tag(s, 8, 0x3B0B);
-    avio_wb64(pb, 0);
+    mxf_write_refs_count(pb, 0);
 }
 
 /*
