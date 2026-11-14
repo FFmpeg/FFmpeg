@@ -3474,6 +3474,13 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    // codecs without sequence headers: every key frame is a random access point
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        st->codecpar->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
+        st->codecpar->codec_id != AV_CODEC_ID_H264 &&
+        pkt->flags & AV_PKT_FLAG_KEY)
+        ie.flags |= 0x80;
+
     if (mxf->cbr_index) {
         if (pkt->size != sc->frame_size && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             av_log(s, AV_LOG_ERROR, "track %d: frame size does not match index unit size, %d != %d\n",
