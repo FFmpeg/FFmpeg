@@ -333,7 +333,7 @@ static int config_input(AVFilterLink *inlink)
         s->calc_avgy = calc_avgy16;
     }
 
-    s->histogram = av_calloc(1 << s->depth, sizeof(*s->histogram));
+    s->histogram = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histogram));
     if (!s->histogram)
         return AVERROR(ENOMEM);
 
