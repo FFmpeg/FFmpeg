@@ -824,7 +824,7 @@ static int mov_write_esds_tag(AVIOContext *pb, MOVTrack *track) // Basic
 
     // ES descriptor
     put_descr(pb, 0x03, 3 + 5+13 + decoder_specific_info_len + 5+1);
-    avio_wb16(pb, track->track_id);
+    avio_wb16(pb, 0); // ES_ID as stored in the file
     avio_w8(pb, 0x00); // flags (= no flags)
 
     // DecoderConfig descriptor

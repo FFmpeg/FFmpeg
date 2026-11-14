@@ -1,4 +1,4 @@
-45ed80eea8de7503fb62859b6cef15d5 *tests/data/fate/adtstoasc_ticket3715.mov
+dca676592ca95df2c617b810e8409508 *tests/data/fate/adtstoasc_ticket3715.mov
 33324 tests/data/fate/adtstoasc_ticket3715.mov
 #extradata 0:        2, 0x00340022
 #tb 0: 1/44100
