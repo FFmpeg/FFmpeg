@@ -3378,6 +3378,10 @@ ffmpeg -i file.mpg -c copy \
 
 @section mxf, mxf_d10, mxf_opatom
 
+The @code{mxf_opatom} muxer writes one clip-wrapped essence element.
+It does not accept ProRes or ancillary data, including EIA-608 captions
+mapped to ANC. For ProRes, use @code{-f mxf} when OP1a is suitable.
+
 MXF muxer.
 
 @subsection Options

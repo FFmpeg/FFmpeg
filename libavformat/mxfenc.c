@@ -105,6 +105,7 @@ typedef struct MXFStreamContext {
     int index;               ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
     const UID *container_ul;
+    UID clip_container_ul;   ///< clip wrapping essence container ul, used by OPAtom
     int order;               ///< interleaving order if dts are equal
     int interlaced;          ///< whether picture is interlaced
     int field_dominance;     ///< tff=1, bff=2
@@ -560,10 +561,9 @@ static void klv_encode_ber4_length(AVIOContext *pb, int len)
     avio_wb24(pb, len);
 }
 
-static void klv_encode_ber9_length(AVIOContext *pb, uint64_t len)
+static void klv_encode_ber8_length(AVIOContext *pb, uint64_t len)
 {
-    avio_w8(pb, 0x80 + 8);
-    avio_wb64(pb, len);
+    avio_wb64(pb, (UINT64_C(0x87) << 56) | (len & UINT64_C(0x00FFFFFFFFFFFFFF)));
 }
 
 /*
@@ -3072,9 +3072,22 @@ static int mxf_init(AVFormatContext *s)
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     int64_t timestamp = 0;
 
-    if (IS_OPATOM(s) && s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
-        return -1;
+    if (IS_OPATOM(s)) {
+        const AVCodecParameters *par;
+
+        if (s->nb_streams != 1) {
+            av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
+            return -1;
+        }
+        par = s->streams[0]->codecpar;
+        // This muxer writes one clip KLV; ProRes and ANC mappings use frame elements.
+        if (par->codec_id == AV_CODEC_ID_PRORES ||
+            (par->codec_type != AVMEDIA_TYPE_VIDEO &&
+             par->codec_type != AVMEDIA_TYPE_AUDIO)) {
+            av_log(s, AV_LOG_ERROR, "%s is not supported in MXF OPAtom\n",
+                   avcodec_get_name(par->codec_id));
+            return AVERROR_PATCHWELCOME;
+        }
     }
 
     if (!av_dict_get(s->metadata, "comment_", NULL, AV_DICT_IGNORE_SUFFIX))
@@ -3264,16 +3277,12 @@ static int mxf_init(AVFormatContext *s)
 
         memcpy(sc->track_essence_element_key, mxf_essence_container_uls[sc->index].element_ul, 15);
         sc->track_essence_element_key[15] = present[sc->index];
-        if (IS_OPATOM(s) && st->codecpar->codec_id == AV_CODEC_ID_DNXHD) {
-            // clip-wrapping requires 0x0D per ST2019-4:2009 or 0x06 per previous version ST2019-4:2008
-            // we choose to use 0x06 instead 0x0D to be compatible with AVID systems
-            // and produce mxf files with the most relevant flavour for opatom
-            sc->track_essence_element_key[14] = 0x06;
-        }
         // ANC element numbers start at 1, ST 436-1
         if (sc->index == INDEX_S436M)
             sc->track_essence_element_key[15]++;
-        PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
+        if (!IS_OPATOM(s)) {
+            PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
+        }
 
         if (!present[sc->index])
             mxf->essence_container_count++;
@@ -3412,7 +3421,47 @@ static int mxf_write_opatom_body_partition(AVFormatContext *s)
         return err;
     mxf_write_klv_fill(s);
     avio_write(pb, sc->track_essence_element_key, 16);
-    klv_encode_ber9_length(pb, mxf->body_offset);
+    // 8 byte BER length for clip wrapping, ST 381-3 7.2 and ST 382 6.5.5
+    klv_encode_ber8_length(pb, mxf->body_offset);
+    return 0;
+}
+
+/**
+ * OPAtom essence is written as a single clip wrapped KLV,
+ * use the clip wrapping essence container label and element type.
+ */
+static int mxf_opatom_clip_wrap(AVFormatContext *s)
+{
+    AVStream *st = s->streams[0];
+    MXFStreamContext *sc = st->priv_data;
+    int wrapping_byte, element_type;
+
+    switch (st->codecpar->codec_id) {
+    case AV_CODEC_ID_MPEG2VIDEO: // ST 381-1
+    case AV_CODEC_ID_H264:       // ST 381-3
+        wrapping_byte = 15; element_type = 0x06; break;
+    case AV_CODEC_ID_DVVIDEO:    // ST 383
+        wrapping_byte = 15; element_type = 0x02; break;
+    case AV_CODEC_ID_DNXHD:      // ST 2019-4
+        wrapping_byte = 14; element_type = 0x0D; break;
+    case AV_CODEC_ID_JPEG2000:   // ST 422
+        wrapping_byte = 14; element_type = 0x09; break;
+    case AV_CODEC_ID_FFV1:       // RDD 48
+        wrapping_byte = 14; element_type = 0x1E; break;
+    case AV_CODEC_ID_PCM_S16LE:  // ST 382
+    case AV_CODEC_ID_PCM_S24LE:
+        wrapping_byte = 14; element_type = 0x02; break;
+    default:
+        av_log(s, AV_LOG_ERROR, "%s has no clip wrapping essence container, not supported in OPAtom\n",
+               avcodec_get_name(st->codecpar->codec_id));
+        return AVERROR_PATCHWELCOME;
+    }
+
+    memcpy(sc->clip_container_ul, *sc->container_ul, 16);
+    sc->clip_container_ul[wrapping_byte] = 0x02;
+    sc->container_ul = &sc->clip_container_ul;
+    sc->track_essence_element_key[14] = element_type;
+    PRINT_KEY(s, "track essence element key", sc->track_essence_element_key);
     return 0;
 }
 
@@ -3424,6 +3473,9 @@ static int mxf_write_opatom_packet(AVFormatContext *s, AVPacket *pkt, MXFIndexEn
     int err;
 
     if (!mxf->header_written) {
+        if ((err = mxf_opatom_clip_wrap(s)) < 0)
+            return err;
+
         if ((err = mxf_write_partition(s, 0, 0, header_open_partition_key, 1)) < 0)
             return err;
         mxf_write_klv_fill(s);
@@ -3645,6 +3697,11 @@ static int mxf_write_footer(AVFormatContext *s)
         (IS_OPATOM(s) && !mxf->body_partition_offset)) {
         /* reason could be invalid options/not supported codec/out of memory */
         return AVERROR_UNKNOWN;
+    }
+
+    if (IS_OPATOM(s) && mxf->body_offset >= (UINT64_C(1) << 56)) {
+        av_log(s, AV_LOG_ERROR, "MXF OPAtom essence exceeds the 8-byte BER length limit\n");
+        return AVERROR(EFBIG);
     }
 
     mxf->duration = mxf->last_indexed_edit_unit + mxf->edit_units_count;
@@ -3960,7 +4017,6 @@ const FFOutputFormat ff_mxf_opatom_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_DNXHD,
-    .p.subtitle_codec  = AV_CODEC_ID_EIA_608,
     .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
