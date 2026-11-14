@@ -444,7 +444,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const int width = s->planewidth[p];
         const int mid = s->mid;
         double max_hval_log;
-        unsigned max_hval = 0;
+        unsigned max_hval = 1;
         int starty, startx;
 
         if (!((1 << k) & s->components))
