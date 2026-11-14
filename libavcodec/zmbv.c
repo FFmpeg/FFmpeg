@@ -27,8 +27,9 @@
 #include <stddef.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
 #include "libavutil/common.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
@@ -60,11 +61,10 @@ typedef struct ZmbvContext {
     AVCodecContext *avctx;
 
     int bpp;
-    int alloc_bpp;
     unsigned int decomp_size;
     uint8_t* decomp_buf;
     uint8_t pal[768];
-    uint8_t *prev, *cur;
+    AVFrame *prev_frame;
     int width, height;
     int fmt;
     int comp;
@@ -74,26 +74,69 @@ typedef struct ZmbvContext {
     int decomp_len;
     int got_keyframe;
     FFZStream zstream;
-    int (*decode_xor)(struct ZmbvContext *c);
+    int (*decode_xor)(struct ZmbvContext *c, uint8_t *output,
+                      ptrdiff_t out_linesize, const uint8_t *prev,
+                      ptrdiff_t prev_linesize);
 } ZmbvContext;
+
+static int get_video_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
+    int ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
+        return ret;
+
+    if (frame->buf[0] && frame->extended_data == frame->data &&
+        !frame->extended_buf && !frame->hw_frames_ctx)
+        return 0;
+
+    av_log(avctx, AV_LOG_ERROR, "Invalid software video buffer from get_buffer2()\n");
+    av_frame_unref(frame);
+    return AVERROR(EINVAL);
+}
+
+/* Reference a software video frame's buffers and layout. The destination is
+ * either a fresh output frame or a reference previously set by this helper.
+ */
+static int ref_video_buffers(AVFrame *dst, const AVFrame *src)
+{
+    av_assert1(dst != src);
+    av_assert1(dst->extended_data == dst->data && !dst->extended_buf &&
+               !dst->hw_frames_ctx);
+    av_assert1(!dst->side_data && !dst->metadata && !dst->private_ref &&
+               !dst->opaque && !dst->opaque_ref);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(dst->buf); i++) {
+        int ret = av_buffer_replace(&dst->buf[i], src->buf[i]);
+        if (ret < 0) {
+            av_frame_unref(dst);
+            return ret;
+        }
+    }
+
+    memcpy(dst->data, src->data, sizeof(dst->data));
+    memcpy(dst->linesize, src->linesize, sizeof(dst->linesize));
+    dst->format = src->format;
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    return 0;
+}
 
 /**
  * Decode XOR'ed frame - 8bpp version
  */
 
-static int zmbv_decode_xor_8(ZmbvContext *c)
+static int zmbv_decode_xor_8(ZmbvContext *c, uint8_t *output,
+                             ptrdiff_t out_linesize, const uint8_t *prev,
+                             ptrdiff_t prev_linesize)
 {
     uint8_t *src = c->decomp_buf;
-    uint8_t *output, *prev;
     int8_t *mvec;
     int x, y;
     int d, dx, dy, bw2, bh2;
     int block;
     int i, j;
     int mx, my;
-
-    output = c->cur;
-    prev = c->prev;
 
     if (c->flags & ZMBV_DELTAPAL) {
         for (i = 0; i < 768; i++)
@@ -107,7 +150,8 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
     for (y = 0; y < c->height; y += c->bh) {
         bh2 = ((c->height - y) > c->bh) ? c->bh : (c->height - y);
         for (x = 0; x < c->width; x += c->bw) {
-            uint8_t *out, *tprev;
+            uint8_t *out;
+            const uint8_t *tprev;
 
             d = mvec[block] & 1;
             dx = mvec[block] >> 1;
@@ -118,7 +162,7 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
 
             /* copy block - motion vectors out of bounds are used to zero blocks */
             out = output + x;
-            tprev = prev + x + dx + dy * c->width;
+            tprev = prev + x + dx + dy * prev_linesize;
             mx = x + dx;
             my = y + dy;
             for (j = 0; j < bh2; j++) {
@@ -134,8 +178,8 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
                             out[i] = tprev[i];
                     }
                 }
-                out += c->width;
-                tprev += c->width;
+                out += out_linesize;
+                tprev += prev_linesize;
             }
 
             if (d) { /* apply XOR'ed difference */
@@ -145,12 +189,12 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
                 for (j = 0; j < bh2; j++) {
                     for (i = 0; i < bw2; i++)
                         out[i] ^= *src++;
-                    out += c->width;
+                    out += out_linesize;
                 }
             }
         }
-        output += c->width * c->bh;
-        prev += c->width * c->bh;
+        output += out_linesize * c->bh;
+        prev += prev_linesize * c->bh;
     }
     if (src - c->decomp_buf != c->decomp_len)
         av_log(c->avctx, AV_LOG_ERROR, "Used %td of %i bytes\n",
@@ -162,19 +206,21 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
  * Decode XOR'ed frame - 15bpp and 16bpp version
  */
 
-static int zmbv_decode_xor_16(ZmbvContext *c)
+static int zmbv_decode_xor_16(ZmbvContext *c, uint8_t *output,
+                              ptrdiff_t out_linesize, const uint8_t *prev,
+                              ptrdiff_t prev_linesize)
 {
     uint8_t *src = c->decomp_buf;
-    uint16_t *output, *prev;
+    uint16_t *dst = (uint16_t *)output;
+    const uint16_t *ref = (const uint16_t *)prev;
+    ptrdiff_t out_step = out_linesize / 2;
+    ptrdiff_t prev_step = prev_linesize / 2;
     int8_t *mvec;
     int x, y;
     int d, dx, dy, bw2, bh2;
     int block;
     int i, j;
     int mx, my;
-
-    output = (uint16_t*)c->cur;
-    prev = (uint16_t*)c->prev;
 
     mvec = (int8_t*)src;
     src += ((c->bx * c->by * 2 + 3) & ~3);
@@ -183,7 +229,8 @@ static int zmbv_decode_xor_16(ZmbvContext *c)
     for (y = 0; y < c->height; y += c->bh) {
         bh2 = ((c->height - y) > c->bh) ? c->bh : (c->height - y);
         for (x = 0; x < c->width; x += c->bw) {
-            uint16_t *out, *tprev;
+            uint16_t *out;
+            const uint16_t *tprev;
 
             d = mvec[block] & 1;
             dx = mvec[block] >> 1;
@@ -193,8 +240,8 @@ static int zmbv_decode_xor_16(ZmbvContext *c)
             bw2 = ((c->width - x) > c->bw) ? c->bw : (c->width - x);
 
             /* copy block - motion vectors out of bounds are used to zero blocks */
-            out = output + x;
-            tprev = prev + x + dx + dy * c->width;
+            out = dst + x;
+            tprev = ref + x + dx + dy * prev_step;
             mx = x + dx;
             my = y + dy;
             for (j = 0; j < bh2; j++) {
@@ -210,25 +257,25 @@ static int zmbv_decode_xor_16(ZmbvContext *c)
                             out[i] = tprev[i];
                     }
                 }
-                out += c->width;
-                tprev += c->width;
+                out += out_step;
+                tprev += prev_step;
             }
 
             if (d) { /* apply XOR'ed difference */
                 if (c->decomp_len - (src - c->decomp_buf) < bw2 * bh2 * 2)
                     return AVERROR_INVALIDDATA;
-                out = output + x;
+                out = dst + x;
                 for (j = 0; j < bh2; j++){
                     for (i = 0; i < bw2; i++) {
                         out[i] ^= *((uint16_t*)src);
                         src += 2;
                     }
-                    out += c->width;
+                    out += out_step;
                 }
             }
         }
-        output += c->width * c->bh;
-        prev += c->width * c->bh;
+        dst += out_step * c->bh;
+        ref += prev_step * c->bh;
     }
     if (src - c->decomp_buf != c->decomp_len)
         av_log(c->avctx, AV_LOG_ERROR, "Used %td of %i bytes\n",
@@ -241,22 +288,20 @@ static int zmbv_decode_xor_16(ZmbvContext *c)
  * Decode XOR'ed frame - 24bpp version
  */
 
-static int zmbv_decode_xor_24(ZmbvContext *c)
+static int zmbv_decode_xor_24(ZmbvContext *c, uint8_t *output,
+                              ptrdiff_t out_linesize, const uint8_t *prev,
+                              ptrdiff_t prev_linesize)
 {
     uint8_t *src = c->decomp_buf;
-    uint8_t *output, *prev;
+    ptrdiff_t stride = out_linesize;
+    ptrdiff_t pstride = prev_linesize;
     int8_t *mvec;
     int x, y;
     int d, dx, dy, bw2, bh2;
     int block;
     int i, j;
     int mx, my;
-    int stride;
 
-    output = c->cur;
-    prev = c->prev;
-
-    stride = c->width * 3;
     mvec = (int8_t*)src;
     src += ((c->bx * c->by * 2 + 3) & ~3);
 
@@ -264,7 +309,8 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
     for (y = 0; y < c->height; y += c->bh) {
         bh2 = ((c->height - y) > c->bh) ? c->bh : (c->height - y);
         for (x = 0; x < c->width; x += c->bw) {
-            uint8_t *out, *tprev;
+            uint8_t *out;
+            const uint8_t *tprev;
 
             d = mvec[block] & 1;
             dx = mvec[block] >> 1;
@@ -275,7 +321,7 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
 
             /* copy block - motion vectors out of bounds are used to zero blocks */
             out = output + x * 3;
-            tprev = prev + (x + dx) * 3 + dy * stride;
+            tprev = prev + (x + dx) * 3 + dy * pstride;
             mx = x + dx;
             my = y + dy;
             for (j = 0; j < bh2; j++) {
@@ -297,7 +343,7 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
                     }
                 }
                 out += stride;
-                tprev += stride;
+                tprev += pstride;
             }
 
             if (d) { /* apply XOR'ed difference */
@@ -315,7 +361,7 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
             }
         }
         output += stride * c->bh;
-        prev += stride * c->bh;
+        prev += pstride * c->bh;
     }
     if (src - c->decomp_buf != c->decomp_len)
         av_log(c->avctx, AV_LOG_ERROR, "Used %td of %i bytes\n",
@@ -328,19 +374,21 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
  * Decode XOR'ed frame - 32bpp version
  */
 
-static int zmbv_decode_xor_32(ZmbvContext *c)
+static int zmbv_decode_xor_32(ZmbvContext *c, uint8_t *output,
+                              ptrdiff_t out_linesize, const uint8_t *prev,
+                              ptrdiff_t prev_linesize)
 {
     uint8_t *src = c->decomp_buf;
-    uint32_t *output, *prev;
+    uint32_t *dst = (uint32_t *)output;
+    const uint32_t *ref = (const uint32_t *)prev;
+    ptrdiff_t out_step = out_linesize / 4;
+    ptrdiff_t prev_step = prev_linesize / 4;
     int8_t *mvec;
     int x, y;
     int d, dx, dy, bw2, bh2;
     int block;
     int i, j;
     int mx, my;
-
-    output = (uint32_t*)c->cur;
-    prev = (uint32_t*)c->prev;
 
     mvec = (int8_t*)src;
     src += ((c->bx * c->by * 2 + 3) & ~3);
@@ -349,7 +397,8 @@ static int zmbv_decode_xor_32(ZmbvContext *c)
     for (y = 0; y < c->height; y += c->bh) {
         bh2 = ((c->height - y) > c->bh) ? c->bh : (c->height - y);
         for (x = 0; x < c->width; x += c->bw) {
-            uint32_t *out, *tprev;
+            uint32_t *out;
+            const uint32_t *tprev;
 
             d = mvec[block] & 1;
             dx = mvec[block] >> 1;
@@ -359,8 +408,8 @@ static int zmbv_decode_xor_32(ZmbvContext *c)
             bw2 = ((c->width - x) > c->bw) ? c->bw : (c->width - x);
 
             /* copy block - motion vectors out of bounds are used to zero blocks */
-            out = output + x;
-            tprev = prev + x + dx + dy * c->width;
+            out = dst + x;
+            tprev = ref + x + dx + dy * prev_step;
             mx = x + dx;
             my = y + dy;
             for (j = 0; j < bh2; j++) {
@@ -376,25 +425,25 @@ static int zmbv_decode_xor_32(ZmbvContext *c)
                             out[i] = tprev[i];
                     }
                 }
-                out += c->width;
-                tprev += c->width;
+                out += out_step;
+                tprev += prev_step;
             }
 
             if (d) { /* apply XOR'ed difference */
                 if (c->decomp_len - (src - c->decomp_buf) < bw2 * bh2 * 4)
                     return AVERROR_INVALIDDATA;
-                out = output + x;
+                out = dst + x;
                 for (j = 0; j < bh2; j++){
                     for (i = 0; i < bw2; i++) {
                         out[i] ^= *((uint32_t *) src);
                         src += 4;
                     }
-                    out += c->width;
+                    out += out_step;
                 }
             }
         }
-        output += c->width * c->bh;
-        prev   += c->width * c->bh;
+        dst += out_step * c->bh;
+        ref += prev_step * c->bh;
     }
     if (src - c->decomp_buf != c->decomp_len)
         av_log(c->avctx, AV_LOG_ERROR, "Used %td of %i bytes\n",
@@ -405,9 +454,11 @@ static int zmbv_decode_xor_32(ZmbvContext *c)
 /**
  * Decode intraframe
  */
-static int zmbv_decode_intra(ZmbvContext *c)
+static int zmbv_decode_intra(ZmbvContext *c, uint8_t *dst,
+                             ptrdiff_t dst_linesize)
 {
     uint8_t *src = c->decomp_buf;
+    int y;
 
     /* make the palette available on the way out */
     if (c->fmt == ZMBV_FMT_8BPP) {
@@ -415,7 +466,11 @@ static int zmbv_decode_intra(ZmbvContext *c)
         src += 768;
     }
 
-    memcpy(c->cur, src, c->width * c->height * (c->bpp / 8));
+    for (y = 0; y < c->height; y++) {
+        memcpy(dst, src, c->stride);
+        dst += dst_linesize;
+        src += c->stride;
+    }
     return 0;
 }
 
@@ -509,19 +564,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_UNKNOWN;
         }
 
-        if (c->alloc_bpp < c->bpp) {
-            c->cur  = av_realloc_f(c->cur, avctx->width * avctx->height,  (c->bpp / 8));
-            c->prev = av_realloc_f(c->prev, avctx->width * avctx->height,  (c->bpp / 8));
-            c->alloc_bpp = c->bpp;
-        }
         c->bx = (c->width + c->bw - 1) / c->bw;
         c->by = (c->height+ c->bh - 1) / c->bh;
-        if (!c->cur || !c->prev) {
-            c->alloc_bpp = 0;
-            return AVERROR(ENOMEM);
-        }
-        memset(c->cur, 0, avctx->width * avctx->height * (c->bpp / 8));
-        memset(c->prev, 0, avctx->width * avctx->height * (c->bpp / 8));
+        /* A keyframe may change the pixel format; drop the reference frame
+         * so a P frame never references a frame in a different format.
+         */
+        av_frame_unref(c->prev_frame);
         c->got_keyframe = 1;
     }
     if (c->flags & ZMBV_KEYFRAME) {
@@ -535,6 +583,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (!c->got_keyframe) {
         av_log(avctx, AV_LOG_ERROR, "Error! Got no format or no keyframe!\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (!(c->flags & ZMBV_KEYFRAME) && !c->prev_frame->data[0]) {
+        av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -565,50 +617,39 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         av_log(avctx, AV_LOG_ERROR, "decompressed size %d is incorrect, expected %d\n", c->decomp_len, expected_size);
         return AVERROR_INVALIDDATA;
     }
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+
+    /* Decode directly into the output frame. It is kept as the reference
+     * frame for the next P frame, hence the reference flag.
+     */
+    if ((ret = get_video_buffer(avctx, frame)) < 0)
         return ret;
 
     if (c->flags & ZMBV_KEYFRAME) {
         frame->flags |= AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_I;
-        zmbv_decode_intra(c);
+        zmbv_decode_intra(c, frame->data[0], frame->linesize[0]);
     } else {
         frame->flags &= ~AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_P;
         if (c->decomp_len < 2LL * ((c->width + c->bw - 1) / c->bw) * ((c->height + c->bh - 1) / c->bh))
             return AVERROR_INVALIDDATA;
         if (c->decomp_len) {
-            if ((ret = c->decode_xor(c)) < 0)
+            if ((ret = c->decode_xor(c, frame->data[0], frame->linesize[0],
+                                     c->prev_frame->data[0],
+                                     c->prev_frame->linesize[0])) < 0)
                 return ret;
         }
     }
 
-    /* update frames */
-    {
-        uint8_t *out, *src;
-        int j;
-
-        out = frame->data[0];
-        src = c->cur;
-        switch (c->fmt) {
-        case ZMBV_FMT_8BPP:
-            for (j = 0; j < 256; j++)
-                AV_WN32(&frame->data[1][j * 4], 0xFFU << 24 | AV_RB24(&c->pal[j * 3]));
-            av_fallthrough;
-        case ZMBV_FMT_15BPP:
-        case ZMBV_FMT_16BPP:
-#ifdef ZMBV_ENABLE_24BPP
-        case ZMBV_FMT_24BPP:
-#endif
-        case ZMBV_FMT_32BPP:
-            av_image_copy_plane(out, frame->linesize[0], src, c->stride,
-                                c->stride, c->height);
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Cannot handle format %i\n", c->fmt);
-        }
-        FFSWAP(uint8_t *, c->cur, c->prev);
+    if (c->fmt == ZMBV_FMT_8BPP) {
+        for (int j = 0; j < 256; j++)
+            AV_WN32(&frame->data[1][j * 4], 0xFFU << 24 | AV_RB24(&c->pal[j * 3]));
     }
+
+    ret = ref_video_buffers(c->prev_frame, frame);
+    if (ret < 0)
+        return ret;
+
     *got_frame = 1;
 
     /* always report that the buffer was completely consumed */
@@ -641,7 +682,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
+    c->prev_frame = av_frame_alloc();
+    if (!c->prev_frame)
+        return AVERROR(ENOMEM);
+
     return ff_inflate_init(&c->zstream, avctx);
+}
+
+static av_cold void decode_flush(AVCodecContext *avctx)
+{
+    ZmbvContext *const c = avctx->priv_data;
+
+    av_frame_unref(c->prev_frame);
+    c->got_keyframe = 0;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
@@ -649,9 +702,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     ZmbvContext * const c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
-
-    av_freep(&c->cur);
-    av_freep(&c->prev);
+    av_frame_free(&c->prev_frame);
     ff_inflate_end(&c->zstream);
 
     return 0;
@@ -664,6 +715,7 @@ const FFCodec ff_zmbv_decoder = {
     .p.id           = AV_CODEC_ID_ZMBV,
     .priv_data_size = sizeof(ZmbvContext),
     .init           = decode_init,
+    .flush          = decode_flush,
     .close          = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
