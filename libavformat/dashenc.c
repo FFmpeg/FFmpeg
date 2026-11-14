@@ -1007,10 +1007,8 @@ static int write_manifest(AVFormatContext *s, int final)
     }
     out = c->mpd_out;
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    avio_printf(out, "<MPD xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-                "\txmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
+    avio_printf(out, "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
                 "\txmlns:xlink=\"http://www.w3.org/1999/xlink\"\n"
-                "\txsi:schemaLocation=\"urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd\"\n"
                 "\tprofiles=\"");
     if (c->profile & MPD_PROFILE_DASH)
          avio_printf(out, "%s%s", "urn:mpeg:dash:profile:isoff-live:2011", c->profile & MPD_PROFILE_DVB ? "," : "\"\n");
