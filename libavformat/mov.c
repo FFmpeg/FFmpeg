@@ -9835,10 +9835,12 @@ fail:
     return ret;
 }
 
-static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
+static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version,
+                              uint32_t size)
 {
     HEIFItem *item = NULL;
     int entries;
+    int item_id_size = version ? 4 : 2;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
     int ret;
 
@@ -9875,6 +9877,11 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     if (!entries) {
         av_log(c->fc, AV_LOG_ERROR,
                "Derived image item references no input images\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if ((int64_t)entries * item_id_size > (int64_t)size - item_id_size - 2) {
+        av_log(c->fc, AV_LOG_ERROR, "iref dimg entry count %d exceeds the sub-box size\n",
+               entries);
         return AVERROR_INVALIDDATA;
     }
 
@@ -10014,7 +10021,7 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         type = avio_rl32(pb);
         switch (type) {
         case MKTAG('d','i','m','g'):
-            ret = mov_read_iref_dimg(c, pb, version);
+            ret = mov_read_iref_dimg(c, pb, version, size - 8);
             if (ret < 0)
                 return ret;
             break;
