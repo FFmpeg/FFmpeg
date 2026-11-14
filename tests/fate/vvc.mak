@@ -6,6 +6,7 @@ VVC_SAMPLES_10BIT =       \
     APSLMCS_D_1           \
     APSMULT_A_4           \
     AUD_A_3               \
+    BOUNDARY_A_3          \
     BUMP_A_2              \
     DCI_A_3               \
     HRD_A_3               \
@@ -36,7 +37,6 @@ VVC_SAMPLES_444_10BIT =   \
     ACT_A_3               \
 
 # not tested:
-# BOUNDARY_A_3 (too big)
 # OPI_B_3 (Inter layer ref support needed)
 # VPS_A_3 (Inter layer ref support needed)
 
