@@ -91,7 +91,7 @@ static int config_input(AVFilterLink *inlink)
     s->planenames[2] = s->is_rgb ? 'B' : 'V';
     s->planenames[3] = 'A';
 
-    s->histogram = av_malloc_array(1 << s->depth, sizeof(*s->histogram));
+    s->histogram = av_calloc(1 << (s->depth > 8 ? 16 : 8), sizeof(*s->histogram));
     if (!s->histogram)
         return AVERROR(ENOMEM);
 
