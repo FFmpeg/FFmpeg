@@ -169,6 +169,8 @@ Go to @url{https://github.com/v-novaltd/LCEVCdec} and follow the instructions
 for installing the library. Then pass @code{--enable-liblcevc-dec} to configure to
 enable it.
 
+LCEVCdec 4.2.0 or later is required.
+
 @float NOTE
 LCEVCdec is under the BSD-3-Clause-Clear License.
 @end float
