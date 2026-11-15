@@ -34199,6 +34199,9 @@ Default value of this option is @file{tcp://localhost:5555}. You may
 want to alter this value to your needs, but do not forget to escape any
 ':' signs (see @ref{filtergraph escaping}).
 
+Commands are not authenticated, protect a non-loopback
+@option{bind_address} with a firewall.
+
 The received message must be in the form:
 @example
 @var{TARGET} @var{COMMAND} [@var{ARG}]
