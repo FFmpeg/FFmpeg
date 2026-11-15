@@ -1150,7 +1150,6 @@ static const AVClass avisynth_demuxer_class = {
 const FFInputFormat ff_avisynth_demuxer = {
     .p.name         = "avisynth",
     .p.long_name    = NULL_IF_CONFIG_SMALL("AviSynth script"),
-    .p.extensions   = "avs",
     .p.priv_class   = &avisynth_demuxer_class,
     .priv_data_size = sizeof(AviSynthContext),
     .read_header    = avisynth_read_header,

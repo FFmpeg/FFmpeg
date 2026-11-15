@@ -282,7 +282,7 @@ DirectShowSource("C:\path to your file\yourfile.asf")
 @end example
 ... and then feed that text file to ffmpeg:
 @example
-ffmpeg -i input.avs
+ffmpeg -f avisynth -i input.avs
 @end example
 
 For ANY other help on AviSynth, please visit the
