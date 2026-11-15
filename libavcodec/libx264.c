@@ -400,6 +400,10 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic,
 
     int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
     int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
+    /* x264 rounds the macroblock row count up to an even number for
+     * interlaced and fake-interlaced encoding and reads quant_offsets
+     * over that grid, so size the map for it. */
+    int mby_alloc = FFALIGN(mby, 2);
     int qp_range = 51 + 6 * (x4->params.i_bitdepth - 8);
     int nb_rois;
     const AVRegionOfInterest *roi;
@@ -428,7 +432,7 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic,
     }
     nb_rois = size / roi_size;
 
-    qoffsets = av_calloc(mbx * mby, sizeof(*qoffsets));
+    qoffsets = av_calloc(mbx * mby_alloc, sizeof(*qoffsets));
     if (!qoffsets)
         return AVERROR(ENOMEM);
 
@@ -442,6 +446,14 @@ static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic,
 
         starty = FFMIN(mby, roi->top / MB_SIZE);
         endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
+        if (x4->params.b_interlaced && starty < endy) {
+            /* A macroblock pair may be field coded, in which case each of
+             * its two rows covers every other line of the pair's 32 lines.
+             * Apply the offset to both rows of each pair the region
+             * touches. */
+            starty &= ~1;
+            endy    = FFALIGN(endy, 2);
+        }
         startx = FFMIN(mbx, roi->left / MB_SIZE);
         endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
 
