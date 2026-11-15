@@ -192,7 +192,7 @@ void ff_network_wakeup_close(FFNetWakeup *w)
 }
 
 int ff_network_wait_fd_wakeup(int fd, int write, int timeout_ms,
-                              const FFNetWakeup *w)
+                              FFNetWakeup *w)
 {
     int ev = write ? POLLOUT : POLLIN;
     struct pollfd p[2] = {
