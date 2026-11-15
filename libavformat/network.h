@@ -168,7 +168,7 @@ void ff_network_wakeup_close(FFNetWakeup *w);
  *         or a negative error code
  */
 int ff_network_wait_fd_wakeup(int fd, int write, int timeout_ms,
-                              const FFNetWakeup *w);
+                              FFNetWakeup *w);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
