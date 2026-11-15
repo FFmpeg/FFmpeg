@@ -32,6 +32,10 @@ fate-matroska-opus-best-fit-ts-sample-gap: CMD = transcode matroska $(TARGET_SAM
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER AAC_DECODER) += fate-matroska-aac-eld-best-fit-ts
 fate-matroska-aac-eld-best-fit-ts: CMD = transcode mov $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4 matroska "-c copy -frames:a 16 -timestamp_scale 1000000" "-c copy" "" "" "-best_fit_ts 1"
 
+# Test the complete LD-SBR timestamp grid independently of MOV edit-list trimming.
+FATE_MATROSKA-$(call REMUX, MATROSKA, MOV_DEMUXER) += fate-matroska-aac-eld-dual-rate-best-fit-ts
+fate-matroska-aac-eld-dual-rate-best-fit-ts: CMD = transcode mov $(TARGET_SAMPLES)/mov/aac-eld-dual-rate.mp4 matroska "-c copy -timestamp_scale 1000000" "-c copy" "" "" "-nofind_stream_info -best_fit_ts 1" "-nofind_stream_info -ignore_editlist 1"
+
 FATE_MATROSKA-$(call FRAMECRC, MATROSKA,, VORBIS_PARSER) += fate-matroska-vorbis-best-fit-ts
 fate-matroska-vorbis-best-fit-ts: CMD = framecrc -best_fit_ts 1 -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -map 0:a -c copy -frames:a 50
 

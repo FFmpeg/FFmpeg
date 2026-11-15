@@ -3250,7 +3250,7 @@ static void mka_setup_exact_timestamps(MatroskaTrack *track, AVStream *st,
         goto keep_clock;
     case AV_CODEC_ID_AAC: {
         MPEG4AudioConfig cfg = { 0 };
-        int frame_length;
+        int frame_length, frame_rate;
 
         if (avpriv_mpeg4audio_get_config2(&cfg, par->extradata,
                                           par->extradata_size, 1,
@@ -3260,14 +3260,18 @@ static void mka_setup_exact_timestamps(MatroskaTrack *track, AVStream *st,
             goto keep_clock;
         }
         // A frame holds its samples at the core rate, whatever the SBR
-        // signalling.
+        // signalling, except low-delay SBR, whose frame length counts
+        // output samples.
         frame_length = cfg.frame_length;
+        frame_rate   = cfg.sample_rate;
+        if (cfg.object_type == AOT_ER_AAC_ELD && cfg.sbr == 1)
+            frame_rate = cfg.ext_sample_rate;
         if (frame_length <= 0 ||
-            (int64_t)frame_length * rate % cfg.sample_rate) {
+            (int64_t)frame_length * rate % frame_rate) {
             reason = "frame length unknown";
             goto keep_clock;
         }
-        samples = (int64_t)frame_length * rate / cfg.sample_rate;
+        samples = (int64_t)frame_length * rate / frame_rate;
         break;
     }
     default:

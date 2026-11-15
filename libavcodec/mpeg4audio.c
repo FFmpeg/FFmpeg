@@ -143,9 +143,26 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
         c->frame_length = c->frame_length_short ? 960 : 1024;
         break;
     case AOT_ER_AAC_LD:
-    case AOT_ER_AAC_ELD:
         c->frame_length_short = get_bits1(gb);
         c->frame_length = c->frame_length_short ? 480 : 512;
+        break;
+    case AOT_ER_AAC_ELD:
+        if (get_bits_left(gb) < 5)
+            return AVERROR_INVALIDDATA;
+        c->frame_length_short = get_bits1(gb);
+        c->frame_length = c->frame_length_short ? 480 : 512;
+        skip_bits(gb, 3); /* resilience flags */
+        c->sbr = get_bits1(gb);
+        if (c->sbr) {
+            int dual_rate;
+
+            if (get_bits_left(gb) < 1)
+                return AVERROR_INVALIDDATA;
+            dual_rate = get_bits1(gb);
+            c->ext_object_type = AOT_SBR;
+            c->ext_sample_rate = c->sample_rate << dual_rate;
+            c->frame_length <<= dual_rate;
+        }
         break;
     case AOT_USAC: {
         int core_sbr_frame_len_idx, sbr_ratio;
@@ -181,7 +198,8 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
     }
     }
 
-    if (c->ext_object_type != AOT_SBR && sync_extension) {
+    if (c->ext_object_type != AOT_SBR && c->object_type != AOT_ER_AAC_ELD &&
+        sync_extension) {
         while (get_bits_left(gb) > 15) {
             if (show_bits(gb, 11) == 0x2b7) { // sync extension
                 get_bits(gb, 11);

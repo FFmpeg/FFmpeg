@@ -39,7 +39,7 @@ typedef struct MPEG4AudioConfig {
     int channels;
     int ps;  ///< -1 implicit, 1 presence
     int frame_length_short;
-    int frame_length; ///< derived value
+    int frame_length; ///< Samples per frame. For ELD with LD-SBR, counted at ext_sample_rate.
 } MPEG4AudioConfig;
 
 extern const int     ff_mpeg4audio_sample_rates[16];
