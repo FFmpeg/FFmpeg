@@ -21,6 +21,7 @@
 #include <float.h> /* FLT_MAX */
 
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
@@ -39,6 +40,15 @@ typedef enum {
     REPEAT_TOP,
     REPEAT_BOTTOM,
 } RepeatedField;
+
+typedef struct IDETSums {
+    int64_t alpha[2];
+    int64_t delta;
+    int64_t gamma[2];
+} IDETSums;
+
+/* below this many luma pixels per job, threading costs more than it saves */
+#define MIN_PIXELS_PER_JOB (128 * 1024)
 
 typedef struct IDETContext {
     const AVClass *class;
@@ -72,6 +82,9 @@ typedef struct IDETContext {
 
     const AVPixFmtDescriptor *csp;
     int eof;
+
+    int nb_threads;
+    IDETSums *sums;
 } IDETContext;
 
 #define OFFSET(x) offsetof(IDETContext, x)
@@ -132,30 +145,32 @@ static const char *rep2str(RepeatedField repeated_field)
     return NULL;
 }
 
-static void filter(AVFilterContext *ctx)
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     IDETContext *idet = ctx->priv;
-    int y, i;
-    int64_t alpha[2]={0};
-    int64_t delta=0;
-    int64_t gamma[2]={0};
-    Type type, best_type;
-    RepeatedField repeat;
-    int match = 0;
-    AVDictionary **metadata = &idet->cur->metadata;
+    IDETSums *sums = &idet->sums[jobnr];
+    int64_t alpha[2] = { 0 };
+    int64_t delta = 0;
+    int64_t gamma[2] = { 0 };
     ff_idet_filter_func filter_line = idet->dsp.filter_line;
 
-    for (i = 0; i < idet->csp->nb_components; i++) {
+    for (int i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->width;
         int h = idet->cur->height;
         int refs = idet->cur->linesize[i];
+        int rows, start, end;
 
         if (i && i<3) {
             w = AV_CEIL_RSHIFT(w, idet->csp->log2_chroma_w);
             h = AV_CEIL_RSHIFT(h, idet->csp->log2_chroma_h);
         }
 
-        for (y = 2; y < h - 2; y++) {
+        /* rows 2 to h - 3 are analyzed, split across the jobs */
+        rows  = FFMAX(h - 4, 0);
+        start = 2 + ff_slice_pos(rows, jobnr,     nb_jobs);
+        end   = 2 + ff_slice_pos(rows, jobnr + 1, nb_jobs);
+
+        for (int y = start; y < end; y++) {
             uint8_t *prev = &idet->prev->data[i][y*idet->prev->linesize[i]];
             uint8_t *cur  = &idet->cur ->data[i][y*refs];
             uint8_t *next = &idet->next->data[i][y*idet->next->linesize[i]];
@@ -164,6 +179,40 @@ static void filter(AVFilterContext *ctx)
             delta          += filter_line(cur-refs,  cur, cur+refs, w);
             gamma[(y^1)&1] += filter_line(cur     , prev, cur     , w);
         }
+    }
+
+    sums->alpha[0] = alpha[0];
+    sums->alpha[1] = alpha[1];
+    sums->delta    = delta;
+    sums->gamma[0] = gamma[0];
+    sums->gamma[1] = gamma[1];
+
+    return 0;
+}
+
+static void filter(AVFilterContext *ctx)
+{
+    IDETContext *idet = ctx->priv;
+    int i;
+    int64_t alpha[2]={0};
+    int64_t delta=0;
+    int64_t gamma[2]={0};
+    Type type, best_type;
+    RepeatedField repeat;
+    int match = 0;
+    AVDictionary **metadata = &idet->cur->metadata;
+    const int64_t pixels = (int64_t)idet->cur->width * idet->cur->height;
+    const int nb_jobs = av_clip64(pixels / MIN_PIXELS_PER_JOB, 1,
+                                  FFMIN(idet->cur->height, idet->nb_threads));
+
+    ff_filter_execute(ctx, filter_slice, NULL, NULL, nb_jobs);
+
+    for (i = 0; i < nb_jobs; i++) {
+        alpha[0] += idet->sums[i].alpha[0];
+        alpha[1] += idet->sums[i].alpha[1];
+        delta    += idet->sums[i].delta;
+        gamma[0] += idet->sums[i].gamma[0];
+        gamma[1] += idet->sums[i].gamma[1];
     }
 
     if      (alpha[0] > idet->interlace_threshold * alpha[1]){
@@ -380,6 +429,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&idet->prev);
     av_frame_free(&idet->cur );
     av_frame_free(&idet->next);
+    av_freep(&idet->sums);
 }
 
 static const enum AVPixelFormat pix_fmts[] = {
@@ -434,11 +484,26 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    IDETContext *idet = ctx->priv;
+
+    idet->nb_threads = FFMAX(1, ff_filter_get_nb_threads(ctx));
+    av_freep(&idet->sums);
+    idet->sums = av_calloc(idet->nb_threads, sizeof(*idet->sums));
+    if (!idet->sums)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static const AVFilterPad idet_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
 };
 
@@ -453,7 +518,7 @@ static const AVFilterPad idet_outputs[] = {
 const FFFilter ff_vf_idet = {
     .p.name        = "idet",
     .p.description = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
-    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY | AVFILTER_FLAG_SLICE_THREADS,
     .p.priv_class  = &idet_class,
     .priv_size     = sizeof(IDETContext),
     .init          = init,

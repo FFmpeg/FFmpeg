@@ -935,6 +935,10 @@ FATE_METADATA_FILTER-$(call ALLYES, $(CROPDETECT_DEPS)) += fate-filter-metadata-
 fate-filter-metadata-cropdetect2: SRC = $(TARGET_SAMPLES)/filter/cropdetect2.mp4
 fate-filter-metadata-cropdetect2: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;movie='$(SRC)',mestimate,cropdetect=mode=mvedges,metadata=mode=print"
 
+IDET_DEPS = FFPROBE LAVFI_INDEV WRAPPED_AVFRAME_DECODER TESTSRC2_FILTER WEAVE_FILTER CONCAT_FILTER CROP_FILTER FORMAT_FILTER SCALE_FILTER IDET_FILTER
+FATE_FILTER_FFPROBE-$(call ALLYES, $(IDET_DEPS)) += fate-filter-metadata-idet
+fate-filter-metadata-idet: CMD = run $(FILTER_METADATA_COMMAND) "testsrc2=s=720x288:r=50:d=0.4,weave[a];testsrc2=s=720x288:r=50:d=0.4,weave=bottom[b];testsrc2=s=720x576:r=25:d=0.4[c];[a][b][c]concat=n=3,format=yuv422p10le,crop=720:575:0:0,format=yuv422p10,idet"
+
 FREEZEDETECT_DEPS = LAVFI_INDEV MPTESTSRC_FILTER SCALE_FILTER FREEZEDETECT_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(FREEZEDETECT_DEPS)) += fate-filter-metadata-freezedetect
 fate-filter-metadata-freezedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;mptestsrc=r=25:d=10:m=51,freezedetect"
