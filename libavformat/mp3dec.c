@@ -416,10 +416,12 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
     mp3_parse_itunes_smpb(s, st, c, spf);
 
     /* Packets keep the skipped samples, so shift the timeline instead. */
-    if (ffstream(st)->start_skip_samples)
+    if (ffstream(st)->start_skip_samples) {
+        st->codecpar->initial_padding = ffstream(st)->start_skip_samples;
         st->start_time = av_rescale_q(ffstream(st)->start_skip_samples,
                                       (AVRational){1, c->sample_rate},
                                       st->time_base);
+    }
 
     if (!mp3->frames && !mp3->header_filesize) {
         ret = -1;
