@@ -21,6 +21,18 @@ fate-caf-alac-remux: CMD = transcode m4a $(TARGET_SAMPLES)/lossless-audio/inside
 FATE_CAF_FFMPEG-$(call REMUX, CAF, AMR_DEMUXER) += fate-caf-amr_nb-remux
 fate-caf-amr_nb-remux: CMD = transcode amr $(TARGET_SAMPLES)/amrnb/4.75k.amr caf "-c copy" "-c copy -t 0.2"
 
+# Rounding each packet duration from a 999 Hz clock must not drop the last packet.
+FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER SETTS_BSF) += fate-caf-amr_wb-rounded-duration-remux
+fate-caf-amr_wb-rounded-duration-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb caf \
+    "-c copy -bsf:a setts=time_base=1/999:prescale=1:duration=NEXT_PTS-PTS -frames:a 1000" \
+    "-c copy -frames:a 2" "-count_packets -show_entries stream=duration_ts,nb_read_packets -of compact" \
+    "" "" "-stream_loop 1"
+
+# Two complete coded packets with 7 samples of priming and 11 of end discard.
+FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER TRIM_BSF) += fate-caf-amr_wb-skip-samples-remux
+fate-caf-amr_wb-skip-samples-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb caf \
+    "-c copy -bsf:a trim=start=7:end=629" "-c copy" "-show_entries stream=initial_padding,duration_ts -of compact"
+
 FATE_CAF_FFMPEG-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-qdm2-remux
 fate-caf-qdm2-remux: CMD = transcode mov $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.mov caf "-c copy" "-c copy -t 0.2"
 

@@ -1,0 +1,11 @@
+7b3ed16616540ac21ca5b480e0aa543f *tests/data/fate/caf-amr_wb-rounded-duration-remux.caf
+62169 tests/data/fate/caf-amr_wb-rounded-duration-remux.caf
+#extradata 0:       29, 0x6ada07cf
+#tb 0: 1/16000
+#media_type 0: audio
+#codec_id 0: amr_wb
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,          0,          0,      320,       61, 0xc8891fe9
+0,        320,        320,      320,       61, 0xc2562027
+stream|duration_ts=320000|nb_read_packets=1000

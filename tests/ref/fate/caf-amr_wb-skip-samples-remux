@@ -1,0 +1,11 @@
+2a5149355add8cfa6aef36da665d62dc *tests/data/fate/caf-amr_wb-skip-samples-remux.caf
+293 tests/data/fate/caf-amr_wb-skip-samples-remux.caf
+#extradata 0:       29, 0x6ada07cf
+#tb 0: 1/16000
+#media_type 0: audio
+#codec_id 0: amr_wb
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,         -7,         -7,      320,       61, 0xc8891fe9, S=1, Skip Samples,       10, 0x00460007
+0,        313,        313,      309,       61, 0xc2562027, S=1, Skip Samples,       10, 0x0042000b
+stream|initial_padding=7|duration_ts=622

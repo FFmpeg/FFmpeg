@@ -25,8 +25,10 @@
 #include "caf.h"
 #include "isom.h"
 #include "avio_internal.h"
+#include "internal.h"
 #include "mux.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/mem.h"
 #include "libavcodec/opus/tab.h"
@@ -37,6 +39,8 @@ typedef struct {
     int64_t data;
     int64_t total_duration;
     uint32_t frame_size;
+    uint32_t priming;
+    int64_t end_discard;
 
     uint8_t *pakt_buf;
     unsigned pakt_buf_size;
@@ -90,6 +94,7 @@ static uint32_t samples_per_packet(const AVCodecParameters *par) {
     case AV_CODEC_ID_ILBC:
     case AV_CODEC_ID_QCELP:
         return 160;
+    case AV_CODEC_ID_AMR_WB:
     case AV_CODEC_ID_GSM_MS:
         return 320;
     case AV_CODEC_ID_MP1:
@@ -117,6 +122,7 @@ static uint32_t samples_per_packet(const AVCodecParameters *par) {
 
 static int caf_write_init(struct AVFormatContext *s)
 {
+    CAFContext *caf = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, par->codec_id);
 
@@ -136,6 +142,11 @@ static int caf_write_init(struct AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR_INVALIDDATA;
     }
+
+    caf->end_discard = -1;
+    /* AMR-WB trim and packet duration are both measured in sample frames. */
+    if (par->codec_id == AV_CODEC_ID_AMR_WB)
+        avpriv_set_pts_info(s->streams[0], 64, 1, par->sample_rate);
 
     // if either block_align or frame_size are 0, we need to check that the output
     // is seekable. Postpone reporting init as complete until caf_write_header()
@@ -197,17 +208,13 @@ static int caf_write_header(AVFormatContext *s)
         avio_wb64(pb, 12 + par->extradata_size);
         avio_write(pb, "\0\0\0\14frmaalac", 12);
         avio_write(pb, par->extradata, par->extradata_size);
-    } else if (par->codec_id == AV_CODEC_ID_AMR_NB) {
+    } else if (par->codec_id == AV_CODEC_ID_AMR_NB ||
+               par->codec_id == AV_CODEC_ID_AMR_WB) {
         ffio_wfourcc(pb, "kuki");
-        avio_wb64(pb, 29);
-        avio_write(pb, "\0\0\0\14frmasamr", 12);
-        avio_wb32(pb, 0x11); /* size */
-        avio_write(pb, "samrFFMP", 8);
-        avio_w8(pb, 0); /* decoder version */
-
-        avio_wb16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
-        avio_w8(pb, 0x00); /* Mode change period (no restriction) */
-        avio_w8(pb, 0x01); /* Frames per sample */
+        avio_wb64(pb, 12 + FF_AMR_CONFIG_ATOM_SIZE);
+        avio_write(pb, "\0\0\0\14frma", 8);
+        avio_wl32(pb, codec_tag);
+        ff_amr_write_config_atom(pb, par->codec_id, 1);
     } else if (par->codec_id == AV_CODEC_ID_QDM2 || par->codec_id == AV_CODEC_ID_QDMC) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, par->extradata_size);
@@ -252,8 +259,47 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CAFContext *caf = s->priv_data;
     AVStream *const st = s->streams[0];
+    const AVCodecParameters *par = st->codecpar;
+    int64_t duration = pkt->duration;
+    int64_t end_discard = -1;
+    uint32_t start_skip = 0;
 
-    if (!st->codecpar->block_align || !caf->frame_size) {
+    if (par->codec_id == AV_CODEC_ID_AMR_WB) {
+        const AVPacketSideData *sd;
+        int ret = ff_amr_check_frame_block(par->codec_id, pkt->data, pkt->size,
+                                           par->ch_layout.nb_channels);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "AMR packets must contain one complete frame per channel\n");
+            return ret;
+        }
+        if (par->block_align && pkt->size != par->block_align) {
+            av_log(s, AV_LOG_ERROR, "AMR packet size does not match the block alignment\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        sd = av_packet_side_data_get(pkt->side_data, pkt->side_data_elems,
+                                     AV_PKT_DATA_SKIP_SAMPLES);
+        if (sd && sd->size >= 10) {
+            end_discard = AV_RL32(sd->data + 4);
+            if (end_discard >= caf->frame_size) {
+                av_log(s, AV_LOG_ERROR, "AMR end discard must leave samples in the packet\n");
+                return AVERROR_INVALIDDATA;
+            }
+            start_skip = AV_RL32(sd->data);
+        }
+
+        /* Only the final AMR frame block can carry tail padding. */
+        duration = caf->frame_size;
+        if (end_discard >= 0) {
+            duration -= end_discard;
+        } else if (pkt->duration > 0 && pkt->duration < caf->frame_size) {
+            /* Without an explicit discard count, duration is only an estimate:
+             * stream-copy rescaling may already have rounded the endpoint. */
+            duration = pkt->duration;
+        }
+    }
+
+    if (!par->block_align || !caf->frame_size) {
 #if SIZE_MAX - 10 < UINT_MAX
         if (caf->pakt_buf_size > SIZE_MAX - 10)
             return AVERROR(ERANGE);
@@ -265,13 +311,25 @@ static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
         caf->pakt_buf = pakt_buf;
         pakt_buf += caf->pakt_buf_size;
 
-        if (!st->codecpar->block_align)
+        if (!par->block_align)
             pakt_buf = put_variable_length_num(pakt_buf, pkt->size);
         if (!caf->frame_size)
             pakt_buf = put_variable_length_num(pakt_buf, pkt->duration);
         caf->pakt_buf_size = pakt_buf - caf->pakt_buf;
     }
-    caf->total_duration += pkt->duration;
+
+    if (par->codec_id == AV_CODEC_ID_AMR_WB) {
+        if (caf->end_discard > 0)
+            av_log(s, AV_LOG_WARNING, "Ignoring the end discard of a packet before the last one\n");
+        if (!st->nb_frames)
+            caf->priming = start_skip;
+        else if (start_skip)
+            av_log(s, AV_LOG_WARNING, "Ignoring the start skip of a packet after the first one\n");
+        caf->total_duration = st->nb_frames * caf->frame_size + duration;
+        caf->end_discard    = end_discard;
+    } else {
+        caf->total_duration += duration;
+    }
 
     avio_write(s->pb, pkt->data, pkt->size);
     return 0;
@@ -283,6 +341,32 @@ static int caf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     AVCodecParameters *par = st->codecpar;
+    uint32_t priming = par->initial_padding;
+
+    if (par->codec_id == AV_CODEC_ID_AMR_WB) {
+        int64_t frames = st->nb_frames * caf->frame_size;
+
+        /* Skip-samples side data may carry only the leading trim. */
+        if (caf->end_discard <= 0 && par->trailing_padding) {
+            if (par->trailing_padding < 0 || par->trailing_padding >= caf->frame_size ||
+                par->trailing_padding > frames) {
+                av_log(s, AV_LOG_ERROR, "AMR end discard must leave samples in the packet\n");
+                return AVERROR(EINVAL);
+            }
+            caf->total_duration = frames - par->trailing_padding;
+        }
+        if (caf->priming)
+            priming = caf->priming;
+        if (priming > INT32_MAX || (priming && priming >= caf->total_duration)) {
+            av_log(s, AV_LOG_ERROR, "AMR priming must fit in the packet table and leave valid samples\n");
+            return AVERROR(EINVAL);
+        }
+        if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+            (priming || caf->total_duration < frames)) {
+            av_log(s, AV_LOG_ERROR, "AMR padding requires a seekable output\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
@@ -294,8 +378,8 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
 
-        if (!par->block_align || !caf->frame_size || par->initial_padding || remainder_frames) {
-            valid_frames -= par->initial_padding;
+        if (!par->block_align || !caf->frame_size || priming || remainder_frames) {
+            valid_frames -= priming;
             valid_frames -= remainder_frames;
 
             avio_seek(pb, file_size, SEEK_SET);
@@ -303,7 +387,7 @@ static int caf_write_trailer(AVFormatContext *s)
             avio_wb64(pb, 24ULL + caf->pakt_buf_size); // size
             avio_wb64(pb, packets); ///< mNumberPackets
             avio_wb64(pb, valid_frames); ///< mNumberValidFrames
-            avio_wb32(pb, par->initial_padding); ///< mPrimingFrames
+            avio_wb32(pb, priming); ///< mPrimingFrames
             avio_wb32(pb, remainder_frames); ///< mRemainderFrames
             avio_write(pb, caf->pakt_buf, caf->pakt_buf_size);
         }

@@ -40,6 +40,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_ADPCM_MS,        MKTAG('m','s', 0,  2 ) },
     { AV_CODEC_ID_ALAC,            MKTAG('a','l','a','c') },
     { AV_CODEC_ID_AMR_NB,          MKTAG('s','a','m','r') },
+    { AV_CODEC_ID_AMR_WB,          MKTAG('s','a','w','b') },
   /* FIXME: use DV demuxer, as done in MOV */
   /*{ AV_CODEC_ID_DVAUDIO,         MKTAG('v','d','v','a') },*/
   /*{ AV_CODEC_ID_DVAUDIO,         MKTAG('d','v','c','a') },*/
