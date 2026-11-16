@@ -277,7 +277,7 @@ static int theora_packet(AVFormatContext *s, int idx)
     /* A later link's headers are skipped and attached as extradata to the
      * first data packet that follows. That packet keeps its timestamp, which
      * ogg_read_packet() would clear after a stream replacement. */
-    if (type != THEORA_PACKET_DATA && type != THEORA_PACKET_RESERVED) {
+    if (thp && type != THEORA_PACKET_DATA && type != THEORA_PACKET_RESERVED) {
         int i = type - THEORA_PACKET_ID;
 
         os->replace = 0;
@@ -312,7 +312,8 @@ static int theora_packet(AVFormatContext *s, int idx)
 
         return 1;
     }
-    theora_check_packet_order(s, thp, type);
+    if (thp)
+        theora_check_packet_order(s, thp, type);
 
     /* first packet handling
        here we parse the duration of each packet in the first page and compare
