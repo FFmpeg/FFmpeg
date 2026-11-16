@@ -1442,8 +1442,9 @@ static int open_files(OptionGroupList *l, const char *inout, Scheduler *sch,
         ret = open_file(&o, g->arg, sch);
         uninit_options(&o);
         if (ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error opening %s file %s.\n",
-                   inout, g->arg);
+            if (ret != AVERROR_EXIT)
+                av_log(NULL, AV_LOG_ERROR, "Error opening %s file %s.\n",
+                       inout, g->arg);
             return ret;
         }
         av_log(NULL, AV_LOG_DEBUG, "Successfully opened the file.\n");
