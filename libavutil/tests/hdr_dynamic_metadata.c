@@ -583,15 +583,58 @@ static void test_hdr_plus(void)
            ret == AVERROR(EINVAL) ? "yes" : "no");
 
     {
-        /* Oversized input is rejected before parsing. */
-        size_t big = AV_HDR_PLUS_MAX_PAYLOAD_SIZE + 1;
-        uint8_t *oversized = av_mallocz(big);
-        if (oversized) {
+        /* A zero excess beyond the limit is ignored and must not change the
+         * parsed fields; a non-zero excess byte is rejected. */
+        size_t big = AV_HDR_PLUS_MAX_PAYLOAD_SIZE + 2;
+        uint8_t *normal = NULL, *oversized = av_mallocz(big);
+        size_t nsize = 0;
+
+        fill_hdr_plus_conforming(hdr);
+        ret = av_dynamic_hdr_plus_to_t35(hdr, &normal, &nsize);
+        printf("oversized fixture: to_t35 ret=%d size=%zu\n", ret, nsize);
+
+        if (oversized && normal && ret >= 0) {
+            memcpy(oversized, normal, nsize);
+
+            memset(hdr_rt, 0, sizeof(*hdr_rt));
+            ret = av_dynamic_hdr_plus_from_t35(hdr_rt, normal, nsize);
+            printf("from_t35 normal length: ret=%d\n", ret);
+            if (ret >= 0)
+                print_hdr_plus("normal", hdr_rt);
+
+            memset(hdr_rt, 0, sizeof(*hdr_rt));
             ret = av_dynamic_hdr_plus_from_t35(hdr_rt, oversized, big);
-            printf("from_t35 oversized: ret==AVERROR(EINVAL)=%s\n",
-                   ret == AVERROR(EINVAL) ? "yes" : "no");
-            av_free(oversized);
+            printf("from_t35 zero-padded: ret=%d\n", ret);
+            if (ret >= 0)
+                print_hdr_plus("zero-padded", hdr_rt);
+
+            /* First byte beyond the limit: rejected. */
+            oversized[AV_HDR_PLUS_MAX_PAYLOAD_SIZE] = 1;
+            ret = av_dynamic_hdr_plus_from_t35(hdr_rt, oversized, big);
+            printf("from_t35 non-zero at limit: ret==AVERROR_INVALIDDATA=%s\n",
+                   ret == AVERROR_INVALIDDATA ? "yes" : "no");
+            oversized[AV_HDR_PLUS_MAX_PAYLOAD_SIZE] = 0;
+
+            /* Last byte of the input: rejected. */
+            oversized[big - 1] = 1;
+            ret = av_dynamic_hdr_plus_from_t35(hdr_rt, oversized, big);
+            printf("from_t35 non-zero at end: ret==AVERROR_INVALIDDATA=%s\n",
+                   ret == AVERROR_INVALIDDATA ? "yes" : "no");
+            oversized[big - 1] = 0;
+
+            /* A malformed prefix is still rejected at normal length... */
+            normal[1] &= 0x3F; /* num_windows = 0 */
+            ret = av_dynamic_hdr_plus_from_t35(hdr_rt, normal, nsize);
+            printf("from_t35 malformed normal: ret==AVERROR_INVALIDDATA=%s\n",
+                   ret == AVERROR_INVALIDDATA ? "yes" : "no");
+            /* ...and with a zero excess: padding does not excuse it. */
+            oversized[1] &= 0x3F;
+            ret = av_dynamic_hdr_plus_from_t35(hdr_rt, oversized, big);
+            printf("from_t35 malformed zero-padded: ret==AVERROR_INVALIDDATA=%s\n",
+                   ret == AVERROR_INVALIDDATA ? "yes" : "no");
         }
+        av_free(normal);
+        av_free(oversized);
     }
 
     av_freep(&hdr);

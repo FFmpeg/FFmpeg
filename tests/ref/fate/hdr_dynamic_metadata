@@ -71,7 +71,33 @@ to_t35 rows>25 with flag clear: ret==0=yes
 to_t35 mastering rows>25 with flag clear: ret==0=yes
 to_t35 anchors>15 with flag clear: ret==0=yes
 from_t35 NULL s: ret==AVERROR(EINVAL)=yes
-from_t35 oversized: ret==AVERROR(EINVAL)=yes
+oversized fixture: to_t35 ret=0 size=58
+from_t35 normal length: ret=0
+normal:
+  application_version=1 num_windows=1 targeted_system_display_maximum_luminance=400/1
+  targeted_system_display_actual_peak_luminance_flag=0
+  mastering_display_actual_peak_luminance_flag=0
+  window 0:
+    maxscl: 50000/100000 60000/100000 99000/100000 average_maxrgb=40000/100000
+    distribution_maxrgb: n=9 1%=1000/100000 5%=0/100000 10%=255/100000 25%=25000/100000 50%=50000/100000 75%=75000/100000 90%=90000/100000 95%=95000/100000 99%=99000/100000
+    fraction_bright_pixels=250/1000
+    tone_mapping_flag=1 knee=512/4095,1024/4095 anchors=9: 100/1023 200/1023 300/1023 400/1023 500/1023 600/1023 700/1023 800/1023 900/1023
+    color_saturation_mapping_flag=0
+from_t35 zero-padded: ret=0
+zero-padded:
+  application_version=1 num_windows=1 targeted_system_display_maximum_luminance=400/1
+  targeted_system_display_actual_peak_luminance_flag=0
+  mastering_display_actual_peak_luminance_flag=0
+  window 0:
+    maxscl: 50000/100000 60000/100000 99000/100000 average_maxrgb=40000/100000
+    distribution_maxrgb: n=9 1%=1000/100000 5%=0/100000 10%=255/100000 25%=25000/100000 50%=50000/100000 75%=75000/100000 90%=90000/100000 95%=95000/100000 99%=99000/100000
+    fraction_bright_pixels=250/1000
+    tone_mapping_flag=1 knee=512/4095,1024/4095 anchors=9: 100/1023 200/1023 300/1023 400/1023 500/1023 600/1023 700/1023 800/1023 900/1023
+    color_saturation_mapping_flag=0
+from_t35 non-zero at limit: ret==AVERROR_INVALIDDATA=yes
+from_t35 non-zero at end: ret==AVERROR_INVALIDDATA=yes
+from_t35 malformed normal: ret==AVERROR_INVALIDDATA=yes
+from_t35 malformed zero-padded: ret==AVERROR_INVALIDDATA=yes
 
 Testing OOM path
 alloc OOM: OK

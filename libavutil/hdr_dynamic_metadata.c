@@ -61,13 +61,20 @@ int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
 {
     uint8_t padded_buf[AV_HDR_PLUS_MAX_PAYLOAD_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     GetBitContext gbc, *gb = &gbc;
+    size_t i;
     int ret;
 
     if (!s)
         return AVERROR(EINVAL);
 
-    if (size > AV_HDR_PLUS_MAX_PAYLOAD_SIZE)
-        return AVERROR(EINVAL);
+    if (size > AV_HDR_PLUS_MAX_PAYLOAD_SIZE) {
+        /* Tolerate an all-zero excess beyond the maximum payload size. */
+        for (i = AV_HDR_PLUS_MAX_PAYLOAD_SIZE; i < size; i++) {
+            if (data[i])
+                return AVERROR_INVALIDDATA;
+        }
+        size = AV_HDR_PLUS_MAX_PAYLOAD_SIZE;
+    }
 
     memcpy(padded_buf, data, size);
     // Zero-initialize the buffer padding to avoid overreads into uninitialized data.

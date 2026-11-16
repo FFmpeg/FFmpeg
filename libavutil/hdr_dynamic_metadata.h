@@ -352,11 +352,17 @@ AVDynamicHDRPlus *av_dynamic_hdr_plus_create_side_data(AVFrame *frame);
  * @param data The byte array containing the raw ITU-T T.35 data.
  * @param size Size of the data array in bytes.
  *
- * @return >= 0 on success. Otherwise, returns the appropriate AVERROR.
+ * @return >= 0 on success, otherwise an AVERROR. A payload longer than
+ *         AV_HDR_PLUS_MAX_PAYLOAD_SIZE is parsed only when every byte
+ *         beyond that limit is zero; unparsed bytes are not validated.
  */
 int av_dynamic_hdr_plus_from_t35(AVDynamicHDRPlus *s, const uint8_t *data,
                                  size_t size);
 
+/** Maximum HDR10+ payload size in bytes the parser and serializer support,
+ *  derived from the largest field combination (7249 bits), not a fixed
+ *  length mandated by CTA-861, which defines no padding element for this
+ *  syntax. */
 #define AV_HDR_PLUS_MAX_PAYLOAD_SIZE 907
 
 /**
