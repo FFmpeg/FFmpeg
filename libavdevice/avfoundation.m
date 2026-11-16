@@ -1132,7 +1132,8 @@ static int avf_read_header(AVFormatContext *s)
             int index = [devices indexOfObject:device];
             avf_log_device_entry(ctx, index, device);
         }
-         goto fail;
+        ret = AVERROR_EXIT;
+        goto fail;
     }
 
     // parse input filename for video and audio device
