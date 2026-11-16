@@ -3784,7 +3784,7 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
         ret = hevc_frame_start(s, l, nal_idx);
         if (ret < 0)
             return ret;
-    } else if (!l->cur_frame) {
+    } else if (!l->cur_frame || l->cur_frame != s->cur_frame) {
         av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
         return AVERROR_INVALIDDATA;
     }
