@@ -2588,13 +2588,13 @@ yuv2gbrpf32_full_X_c(SwsInternal *c, const int16_t *lumFilter,
         Y -= c->yuv2rgb_y_offset;
         Y *= c->yuv2rgb_y_coeff;
         Y += (1 << 13) - (1 << 29);
-        R = V * c->yuv2rgb_v2r_coeff;
-        G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
-        B =                            U * c->yuv2rgb_u2b_coeff;
+        R = V * (unsigned)c->yuv2rgb_v2r_coeff;
+        G = V * (unsigned)c->yuv2rgb_v2g_coeff + U * (unsigned)c->yuv2rgb_u2g_coeff;
+        B =                                      U * (unsigned)c->yuv2rgb_u2b_coeff;
 
-        R = av_clip_uintp2(((Y + R) >> 14) + (1<<15), 16);
-        G = av_clip_uintp2(((Y + G) >> 14) + (1<<15), 16);
-        B = av_clip_uintp2(((Y + B) >> 14) + (1<<15), 16);
+        R = av_clip_uintp2(((Y + (int64_t)R) >> 14) + (1<<15), 16);
+        G = av_clip_uintp2(((Y + (int64_t)G) >> 14) + (1<<15), 16);
+        B = av_clip_uintp2(((Y + (int64_t)B) >> 14) + (1<<15), 16);
 
         dest32[0][i] = av_float2int(float_mult * (float)G);
         dest32[1][i] = av_float2int(float_mult * (float)B);
