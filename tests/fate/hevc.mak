@@ -292,6 +292,9 @@ FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC, EXTRACT_EXTRADATA_BSF) 
 fate-hevc-hdr10-plus-metadata: CMD = probeframes -show_entries frame=side_data_list $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc
 FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-hdr10-plus-metadata
 
+fate-hevc-hdr10-plus-padded-sei-metadata: CMD = probeframes -show_entries frame=side_data_list $(TARGET_SAMPLES)/hevc/hdr10plus-padded-1f.mp4
+FATE_HEVC_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-hevc-hdr10-plus-padded-sei-metadata
+
 fate-hevc-hdr-vivid-metadata: CMD = probeframes -show_entries frame=side_data_list $(TARGET_SAMPLES)/hevc/hdr_vivid_h265_sample.hevc
 FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-hdr-vivid-metadata
 

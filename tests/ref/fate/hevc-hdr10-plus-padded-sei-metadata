@@ -1,0 +1,32 @@
+[FRAME]
+[SIDE_DATA]
+side_data_type=HDR Dynamic Metadata SMPTE2094-40 (HDR10+)
+application version=1
+num_windows=1
+targeted_system_display_maximum_luminance=0/1
+maxscl=7230/100000
+maxscl=7230/100000
+maxscl=7230/100000
+average_maxrgb=1649/100000
+num_distribution_maxrgb_percentiles=9
+distribution_maxrgb_percentage=1
+distribution_maxrgb_percentile=40/100000
+distribution_maxrgb_percentage=5
+distribution_maxrgb_percentile=6788/100000
+distribution_maxrgb_percentage=10
+distribution_maxrgb_percentile=255/100000
+distribution_maxrgb_percentage=25
+distribution_maxrgb_percentile=1137/100000
+distribution_maxrgb_percentage=50
+distribution_maxrgb_percentile=1763/100000
+distribution_maxrgb_percentage=75
+distribution_maxrgb_percentile=2126/100000
+distribution_maxrgb_percentage=90
+distribution_maxrgb_percentile=2514/100000
+distribution_maxrgb_percentage=95
+distribution_maxrgb_percentile=2887/100000
+distribution_maxrgb_percentage=99
+distribution_maxrgb_percentile=6788/100000
+fraction_bright_pixels=0/1000
+[/SIDE_DATA]
+[/FRAME]
