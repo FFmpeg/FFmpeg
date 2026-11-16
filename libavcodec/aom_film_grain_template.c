@@ -507,7 +507,8 @@ FUNC(apply_grain_row)(AVFrame *out, const AVFrame *in,
                             grain_lut[0], bh, row HBD_CALL);
     }
 
-    if (!data->num_uv_points[0] && !data->num_uv_points[1] &&
+    if (!out->data[1] ||
+        !data->num_uv_points[0] && !data->num_uv_points[1] &&
         !data->chroma_scaling_from_luma)
     {
         return;
