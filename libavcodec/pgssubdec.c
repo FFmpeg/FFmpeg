@@ -236,7 +236,7 @@ static int parse_object_segment(AVCodecContext *avctx,
     PGSSubObject *object;
 
     uint8_t sequence_desc;
-    unsigned int rle_bitmap_len, width, height;
+    int rle_bitmap_len, width, height;
     int id;
 
     if (buf_size <= 4)
