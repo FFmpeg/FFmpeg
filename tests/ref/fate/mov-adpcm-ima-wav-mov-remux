@@ -1,0 +1,18 @@
+b29d126f88d1d896c7910189de8f946f *tests/data/fate/mov-adpcm-ima-wav-mov-remux.mov
+5821 tests/data/fate/mov-adpcm-ima-wav-mov-remux.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     1017,     4068, 0x7152d92f
+0,       1017,       1017,     1017,     4068, 0xd171d92b
+0,       2034,       2034,     1017,     4068, 0x0f32f797
+0,       3051,       3051,     1017,     4068, 0xd5bddacf
+0,       4068,       4068,     1017,     4068, 0x97ef1783
+[STREAM]
+codec_name=adpcm_ima_wav
+sample_rate=44100
+channels=2
+duration_ts=4410
+[/STREAM]

@@ -7364,6 +7364,13 @@ static int mov_cts_out_of_range(const MOVMuxContext *mov, const AVPacket *pkt)
     return delta != (int32_t)delta;
 }
 
+static int mov_packet_uses_stbl(const MOVMuxContext *mov)
+{
+    return !(mov->flags & FF_MOV_FLAG_FRAGMENT) ||
+           mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED ||
+           (!mov->moov_written && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV));
+}
+
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -7373,7 +7380,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVProducerReferenceTime *prft;
     unsigned int samples_in_chunk = 0;
     int64_t duration;
-    int size = pkt->size, ret = 0, offset = 0;
+    int size = pkt->size, ret = 0, offset = 0, coded_samples = 0;
+    int64_t discard = 0;
     size_t prft_size;
     uint8_t *reformatted_data = NULL;
 
@@ -7436,7 +7444,17 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     } else if (par->codec_id == AV_CODEC_ID_ADPCM_MS ||
                par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
-        samples_in_chunk = trk->par->frame_size;
+        /* packets of whole blocks of block_align bytes */
+        int64_t blocks = size == trk->sample_size ? 1 : size / trk->sample_size;
+        if (!size || size != blocks * trk->sample_size) {
+            av_log(s, AV_LOG_ERROR, "Packet size %d is not a multiple of the block align %ld\n",
+                   size, trk->sample_size);
+            return AVERROR_INVALIDDATA;
+        }
+        if (par->frame_size <= 0 || blocks * par->frame_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
+        coded_samples    = blocks * par->frame_size;
+        samples_in_chunk = coded_samples;
     } else if (trk->sample_size)
         samples_in_chunk = size / trk->sample_size;
     else
@@ -7747,18 +7765,40 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     sd = av_packet_side_data_get(pkt->side_data, pkt->side_data_elems, AV_PKT_DATA_SKIP_SAMPLES);
-    if (sd && sd->size >= 10 && trk->par->frame_size) {
-        int coded_samples = av_get_audio_frame_duration2(trk->par, pkt->size);
+    if (sd && sd->size >= 10 && trk->par->frame_size)
+        discard = AV_RL32(sd->data + 4);
+    else
+        sd = NULL;
+
+    if (coded_samples) {
+        if (!sd && pkt->duration == coded_samples &&
+            !av_cmp_q(trk->st->time_base, (AVRational){ 1, par->sample_rate }))
+            coded_samples = 0; /* full packet, nothing to trim */
+        else if (!discard && pkt->duration > 0)
+            /* a last packet of whole blocks may be shorter than its blocks */
+            discard = FFMAX(coded_samples - av_rescale_q(pkt->duration, trk->st->time_base,
+                                                         (AVRational){ 1, par->sample_rate }), 0);
+    } else if (sd) {
+        coded_samples = av_get_audio_frame_duration2(par, pkt->size);
         if (coded_samples <= 0)
-            coded_samples = trk->par->frame_size;
+            coded_samples = par->frame_size;
+    }
+    if (coded_samples > 0) {
+        /* fragments have an open-ended edit list, their durations carry the end trim */
+        int adpcm_fragment = (par->codec_id == AV_CODEC_ID_ADPCM_MS ||
+                              par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) &&
+                             !mov_packet_uses_stbl(mov);
+
         duration = FFMAX(av_rescale_q(coded_samples, (AVRational){ 1, trk->par->sample_rate },
                                       trk->st->time_base), pkt->duration);
-        if (mov->use_editlist)
+        if (mov->use_editlist && !adpcm_fragment)
             pkt->duration = duration;
-        duration -= av_rescale_q(AV_RL32(sd->data + 4), (AVRational){ 1, trk->par->sample_rate },
+        duration -= av_rescale_q(discard, (AVRational){ 1, trk->par->sample_rate },
                                  trk->st->time_base);
         if (duration < 0)
             return AVERROR_INVALIDDATA;
+        if (adpcm_fragment)
+            pkt->duration = duration;
     } else
         duration = pkt->duration;
 
@@ -9090,11 +9130,21 @@ static int mov_init(AVFormatContext *s)
             }else if (st->codecpar->codec_id == AV_CODEC_ID_ADPCM_MS ||
                      st->codecpar->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
                      st->codecpar->codec_id == AV_CODEC_ID_ILBC){
-                if (!st->codecpar->block_align) {
+                if (st->codecpar->block_align <= 0) {
                     av_log(s, AV_LOG_ERROR, "track %d: codec block align is not set for adpcm\n", i);
                     return AVERROR(EINVAL);
                 }
                 track->sample_size = st->codecpar->block_align;
+                if (!st->codecpar->frame_size) {
+                    st->codecpar->frame_size =
+                        av_get_audio_frame_duration2(st->codecpar, st->codecpar->block_align);
+                    if (!st->codecpar->frame_size) {
+                        av_log(s, AV_LOG_ERROR, "track %d: cannot derive samples per block "
+                               "(block align %d, coded bits per sample %d)\n", i,
+                               st->codecpar->block_align, st->codecpar->bits_per_coded_sample);
+                        return AVERROR_INVALIDDATA;
+                    }
+                }
             }else if (st->codecpar->frame_size > 1){ /* assume compressed audio */
                 track->audio_vbr = 1;
             }else{

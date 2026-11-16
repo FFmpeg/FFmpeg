@@ -836,6 +836,41 @@ fate-mov-chpl-utf8: tests/data/chpl-utf8.ffmeta
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER MPEG4_ENCODER FFMETADATA_DEMUXER TGP_MUXER MOV_DEMUXER FILE_PROTOCOL) += fate-mov-chpl-utf8
 fate-mov-chpl-utf8: CMD = run_with_temp "$(FFMPEG) -nostdin -v error -filter_complex color=c=black:s=2x2:r=1 -f ffmetadata -i $(TARGET_PATH)/tests/data/chpl-utf8.ffmeta -map_chapters 0 -frames:v 1 -c:v mpeg4 -threads 1 -flags +bitexact -fflags +bitexact -f 3gp -y" "ffprobe$(PROGSSUF)$(EXESUF) -loglevel error -bitexact -show_chapters" 3gp
 
+# WAV groups several ADPCM blocks in a packet and does not set frame_size;
+# the last packet of an encoded MOV is shorter than its block.
+MOV_ADPCM_SRC = $(foreach C, adpcm_ms adpcm_ima_wav, tests/data/mov-$(C).wav tests/data/mov-$(C).mov)
+$(MOV_ADPCM_SRC): TAG = GEN
+$(MOV_ADPCM_SRC): ffmpeg$(PROGSSUF)$(EXESUF) tests/data/asynth-44100-2.wav | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -v error -fflags +bitexact -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -t 0.1 -c:a $(patsubst mov-%,%,$(basename $(@F))) -flags +bitexact -fflags +bitexact -y $(TARGET_PATH)/$@
+
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, ADPCM_MS_ENCODER ADPCM_MS_DECODER PCM_S16LE_DECODER PCM_S16LE_ENCODER WAV_MUXER WAV_DEMUXER MOV_MUXER MOV_DEMUXER FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mov-adpcm-ms-remux
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, ADPCM_IMA_WAV_ENCODER ADPCM_IMA_WAV_DECODER PCM_S16LE_DECODER PCM_S16LE_ENCODER ARESAMPLE_FILTER WAV_MUXER WAV_DEMUXER MOV_MUXER MOV_DEMUXER FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mov-adpcm-ima-wav-remux
+fate-mov-adpcm-ms-remux: tests/data/mov-adpcm_ms.wav
+fate-mov-adpcm-ms-remux: CMD = transcode wav $(TARGET_PATH)/tests/data/mov-adpcm_ms.wav mov "-c:a copy" "-c:a pcm_s16le" "-show_entries stream=codec_name,sample_rate,channels,duration_ts"
+fate-mov-adpcm-ima-wav-remux: tests/data/mov-adpcm_ima_wav.wav
+fate-mov-adpcm-ima-wav-remux: CMD = transcode wav $(TARGET_PATH)/tests/data/mov-adpcm_ima_wav.wav mov "-c:a copy" "-af aresample -c:a pcm_s16le" "-show_entries stream=codec_name,sample_rate,channels,duration_ts"
+
+# A single block with both a leading skip and a short duration.
+tests/data/mov-adpcm_ms-trim-both.mov: TAG = GEN
+tests/data/mov-adpcm_ms-trim-both.mov: ffmpeg$(PROGSSUF)$(EXESUF) tests/data/asynth-44100-1.wav | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -v error -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -c:a adpcm_ms -t 0.02 -movie_timescale 44100 -output_ts_offset -0.002268 -avoid_negative_ts disabled -use_editlist 1 -flags +bitexact -fflags +bitexact -y $(TARGET_PATH)/$@
+
+FATE_MOV_FFMPEG_FFPROBE-$(call REMUX, MOV, WAV_DEMUXER PCM_S16LE_DECODER ADPCM_MS_ENCODER) += fate-mov-adpcm-ms-mov-remux-trim-both
+fate-mov-adpcm-ms-mov-remux-trim-both: tests/data/mov-adpcm_ms-trim-both.mov
+fate-mov-adpcm-ms-mov-remux-trim-both: CMD = transcode mov $(TARGET_PATH)/tests/data/mov-adpcm_ms-trim-both.mov mov "-c:a copy -movie_timescale 44100 -use_editlist 1" "-c copy" "-show_entries stream=duration_ts"
+
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, ADPCM_MS_ENCODER ADPCM_MS_DECODER PCM_S16LE_DECODER PCM_S16LE_ENCODER WAV_DEMUXER MOV_MUXER MOV_DEMUXER FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mov-adpcm-ms-mov-remux
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, ADPCM_IMA_WAV_ENCODER ADPCM_IMA_WAV_DECODER PCM_S16LE_DECODER PCM_S16LE_ENCODER ARESAMPLE_FILTER WAV_DEMUXER MOV_MUXER MOV_DEMUXER FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mov-adpcm-ima-wav-mov-remux
+fate-mov-adpcm-ms-mov-remux: tests/data/mov-adpcm_ms.mov
+fate-mov-adpcm-ms-mov-remux: CMD = transcode mov $(TARGET_PATH)/tests/data/mov-adpcm_ms.mov mov "-c:a copy" "-c:a pcm_s16le" "-show_entries stream=codec_name,sample_rate,channels,duration_ts"
+fate-mov-adpcm-ima-wav-mov-remux: tests/data/mov-adpcm_ima_wav.mov
+fate-mov-adpcm-ima-wav-mov-remux: CMD = transcode mov $(TARGET_PATH)/tests/data/mov-adpcm_ima_wav.mov mov "-c:a copy" "-af aresample -c:a pcm_s16le" "-show_entries stream=codec_name,sample_rate,channels,duration_ts"
+
+FATE_MOV_FFMPEG_FFPROBE-$(call REMUX, MOV, WAV_DEMUXER PCM_S16LE_DECODER ADPCM_MS_ENCODER) += fate-mov-adpcm-ms-remux-delay-moov
+fate-mov-adpcm-ms-remux-delay-moov: tests/data/mov-adpcm_ms.mov
+fate-mov-adpcm-ms-remux-delay-moov: CMD = transcode mov $(TARGET_PATH)/tests/data/mov-adpcm_ms.mov mov \
+  "-c:a copy -movflags +delay_moov -frag_duration 25000" "-c:a copy" "-show_entries stream=duration_ts"
+
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 FATE_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
 

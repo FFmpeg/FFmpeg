@@ -1,0 +1,18 @@
+cd119af18f219bd991cdbac7ff9dbe04 *tests/data/fate/mov-adpcm-ms-mov-remux.mov
+5819 tests/data/fate/mov-adpcm-ms-mov-remux.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     1012,     4048, 0x2859017e
+0,       1012,       1012,     1012,     4048, 0x4524f707
+0,       2024,       2024,     1012,     4048, 0xedcee0dd
+0,       3036,       3036,     1012,     4048, 0x1ce0cf87
+0,       4048,       4048,     1012,     4048, 0x1411c3b9
+[STREAM]
+codec_name=adpcm_ms
+sample_rate=44100
+channels=2
+duration_ts=4410
+[/STREAM]

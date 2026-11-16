@@ -1,0 +1,15 @@
+5d174d2b6e2db23e831b63417d6311b5 *tests/data/fate/mov-adpcm-ms-remux-delay-moov.mov
+6280 tests/data/fate/mov-adpcm-ms-remux-delay-moov.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: adpcm_ms
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     1012,     1024, 0x04480635
+0,       1012,       1012,     1012,     1024, 0x76db0918
+0,       2024,       2024,     1012,     1024, 0xbad708b0
+0,       3036,       3036,     1012,     1024, 0x7f09088a
+0,       4048,       4048,      362,     1024, 0xe3b90b09
+[STREAM]
+duration_ts=4410
+[/STREAM]

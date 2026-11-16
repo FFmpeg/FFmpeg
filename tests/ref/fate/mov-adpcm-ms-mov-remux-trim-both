@@ -1,0 +1,11 @@
+cfe19ed761c77bae3edddfb4f3fee962 *tests/data/fate/mov-adpcm-ms-mov-remux-trim-both.mov
+1723 tests/data/fate/mov-adpcm-ms-mov-remux-trim-both.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: adpcm_ms
+#sample_rate 0: 44100
+#channel_layout_name 0: mono
+0,       -100,       -100,      882,     1024, 0x7327f493, S=1, Skip Samples,       10, 0x03e80064
+[STREAM]
+duration_ts=782
+[/STREAM]
