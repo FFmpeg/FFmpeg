@@ -88,7 +88,7 @@ static void prores_idct_12(int16_t *restrict block, const int16_t *restrict qmat
 static void prores_idct_bayer_16(int32_t *restrict block, const int16_t *restrict qmat)
 {
     for (int i = 0; i < 64; i++)
-        block[i] = av_clip_int16(block[i] * qmat[i]);
+        block[i] = av_clip_int16(block[i] * (unsigned)qmat[i]);
 
     for (int i = 0; i < 8; i++)
         idctRowCondDC_int32_16bit(block + i*8, 0);
