@@ -259,6 +259,8 @@ static int FUNC(tile)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (padding_size > 0) {
 #ifdef READ
+        if (get_bits_left(rw) < 8LL * padding_size)
+            return AVERROR_INVALIDDATA;
         current->tile_dummy_byte      = (uint8_t*)align_get_bits(rw);
         current->tile_dummy_byte_size = padding_size;
         skip_bits_long(rw, 8 * padding_size);
