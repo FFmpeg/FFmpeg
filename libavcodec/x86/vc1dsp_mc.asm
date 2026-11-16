@@ -34,6 +34,7 @@ pb_m3_18: times 8 db -3, 18
 
 pw_53: times 8 dw 53
 
+cextern pb_80
 cextern pw_9
 cextern pw_18
 cextern pw_128
@@ -427,9 +428,9 @@ VER_8B avg, 16
 %endif
 
 %macro FUNC_HEADER 6; put vs avg, size, shift_ver, shift_hor, coeff1, coeff2
-%assign stack_size (2*%2+16)*%2
+%assign stack_size (2*%2+16)*%2+mmsize*ARCH_X86_32*(%2>>4)
 %if ARCH_X86_64
-cglobal vc1_%1_mspel_mc%4%3_%2, 4, 7, 13, stack_size, dst, src, stride, rnd, rnd1, unused, tmp
+cglobal vc1_%1_mspel_mc%4%3_%2, 4, 7, 13+2*(%2 / 16), stack_size, dst, src, stride, rnd, rnd1, unused, tmp
 %define COEFF0    m9
 %define COEFF1   m10
     mova          COEFF0, [%5]
@@ -502,21 +503,27 @@ cglobal vc1_%1_mspel_mc%4%3_%2, 0, 5, 8, stack_size, coeffs, src, stride, rnd
     FUNC_HEADER %1, %2, 2, %3, pb_m4_36, pb_36_m4
 %1_mspel_hor_16b_shift%3_%2_ %+ cpuname:
 %define hd rnd1d
-%if %3 != 2
-    mova              m6, [pw_53]
-    mova              m7, [pw_18]
+%if %3 == 1
+    %define C1 PW_53
+    %define C2 PW_18
 %else
-    mova              m6, [pw_9]
+    %define C1 PW_18
+    %define C2 PW_53
 %endif
 %if ARCH_X86_32
     DEFINE_ARGS dst, src, stride, rnd1
     mov             dstq, r0m
 %endif
+%if ARCH_X86_64 || %2 == 8
     mov             srcq, rsp
+%else
+    lea             srcq, [rsp+mmsize]
+%endif
 
 .loop:
     movu              m2, [srcq + 2 * 1]
     movu              m3, [srcq + 2 * 2]
+%if %2 == 8
 %if %3 == 2
     movu              m1, [srcq + 2 * 3]
     paddw             m2, m3
@@ -532,11 +539,10 @@ cglobal vc1_%1_mspel_mc%4%3_%2, 0, 5, 8, stack_size, coeffs, src, stride, rnd
     mova              m1, [srcq]
     movu              m4, [srcq + 2 * 3]
 %if %3 == 3
-    SWAP               1, 4
-    SWAP               2, 3
+    SWAP            1, 4
 %endif
-    pmullw            m2, m6       ; 0,53,0,0
-    pmullw            m3, m7       ; 0,0,18,0
+    pmullw            m2, C1       ; 0,53,0,0
+    pmullw            m3, C2       ; 0,0,18,0
 %ifidn %1,avg
     movq              m5, [dstq]
 %endif
@@ -559,6 +565,67 @@ cglobal vc1_%1_mspel_mc%4%3_%2, 0, 5, 8, stack_size, coeffs, src, stride, rnd
     pavgb             m2, m5
 %endif
     movq          [dstq], m2
+%else ; size 16
+%if %3 == 2
+    movu              m1, [srcq + 2 * 3]
+    paddw             m2, m3
+    paddw             m1, [srcq]
+    pmullw            m2, m6
+    movu              m3, [srcq + 2 * 1 + mmsize]
+    movu              m5, [srcq + 2 * 2 + mmsize]
+    paddw             m1, m0       ; 1,0,0,1+rnd
+    movu              m4, [srcq + 3 * 2 + mmsize]
+    paddw             m3, m5
+    psubw             m2, m1       ; -1,9,9,-1-rnd
+    pmullw            m3, m6
+    paddw             m4, [srcq + mmsize]
+    psraw             m2, 7
+    add             srcq, 2*%2+16
+    paddw             m4, m0
+    psubw             m3, m4
+    psraw             m3, 7
+    packsswb          m2, m3
+    pxor              m2, BIAS_REG ; undo -128 bias
+%else
+    mova              m1, [srcq]
+    movu              m4, [srcq + 2 * 3]
+%if %3 == 3
+    SWAP              1, 4
+%endif
+    pmullw            m2, C1       ; 0,53,0,0
+    movu              m5, [srcq + 2 * 1 + mmsize]
+    pmullw            m3, C2       ; 0,0,18,0
+    paddw             m1, m4       ; 1,0,0,1
+    movu              m6, [srcq + 2 * 2 + mmsize]
+    pmullw            m5, C1       ; 0,53,0,0
+    psubw             m4, m0       ; 0,0,0,1-rnd
+    pmullw            m6, C2       ; 0,0,18,0
+    mova              m7, [srcq + mmsize]
+    psllw             m1, 2        ; 4,0,0,4
+
+    paddw             m2, m4       ; 0,53,0,1-rnd
+    movu              m4, [srcq + 3 * 2 + mmsize]
+%if %3 == 3
+    SWAP               4, 7
+%endif
+    psubw             m3, m1       ; -4,0,18,-4
+    paddw             m7, m4       ; 1,0,0,1
+    paddsw            m2, m3       ; -4,53,18,-3-rnd
+    add             srcq, 2*%2+16
+    psubw             m4, m0       ; 0,0,0,1-rnd
+    psllw             m7, 2        ; 4,0,0,4
+    paddw             m5, m4       ; 0,53,0,1-rnd
+    psraw             m2, 7
+    psubw             m6, m7       ; -4,0,18,-4
+    paddsw            m5, m6       ; -4,53,18,-3-rnd
+    psraw             m5, 7
+    packuswb          m2, m5
+%endif
+%ifidn %1,avg
+    pavgb             m2, [dstq]
+%endif
+    mova          [dstq], m2
+%endif
     add             dstq, strideq
     dec               hd
     jnz            .loop
@@ -570,7 +637,6 @@ put_mspel_ver_%2_%1_ssse3:
 %if ARCH_X86_32
     DEFINE_ARGS coeffs, src, stride, rnd1, tmp
 %endif
-%define RND BIAS_REG
 %define hd     rnd1d
 ; Necessary to ensure that reading memory args works.
 %assign stack_offset stack_offset+gprsize
@@ -580,7 +646,14 @@ put_mspel_ver_%2_%1_ssse3:
     MOV%1             m2, [srcq+strideq]
     movd              m3, [srcq+strideq+%1]
     neg          strideq
+%if %1 == 8 || ARCH_X86_64
+%define RND BIAS_REG
     SPLATW           RND, m0
+%else
+%define RND [rsp+gprsize]
+    SPLATW            m0, m0
+    mova             RND, m0
+%endif
 %if ARCH_X86_64
     MOV%1             m4, [srcq]
     movd              m5, [srcq+%1]
@@ -593,8 +666,17 @@ put_mspel_ver_%2_%1_ssse3:
 %else
     movd              m4, [srcq+strideq+%1]
 %endif
-    lea             tmpq, [rsp+gprsize]
+    lea             tmpq, [rsp+gprsize+mmsize*ARCH_X86_32*(%1>>4)]
+%if %1 == 16
+%if ARCH_X86_64
+    punpcklbw        m13, m2, m6
+%else
+    punpcklbw         m7, m2, m6
+%endif
+    punpckhbw         m2, m6
+%else ; size 8
     punpcklbw         m2, m6
+%endif
 %if ARCH_X86_64
     punpcklbw         m3, m7
 %else
@@ -603,6 +685,53 @@ put_mspel_ver_%2_%1_ssse3:
 .loop:
 %assign         %%offset 0
 %rep 4
+%if %1 == 16
+%if ARCH_X86_64
+    movu             m11, [srcq]
+    movd             m12, [srcq+16]
+    pmaddubsw        m13, COEFF0
+    pmaddubsw         m2, COEFF0
+    punpcklbw        m14, m4, m11
+    pmaddubsw         m3, COEFF0
+    punpckhbw         m4, m11
+    punpcklbw         m5, m12
+    SWAP               6, 14
+    SWAP               7, 13
+%else
+    movu              m4, [srcq]
+    movd              m5, [srcq+16]
+    pmaddubsw         m7, COEFF0
+    movu              m0, [srcq+2*strideq]
+    pmaddubsw         m2, COEFF0
+    movd              m1, [srcq+2*strideq+16]
+    pmaddubsw         m3, COEFF0
+    punpcklbw         m6, m4, m0
+    punpckhbw         m4, m0
+    punpcklbw         m5, m1
+%endif
+    pmaddubsw         m0, m6, COEFF1
+    add             srcq, strideq
+    paddw             m7, RND
+    pmaddubsw         m1, m4, COEFF1
+    paddw             m2, RND
+    paddw             m0, m7
+    pmaddubsw         m7, m5, COEFF1
+    paddw             m3, RND
+    psraw             m0, %2
+    paddw             m1, m2
+    mova  [tmpq+%%offset], m0
+    psraw             m1, %2
+    paddw             m3, m7
+    mova [tmpq+%%offset+mmsize], m1
+    psraw             m3, %2
+    movq [tmpq+%%offset+2*mmsize], m3
+%if ARCH_X86_64
+    SWAP               6, 14
+    SWAP               7, 13, 14
+%else
+    SWAP               6, 7
+%endif
+%else ; size 8
 %if ARCH_X86_64
     MOV%1            m11, [srcq]
     movd             m12, [srcq+%1]
@@ -631,6 +760,7 @@ put_mspel_ver_%2_%1_ssse3:
     psraw             m1, %2
     mova  [tmpq+%%offset], m0
     movq [tmpq+%%offset+16], m1
+%endif
     %assign     %%offset %%offset+2*%1+16
 %if ARCH_X86_64
     SWAP 2, 4, 6, 11
@@ -644,13 +774,23 @@ put_mspel_ver_%2_%1_ssse3:
     dec               hd
     jnz            .loop
 
+; common init code for the various horizontal filtering codepaths
 %if ARCH_X86_64
     movd              m0, rndd
 %else
     movd              m0, r3m
 %endif
 %if %2 == 3
+%if %1 == 8 || ARCH_X86_64
     packsswb    BIAS_REG, BIAS_REG              ; -128 aka pb_80
+%else
+    RESET_MM_PERMUTATION
+    mova        BIAS_REG, [pb_80]
+%endif
+    mova              m6, [pw_9]
+%elif %1 == 8 || ARCH_X86_64
+    mova           PW_53, [pw_53]
+    mova           PW_18, [pw_18]
 %endif
     mov               hd, %1
     SPLATW            m0, m0
@@ -672,5 +812,17 @@ put_mspel_ver_%2_%1_ssse3:
     FUNC_TRIPLE avg, %1, 2
 %endmacro
 
+%define PW_53  m6
+%define PW_18  m7
 SHIFT13_FUNCS 8
 SHIFT2_FUNCS  8
+
+%if ARCH_X86_64
+%define PW_53  m8
+%define PW_18  m9
+%else
+%define PW_53  [pw_53]
+%define PW_18  [pw_18]
+%endif
+SHIFT13_FUNCS 16
+SHIFT2_FUNCS  16
