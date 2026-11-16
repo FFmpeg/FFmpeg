@@ -4441,6 +4441,7 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
     AVIndexEntry *const index_entries = sti->index_entries;
     int nb_index_entries = sti->nb_index_entries;
     CueDesc cue_desc;
+    int64_t end_pos;
     int i;
 
     if (ts >= (int64_t)(matroska->duration * matroska->time_scale))
@@ -4453,6 +4454,9 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
     }
     --i;
     if (index_entries[i].timestamp > matroska->duration)
+        return (CueDesc) {-1, -1, -1, -1};
+    end_pos = i != nb_index_entries - 1 ? index_entries[i + 1].pos : cues_start;
+    if (index_entries[i].pos < matroska->segment_start || end_pos < matroska->segment_start)
         return (CueDesc) {-1, -1, -1, -1};
     cue_desc.start_time_ns = index_entries[i].timestamp * matroska->time_scale;
     cue_desc.start_offset = index_entries[i].pos - matroska->segment_start;
