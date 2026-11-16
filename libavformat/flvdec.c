@@ -1565,6 +1565,10 @@ skip:
         goto leave;
     }
 
+    if (flv->time_pos <= pos) {
+        dts += flv->time_offset;
+    }
+
     for (;;) {
         int track_size = size;
         if (size < 0) {
@@ -1605,10 +1609,6 @@ skip:
                 return AVERROR(ENOMEM);
         }
         av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
-
-        if (flv->time_pos <= pos) {
-            dts += flv->time_offset;
-        }
 
         if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
             ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
