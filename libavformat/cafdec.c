@@ -306,7 +306,14 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
         if (!num_packets) {
             if (caf->data_size < 0)
                 return AVERROR_INVALIDDATA;
-            num_packets = caf->data_size / caf->bytes_per_packet;
+            if (caf->data_size)
+                num_packets = caf->data_size / caf->bytes_per_packet;
+            else /* no data chunk yet */
+                num_packets = st->nb_frames / caf->frames_per_packet +
+                              !!(st->nb_frames % caf->frames_per_packet);
+            if (num_packets > INT64_MAX / FFMAX(caf->bytes_per_packet,
+                                                caf->frames_per_packet))
+                return AVERROR_INVALIDDATA;
         }
         st->duration = caf->frames_per_packet * num_packets - priming;
         pos          = caf-> bytes_per_packet * num_packets;
