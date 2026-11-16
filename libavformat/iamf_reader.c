@@ -176,7 +176,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         nb_subblocks = param->nb_subblocks;
     }
 
-    if (nb_subblocks > duration) {
+    if (nb_subblocks > duration || nb_subblocks > len) {
         av_log(s, AV_LOG_ERROR, "Invalid duration or subblock count in parameter_id %u\n", parameter_id);
         ret = AVERROR_INVALIDDATA;
         goto fail;
