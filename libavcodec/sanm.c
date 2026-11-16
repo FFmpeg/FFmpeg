@@ -2124,8 +2124,8 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
             memset(ctx->fbuf, 0, ctx->frm0_size);
     }
 
-    left += xoff;
-    top += yoff;
+    left += (unsigned)xoff;
+    top += (unsigned)yoff;
 
     switch (codec) {
     case 1:
