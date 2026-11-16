@@ -301,7 +301,8 @@ static int rpl_read_header(AVFormatContext *s)
             error = -1;
             continue;
         }
-        if (total_audio_size/8 + (uint64_t)audio_size >= INT64_MAX/8)
+        if (video_size < 0 || offset > INT64_MAX - video_size ||
+            total_audio_size/8 + (uint64_t)audio_size >= INT64_MAX/8)
             return AVERROR_INVALIDDATA;
         if (vst)
             av_add_index_entry(vst, offset, i * rpl->frames_per_chunk,
