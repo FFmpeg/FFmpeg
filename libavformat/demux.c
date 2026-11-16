@@ -1561,7 +1561,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             int64_t pts = pkt->pts - (is_relative(pkt->pts) ? RELATIVE_TS_BASE : 0);
             int64_t sample = ts_to_samples(st, pts);
             int64_t duration = FFMAX(st->codecpar->frame_size, ts_to_samples(st, pkt->duration));
-            int64_t end_sample = sample + duration;
+            int64_t end_sample = av_sat_add64(sample, duration);
             if (duration > 0 && end_sample >= sti->first_discard_sample &&
                 sample < sti->last_discard_sample)
                 discard_padding = FFMIN(end_sample - sti->first_discard_sample, duration);
