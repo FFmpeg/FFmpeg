@@ -265,7 +265,14 @@ static int parse_object_segment(AVCodecContext *avctx,
         if (buf_size > object->rle_remaining_len)
             return AVERROR_INVALIDDATA;
 
+        uint8_t *rle = av_fast_realloc(object->rle, &object->rle_buffer_size,
+                                       object->rle_data_len + buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!rle)
+            return AVERROR(ENOMEM);
+        object->rle = rle;
+
         memcpy(object->rle + object->rle_data_len, buf, buf_size);
+        memset(object->rle + object->rle_data_len + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         object->rle_data_len += buf_size;
         object->rle_remaining_len -= buf_size;
 
@@ -299,7 +306,7 @@ static int parse_object_segment(AVCodecContext *avctx,
     object->w = width;
     object->h = height;
 
-    av_fast_padded_malloc(&object->rle, &object->rle_buffer_size, rle_bitmap_len);
+    av_fast_padded_malloc(&object->rle, &object->rle_buffer_size, buf_size);
 
     if (!object->rle) {
         object->rle_data_len = 0;
