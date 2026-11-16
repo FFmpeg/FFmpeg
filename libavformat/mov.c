@@ -4482,13 +4482,12 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     av_log(mov->fc, AV_LOG_DEBUG, "drop a frame at curr_cts: %"PRId64" @ %"PRId64"\n", curr_cts, index);
 
                     if (edit_list_start_encountered == 0) {
-                        num_discarded_begin++;
-                        if (av_reallocp_array(&frame_duration_buffer, num_discarded_begin,
-                                              sizeof(*frame_duration_buffer)) < 0) {
+                        if (!av_dynarray2_add((void **)&frame_duration_buffer, &num_discarded_begin,
+                                              sizeof(*frame_duration_buffer),
+                                              (const uint8_t *)&frame_duration)) {
                             av_log(mov->fc, AV_LOG_ERROR, "Cannot reallocate frame duration buffer\n");
                             break;
                         }
-                        frame_duration_buffer[num_discarded_begin - 1] = frame_duration;
 
                         // Increment skip_samples for the first non-zero audio edit list
                         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
