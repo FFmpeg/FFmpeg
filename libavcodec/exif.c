@@ -466,7 +466,8 @@ static int exif_get_makernote_offset(GetByteContext *gb)
         return -1;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(makernote_data); i++) {
-        if (!memcmp(gb->buffer, makernote_data[i].header, makernote_data[i].header_size))
+        if (bytestream2_get_bytes_left(gb) >= makernote_data[i].header_size &&
+            !memcmp(gb->buffer, makernote_data[i].header, makernote_data[i].header_size))
             return makernote_data[i].result;
     }
 
