@@ -169,7 +169,8 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
             }
             data++;
         }
-        if (par->codec_tag == MKTAG('h','v','c','1') &&
+        if ((par->codec_tag == MKTAG('h','v','c','1') ||
+             par->codec_tag == MKTAG('h','e','v','1')) &&
             profile != AV_PROFILE_UNKNOWN &&
             profile_compatibility != AV_PROFILE_UNKNOWN &&
             tier != 0 &&

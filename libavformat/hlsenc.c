@@ -2404,8 +2404,9 @@ static int hls_write_header(AVFormatContext *s)
             }
             avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
             if (outer_st->codecpar->codec_id == AV_CODEC_ID_HEVC &&
-                outer_st->codecpar->codec_tag != MKTAG('h','v','c','1')) {
-                av_log(s, AV_LOG_WARNING, "Stream HEVC is not hvc1, you should use tag:v hvc1 to set it.\n");
+                outer_st->codecpar->codec_tag != MKTAG('h','v','c','1') &&
+                outer_st->codecpar->codec_tag != MKTAG('h','e','v','1')) {
+                av_log(s, AV_LOG_WARNING, "Stream HEVC is not hvc1 or hev1, you should use tag:v hvc1 to set it.\n");
             }
             write_codec_attr(outer_st, vs);
 
