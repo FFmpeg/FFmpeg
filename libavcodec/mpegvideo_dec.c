@@ -25,7 +25,6 @@
 #include "config_components.h"
 
 #include "libavutil/avassert.h"
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/video_enc_params.h"
@@ -403,8 +402,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 /* called after a frame has been decoded. */
 void ff_mpv_frame_end(MpegEncContext *s)
 {
-    emms_c();
-
     if (s->cur_pic.reference)
         ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
 }
