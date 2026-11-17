@@ -1,0 +1,7 @@
+#extradata 0:        4, 0x021c008d
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: av1
+#dimensions 0: 352x288
+#sar 0: 0/1
+0,          0,          0,        1,    36265, 0x6c8c9941

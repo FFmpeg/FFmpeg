@@ -9618,6 +9618,7 @@ static int mov_read_pitm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_idat(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     c->idat_offset = avio_tell(pb);
+    c->idat_size = atom.size;
     return 0;
 }
 
@@ -9627,6 +9628,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int version, offset_size, length_size, base_offset_size, index_size;
     int item_count, extent_count;
     int64_t base_offset, extent_offset, extent_length;
+    int64_t atom_start, remaining;
     uint8_t value;
 
     if (c->found_iloc) {
@@ -9634,6 +9636,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
+    atom_start = avio_tell(pb);
     version = avio_r8(pb);
     avio_rb24(pb);  // flags.
 
@@ -9679,15 +9682,16 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (rb_size(pb, &base_offset, base_offset_size) < 0)
             return AVERROR_INVALIDDATA;
         extent_count = avio_rb16(pb);
-        if (extent_count > 1) {
-            // For still AVIF images, we only support one extent item.
-            avpriv_report_missing_feature(c->fc, "iloc: extent_count > 1");
-            return AVERROR_PATCHWELCOME;
-        }
-
-        if (rb_size(pb, &extent_offset, offset_size) < 0 ||
-            rb_size(pb, &extent_length, length_size) < 0 ||
-            base_offset > INT64_MAX - extent_offset)
+        // Each extent takes at least offset_size + length_size bytes; bound
+        // the count by the remaining box bytes so anomalous input cannot
+        // drive an unreasonably long extent loop. Zero field sizes carry no
+        // per-extent fields, so only a single extent with implied offset and
+        // length (ISO/IEC 14496-12 8.11.3.1) is representable. Subtracting
+        // the consumed bytes from atom.size instead of forming the absolute
+        // box end keeps the computation representable for extended sizes.
+        remaining = atom.size - (avio_tell(pb) - atom_start);
+        if (extent_count > (offset_size + length_size
+                            ? remaining / (offset_size + length_size) : 1))
             return AVERROR_INVALIDDATA;
 
         for (j = 0; j < c->nb_heif_item; j++) {
@@ -9707,11 +9711,75 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         if (offset_type == 1)
             item->is_idat_relative = 1;
-        item->extent_length = extent_length;
-        item->extent_offset = base_offset + extent_offset;
-        av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, item->item_id %d, offset_type %d, "
-                                    "extent_offset %"PRId64", extent_length %"PRId64"\n",
-               i, item->item_id, offset_type, item->extent_offset, item->extent_length);
+
+        av_freep(&item->extents);
+        item->nb_extents = 0;
+        // A repeated item_id replaces its extents; a stale implied-length
+        // flag would overwrite the replacement's explicit length during
+        // resolution.
+        item->has_implied_length = 0;
+
+        for (int k = 0; k < extent_count; k++) {
+            HEIFItemExtent *extents, *last;
+            int merged;
+
+            if (rb_size(pb, &extent_offset, offset_size) < 0 ||
+                rb_size(pb, &extent_length, length_size) < 0 ||
+                base_offset > INT64_MAX - extent_offset)
+                return AVERROR_INVALIDDATA;
+            extent_offset += base_offset;
+
+            if (!extent_length) {
+                // ISO/IEC 14496-12 8.11.3.1/8.11.3.3: a zero extent length
+                // means the extent runs to the end of the referenced container.
+                // Only the last extent may carry that implied length; it is
+                // resolved once iloc parsing is done, since the container size
+                // (in particular the idat box size) is not known yet.
+                if (k != extent_count - 1)
+                    return AVERROR_INVALIDDATA;
+                item->has_implied_length = 1;
+            }
+
+            last = item->nb_extents ? &item->extents[item->nb_extents - 1] : NULL;
+            merged = 0;
+            if (last) {
+                // The contiguity test below adds last->offset and last->length;
+                // that sum must be validated for overflow first.
+                if (last->length > INT64_MAX - last->offset)
+                    return AVERROR_INVALIDDATA;
+                merged = last->offset + last->length == extent_offset;
+            }
+
+            // Contiguous extents are merged so that a single-extent item and a
+            // contiguous multi-extent item both normalize to one segment.
+            if (merged) {
+                if (extent_length > INT64_MAX - last->length)
+                    return AVERROR_INVALIDDATA;
+                last->length += extent_length;
+            } else {
+                extents = av_realloc_array(item->extents, item->nb_extents + 1, sizeof(*item->extents));
+                if (!extents)
+                    return AVERROR(ENOMEM);
+                item->extents = extents;
+                item->extents[item->nb_extents].offset = extent_offset;
+                item->extents[item->nb_extents].length = extent_length;
+                item->nb_extents++;
+            }
+            av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, item->item_id %d, offset_type %d, "
+                                        "extent_offset %"PRId64", extent_length %"PRId64"\n",
+                   i, item->item_id, offset_type, extent_offset, extent_length);
+        }
+        if (!item->nb_extents) {
+            // Degenerate case (no extents or only zero-length ones): keep the
+            // pre-multi-extent behavior with a single zero-length extent
+            // anchored at base_offset.
+            item->extents = av_mallocz(sizeof(*item->extents));
+            if (!item->extents)
+                return AVERROR(ENOMEM);
+            item->extents[0].offset = base_offset;
+            item->extents[0].length = 0;
+            item->nb_extents = 1;
+        }
     }
 
     c->found_iloc = 1;
@@ -11050,6 +11118,7 @@ static void mov_free_stream_context(AVFormatContext *s, AVStream *st)
     }
 
     av_freep(&sc->tts_data);
+    av_freep(&sc->heif_extents);
     for (int i = 0; i < sc->drefs_count; i++) {
         av_freep(&sc->drefs[i].path);
         av_freep(&sc->drefs[i].dir);
@@ -11145,6 +11214,7 @@ static int mov_read_close(AVFormatContext *s)
     for (i = 0; i < mov->nb_heif_item; i++) {
         if (!mov->heif_item[i])
             continue;
+        av_freep(&mov->heif_item[i]->extents);
         av_freep(&mov->heif_item[i]->name);
         av_freep(&mov->heif_item[i]->iref_from_list);
         av_freep(&mov->heif_item[i]->iref_to_list);
@@ -11388,17 +11458,90 @@ static int set_display_matrix_from_item(AVPacketSideData **coded_side_data, int 
     return 0;
 }
 
+// Assemble all extents of a HEIF item, in order, into one contiguous buffer.
+// Restores the file position on return. Callers must have checked that the
+// input is seekable and that idat_offset is set when the item is idat-relative.
+// A non-negative max_size bounds the amount of data read and allocated: the
+// declared length is truncated to it, so a malformed oversized extent cannot
+// drive the allocation. Callers should pass what their syntax actually
+// consumes; a negative max_size reads the full declared length.
+static int heif_read_item_data(AVFormatContext *s, const HEIFItem *item,
+                               uint8_t **pbuf, int64_t *psize, int64_t max_size)
+{
+    MOVContext *c = s->priv_data;
+    int64_t idat_offset = 0, total = 0, read = 0, pos;
+    uint8_t *buf;
+    int ret = 0;
+
+    for (int i = 0; i < item->nb_extents; i++) {
+        if (item->extents[i].length > INT64_MAX - total)
+            return AVERROR_INVALIDDATA;
+        total += item->extents[i].length;
+    }
+    if (total > INT_MAX)
+        return AVERROR_INVALIDDATA;
+    if (max_size >= 0 && total > max_size)
+        total = max_size;
+
+    if (item->is_idat_relative) {
+        if (!c->idat_offset)
+            return AVERROR_INVALIDDATA;
+        idat_offset = c->idat_offset;
+    }
+
+    buf = av_malloc(total ? total : 1);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    pos = avio_tell(s->pb);
+    for (int i = 0; i < item->nb_extents && read < total; i++) {
+        int64_t offset = item->extents[i].offset;
+        int len = item->extents[i].length;
+        int err;
+
+        if (len > total - read)
+            len = total - read;
+
+        if (idat_offset > INT64_MAX - offset ||
+            avio_seek(s->pb, offset + idat_offset, SEEK_SET) < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+        err = avio_read(s->pb, buf + read, len);
+        if (err != len) {
+            ret = err < 0 ? err : AVERROR_INVALIDDATA;
+            goto fail;
+        }
+        read += len;
+    }
+    avio_seek(s->pb, pos, SEEK_SET);
+
+    *pbuf = buf;
+    *psize = total;
+    return 0;
+
+fail:
+    av_free(buf);
+    avio_seek(s->pb, pos, SEEK_SET);
+
+    return ret;
+}
+
 static int read_image_grid(AVFormatContext *s, const HEIFGroup *grid,
                            AVStreamGroupTileGrid *tile_grid)
 {
     MOVContext *c = s->priv_data;
     const HEIFItem *item = grid->item;
     int64_t coded_width = 0, coded_height = 0;
-    int64_t offset = 0, pos = avio_tell(s->pb);
     int64_t x = 0, y = 0;
+    int64_t buf_size;
     int i = 0;
     int tile_rows, tile_cols;
     int flags, size;
+    FFIOContext pbctx;
+    AVIOContext *pb;
+    uint8_t *buf;
+    int ret;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(c->fc, AV_LOG_INFO, "grid box with non seekable input\n");
@@ -11409,27 +11552,31 @@ static int read_image_grid(AVFormatContext *s, const HEIFGroup *grid,
             av_log(c->fc, AV_LOG_ERROR, "missing idat box required by the image grid\n");
             return AVERROR_INVALIDDATA;
         }
-        offset = c->idat_offset;
     }
 
-    if (offset > INT64_MAX - item->extent_offset)
-        return AVERROR_INVALIDDATA;
+    // The grid syntax this reader consumes is bounded by its header:
+    // version, flags, the row/column counts and the two output size
+    // fields, 12 bytes at most.
+    ret = heif_read_item_data(s, item, &buf, &buf_size, 12);
+    if (ret < 0)
+        return ret;
 
-    avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
+    pb = &pbctx.pub;
+    ffio_init_read_context(&pbctx, buf, buf_size);
 
-    avio_r8(s->pb);    /* version */
-    flags = avio_r8(s->pb);
+    avio_r8(pb);    /* version */
+    flags = avio_r8(pb);
 
-    tile_rows = avio_r8(s->pb) + 1;
-    tile_cols = avio_r8(s->pb) + 1;
+    tile_rows = avio_r8(pb) + 1;
+    tile_cols = avio_r8(pb) + 1;
     /* actual width and height of output image */
-    tile_grid->width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
-    tile_grid->height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+    tile_grid->width  = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
+    tile_grid->height = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
 
     av_log(c->fc, AV_LOG_TRACE, "grid: grid_rows %d grid_cols %d output_width %d output_height %d\n",
            tile_rows, tile_cols, tile_grid->width, tile_grid->height);
 
-    avio_seek(s->pb, pos, SEEK_SET);
+    av_free(buf);
 
     size = tile_rows * tile_cols;
     tile_grid->nb_tiles = grid->nb_items;
@@ -11491,8 +11638,11 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
     MOVContext *c = s->priv_data;
     const HEIFItem *item = grid->item;
     uint16_t canvas_fill_value[4];
-    int64_t offset = 0, pos = avio_tell(s->pb);
+    int64_t buf_size;
     int ret = 0, flags;
+    FFIOContext pbctx;
+    AVIOContext *pb;
+    uint8_t *buf;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(c->fc, AV_LOG_INFO, "iovl box with non seekable input\n");
@@ -11503,19 +11653,24 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
             av_log(c->fc, AV_LOG_ERROR, "missing idat box required by the image overlay\n");
             return AVERROR_INVALIDDATA;
         }
-        offset = c->idat_offset;
     }
 
-    if (offset > INT64_MAX - item->extent_offset)
-        return AVERROR_INVALIDDATA;
+    // The overlay syntax this reader consumes is bounded by its header
+    // (version, flags, the four canvas fill values and the two output size
+    // fields, 18 bytes at most) plus one offset pair per referenced item.
+    ret = heif_read_item_data(s, item, &buf, &buf_size,
+                              18 + (int64_t)grid->nb_items * 8);
+    if (ret < 0)
+        return ret;
 
-    avio_seek(s->pb, item->extent_offset + offset, SEEK_SET);
+    pb = &pbctx.pub;
+    ffio_init_read_context(&pbctx, buf, buf_size);
 
-    avio_r8(s->pb);    /* version */
-    flags = avio_r8(s->pb);
+    avio_r8(pb);    /* version */
+    flags = avio_r8(pb);
 
     for (int i = 0; i < 4; i++)
-        canvas_fill_value[i] = avio_rb16(s->pb);
+        canvas_fill_value[i] = avio_rb16(pb);
     av_log(c->fc, AV_LOG_TRACE, "iovl: canvas_fill_value { %u, %u, %u, %u }\n",
            canvas_fill_value[0], canvas_fill_value[1],
            canvas_fill_value[2], canvas_fill_value[3]);
@@ -11524,9 +11679,9 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
 
     /* actual width and height of output image */
     tile_grid->width        =
-    tile_grid->coded_width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+    tile_grid->coded_width  = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
     tile_grid->height       =
-    tile_grid->coded_height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+    tile_grid->coded_height = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
 
     av_log(c->fc, AV_LOG_TRACE, "iovl: output_width %d, output_height %d\n",
            tile_grid->width, tile_grid->height);
@@ -11540,8 +11695,8 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
 
     for (int i = 0; i < tile_grid->nb_tiles; i++) {
         tile_grid->offsets[i].idx        = grid->item_idx_list[i];
-        tile_grid->offsets[i].horizontal = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
-        tile_grid->offsets[i].vertical   = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+        tile_grid->offsets[i].horizontal = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
+        tile_grid->offsets[i].vertical   = (flags & 1) ? avio_rb32(pb) : avio_rb16(pb);
         av_log(c->fc, AV_LOG_TRACE, "iovl: stream_idx[%d] %u, "
                                     "horizontal_offset[%d] %d, vertical_offset[%d] %d\n",
                i, tile_grid->offsets[i].idx,
@@ -11549,7 +11704,7 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGroup *grid,
     }
 
 fail:
-    avio_seek(s->pb, pos, SEEK_SET);
+    av_free(buf);
 
     return ret;
 }
@@ -11559,7 +11714,7 @@ static int mov_parse_exif_item(AVFormatContext *s, HEIFItem *item, const HEIFIte
     MOVContext *c = s->priv_data;
     AVExifMetadata *ifd = &item->ifd;
     uint8_t *buf;
-    int64_t offset = 0, pos = avio_tell(s->pb);
+    int64_t buf_size;
     unsigned orientation_id = av_exif_get_tag_id("Orientation");
     int err;
 
@@ -11572,30 +11727,17 @@ static int mov_parse_exif_item(AVFormatContext *s, HEIFItem *item, const HEIFIte
             av_log(c->fc, AV_LOG_ERROR, "missing idat box required by the Exif metadata\n");
             return AVERROR_INVALIDDATA;
         }
-        offset = c->idat_offset;
     }
 
-    buf = av_malloc(ref->extent_length);
-    if (!buf)
-        return AVERROR(ENOMEM);
-
-    if (offset > INT64_MAX - ref->extent_offset) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    avio_seek(s->pb, ref->extent_offset + offset, SEEK_SET);
-    err = avio_read(s->pb, buf, ref->extent_length);
-    if (err != ref->extent_length) {
-        if (err > 0)
-            err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
+    err = heif_read_item_data(s, ref, &buf, &buf_size, -1);
+    if (err < 0)
+        return err;
 
     // HEIF spec states that Exif metadata is informative. The irot item property is
     // the normative source of rotation information. So we remove any Orientation tag
     // present in the Exif buffer.
-    err = av_exif_parse_buffer(s, buf, ref->extent_length, ifd, AV_EXIF_T_OFF);
+    err = av_exif_parse_buffer(s, buf, buf_size, ifd, AV_EXIF_T_OFF);
+    av_free(buf);
     if (err < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to parse Exif metadata\n");
         goto fail;
@@ -11605,12 +11747,9 @@ static int mov_parse_exif_item(AVFormatContext *s, HEIFItem *item, const HEIFIte
     if (err < 0)
         goto fail;
 
-    err = 0;
+    return 0;
 fail:
-    av_free(buf);
-    if (err < 0)
-        av_exif_free(ifd);
-    avio_seek(s->pb, pos, SEEK_SET);
+    av_exif_free(ifd);
 
     return err;
 }
@@ -11777,9 +11916,8 @@ static int mov_parse_heif_layered_video_tmap(AVFormatContext *s, const HEIFGroup
     AVStreamGroupLayeredVideo *layered_video;
     AVGainMapParams *gain = NULL;
     uint8_t *payload = NULL;
-    int64_t pos, offset = 0;
+    int64_t payload_size;
     size_t gain_size;
-    int64_t err64;
     int err;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
@@ -11848,43 +11986,23 @@ static int mov_parse_heif_layered_video_tmap(AVFormatContext *s, const HEIFGroup
             av_log(s, AV_LOG_ERROR, "Missing idat box required by the tmap\n");
             return AVERROR_INVALIDDATA;
         }
-        offset = mov->idat_offset;
     }
-
-    if (offset > INT64_MAX - tmap->item->extent_offset)
-        return AVERROR_INVALIDDATA;
 
     gain = av_gain_map_params_alloc(&gain_size);
     if (!gain)
         return AVERROR(ENOMEM);
 
-    payload = av_malloc(tmap->item->extent_length);
-    if (!payload) {
-        err = AVERROR(ENOMEM);
+    err = heif_read_item_data(s, tmap->item, &payload, &payload_size, -1);
+    if (err < 0)
+        goto fail;
+    if (payload_size < 1) {
+        err = AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    pos = avio_tell(s->pb);
-    err64 = avio_seek(s->pb, tmap->item->extent_offset + offset, SEEK_SET);
-    if (err64 != tmap->item->extent_offset + offset) {
-        err64 = err64 < 0 ? err64 : AVERROR_INVALIDDATA;
-        goto fail;
-    }
-    avio_r8(s->pb); /* version */
-
-    err = avio_read(s->pb, payload, tmap->item->extent_length - 1);
-    if (err == (tmap->item->extent_length - 1))
-        err64 = avio_seek(s->pb, pos, SEEK_SET);
-    else {
-        err = err < 0 ? err : AVERROR_INVALIDDATA;
-        goto fail;
-    }
-    if (err64 != pos) {
-        err = err64 < 0 ? err64 : AVERROR_INVALIDDATA;
-        goto fail;
-    }
-
-    err = av_gain_map_params_from_iso21496(gain, payload, tmap->item->extent_length - 1);
+    // The first byte of the tmap item is the version, the ISO 21496-1 gain
+    // map payload starts right after it.
+    err = av_gain_map_params_from_iso21496(gain, payload + 1, payload_size - 1);
     av_freep(&payload);
     if (err < 0) {
         av_log(s, AV_LOG_ERROR, "Invalid ISO 21496-1 gain map payload\n");
@@ -12200,16 +12318,48 @@ static int mov_parse_heif_layered_video(AVFormatContext *s)
     return 0;
 }
 
+// ISO/IEC 14496-12 8.11.3.1/8.11.3.3: the last extent of an item may declare
+// a zero length, meaning it runs to the end of the referenced container (the
+// file, or the idat box for idat-relative items).
+static int mov_resolve_implied_extents(MOVContext *mov, AVIOContext *pb)
+{
+    for (int i = 0; i < mov->nb_heif_item; i++) {
+        HEIFItem *item = mov->heif_item[i];
+        HEIFItemExtent *extent;
+        int64_t container_size;
+
+        if (!item || !item->has_implied_length)
+            continue;
+        if (item->is_idat_relative) {
+            if (!mov->idat_offset)
+                return AVERROR_INVALIDDATA;
+            container_size = mov->idat_size;
+        } else
+            container_size = avio_size(pb);
+        extent = &item->extents[item->nb_extents - 1];
+        if (container_size < 0 || extent->offset > container_size)
+            return AVERROR_INVALIDDATA;
+        extent->length = container_size - extent->offset;
+        item->has_implied_length = 0;
+    }
+
+    return 0;
+}
+
 static int mov_parse_heif_items(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
     int err;
 
+    err = mov_resolve_implied_extents(mov, s->pb);
+    if (err < 0)
+        return err;
+
     for (int i = 0; i < mov->nb_heif_item; i++) {
         HEIFItem *item = mov->heif_item[i];
         MOVStreamContext *sc;
         AVStream *st;
-        int64_t offset = 0;
+        int64_t offset = 0, extent_total = 0;
 
         if (!item)
             continue;
@@ -12229,17 +12379,48 @@ static int mov_parse_heif_items(AVFormatContext *s)
         st->codecpar->width  = item->width;
         st->codecpar->height = item->height;
 
-        sc->sample_size  = sc->stsz_sample_size = item->extent_length;
+        for (int j = 0; j < item->nb_extents; j++) {
+            if (item->extents[j].length > INT64_MAX - extent_total)
+                return AVERROR_INVALIDDATA;
+            extent_total += item->extents[j].length;
+        }
+
+        // AVIndexEntry.size is a signed 30-bit field; sums beyond 0x1FFFFFFF
+        // read back as negative sample sizes, which makes the packet assembly
+        // loop run zero times and report success. Reject such sums before
+        // indexing instead of storing a wrapped value.
+        if (extent_total > 0x1FFFFFFF) {
+            av_log(s, AV_LOG_ERROR, "Aggregate sample size %"PRId64" is too large\n",
+                   extent_total);
+            return AVERROR_INVALIDDATA;
+        }
+
+        sc->sample_size  = sc->stsz_sample_size = extent_total;
         sc->sample_count = 1;
 
         err = sanity_checks(s, sc, st->index);
         if (err)
             return AVERROR_INVALIDDATA;
 
-        if (offset > INT64_MAX - item->extent_offset)
+        if (item->nb_extents > 1) {
+            // The segments of a multi-extent item are not contiguous in the
+            // file, so mov_read_packet() assembles packets segment by segment.
+            sc->heif_extents = av_malloc_array(item->nb_extents, sizeof(*sc->heif_extents));
+            if (!sc->heif_extents)
+                return AVERROR(ENOMEM);
+            for (int j = 0; j < item->nb_extents; j++) {
+                if (offset > INT64_MAX - item->extents[j].offset)
+                    return AVERROR_INVALIDDATA;
+                sc->heif_extents[j].offset = item->extents[j].offset + offset;
+                sc->heif_extents[j].length = item->extents[j].length;
+            }
+            sc->nb_heif_extents = item->nb_extents;
+        }
+
+        if (offset > INT64_MAX - item->extents[0].offset)
             return AVERROR_INVALIDDATA;
 
-        sc->chunk_offsets[0] = item->extent_offset + offset;
+        sc->chunk_offsets[0] = item->extents[0].offset + offset;
 
         err = mov_parse_heif_item_references(s, item, &st->codecpar->coded_side_data,
                                                       &st->codecpar->nb_coded_side_data);
@@ -13098,7 +13279,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     current_index = sc->current_index;
     mov_current_sample_inc(sc);
 
-    if (mov->next_root_atom) {
+    // Multi-extent items must not be clipped at the next root atom: their
+    // extents span several mdat boxes and the assembly below reads each at
+    // its true position. The clamp stays in effect for contiguous samples.
+    if (mov->next_root_atom && sc->nb_heif_extents <= 1) {
         sample->pos = FFMIN(sample->pos, mov->next_root_atom);
         sample->size = FFMIN(sample->size, (mov->next_root_atom - sample->pos));
     }
@@ -13166,6 +13350,41 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 au_size = sample->size - 4;
             }
             ret = av_get_packet(sc->pb, pkt, au_size);
+        } else if (sc->nb_heif_extents > 1) {
+            // Multi-extent item: the segments are not contiguous in the file,
+            // so the packet is assembled with one seek per segment. The first
+            // segment is already seeked to and read via sample->pos above.
+            // Own error state; ret is not guaranteed to be set when entering
+            // this branch.
+            int64_t assembled = 0;
+            int err = 0;
+
+            for (int j = 0; j < sc->nb_heif_extents && assembled < sample->size; j++) {
+                int64_t length = FFMIN(sc->heif_extents[j].length, sample->size - assembled);
+                int seg;
+
+                if (j) {
+                    int64_t err64 = avio_seek(sc->pb, sc->heif_extents[j].offset, SEEK_SET);
+                    if (err64 != sc->heif_extents[j].offset) {
+                        err = err64 < 0 ? (int)err64 : AVERROR_INVALIDDATA;
+                        break;
+                    }
+                }
+                seg = assembled ? av_append_packet(sc->pb, pkt, length)
+                                : av_get_packet(sc->pb, pkt, length);
+                // Each segment must be read exactly to the expected length;
+                // a short read would silently yield a truncated packet.
+                if (seg != length) {
+                    err = seg < 0 ? seg : AVERROR_INVALIDDATA;
+                    break;
+                }
+                assembled += seg;
+            }
+            if (err < 0) {
+                av_packet_unref(pkt);
+                ret = err;
+            } else
+                ret = assembled;
         } else
             ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
