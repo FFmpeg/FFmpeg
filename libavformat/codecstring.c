@@ -61,6 +61,48 @@ static void set_vp9_codec_str(void *logctx, const AVCodecParameters *par,
     }
 }
 
+/**
+ * Read the general profile, tier, level and constraint fields of an HEVC
+ * profile_tier_level(). ptl points to the byte holding general_profile_space,
+ * and 12 bytes are read.
+ */
+static void parse_hevc_profile_tier_level(const uint8_t *ptl, int *profile,
+                                          uint32_t *profile_compatibility,
+                                          char *tier, int *level,
+                                          char *constraints,
+                                          size_t constraints_size)
+{
+    uint32_t profile_compatibility_flags;
+    uint8_t high_nibble;
+
+    /* TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
+     * and 'H' indicating the flag is 1
+     */
+    *tier = (ptl[0] & 0x20) == 0 ? 'L' : 'H';
+    *profile = ptl[0] & 0x1f;
+    /* PROFILE_COMPATIBILITY is general_profile_compatibility_flags, but in reverse bit order,
+     * in a hexadecimal representation (leading zeroes may be omitted).
+     */
+    profile_compatibility_flags = AV_RB32(ptl + 1);
+    /* revise these bits to get the profile compatibility value */
+    profile_compatibility_flags = ((profile_compatibility_flags & 0x55555555U) << 1) | ((profile_compatibility_flags >> 1) & 0x55555555U);
+    profile_compatibility_flags = ((profile_compatibility_flags & 0x33333333U) << 2) | ((profile_compatibility_flags >> 2) & 0x33333333U);
+    profile_compatibility_flags = ((profile_compatibility_flags & 0x0F0F0F0FU) << 4) | ((profile_compatibility_flags >> 4) & 0x0F0F0F0FU);
+    profile_compatibility_flags = ((profile_compatibility_flags & 0x00FF00FFU) << 8) | ((profile_compatibility_flags >> 8) & 0x00FF00FFU);
+    *profile_compatibility = (profile_compatibility_flags << 16) | (profile_compatibility_flags >> 16);
+    /* skip 8 + 32
+     * CONSTRAINTS is a hexadecimal representation of the general_constraint_indicator_flags.
+     * each byte is separated by a '.', and trailing zero bytes may be omitted.
+     * drop the trailing zero bytes refer to ISO/IEC14496-15.
+     */
+    high_nibble = ptl[6] >> 4;
+    snprintf(constraints, constraints_size,
+             high_nibble ? "%02x.%x" : "%02x",
+             ptl[5], high_nibble);
+    /* skip 8 + 32 + 4 + 43 + 1 bit */
+    *level = ptl[11];
+}
+
 int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                       const AVRational *frame_rate, struct AVBPrint *out)
 {
@@ -121,8 +163,6 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                 uint8_t *rbsp_buf;
                 int remain_size = 0;
                 int rbsp_size = 0;
-                uint32_t profile_compatibility_flags = 0;
-                uint8_t high_nibble = 0;
                 /* skip start code + nalu header */
                 data += 6;
                 /* process by reference General NAL unit syntax */
@@ -137,33 +177,11 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                 /* skip sps_video_parameter_set_id   u(4),
                  *      sps_max_sub_layers_minus1    u(3),
                  *  and sps_temporal_id_nesting_flag u(1)
-                 *
-                 * TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
-                 * and 'H' indicating the flag is 1
                  */
-                tier = (rbsp_buf[1] & 0x20) == 0 ? 'L' : 'H';
-                profile = rbsp_buf[1] & 0x1f;
-                /* PROFILE_COMPATIBILITY is general_profile_compatibility_flags, but in reverse bit order,
-                 * in a hexadecimal representation (leading zeroes may be omitted).
-                 */
-                profile_compatibility_flags = AV_RB32(rbsp_buf + 2);
-                /* revise these bits to get the profile compatibility value */
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x55555555U) << 1) | ((profile_compatibility_flags >> 1) & 0x55555555U);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x33333333U) << 2) | ((profile_compatibility_flags >> 2) & 0x33333333U);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x0F0F0F0FU) << 4) | ((profile_compatibility_flags >> 4) & 0x0F0F0F0FU);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x00FF00FFU) << 8) | ((profile_compatibility_flags >> 8) & 0x00FF00FFU);
-                profile_compatibility = (profile_compatibility_flags << 16) | (profile_compatibility_flags >> 16);
-                /* skip 8 + 8 + 32
-                 * CONSTRAINTS is a hexadecimal representation of the general_constraint_indicator_flags.
-                 * each byte is separated by a '.', and trailing zero bytes may be omitted.
-                 * drop the trailing zero bytes refer to ISO/IEC14496-15.
-                 */
-                high_nibble = rbsp_buf[7] >> 4;
-                snprintf(constraints, sizeof(constraints),
-                         high_nibble ? "%02x.%x" : "%02x",
-                         rbsp_buf[6], high_nibble);
-                /* skip 8 + 8 + 32 + 4 + 43 + 1 bit */
-                level = rbsp_buf[12];
+                parse_hevc_profile_tier_level(rbsp_buf + 1, &profile,
+                                              &profile_compatibility, &tier,
+                                              &level, constraints,
+                                              sizeof(constraints));
                 av_freep(&rbsp_buf);
                 break;
             }
