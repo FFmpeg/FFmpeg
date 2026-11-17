@@ -22,15 +22,14 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mem.h"
 #include "libavutil/rational.h"
 
 #include "av1.h"
 #include "avc.h"
 #include "avformat.h"
+#include "hevc.h"
 #include "internal.h"
 #include "lcevc.h"
-#include "nal.h"
 #include "vpcc.h"
 
 static const struct codec_string {
@@ -61,50 +60,57 @@ static void set_vp9_codec_str(void *logctx, const AVCodecParameters *par,
     }
 }
 
-/**
- * Read the general profile, tier, level and constraint fields of an HEVC
- * profile_tier_level(). ptl points to the byte holding general_profile_space,
- * and 12 bytes are read.
- */
-static void parse_hevc_profile_tier_level(const uint8_t *ptl,
-                                          int *profile_space, int *profile,
-                                          uint32_t *profile_compatibility,
-                                          char *tier, int *level,
-                                          char *constraints,
-                                          size_t constraints_size)
+/** Byte i of the 48-bit general_constraint_indicator_flags, 0 first. */
+static unsigned hevc_constraint_byte(const HVCCProfileTierLevel *ptl, int i)
 {
-    uint32_t profile_compatibility_flags;
-    int constraint_bytes = 6;
+    return (ptl->constraint_indicator_flags >> (40 - 8 * i)) & 0xff;
+}
 
-    /* TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
-     * and 'H' indicating the flag is 1
-     */
-    *profile_space = ptl[0] >> 6;
-    *tier = (ptl[0] & 0x20) == 0 ? 'L' : 'H';
-    *profile = ptl[0] & 0x1f;
-    /* PROFILE_COMPATIBILITY is general_profile_compatibility_flags, but in reverse bit order,
-     * in a hexadecimal representation (leading zeroes may be omitted).
-     */
-    profile_compatibility_flags = AV_RB32(ptl + 1);
-    /* revise these bits to get the profile compatibility value */
-    profile_compatibility_flags = ((profile_compatibility_flags & 0x55555555U) << 1) | ((profile_compatibility_flags >> 1) & 0x55555555U);
-    profile_compatibility_flags = ((profile_compatibility_flags & 0x33333333U) << 2) | ((profile_compatibility_flags >> 2) & 0x33333333U);
-    profile_compatibility_flags = ((profile_compatibility_flags & 0x0F0F0F0FU) << 4) | ((profile_compatibility_flags >> 4) & 0x0F0F0F0FU);
-    profile_compatibility_flags = ((profile_compatibility_flags & 0x00FF00FFU) << 8) | ((profile_compatibility_flags >> 8) & 0x00FF00FFU);
-    *profile_compatibility = (profile_compatibility_flags << 16) | (profile_compatibility_flags >> 16);
-    /* skip 8 + 32
-     * CONSTRAINTS is a hexadecimal representation of the general_constraint_indicator_flags.
-     * each byte is separated by a '.', and trailing zero bytes may be omitted.
-     * drop the trailing zero bytes refer to ISO/IEC14496-15.
-     */
-    while (constraint_bytes > 1 && !ptl[4 + constraint_bytes])
+/* 3GPP TS 26.244 and ISO/IEC 14496-15 */
+static int set_hevc_codec_str(const AVCodecParameters *par, AVBPrint *out)
+{
+    HVCCProfileTierLevel ptl;
+    uint32_t compatibility;
+    int constraint_bytes = 6;
+    int ret;
+
+    if (par->codec_tag != MKTAG('h','v','c','1') &&
+        par->codec_tag != MKTAG('h','e','v','1'))
+        return AVERROR(EINVAL);
+    if (!par->extradata)
+        return AVERROR(EINVAL);
+
+    ret = ff_hevc_get_profile_tier_level(&ptl, par->extradata,
+                                         par->extradata_size);
+    if (ret < 0)
+        return ret;
+    /* No parameter set, or a zeroed hvcC record as some muxers write */
+    if (!ptl.profile_idc || !ptl.level_idc)
+        return AVERROR(EINVAL);
+
+    /* general_profile_compatibility_flags in reverse bit order */
+    compatibility = ptl.profile_compatibility_flags;
+    compatibility = ((compatibility & 0x55555555U) << 1) | ((compatibility >> 1) & 0x55555555U);
+    compatibility = ((compatibility & 0x33333333U) << 2) | ((compatibility >> 2) & 0x33333333U);
+    compatibility = ((compatibility & 0x0F0F0F0FU) << 4) | ((compatibility >> 4) & 0x0F0F0F0FU);
+    compatibility = ((compatibility & 0x00FF00FFU) << 8) | ((compatibility >> 8) & 0x00FF00FFU);
+    compatibility = (compatibility << 16) | (compatibility >> 16);
+
+    av_bprintf(out, "%s.", av_fourcc2str(par->codec_tag));
+    /* general_profile_space 1 to 3 is a letter A to C before the profile */
+    if (ptl.profile_space)
+        av_bprint_chars(out, 'A' + ptl.profile_space - 1, 1);
+    av_bprintf(out, "%d.%"PRIx32".%c%d", ptl.profile_idc, compatibility,
+               ptl.tier_flag ? 'H' : 'L', ptl.level_idc);
+
+    /* The six constraint bytes, trailing zero bytes omitted */
+    while (constraint_bytes > 1 &&
+           !hevc_constraint_byte(&ptl, constraint_bytes - 1))
         constraint_bytes--;
     for (int i = 0; i < constraint_bytes; i++)
-        snprintf(constraints + 3 * i, constraints_size - 3 * i,
-                 "%02x.", ptl[5 + i]);
-    constraints[3 * constraint_bytes - 1] = '\0';
-    /* skip 8 + 32 + 4 + 43 + 1 bit */
-    *level = ptl[11];
+        av_bprintf(out, ".%02x", hevc_constraint_byte(&ptl, i));
+
+    return 0;
 }
 
 int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
@@ -147,87 +153,7 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
             return AVERROR(EINVAL);
         }
     } else if (par->codec_id == AV_CODEC_ID_HEVC) {
-        // 3GPP TS 26.244
-        uint8_t *data = par->extradata;
-        int profile_space = 0;
-        int profile = AV_PROFILE_UNKNOWN;
-        uint32_t profile_compatibility = AV_PROFILE_UNKNOWN;
-        char tier = 0;
-        int level = AV_LEVEL_UNKNOWN;
-        char constraints[19] = "";
-
-        if (par->profile != AV_PROFILE_UNKNOWN)
-            profile = par->profile;
-        if (par->level != AV_LEVEL_UNKNOWN)
-            level = par->level;
-
-        /* HEVCDecoderConfigurationRecord (ISO/IEC 14496-15), as in mp4 and
-         * Matroska: its profile_tier_level fields follow configurationVersion.
-         * Its NAL units have no start code to scan for. Any extradata not
-         * starting with a start code is taken as a record, which covers
-         * configurationVersion 0 from older muxers; this is looser than
-         * libavcodec, which wants the full 23-byte record. Only the 13 bytes
-         * up to general_level_idc are read. */
-        if (data && par->extradata_size >= 13 &&
-            (data[0] || data[1] || data[2] > 1)) {
-            /* Some muxers write a zeroed record: no profile, no level. */
-            if (!(data[1] & 0x1f) || !data[12])
-                return AVERROR(EINVAL);
-            parse_hevc_profile_tier_level(data + 1, &profile_space, &profile,
-                                          &profile_compatibility, &tier,
-                                          &level, constraints,
-                                          sizeof(constraints));
-            data = NULL;
-        }
-
-        /* check the boundary of data which from current position is small than extradata_size */
-        while (data && (data - par->extradata + 19) < par->extradata_size) {
-            /* get HEVC SPS NAL and seek to profile_tier_level */
-            if (!(data[0] | data[1] | data[2]) && data[3] == 1 && ((data[4] & 0x7E) == 0x42)) {
-                uint8_t *rbsp_buf;
-                int remain_size = 0;
-                int rbsp_size = 0;
-                /* skip start code + nalu header */
-                data += 6;
-                /* process by reference General NAL unit syntax */
-                remain_size = par->extradata_size - (data - par->extradata);
-                rbsp_buf = ff_nal_unit_extract_rbsp(data, remain_size, &rbsp_size, 0);
-                if (!rbsp_buf)
-                    return AVERROR(EINVAL);
-                if (rbsp_size < 13) {
-                    av_freep(&rbsp_buf);
-                    break;
-                }
-                /* skip sps_video_parameter_set_id   u(4),
-                 *      sps_max_sub_layers_minus1    u(3),
-                 *  and sps_temporal_id_nesting_flag u(1)
-                 */
-                parse_hevc_profile_tier_level(rbsp_buf + 1, &profile_space,
-                                              &profile,
-                                              &profile_compatibility, &tier,
-                                              &level, constraints,
-                                              sizeof(constraints));
-                av_freep(&rbsp_buf);
-                break;
-            }
-            data++;
-        }
-        if ((par->codec_tag == MKTAG('h','v','c','1') ||
-             par->codec_tag == MKTAG('h','e','v','1')) &&
-            profile != AV_PROFILE_UNKNOWN &&
-            profile_compatibility != AV_PROFILE_UNKNOWN &&
-            tier != 0 &&
-            level != AV_LEVEL_UNKNOWN &&
-            constraints[0] != '\0') {
-            /* general_profile_space 1 to 3 is a letter A to C before
-             * the profile (ISO/IEC 14496-15) */
-            av_bprintf(out, "%s.", av_fourcc2str(par->codec_tag));
-            if (profile_space)
-                av_bprint_chars(out, 'A' + profile_space - 1, 1);
-            av_bprintf(out, "%d.%x.%c%d.%s", profile,
-                       profile_compatibility, tier, level, constraints);
-        } else
-            return AVERROR(EINVAL);
+        return set_hevc_codec_str(par, out);
     } else if (par->codec_id == AV_CODEC_ID_LCEVC) {
         LCEVCDecoderConfigurationRecord lvcc;
         int err;

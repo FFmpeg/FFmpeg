@@ -29,6 +29,27 @@
 #include <stdint.h>
 #include "avio.h"
 
+/** The general profile_tier_level() fields, as an hvcC record carries them. */
+typedef struct HVCCProfileTierLevel {
+    uint8_t  profile_space;
+    uint8_t  tier_flag;
+    uint8_t  profile_idc;
+    uint32_t profile_compatibility_flags;
+    uint64_t constraint_indicator_flags;   ///< 48 bits
+    uint8_t  level_idc;
+} HVCCProfileTierLevel;
+
+/**
+ * Get the general profile, tier and level an hvcC record written from this
+ * extradata would carry.
+ *
+ * @param data extradata, either an hvcC record or Annex B
+ * @return 0 on success, a negative AVERROR code on failure. profile_idc
+ *         and level_idc are 0 when the extradata names none.
+ */
+int ff_hevc_get_profile_tier_level(HVCCProfileTierLevel *ptl,
+                                   const uint8_t *data, int size);
+
 /**
  * Writes Annex B formatted HEVC NAL units to the provided AVIOContext.
  *

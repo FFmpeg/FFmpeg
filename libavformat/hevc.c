@@ -86,15 +86,6 @@ typedef struct HEVCDecoderConfigurationRecord {
     uint8_t alpha_layer_nuh_id;
 } HEVCDecoderConfigurationRecord;
 
-typedef struct HVCCProfileTierLevel {
-    uint8_t  profile_space;
-    uint8_t  tier_flag;
-    uint8_t  profile_idc;
-    uint32_t profile_compatibility_flags;
-    uint64_t constraint_indicator_flags;
-    uint8_t  level_idc;
-} HVCCProfileTierLevel;
-
 static void hvcc_update_ptl(HEVCDecoderConfigurationRecord *hvcc,
                             HVCCProfileTierLevel *ptl)
 {
@@ -1412,6 +1403,29 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
     ret = parse_configuration_record(&hvcc, data, size, &flags, &nal_buf);
     if (ret >= 0)
         ret = hvcc_write(logctx, pb, &hvcc, flags);
+    hvcc_close(&hvcc);
+    av_free(nal_buf);
+    return ret;
+}
+
+int ff_hevc_get_profile_tier_level(HVCCProfileTierLevel *ptl,
+                                   const uint8_t *data, int size)
+{
+    HEVCDecoderConfigurationRecord hvcc;
+    uint8_t *nal_buf = NULL;
+    int flags = 0;
+    int ret;
+
+    hvcc_init(&hvcc);
+    ret = parse_configuration_record(&hvcc, data, size, &flags, &nal_buf);
+    if (ret >= 0) {
+        ptl->profile_space               = hvcc.general_profile_space;
+        ptl->tier_flag                   = hvcc.general_tier_flag;
+        ptl->profile_idc                 = hvcc.general_profile_idc;
+        ptl->profile_compatibility_flags = hvcc.general_profile_compatibility_flags;
+        ptl->constraint_indicator_flags  = hvcc.general_constraint_indicator_flags;
+        ptl->level_idc                   = hvcc.general_level_idc;
+    }
     hvcc_close(&hvcc);
     av_free(nal_buf);
     return ret;
