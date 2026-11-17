@@ -1842,8 +1842,14 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
             int err;
 
             do {
-                if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                if ((err = http_get_line(s, line, sizeof(line))) < 0) {
+                    /* The peer closed before the next chunk header. That
+                     * includes a missing terminating 0 chunk, so a clean
+                     * TCP close is not a complete chunked message. */
+                    if (err == AVERROR_EOF)
+                        return AVERROR(EIO);
                     return err;
+                }
             } while (!*line);    /* skip CR LF from last chunk */
 
             s->chunksize = strtoull(line, NULL, 16);
@@ -1856,11 +1862,11 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
                 /* a partial reply that ends at its range end is continued */
                 int more = s->range_end && s->off == s->range_end &&
                            s->range_end < requested_end(s);
+                do {
+                    if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                        return err == AVERROR_EOF ? AVERROR(EIO) : err;
+                } while (*line);
                 if (s->multiple_requests) {
-                    do {
-                        if ((err = http_get_line(s, line, sizeof(line))) < 0)
-                            return err;
-                    } while (*line);
                     s->chunkend = !more;
                 } else {
                     av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
@@ -1892,8 +1898,18 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         if (s->off == target_end && target_end < file_end)
             return AVERROR(EAGAIN); /* reached end of content range */
         len = ffurl_read(s->hd, buf, size);
+        /* A chunk body that stops short of its declared size is not a
+         * clean end, even when the resource length is unknown. */
+        if (s->chunksize != UINT64_MAX && s->chunksize > 0 &&
+            (!len || len == AVERROR_EOF)) {
+            av_log(h, AV_LOG_ERROR,
+                   "Chunked encoding ended %"PRIu64" bytes early\n",
+                   s->chunksize);
+            return AVERROR(EIO);
+        }
         if ((!len || len == AVERROR_EOF) &&
-            (!s->willclose || s->chunksize == UINT64_MAX) && s->off < target_end) {
+            (!s->willclose || s->chunksize == UINT64_MAX) &&
+            target_end != UINT64_MAX && s->off < target_end) {
             av_log(h, AV_LOG_ERROR,
                    "Stream ends prematurely at %"PRIu64", should be %"PRIu64"\n",
                    s->off, target_end
@@ -1983,8 +1999,11 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     if (!s->is_connected_server && s->method && !av_strcasecmp(s->method, "HEAD"))
         return AVERROR_EOF;
 
-    if (!s->hd)
-        return s->off < requested_end(s) ? AVERROR(EIO) : AVERROR_EOF;
+    if (!s->hd) {
+        uint64_t file_end = requested_end(s);
+        return file_end != UINT64_MAX && s->off < file_end
+               ? AVERROR(EIO) : AVERROR_EOF;
+    }
 
 #if CONFIG_ZLIB
     if (s->compressed)
@@ -1996,7 +2015,11 @@ retry:
     while (read_ret < 0) {
         uint64_t target = h->is_streamed ? 0 : s->off;
         uint64_t file_end = requested_end(s);
-        bool is_premature = file_end > 0 && s->off < file_end;
+        /* Unknown length: a clean close is EOF. A transport error still
+         * means bytes are missing, so reconnect can recover them. */
+        bool is_premature = file_end > 0 && s->off < file_end &&
+                            (file_end != UINT64_MAX ||
+                             read_ret != AVERROR_EOF);
 
         if (read_ret == AVERROR_EXIT)
             break;
@@ -2040,7 +2063,17 @@ retry:
         reconnect_delay = 1 + 2*reconnect_delay;
         conn_attempts++;
         seek_ret = http_seek_internal(h, target, SEEK_SET, 1);
-        if (seek_ret >= 0 && seek_ret != target) {
+        /* A failed reopen restored the old connection. Keep the reopen error
+         * instead of reading old_hd (which would turn e.g. HTTP 503 into EOF),
+         * and map a headerless EOF to EIO so unknown-length streams still
+         * spend the remaining retry budget. */
+        if (seek_ret < 0) {
+            if (seek_ret == AVERROR_EXIT || seek_ret == AVERROR(EAGAIN))
+                return (int)seek_ret;
+            read_ret = seek_ret == AVERROR_EOF ? AVERROR(EIO) : (int)seek_ret;
+            continue;
+        }
+        if (seek_ret != target) {
             ffurl_closep(&s->hd);
             av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRIu64".\n", target);
             return read_ret;
