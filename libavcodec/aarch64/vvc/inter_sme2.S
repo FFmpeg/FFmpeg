@@ -614,10 +614,10 @@ function ff_vvc_alf_filter_luma_10_sme2, export=1
         tbnz            x13, #24, 13f
         sqrshr          z15.h, {z28.d-z31.d}, #10
 13:
-        add             z12.h, z12.h, z6.h
-        add             z13.h, z13.h, z7.h
-        add             z14.h, z14.h, z0.h
-        add             z15.h, z15.h, z3.h
+        sqadd           z12.h, z12.h, z6.h
+        sqadd           z13.h, z13.h, z7.h
+        sqadd           z14.h, z14.h, z0.h
+        sqadd           z15.h, z15.h, z3.h
         sclamp          {z12.h-z15.h}, z9.h, z10.h
         st1h            z12.h, p0, [x19]
         st1h            z13.h, p0, [x19, x2, lsl #1]
