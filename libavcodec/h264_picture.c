@@ -219,8 +219,9 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
         if (err < 0) {
             av_log(h->avctx, AV_LOG_WARNING, "Failed synthesizing film "
                    "grain, ignoring: %s\n", av_err2str(err));
-            cur->needs_fg = 0;
-            err = 0;
+            /* other threads may already hold a reference with needs_fg set,
+             * so output the decoded picture through the grain buffer */
+            err = av_frame_copy(cur->f_grain, cur->f);
         }
     }
 
