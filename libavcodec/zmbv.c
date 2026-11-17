@@ -484,6 +484,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int len = buf_size;
     int hi_ver, lo_ver, ret;
     int expected_size;
+    int direct = 0;
 
     /* parse header */
     if (len < 1)
@@ -599,16 +600,42 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         c->decomp_len = len;
     } else { // ZLIB-compressed data
         z_stream *const zstream = &c->zstream.zstream;
+        uint8_t *out = c->decomp_buf;
+        int out_size = c->decomp_size;
+
+        /* A packed keyframe without a palette is inflated straight into
+         * the output frame, which saves the copy from decomp_buf.
+         */
+        if ((c->flags & ZMBV_KEYFRAME) && c->fmt != ZMBV_FMT_8BPP) {
+            ret = get_video_buffer(avctx, frame);
+            if (ret < 0)
+                return ret;
+            if (frame->linesize[0] == c->stride) {
+                direct   = 1;
+                out      = frame->data[0];
+                out_size = expected_size;
+            }
+        }
 
         zstream->total_in  = zstream->total_out = 0;
         zstream->next_in   = buf;
         zstream->avail_in  = len;
-        zstream->next_out  = c->decomp_buf;
-        zstream->avail_out = c->decomp_size;
+        zstream->next_out  = out;
+        zstream->avail_out = out_size;
         zret = inflate(zstream, Z_SYNC_FLUSH);
         if (zret != Z_OK && zret != Z_STREAM_END) {
             av_log(avctx, AV_LOG_ERROR, "inflate error %d\n", zret);
             return AVERROR_INVALIDDATA;
+        }
+        if (direct && !zstream->avail_out && zret != Z_STREAM_END) {
+            /* Any further output means the payload exceeds the frame. */
+            zstream->next_out  = c->decomp_buf;
+            zstream->avail_out = 1;
+            zret = inflate(zstream, Z_SYNC_FLUSH);
+            if (zret != Z_OK && zret != Z_STREAM_END && zret != Z_BUF_ERROR) {
+                av_log(avctx, AV_LOG_ERROR, "inflate error %d\n", zret);
+                return AVERROR_INVALIDDATA;
+            }
         }
         c->decomp_len = zstream->total_out;
     }
@@ -621,13 +648,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     /* Decode directly into the output frame. It is kept as the reference
      * frame for the next P frame, hence the reference flag.
      */
-    if ((ret = get_video_buffer(avctx, frame)) < 0)
+    if (!frame->buf[0] &&
+        (ret = get_video_buffer(avctx, frame)) < 0)
         return ret;
 
     if (c->flags & ZMBV_KEYFRAME) {
         frame->flags |= AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_I;
-        zmbv_decode_intra(c, frame->data[0], frame->linesize[0]);
+        if (!direct)
+            zmbv_decode_intra(c, frame->data[0], frame->linesize[0]);
     } else {
         frame->flags &= ~AV_FRAME_FLAG_KEY;
         frame->pict_type = AV_PICTURE_TYPE_P;
