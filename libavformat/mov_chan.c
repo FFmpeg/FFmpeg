@@ -569,7 +569,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         return 0;
 
     if (layout_tag == MOV_CH_LAYOUT_USE_DESCRIPTIONS) {
-        AVChannelLayout tmp = { 0 };
+        AVChannelLayout tmp = { .order = AV_CHANNEL_ORDER_CUSTOM };
         int nb_channels = ch_layout->nb_channels;
 
         if (!num_descr || num_descr < nb_channels) {
@@ -589,11 +589,13 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             num_descr = nb_channels;
         }
 
-        ret = av_channel_layout_custom_init(&tmp, nb_channels);
-        if (ret < 0)
+        if (nb_channels <= 0) {
+            ret = AVERROR(EINVAL);
             goto out;
+        }
 
         for (int i = 0; i < num_descr; i++) {
+            AVChannelCustom ch = { 0 };
             uint32_t label;
             if (pb->eof_reached) {
                 av_log(s, AV_LOG_ERROR,
@@ -607,7 +609,13 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             avio_rl32(pb);                      // mCoordinates[1]
             avio_rl32(pb);                      // mCoordinates[2]
             size -= 20;
-            tmp.u.map[i].id = mov_get_channel_id(label);
+            ch.id = mov_get_channel_id(label);
+            if (!av_dynarray2_add((void **)&tmp.u.map, &tmp.nb_channels,
+                                  sizeof(*tmp.u.map), (const uint8_t *)&ch)) {
+                av_channel_layout_uninit(&tmp);
+                ret = AVERROR(ENOMEM);
+                goto out;
+            }
         }
 
         ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
@@ -783,7 +791,7 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st, int vers
 
         av_log(s, AV_LOG_TRACE, "'chnl' layout %d\n", layout);
         if (!layout) {
-            AVChannelLayout tmp = { 0 }, *ch_layout = &st->codecpar->ch_layout;
+            AVChannelLayout tmp = { .order = AV_CHANNEL_ORDER_CUSTOM }, *ch_layout = &st->codecpar->ch_layout;
             int nb_channels = ch_layout->nb_channels;
 
             if (version == 1) {
@@ -793,14 +801,22 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st, int vers
                     return AVERROR_INVALIDDATA;
             }
 
-            ret = av_channel_layout_custom_init(&tmp, nb_channels);
-            if (ret < 0)
-                return ret;
+            if (nb_channels <= 0)
+                return AVERROR(EINVAL);
 
             for (int i = 0; i < nb_channels; i++) {
-                int speaker_pos = avio_r8(pb);
+                AVChannelCustom ch = { 0 };
+                int speaker_pos;
                 enum AVChannel channel;
 
+                if (pb->eof_reached) {
+                    av_log(s, AV_LOG_ERROR,
+                           "reached EOF while reading channel layout\n");
+                    av_channel_layout_uninit(&tmp);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                speaker_pos = avio_r8(pb);
                 if (speaker_pos == 126) // explicit position
                     avio_skip(pb, 3);   // azimuth, elevation
 
@@ -814,7 +830,12 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st, int vers
                     channel = AV_CHAN_UNKNOWN;
                 }
 
-                tmp.u.map[i].id = channel;
+                ch.id = channel;
+                if (!av_dynarray2_add((void **)&tmp.u.map, &tmp.nb_channels,
+                                      sizeof(*tmp.u.map), (const uint8_t *)&ch)) {
+                    av_channel_layout_uninit(&tmp);
+                    return AVERROR(ENOMEM);
+                }
             }
 
             ret = av_channel_layout_retype(&tmp, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
