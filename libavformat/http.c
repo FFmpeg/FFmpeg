@@ -2100,14 +2100,18 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     if (s->end_of_resource)
         return AVERROR_EOF;
 
-    if (!s->hd)
-        return s->off < requested_end(s) ? AVERROR(EIO) : AVERROR_EOF;
-
-    if (s->end_chunked_post && !s->end_header) {
+    if (s->hd && s->end_chunked_post && !s->end_header) {
         err = http_read_header(h);
         if (err < 0)
             return err;
     }
+
+    /* A HEAD response describes the resource without carrying a body. */
+    if (!s->is_connected_server && s->method && !av_strcasecmp(s->method, "HEAD"))
+        return AVERROR_EOF;
+
+    if (!s->hd)
+        return s->off < requested_end(s) ? AVERROR(EIO) : AVERROR_EOF;
 
 #if CONFIG_ZLIB
     if (s->compressed)
@@ -2635,10 +2639,33 @@ static int http_proxy_write(URLContext *h, const uint8_t *buf, int size)
     return ffurl_write(s->hd, buf, size);
 }
 
+/* A CONNECT tunnel is an unbounded byte stream, so the Content-Length,
+ * chunked and premature-end handling in http_buf_read() does not apply.
+ * Forward any bytes buffered together with the CONNECT reply first, then
+ * pass reads (and EOF) through from the underlying connection. */
+static int http_proxy_read(URLContext *h, uint8_t *buf, int size)
+{
+    HTTPContext *s = h->priv_data;
+    int len;
+
+    if (!s->hd)
+        return AVERROR(EIO);
+
+    len = s->buf_end - s->buf_ptr;
+    if (len > 0) {
+        if (len > size)
+            len = size;
+        memcpy(buf, s->buf_ptr, len);
+        s->buf_ptr += len;
+        return len;
+    }
+    return ffurl_read(s->hd, buf, size);
+}
+
 const URLProtocol ff_httpproxy_protocol = {
     .name                = "httpproxy",
     .url_open            = http_proxy_open,
-    .url_read            = http_buf_read,
+    .url_read            = http_proxy_read,
     .url_write           = http_proxy_write,
     .url_close           = http_proxy_close,
     .url_get_file_handle = http_get_file_handle,
