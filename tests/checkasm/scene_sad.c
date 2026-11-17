@@ -51,13 +51,24 @@ static void check_scene_sad(int depth)
     }
 
     if (check_func(ff_scene_sad_get_fn(depth), "scene_sad%d", depth)) {
+        /* include rows narrower than and around each vector width */
+        const int widths[] = { 1, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, width };
+        const int heights[] = { 0, 1, HEIGHT };
         uint64_t sum1, sum2;
-        call_ref(src1, STRIDE, src2, STRIDE, width, HEIGHT, &sum1);
-        call_new(src1, STRIDE, src2, STRIDE, width, HEIGHT, &sum2);
-        if (sum1 != sum2) {
-            fprintf(stderr, "scene_sad%d: sum mismatch: %llu != %llu\n",
-                    depth, (unsigned long long) sum1, (unsigned long long) sum2);
-            fail();
+
+        for (int w = 0; w < FF_ARRAY_ELEMS(widths); w++) {
+            for (int h = 0; h < FF_ARRAY_ELEMS(heights); h++) {
+                if (widths[w] > width)
+                    continue;
+                call_ref(src1, STRIDE, src2, STRIDE, widths[w], heights[h], &sum1);
+                call_new(src1, STRIDE, src2, STRIDE, widths[w], heights[h], &sum2);
+                if (sum1 != sum2) {
+                    fprintf(stderr, "scene_sad%d: sum mismatch for %dx%d: %llu != %llu\n",
+                            depth, widths[w], heights[h],
+                            (unsigned long long) sum1, (unsigned long long) sum2);
+                    fail();
+                }
+            }
         }
         if (depth == 8) {
             for (int offset1 = 0; offset1 < 16; offset1++) {

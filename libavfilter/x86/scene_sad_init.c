@@ -27,7 +27,8 @@ static void FUNC_NAME(SCENE_SAD_PARAMS) {                                     \
     uint64_t sad[MMSIZE / 8] = {0};                                           \
     ptrdiff_t awidth = width & ~(MMSIZE - 1);                                 \
     *sum = 0;                                                                 \
-    ASM_FUNC_NAME(src1, stride1, src2, stride2, awidth, height, sad);         \
+    if (awidth && height > 0)                                                 \
+        ASM_FUNC_NAME(src1, stride1, src2, stride2, awidth, height, sad);     \
     for (int i = 0; i < MMSIZE / 8; i++)                                      \
         *sum += sad[i];                                                       \
     ff_scene_sad_c(src1 + awidth, stride1,                                    \
@@ -43,7 +44,8 @@ static void FUNC_NAME(SCENE_SAD_PARAMS) {                                     \
     uint64_t sad[MMSIZE / 8] = {0};                                           \
     ptrdiff_t bytes = (width << 1) & ~(MMSIZE - 1);                           \
     *sum = 0;                                                                 \
-    ASM_FUNC_NAME(src1, stride1, src2, stride2, bytes, height, sad);          \
+    if (bytes && height > 0)                                                  \
+        ASM_FUNC_NAME(src1, stride1, src2, stride2, bytes, height, sad);      \
     for (int i = 0; i < MMSIZE / 8; i++)                                      \
         *sum += sad[i];                                                       \
     ff_scene_sad16_c(src1 + bytes, stride1,                                   \
