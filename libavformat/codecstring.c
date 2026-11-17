@@ -74,7 +74,7 @@ static void parse_hevc_profile_tier_level(const uint8_t *ptl,
                                           size_t constraints_size)
 {
     uint32_t profile_compatibility_flags;
-    uint8_t high_nibble;
+    int constraint_bytes = 6;
 
     /* TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
      * and 'H' indicating the flag is 1
@@ -97,10 +97,12 @@ static void parse_hevc_profile_tier_level(const uint8_t *ptl,
      * each byte is separated by a '.', and trailing zero bytes may be omitted.
      * drop the trailing zero bytes refer to ISO/IEC14496-15.
      */
-    high_nibble = ptl[6] >> 4;
-    snprintf(constraints, constraints_size,
-             high_nibble ? "%02x.%x" : "%02x",
-             ptl[5], high_nibble);
+    while (constraint_bytes > 1 && !ptl[4 + constraint_bytes])
+        constraint_bytes--;
+    for (int i = 0; i < constraint_bytes; i++)
+        snprintf(constraints + 3 * i, constraints_size - 3 * i,
+                 "%02x.", ptl[5 + i]);
+    constraints[3 * constraint_bytes - 1] = '\0';
     /* skip 8 + 32 + 4 + 43 + 1 bit */
     *level = ptl[11];
 }
@@ -152,7 +154,7 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
         uint32_t profile_compatibility = AV_PROFILE_UNKNOWN;
         char tier = 0;
         int level = AV_LEVEL_UNKNOWN;
-        char constraints[8] = "";
+        char constraints[19] = "";
 
         if (par->profile != AV_PROFILE_UNKNOWN)
             profile = par->profile;

@@ -351,7 +351,7 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
 static void write_codec_attr(AVStream *st, VariantStream *vs)
 {
     int codec_strlen = strlen(vs->codec_attr);
-    char attr[32];
+    char attr[64];
     AVBPrint buffer;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
@@ -361,7 +361,8 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
 
     av_bprint_init_for_buffer(&buffer, attr, sizeof(attr));
     if (ff_make_codec_str(vs->avf, st->codecpar, &st->avg_frame_rate,
-                          &buffer) < 0)
+                          &buffer) < 0 ||
+        !av_bprint_is_complete(&buffer))
         goto fail;
 
     // Don't write the same attribute multiple times

@@ -65,6 +65,16 @@ static const uint8_t hevc_hvcc_profile_space[] = {
     0x1e, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
 };
 
+static const uint8_t hevc_hvcc_constraints[] = {
+    0x01, 0x01, 0x60, 0x00, 0x00, 0x00, 0x90, 0x00, 0x10, 0x00, 0x00, 0x00,
+    0x1e, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
+};
+
+static const uint8_t hevc_hvcc_constraints_full[] = {
+    0x01, 0x01, 0x60, 0x00, 0x00, 0x00, 0x90, 0x10, 0x20, 0x30, 0x40, 0x50,
+    0x1e, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
+};
+
 typedef struct TestCase {
     const char *name;
     enum AVCodecID codec_id;
@@ -98,6 +108,12 @@ static const TestCase cases[] = {
     { "hevc-hvcc-profile-space", AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1'),
       AV_PROFILE_UNKNOWN, hevc_hvcc_profile_space,
       sizeof(hevc_hvcc_profile_space) },
+    { "hevc-hvcc-constraints", AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1'),
+      AV_PROFILE_UNKNOWN, hevc_hvcc_constraints,
+      sizeof(hevc_hvcc_constraints) },
+    { "hevc-hvcc-constraints-full", AV_CODEC_ID_HEVC,
+      MKTAG('h', 'v', 'c', '1'), AV_PROFILE_UNKNOWN,
+      hevc_hvcc_constraints_full, sizeof(hevc_hvcc_constraints_full) },
     { "aac-lc",              AV_CODEC_ID_AAC,  0,
       AV_PROFILE_AAC_LOW, NULL,        0                   },
 };
