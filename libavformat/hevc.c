@@ -1346,8 +1346,10 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
             for (int j = 0; j < num_nalus; j++) {
                 int len = get_bits(&gbc, 16);
 
-                if (len > (get_bits_left(&gbc) / 8))
+                if (len > (get_bits_left(&gbc) / 8)) {
+                    ret = AVERROR_INVALIDDATA;
                     goto end;
+                }
 
                 ret = hvcc_parse_nal_unit(data + get_bits_count(&gbc) / 8,
                                           len, type, &hvcc, flags);
