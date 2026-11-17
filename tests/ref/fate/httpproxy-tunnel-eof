@@ -1,0 +1,3 @@
+proxy_close: open=0 size=ENOSYS read=EOF server_failed=0
+proxy_residue: open=0 size=ENOSYS read=41 server_failed=0
+residue: TUNNEL_PREFIX_BYTES_0123456789_ABCDEFGHIJ

@@ -60,6 +60,19 @@ FATE_LIBAVFORMAT-$(CONFIG_NETWORK) += fate-noproxy
 fate-noproxy: libavformat/tests/noproxy$(EXESUF)
 fate-noproxy: CMD = run libavformat/tests/noproxy$(EXESUF)
 
+# HEAD responses have no body, and CONNECT tunnels are unbounded streams.
+# Self-contained loopback test; it needs no samples and no external network.
+FATE_HTTP_NOBODY-$(CONFIG_HTTP_PROTOCOL)      += fate-http-head-no-body
+FATE_HTTP_NOBODY-$(CONFIG_HTTPPROXY_PROTOCOL) += fate-httpproxy-tunnel-eof
+FATE_HTTP_NOBODY_RUN-$(HAVE_LOOPBACK)         += $(FATE_HTTP_NOBODY-yes)
+FATE_LIBAVFORMAT-$(HAVE_PTHREADS)             += $(FATE_HTTP_NOBODY_RUN-yes)
+
+fate-http-head-no-body: libavformat/tests/http_nobody$(EXESUF)
+fate-http-head-no-body: CMD = run libavformat/tests/http_nobody$(EXESUF) http
+
+fate-httpproxy-tunnel-eof: libavformat/tests/http_nobody$(EXESUF)
+fate-httpproxy-tunnel-eof: CMD = run libavformat/tests/http_nobody$(EXESUF) proxy
+
 FATE_LIBAVFORMAT-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += fate-rtmpdh
 fate-rtmpdh: libavformat/tests/rtmpdh$(EXESUF)
 fate-rtmpdh: CMD = run libavformat/tests/rtmpdh$(EXESUF)

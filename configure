@@ -2481,6 +2481,7 @@ INTRINSICS_LIST="
 SYSTEM_FEATURES="
     dos_paths
     libc_msvcrt
+    loopback
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     section_data_rel_ro
     threads
@@ -6814,6 +6815,25 @@ if ! disabled network; then
     # Prefer arpa/inet.h over winsock2
     if check_headers arpa/inet.h ; then
         check_func closesocket
+        test_exec $network_extralibs <<EOF && enable loopback
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+int main(void) {
+    struct sockaddr_in a = { 0 };
+    int s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0)
+        return 1;
+    a.sin_family = AF_INET;
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (bind(s, (const struct sockaddr *)&a, sizeof(a)) < 0 ||
+        listen(s, 1) < 0)
+        return 1;
+    close(s);
+    return 0;
+}
+EOF
     elif check_headers winsock2.h ; then
         check_func_headers winsock2.h closesocket -lws2 &&
             network_extralibs="-lws2" ||
@@ -6830,6 +6850,27 @@ if ! disabled network; then
         check_struct winsock2.h "struct sockaddr" sa_len
         check_type ws2tcpip.h "struct sockaddr_in6"
         check_type ws2tcpip.h "struct sockaddr_storage"
+        enabled winsock2_h && test_exec $network_extralibs <<EOF && enable loopback
+#include <winsock2.h>
+int main(void) {
+    WSADATA wsa;
+    SOCKET s;
+    struct sockaddr_in a = { 0 };
+    if (WSAStartup(MAKEWORD(1, 1), &wsa))
+        return 1;
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s == INVALID_SOCKET)
+        return 1;
+    a.sin_family = AF_INET;
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (bind(s, (const struct sockaddr *)&a, sizeof(a)) < 0 ||
+        listen(s, 1) < 0)
+        return 1;
+    closesocket(s);
+    WSACleanup();
+    return 0;
+}
+EOF
     else
         disable network
     fi
