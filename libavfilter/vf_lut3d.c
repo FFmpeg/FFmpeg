@@ -1898,6 +1898,11 @@ static int interp_1d_##nbits##_##name##_p##depth(AVFilterContext *ctx,       \
             float r = srcr[x] * scale_r;                                     \
             float g = srcg[x] * scale_g;                                     \
             float b = srcb[x] * scale_b;                                     \
+            if (depth < nbits && (srcr[x] | srcg[x] | srcb[x]) >> depth) {   \
+                r = FFMIN(srcr[x], factor) * scale_r;                        \
+                g = FFMIN(srcg[x], factor) * scale_g;                        \
+                b = FFMIN(srcb[x], factor) * scale_b;                        \
+            }                                                                \
             r = interp_1d_##name(lut1d, 0, r);                               \
             g = interp_1d_##name(lut1d, 1, g);                               \
             b = interp_1d_##name(lut1d, 2, b);                               \
