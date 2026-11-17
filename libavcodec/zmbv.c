@@ -64,6 +64,7 @@ typedef struct ZmbvContext {
     unsigned int decomp_size;
     uint8_t* decomp_buf;
     uint8_t pal[768];
+    int palette_dirty;
     AVFrame *prev_frame;
     int width, height;
     int fmt;
@@ -141,6 +142,7 @@ static int zmbv_decode_xor_8(ZmbvContext *c, uint8_t *output,
     if (c->flags & ZMBV_DELTAPAL) {
         for (i = 0; i < 768; i++)
             c->pal[i] ^= *src++;
+        c->palette_dirty = 1;
     }
 
     mvec = (int8_t*)src;
@@ -645,6 +647,34 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
+    /* A payload that is only the motion vector table has no block data.
+     * Zero vectors let us reuse the reference if its palette is current.
+     * A rejected delta can leave a palette change pending.
+     */
+    if (!(c->flags & (ZMBV_KEYFRAME | ZMBV_DELTAPAL)) &&
+        !c->palette_dirty && c->decomp_len == expected_size) {
+        const uint8_t *mvec = c->decomp_buf;
+        int i, n = c->bx * c->by * 2;
+
+        for (i = 0; i < n; i++)
+            if (mvec[i])
+                break;
+        if (i == n) {
+            ret = ref_video_buffers(frame, c->prev_frame);
+            if (ret < 0)
+                return ret;
+            ret = ff_decode_frame_props(avctx, frame);
+            if (ret < 0)
+                return ret;
+            ret = ff_attach_decode_data(avctx, frame);
+            if (ret < 0)
+                return ret;
+            frame->pict_type = AV_PICTURE_TYPE_P;
+            *got_frame = 1;
+            return buf_size;
+        }
+    }
+
     /* Decode directly into the output frame. It is kept as the reference
      * frame for the next P frame, hence the reference flag.
      */
@@ -678,6 +708,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     ret = ref_video_buffers(c->prev_frame, frame);
     if (ret < 0)
         return ret;
+    c->palette_dirty = 0;
 
     *got_frame = 1;
 
