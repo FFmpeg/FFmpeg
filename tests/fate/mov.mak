@@ -361,10 +361,22 @@ FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
                           += fate-mov-mp4-edst-remainder
 fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
 
-# A colr box can carry reserved colour values; they must not reach the stream
-FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MOV, QTRLE_DECODER) += fate-mov-colr-reserved-color-tags
-fate-mov-colr-reserved-color-tags: CMD = stream_remux mov $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov "" mov \
+# Reserved colour values must not be written to colr
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, H264_PARSER H264_DECODER) += fate-mov-colr-reserved-color-tags
+fate-mov-colr-reserved-color-tags: CMD = stream_remux mov $(TARGET_SAMPLES)/mov/test_iibbibb.mp4 "" mp4 \
     "-map 0:v -frames:v 1 -color_primaries 3 -color_trc 3 -colorspace 3" "" "-c:v copy" \
+    "-select_streams v -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1"
+
+# nclc signals gamma 2.8 as an unspecified transfer with a gama atom
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MOV, H264_PARSER H264_DECODER) += fate-mov-gama-color-trc
+fate-mov-gama-color-trc: CMD = stream_remux mov $(TARGET_SAMPLES)/mov/test_iibbibb.mp4 "" mov \
+    "-map 0:v -frames:v 1 -color_primaries smpte170m -color_trc gamma28 -colorspace smpte170m" "" "-c:v copy" \
+    "-select_streams v -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1"
+
+# without colr, gamma 2.2 is still signaled with a gama atom
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MOV, H264_PARSER H264_DECODER) += fate-mov-gama-only-color-trc
+fate-mov-gama-only-color-trc: CMD = stream_remux mov $(TARGET_SAMPLES)/mov/test_iibbibb.mp4 "" mov \
+    "-map 0:v -frames:v 1 -color_trc gamma22" "" "-c:v copy" \
     "-select_streams v -show_entries stream=color_primaries,color_transfer,color_space -of default=nw=1"
 
 # format-level branding: major_brand, minor_version, compatible_brands should be deleted on re-encode

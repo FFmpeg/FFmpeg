@@ -1,0 +1,12 @@
+b764f5eab64ce82780ad1018d711e11e *tests/data/fate/mov-gama-only-color-trc.mov
+8589 tests/data/fate/mov-gama-only-color-trc.mov
+#extradata 0:       42, 0x114f0ce2
+#tb 0: 1/16384
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 704x576
+#sar 0: 1/1
+0,     -32768,          0,    16384,     7804, 0x565f1f4b
+color_space=unknown
+color_transfer=bt470m
+color_primaries=unknown

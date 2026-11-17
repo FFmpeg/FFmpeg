@@ -183,6 +183,7 @@ typedef struct MOVTrack {
     int pal_done;
 
     int is_unaligned_qt_rgb;
+    int colr_warned;
 
     unsigned int squash_fragment_samples_to_one; //< flag to note formats where all samples for a fragment are to be squashed
 

@@ -1,11 +1,12 @@
-c6b96e10140cb9554d1eb6a5dccc1c1b *tests/data/fate/mov-colr-reserved-color-tags.mov
-7552 tests/data/fate/mov-colr-reserved-color-tags.mov
-#tb 0: 1/19200
+b58cbcdffde271ed93efaa8e7279a12e *tests/data/fate/mov-colr-reserved-color-tags.mp4
+8645 tests/data/fate/mov-colr-reserved-color-tags.mp4
+#extradata 0:       42, 0x114f0ce2
+#tb 0: 1/16384
 #media_type 0: video
-#codec_id 0: qtrle
-#dimensions 0: 160x120
-#sar 0: 0/1
-0,          0,          0,     1920,     6838, 0x2d59b149
+#codec_id 0: h264
+#dimensions 0: 704x576
+#sar 0: 1/1
+0,     -32768,          0,    16384,     7804, 0x565f1f4b
 color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
