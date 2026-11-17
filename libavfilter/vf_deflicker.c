@@ -146,7 +146,7 @@ static int deflicker16(AVFilterContext *ctx,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = av_clip(src[x] * f, 0, max);
+            dst[x] = FFMIN(src[x] * f, max);
         }
 
         dst += dst_linesize / 2;
@@ -378,7 +378,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     s->get_factor(ctx, &f);
     if (!s->bypass)
         s->deflicker(ctx, in->data[0], in->linesize[0], out->data[0], out->linesize[0],
-                     outlink->w, outlink->h, f);
+                     outlink->w, outlink->h, av_clipf(f, 0, (1 << s->depth) - 1));
     for (y = 1 - s->bypass; y < s->nb_planes; y++) {
         av_image_copy_plane(out->data[y], out->linesize[y],
                             in->data[y], in->linesize[y],
