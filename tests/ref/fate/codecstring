@@ -8,4 +8,5 @@ hevc-hvcc-hvc1: hvc1.1.6.L30.90
 hevc-hvcc-hev1: hev1.1.6.L30.90
 hevc-hvcc-version0: hvc1.1.6.L30.90
 hevc-hvcc-zeroed: error
+hevc-hvcc-profile-space: hvc1.A1.6.L30.90
 aac-lc: mp4a.40.2

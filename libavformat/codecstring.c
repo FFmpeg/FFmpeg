@@ -66,7 +66,8 @@ static void set_vp9_codec_str(void *logctx, const AVCodecParameters *par,
  * profile_tier_level(). ptl points to the byte holding general_profile_space,
  * and 12 bytes are read.
  */
-static void parse_hevc_profile_tier_level(const uint8_t *ptl, int *profile,
+static void parse_hevc_profile_tier_level(const uint8_t *ptl,
+                                          int *profile_space, int *profile,
                                           uint32_t *profile_compatibility,
                                           char *tier, int *level,
                                           char *constraints,
@@ -78,6 +79,7 @@ static void parse_hevc_profile_tier_level(const uint8_t *ptl, int *profile,
     /* TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
      * and 'H' indicating the flag is 1
      */
+    *profile_space = ptl[0] >> 6;
     *tier = (ptl[0] & 0x20) == 0 ? 'L' : 'H';
     *profile = ptl[0] & 0x1f;
     /* PROFILE_COMPATIBILITY is general_profile_compatibility_flags, but in reverse bit order,
@@ -145,6 +147,7 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
     } else if (par->codec_id == AV_CODEC_ID_HEVC) {
         // 3GPP TS 26.244
         uint8_t *data = par->extradata;
+        int profile_space = 0;
         int profile = AV_PROFILE_UNKNOWN;
         uint32_t profile_compatibility = AV_PROFILE_UNKNOWN;
         char tier = 0;
@@ -168,7 +171,7 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
             /* Some muxers write a zeroed record: no profile, no level. */
             if (!(data[1] & 0x1f) || !data[12])
                 return AVERROR(EINVAL);
-            parse_hevc_profile_tier_level(data + 1, &profile,
+            parse_hevc_profile_tier_level(data + 1, &profile_space, &profile,
                                           &profile_compatibility, &tier,
                                           &level, constraints,
                                           sizeof(constraints));
@@ -197,7 +200,8 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                  *      sps_max_sub_layers_minus1    u(3),
                  *  and sps_temporal_id_nesting_flag u(1)
                  */
-                parse_hevc_profile_tier_level(rbsp_buf + 1, &profile,
+                parse_hevc_profile_tier_level(rbsp_buf + 1, &profile_space,
+                                              &profile,
                                               &profile_compatibility, &tier,
                                               &level, constraints,
                                               sizeof(constraints));
@@ -213,8 +217,12 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
             tier != 0 &&
             level != AV_LEVEL_UNKNOWN &&
             constraints[0] != '\0') {
-            av_bprintf(out, "%s.%d.%x.%c%d.%s",
-                       av_fourcc2str(par->codec_tag), profile,
+            /* general_profile_space 1 to 3 is a letter A to C before
+             * the profile (ISO/IEC 14496-15) */
+            av_bprintf(out, "%s.", av_fourcc2str(par->codec_tag));
+            if (profile_space)
+                av_bprint_chars(out, 'A' + profile_space - 1, 1);
+            av_bprintf(out, "%d.%x.%c%d.%s", profile,
                        profile_compatibility, tier, level, constraints);
         } else
             return AVERROR(EINVAL);
