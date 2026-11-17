@@ -88,6 +88,8 @@ void checkasm_check_lls(void)
 
         if (check_func(lls.update_lls, "update_lls_%d", counts[i]))
             test_update(&lls, var);
+        for (size_t j = 0; j < MAX_VARS; j++)
+            randomize_stddev_dbl(lls.coeff[j], MAX_VARS, 10.0);
         for (size_t j = 0; j <= i; j++)
             if (check_func(lls.evaluate_lls, "evaluate_lls_%d_%d", counts[i],
                            counts[j])) {
