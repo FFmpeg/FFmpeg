@@ -91,7 +91,12 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                 p = &data[1];
             else
                 return AVERROR(EINVAL);
-            av_bprintf(out, "avc1.%02x%02x%02x", p[0], p[1], p[2]);
+            /* avc3 differs from avc1 by where the parameter sets are
+             * stored; the profile and level part is the same
+             * (ISO/IEC 14496-15) */
+            av_bprintf(out, "%s.%02x%02x%02x",
+                       par->codec_tag == MKTAG('a','v','c','3') ? "avc3" : "avc1",
+                       p[0], p[1], p[2]);
         } else {
             return AVERROR(EINVAL);
         }
