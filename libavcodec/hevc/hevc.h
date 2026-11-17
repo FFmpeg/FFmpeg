@@ -21,6 +21,8 @@
 #ifndef AVCODEC_HEVC_HEVC_H
 #define AVCODEC_HEVC_HEVC_H
 
+#include <stdint.h>
+
 /**
  * Table 7-1 – NAL unit type codes and NAL unit type classes in
  * T-REC-H.265-201802
@@ -174,5 +176,18 @@ enum HEVCAuxId {
     HEVC_AUX_ALPHA = 1,
     HEVC_AUX_DEPTH = 2,
 };
+
+/**
+ * Tell whether extradata is an HEVCDecoderConfigurationRecord (ISO/IEC
+ * 14496-15) rather than Annex B. configurationVersion 0 predates the
+ * standard and is still written by older muxers.
+ *
+ * @param size extradata size; a record is at least 23 bytes
+ */
+static inline int ff_hevc_is_hvcc(const uint8_t *data, int size)
+{
+    return size >= 23 &&
+           (data[0] == 1 || (data[0] == 0 && (data[1] || data[2] > 1)));
+}
 
 #endif /* AVCODEC_HEVC_HEVC_H */

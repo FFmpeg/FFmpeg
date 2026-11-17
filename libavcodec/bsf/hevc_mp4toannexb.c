@@ -377,9 +377,7 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
 
     extradata =
         av_packet_get_side_data(in, AV_PKT_DATA_NEW_EXTRADATA, &extradata_size);
-    if (extradata && extradata_size >= MIN_HEVCC_LENGTH &&
-        ((extradata[0] == 1) ||
-         (extradata[0] == 0 && (extradata[1] || extradata[2] > 1)))) {
+    if (extradata && ff_hevc_is_hvcc(extradata, extradata_size)) {
         ret = hevc_extradata_to_annexb(ctx, extradata, extradata_size,
                                        NULL, NULL);
         if (ret < 0)

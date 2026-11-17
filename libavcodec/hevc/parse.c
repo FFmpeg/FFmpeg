@@ -85,12 +85,7 @@ int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
 
     bytestream2_init(&gb, data, size);
 
-    /* data[0] == 1 is configurationVersion from 14496-15.
-     * data[0] == 0 is for backward compatibility predates the standard.
-     *
-     * Minimum number of bytes of hvcC with 0 numOfArrays is 23.
-     */
-    if (size >= 23 && ((data[0] == 1) || (data[0] == 0 && (data[1] || data[2] > 1)))) {
+    if (ff_hevc_is_hvcc(data, size)) {
         /* It seems the extradata is encoded as hvcC format. */
         int i, j, num_arrays, nal_len_size;
 
