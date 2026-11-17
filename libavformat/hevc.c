@@ -1300,14 +1300,11 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
     if (size < 6) {
         /* We can't write a valid hvcC from the provided data */
         return AVERROR_INVALIDDATA;
-    } else if (*data == 1) {
+    } else if (ff_hevc_is_hvcc(data, size)) {
         /* Data is already hvcC-formatted. Parse the arrays to skip any NALU
            with nuh_layer_id > 0 */
         GetBitContext gbc;
         int num_arrays;
-
-        if (size < 23)
-            return AVERROR_INVALIDDATA;
 
         ret = init_get_bits8(&gbc, data, size);
         if (ret < 0)
