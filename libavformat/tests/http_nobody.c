@@ -1,9 +1,10 @@
 /*
  * Copyright (c) 2026 Jun Zhao
  *
- * Regression tests for HTTP / httpproxy premature-end handling (issue #26071).
- * Expected output lives in tests/ref/fate/http-head-no-body and
- * tests/ref/fate/httpproxy-tunnel-eof.
+ * Regression tests for HTTP / httpproxy premature-end handling (issue #26071),
+ * unknown-length clean EOF and libcurl HEAD.
+ * Expected output lives in tests/ref/fate/http-head-no-body,
+ * tests/ref/fate/httpproxy-tunnel-eof and tests/ref/fate/http-curl-head.
  *
  * This file is part of FFmpeg.
  *
@@ -68,6 +69,52 @@ static const char head_reply[] =
 static const char lie_reply[]     = GET_HEADER;
 static const char connect_reply[] = "HTTP/1.1 200 OK\r\nconnection: close\r\n\r\n";
 
+/* Unknown-length replies ending in a clean close: no Content-Length, so
+ * filesize stays UINT64_MAX.  These must yield EOF, not a premature-end EIO. */
+static const char close_reply[] =
+    "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
+static const char close_body_reply[] =
+    "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nABC";
+
+/* Chunked replies. Accept-Ranges makes the stream seekable, which is the
+ * path that used to report a clean close of an unfinished chunk as EOF.
+ * A finished message still ends at its terminating 0 chunk. */
+static const char chunk_short_reply[] =
+    "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+    "Accept-Ranges: bytes\r\nConnection: close\r\n\r\n"
+    "5\r\nABC";
+static const char chunk_open_reply[] =
+    "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+    "Accept-Ranges: bytes\r\nConnection: close\r\n\r\n"
+    "3\r\nABC\r\n";
+static const char chunk_trailer_reply[] =
+    "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+    "Accept-Ranges: bytes\r\nConnection: close\r\n\r\n"
+    "3\r\nABC\r\n0\r\n";
+static const char chunk_done_reply[] =
+    "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n"
+    "Accept-Ranges: bytes\r\nConnection: close\r\n\r\n"
+    "3\r\nABC\r\n0\r\n\r\n";
+
+/* HEAD reply for the libcurl protocol: a body-less response with a declared
+ * resource size, used to verify -method HEAD is no longer dropped. */
+static const char curl_head_reply[] =
+    "HTTP/1.1 200 OK\r\nContent-Length: 1150\r\nConnection: close\r\n\r\n";
+static const char curl_head_gzip_reply[] =
+    "HTTP/1.1 200 OK\r\nContent-Length: 1150\r\n"
+    "Content-Encoding: gzip\r\nConnection: close\r\n\r\n";
+static const char curl_head_pad_reply[] =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Length:                                                001150\r\n"
+    "Connection: close\r\n\r\n";
+static const char curl_head_zero_reply[] =
+    "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+/* Lowercase "head" is a distinct method token, so it must carry its body.
+ * Omit Content-Length so AVSEEK_SIZE stays ENOSYS across libcurl versions
+ * that populate CURLINFO_CONTENT_LENGTH_DOWNLOAD_T at different points. */
+static const char curl_lc_head_reply[] =
+    "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nABC";
+
 /* CONNECT 200 header and initial tunnel payload sent together in an attempt
  * to exercise forwarding of bytes buffered during header parsing, while still
  * verifying full payload delivery across short transfers. */
@@ -75,7 +122,7 @@ static const char coalesced_reply[] = "HTTP/1.1 200 OK\r\n\r\n" MARK;
 
 static char body_reply[sizeof(GET_HEADER) - 1 + BODY_SIZE];
 
-enum { GROUP_HTTP = 1, GROUP_PROXY = 2 };
+enum { GROUP_HTTP = 1, GROUP_PROXY = 2, GROUP_LIBCURL = 4 };
 enum { PRINT_NONE, PRINT_ENDS, PRINT_TEXT };
 
 typedef struct TestCase {
@@ -86,6 +133,7 @@ typedef struct TestCase {
     const char *reply;
     int reply_len;
     int payload_print;
+    int no_persist;
 } TestCase;
 
 typedef struct TestServer {
@@ -111,7 +159,7 @@ static void set_timeouts(int fd)
 static int send_all(int fd, const char *buf, int len)
 {
     for (int sent = 0; sent < len;) {
-        int r = send(fd, buf + sent, len - sent, 0);
+        int r = send(fd, buf + sent, len - sent, MSG_NOSIGNAL);
         if (r < 0 && ff_neterrno() == AVERROR(EINTR))
             continue;
         if (r <= 0)
@@ -231,14 +279,18 @@ static void run_case(const TestCase *tc)
     }
 
     snprintf(url, sizeof(url), tc->url_fmt, srv.port);
-    if (tc->group == GROUP_HTTP)
+    if (tc->group != GROUP_PROXY)
         av_dict_set(&opts, "http_proxy", "", 0);
+    if (tc->group == GROUP_LIBCURL)
+        av_dict_set(&opts, "prefer_libcurl", "1", 0);
     av_dict_set_int(&opts, "rw_timeout", TIMEOUT_US, 0);
     if (tc->method)
         av_dict_set(&opts, "method", tc->method, 0);
+    if (tc->no_persist)
+        av_dict_set(&opts, "multiple_requests", "0", 0);
 
     open_ret = ffurl_open_whitelist(&uc, url, AVIO_FLAG_READ, &int_cb, &opts,
-                                    "http,httpproxy,tcp", NULL, NULL);
+                                    "http,httpproxy,tcp,libcurl", NULL, NULL);
     av_dict_free(&opts);
     if (open_ret >= 0) {
         size_ret = ffurl_seek(uc, 0, AVSEEK_SIZE);
@@ -267,18 +319,45 @@ static const TestCase cases[] = {
       NULL,   body_reply,      sizeof(body_reply),          PRINT_ENDS },
     { "get_lie",       GROUP_HTTP,  "http://127.0.0.1:%d/x",
       NULL,   lie_reply,       sizeof(lie_reply) - 1,       PRINT_NONE },
+    { "get_close",      GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   close_reply,     sizeof(close_reply) - 1,     PRINT_NONE },
+    { "get_close_body", GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   close_body_reply, sizeof(close_body_reply) - 1, PRINT_TEXT },
+    { "chunk_short",    GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   chunk_short_reply, sizeof(chunk_short_reply) - 1, PRINT_NONE },
+    { "chunk_open",     GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   chunk_open_reply, sizeof(chunk_open_reply) - 1, PRINT_NONE },
+    { "chunk_trailer",  GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   chunk_trailer_reply, sizeof(chunk_trailer_reply) - 1, PRINT_NONE },
+    { "chunk_trailer_mr0", GROUP_HTTP, "http://127.0.0.1:%d/x",
+      NULL,   chunk_trailer_reply, sizeof(chunk_trailer_reply) - 1, PRINT_NONE, 1 },
+    { "chunk_done",     GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   chunk_done_reply, sizeof(chunk_done_reply) - 1, PRINT_TEXT },
+    { "chunk_done_mr0", GROUP_HTTP,  "http://127.0.0.1:%d/x",
+      NULL,   chunk_done_reply, sizeof(chunk_done_reply) - 1, PRINT_TEXT, 1 },
     { "proxy_close",   GROUP_PROXY, "httpproxy://127.0.0.1:%d/example.com:443",
       NULL,   connect_reply,   sizeof(connect_reply) - 1,   PRINT_NONE },
     { "proxy_residue", GROUP_PROXY, "httpproxy://127.0.0.1:%d/example.com:443",
       NULL,   coalesced_reply, sizeof(coalesced_reply) - 1, PRINT_TEXT },
+    { "curl_head",     GROUP_LIBCURL, "http://127.0.0.1:%d/x",
+      "HEAD", curl_head_reply, sizeof(curl_head_reply) - 1, PRINT_NONE },
+    { "curl_head_gzip", GROUP_LIBCURL, "http://127.0.0.1:%d/x",
+      "HEAD", curl_head_gzip_reply, sizeof(curl_head_gzip_reply) - 1, PRINT_NONE },
+    { "curl_head_pad",  GROUP_LIBCURL, "http://127.0.0.1:%d/x",
+      "HEAD", curl_head_pad_reply, sizeof(curl_head_pad_reply) - 1, PRINT_NONE },
+    { "curl_head_zero", GROUP_LIBCURL, "http://127.0.0.1:%d/x",
+      "HEAD", curl_head_zero_reply, sizeof(curl_head_zero_reply) - 1, PRINT_NONE },
+    { "curl_lc_head",   GROUP_LIBCURL, "http://127.0.0.1:%d/x",
+      "head", curl_lc_head_reply, sizeof(curl_lc_head_reply) - 1, PRINT_TEXT },
 };
 
 int main(int argc, char **argv)
 {
     const char *group = argc > 1 ? argv[1] : "all";
-    int mask = !strcmp(group, "all")   ? (GROUP_HTTP | GROUP_PROXY) :
-               !strcmp(group, "http")  ? GROUP_HTTP :
-               !strcmp(group, "proxy") ? GROUP_PROXY : 0;
+    int mask = !strcmp(group, "all")     ? (GROUP_HTTP | GROUP_PROXY) :
+               !strcmp(group, "http")    ? GROUP_HTTP :
+               !strcmp(group, "proxy")   ? GROUP_PROXY :
+               !strcmp(group, "libcurl") ? GROUP_LIBCURL : 0;
 
     if (!mask) {
         fprintf(stderr, "Unknown test group: %s\n", group);

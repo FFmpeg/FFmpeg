@@ -2,3 +2,14 @@ head: open=0 size=1150 read=EOF server_failed=0
 get_body: open=0 size=1150 read=1150 server_failed=0
 body ends: X X
 get_lie: open=0 size=1150 read=EIO server_failed=0
+get_close: open=0 size=ENOSYS read=EOF server_failed=0
+get_close_body: open=0 size=ENOSYS read=3 server_failed=0
+residue: ABC
+chunk_short: open=0 size=ENOSYS read=EIO server_failed=0
+chunk_open: open=0 size=ENOSYS read=EIO server_failed=0
+chunk_trailer: open=0 size=ENOSYS read=EIO server_failed=0
+chunk_trailer_mr0: open=0 size=ENOSYS read=EIO server_failed=0
+chunk_done: open=0 size=ENOSYS read=3 server_failed=0
+residue: ABC
+chunk_done_mr0: open=0 size=ENOSYS read=3 server_failed=0
+residue: ABC

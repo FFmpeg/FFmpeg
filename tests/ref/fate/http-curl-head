@@ -1,0 +1,6 @@
+curl_head: open=0 size=1150 read=EOF server_failed=0
+curl_head_gzip: open=0 size=1150 read=EOF server_failed=0
+curl_head_pad: open=0 size=1150 read=EOF server_failed=0
+curl_head_zero: open=0 size=0 read=EOF server_failed=0
+curl_lc_head: open=0 size=ENOSYS read=3 server_failed=0
+residue: ABC

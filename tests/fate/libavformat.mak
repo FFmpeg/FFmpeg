@@ -68,6 +68,7 @@ fate-noproxy: CMD = run libavformat/tests/noproxy$(EXESUF)
 # Self-contained loopback test; it needs no samples and no external network.
 FATE_HTTP_NOBODY-$(CONFIG_HTTP_PROTOCOL)      += fate-http-head-no-body
 FATE_HTTP_NOBODY-$(CONFIG_HTTPPROXY_PROTOCOL) += fate-httpproxy-tunnel-eof
+FATE_HTTP_NOBODY-$(CONFIG_LIBCURL_PROTOCOL)   += fate-http-curl-head
 FATE_HTTP_NOBODY_RUN-$(HAVE_LOOPBACK)         += $(FATE_HTTP_NOBODY-yes)
 FATE_LIBAVFORMAT-$(HAVE_PTHREADS)             += $(FATE_HTTP_NOBODY_RUN-yes)
 
@@ -76,6 +77,9 @@ fate-http-head-no-body: CMD = run libavformat/tests/http_nobody$(EXESUF) http
 
 fate-httpproxy-tunnel-eof: libavformat/tests/http_nobody$(EXESUF)
 fate-httpproxy-tunnel-eof: CMD = run libavformat/tests/http_nobody$(EXESUF) proxy
+
+fate-http-curl-head: libavformat/tests/http_nobody$(EXESUF)
+fate-http-curl-head: CMD = no_proxy=127.0.0.1,localhost NO_PROXY=127.0.0.1,localhost run libavformat/tests/http_nobody$(EXESUF) libcurl
 
 FATE_LIBAVFORMAT-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += fate-rtmpdh
 fate-rtmpdh: libavformat/tests/rtmpdh$(EXESUF)
