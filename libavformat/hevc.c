@@ -1366,7 +1366,14 @@ static int parse_configuration_record(HEVCDecoderConfigurationRecord *hvcc,
         }
 
         return 0;
-    } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
+    }
+
+    /* leading_zero_8bits may precede the first start code (H.265 B.2) */
+    while (size > 4 && !AV_RB32(data)) {
+        data++;
+        size--;
+    }
+    if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
         return AVERROR_INVALIDDATA;
     }

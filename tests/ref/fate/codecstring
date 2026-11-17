@@ -12,4 +12,5 @@ hevc-hvcc-profile-space: hvc1.A1.6.L30.90
 hevc-hvcc-constraints: hvc1.1.6.L30.90.00.10
 hevc-hvcc-constraints-full: hvc1.1.6.L30.90.10.20.30.40.50
 hevc-annexb-32-long-term-refs: hvc1.1.6.L30.90
+hevc-annexb-leading-zero: hvc1.1.6.L30.90
 aac-lc: mp4a.40.2
