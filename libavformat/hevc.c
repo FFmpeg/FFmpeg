@@ -1290,11 +1290,19 @@ static int hvcc_parse_nal_unit(const uint8_t *buf, uint32_t len, int type,
     return 0;
 }
 
-static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8_t *data,
-                                      int size, int flags)
+/**
+ * Fill an initialized record from extradata, either an hvcC record or
+ * Annex B.
+ *
+ * @param flags    FLAG_IS_NALFF is added for an hvcC record
+ * @param nal_buf  set to a buffer the record's NAL units point into, to be
+ *                 freed by the caller after the record
+ */
+static int parse_configuration_record(HEVCDecoderConfigurationRecord *hvcc,
+                                      const uint8_t *data, int size,
+                                      int *flags, uint8_t **nal_buf)
 {
-    HEVCDecoderConfigurationRecord hvcc;
-    uint8_t *buf, *end, *start = NULL;
+    uint8_t *buf, *end;
     int ret;
 
     if (size < 6) {
@@ -1310,31 +1318,30 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
         if (ret < 0)
             return ret;
 
-        hvcc_init(&hvcc);
-        skip_bits(&gbc, 8); // hvcc.configurationVersion
-        hvcc.general_profile_space = get_bits(&gbc, 2);
-        hvcc.general_tier_flag = get_bits1(&gbc);
-        hvcc.general_profile_idc = get_bits(&gbc, 5);
-        hvcc.general_profile_compatibility_flags = get_bits_long(&gbc, 32);
-        hvcc.general_constraint_indicator_flags = get_bits64(&gbc, 48);
-        hvcc.general_level_idc = get_bits(&gbc, 8);
+        skip_bits(&gbc, 8); // hvcc->configurationVersion
+        hvcc->general_profile_space = get_bits(&gbc, 2);
+        hvcc->general_tier_flag = get_bits1(&gbc);
+        hvcc->general_profile_idc = get_bits(&gbc, 5);
+        hvcc->general_profile_compatibility_flags = get_bits_long(&gbc, 32);
+        hvcc->general_constraint_indicator_flags = get_bits64(&gbc, 48);
+        hvcc->general_level_idc = get_bits(&gbc, 8);
         skip_bits(&gbc, 4); // reserved
-        hvcc.min_spatial_segmentation_idc = get_bits(&gbc, 12);
+        hvcc->min_spatial_segmentation_idc = get_bits(&gbc, 12);
         skip_bits(&gbc, 6); // reserved
-        hvcc.parallelismType = get_bits(&gbc, 2);
+        hvcc->parallelismType = get_bits(&gbc, 2);
         skip_bits(&gbc, 6); // reserved
-        hvcc.chromaFormat = get_bits(&gbc, 2);
+        hvcc->chromaFormat = get_bits(&gbc, 2);
         skip_bits(&gbc, 5); // reserved
-        hvcc.bitDepthLumaMinus8 = get_bits(&gbc, 3);
+        hvcc->bitDepthLumaMinus8 = get_bits(&gbc, 3);
         skip_bits(&gbc, 5); // reserved
-        hvcc.bitDepthChromaMinus8 = get_bits(&gbc, 3);
-        hvcc.avgFrameRate = get_bits(&gbc, 16);
-        hvcc.constantFrameRate = get_bits(&gbc, 2);
-        hvcc.numTemporalLayers = get_bits(&gbc, 3);
-        hvcc.temporalIdNested = get_bits1(&gbc);
-        hvcc.lengthSizeMinusOne = get_bits(&gbc, 2);
+        hvcc->bitDepthChromaMinus8 = get_bits(&gbc, 3);
+        hvcc->avgFrameRate = get_bits(&gbc, 16);
+        hvcc->constantFrameRate = get_bits(&gbc, 2);
+        hvcc->numTemporalLayers = get_bits(&gbc, 3);
+        hvcc->temporalIdNested = get_bits1(&gbc);
+        hvcc->lengthSizeMinusOne = get_bits(&gbc, 2);
 
-        flags |= FLAG_IS_NALFF;
+        *flags |= FLAG_IS_NALFF;
 
         num_arrays = get_bits(&gbc, 8);
         for (int i = 0; i < num_arrays; i++) {
@@ -1346,35 +1353,30 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
             for (int j = 0; j < num_nalus; j++) {
                 int len = get_bits(&gbc, 16);
 
-                if (len > (get_bits_left(&gbc) / 8)) {
-                    ret = AVERROR_INVALIDDATA;
-                    goto end;
-                }
+                if (len > (get_bits_left(&gbc) / 8))
+                    return AVERROR_INVALIDDATA;
 
                 ret = hvcc_parse_nal_unit(data + get_bits_count(&gbc) / 8,
-                                          len, type, &hvcc, flags);
+                                          len, type, hvcc, *flags);
                 if (ret < 0)
-                    goto end;
+                    return ret;
 
                 skip_bits_long(&gbc, len * 8);
             }
         }
 
-        ret = hvcc_write(logctx, pb, &hvcc, flags);
-        goto end;
+        return 0;
     } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_nal_parse_units_buf(data, &start, &size);
+    ret = ff_nal_parse_units_buf(data, nal_buf, &size);
     if (ret < 0)
         return ret;
 
-    hvcc_init(&hvcc);
-
-    buf = start;
-    end = start + size;
+    buf = *nal_buf;
+    end = *nal_buf + size;
 
     while (end - buf > 4) {
         uint32_t len = FFMIN(AV_RB32(buf), end - buf - 4);
@@ -1382,18 +1384,29 @@ static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8
 
         buf += 4;
 
-        ret = hvcc_parse_nal_unit(buf, len, type, &hvcc, flags);
+        ret = hvcc_parse_nal_unit(buf, len, type, hvcc, *flags);
         if (ret < 0)
-            goto end;
+            return ret;
 
         buf += len;
     }
 
-    ret = hvcc_write(logctx, pb, &hvcc, flags);
+    return 0;
+}
 
-end:
+static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8_t *data,
+                                      int size, int flags)
+{
+    HEVCDecoderConfigurationRecord hvcc;
+    uint8_t *nal_buf = NULL;
+    int ret;
+
+    hvcc_init(&hvcc);
+    ret = parse_configuration_record(&hvcc, data, size, &flags, &nal_buf);
+    if (ret >= 0)
+        ret = hvcc_write(logctx, pb, &hvcc, flags);
     hvcc_close(&hvcc);
-    av_free(start);
+    av_free(nal_buf);
     return ret;
 }
 
