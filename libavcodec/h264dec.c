@@ -947,8 +947,13 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     if (ret < 0)
         return ret;
 
-    if (srcp->needs_fg && (ret = av_frame_copy_props(dst, srcp->f)) < 0)
-        return ret;
+    if (srcp->needs_fg) {
+        /* f_grain got its own copy of the side data on allocation */
+        av_frame_side_data_free(&dst->side_data, &dst->nb_side_data);
+        ret = av_frame_copy_props(dst, srcp->f);
+        if (ret < 0)
+            return ret;
+    }
 
     if (srcp->decode_error_flags) {
         atomic_int *decode_error = srcp->decode_error_flags;
