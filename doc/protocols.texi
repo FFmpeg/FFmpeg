@@ -1139,6 +1139,11 @@ The libcurl protocol accepts the following options.
 @item user_agent
 Override the @code{User-Agent} header. Defaults to @code{Lavf/<version>}.
 
+@item method
+Override the HTTP method. @code{HEAD} retrieves the response headers and
+the resource size without a response body. Any other method name is sent
+as supplied; method tokens are case-sensitive.
+
 @item referer
 Set the @code{Referer} header.
 
