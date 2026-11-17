@@ -779,7 +779,8 @@ SKIPHEADERS-$(CONFIG_IMF_DEMUXER)        += imf.h
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += ip.h network.h rtsp.h
 
-TESTPROGS = demux_probe                                                 \
+TESTPROGS = codecstring                                                 \
+            demux_probe                                                 \
             id3v2                                                       \
             mkdir                                                       \
             rename                                                      \

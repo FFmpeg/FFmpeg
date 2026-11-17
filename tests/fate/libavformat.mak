@@ -1,3 +1,7 @@
+FATE_LIBAVFORMAT += fate-codecstring
+fate-codecstring: libavformat/tests/codecstring$(EXESUF)
+fate-codecstring: CMD = run libavformat/tests/codecstring$(EXESUF)
+
 FATE_LIBAVFORMAT += fate-demux-probe
 fate-demux-probe: libavformat/tests/demux_probe$(EXESUF)
 fate-demux-probe: CMD = run libavformat/tests/demux_probe$(EXESUF)
