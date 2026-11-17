@@ -156,6 +156,25 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
         if (par->level != AV_LEVEL_UNKNOWN)
             level = par->level;
 
+        /* HEVCDecoderConfigurationRecord (ISO/IEC 14496-15), as in mp4 and
+         * Matroska: its profile_tier_level fields follow configurationVersion.
+         * Its NAL units have no start code to scan for. Any extradata not
+         * starting with a start code is taken as a record, which covers
+         * configurationVersion 0 from older muxers; this is looser than
+         * libavcodec, which wants the full 23-byte record. Only the 13 bytes
+         * up to general_level_idc are read. */
+        if (data && par->extradata_size >= 13 &&
+            (data[0] || data[1] || data[2] > 1)) {
+            /* Some muxers write a zeroed record: no profile, no level. */
+            if (!(data[1] & 0x1f) || !data[12])
+                return AVERROR(EINVAL);
+            parse_hevc_profile_tier_level(data + 1, &profile,
+                                          &profile_compatibility, &tier,
+                                          &level, constraints,
+                                          sizeof(constraints));
+            data = NULL;
+        }
+
         /* check the boundary of data which from current position is small than extradata_size */
         while (data && (data - par->extradata + 19) < par->extradata_size) {
             /* get HEVC SPS NAL and seek to profile_tier_level */

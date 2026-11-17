@@ -50,6 +50,16 @@ static const uint8_t hevc_hvcc[] = {
     0x1e, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
 };
 
+static const uint8_t hevc_hvcc_version0[] = {
+    0x00, 0x01, 0x60, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x1e, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
+};
+
+static const uint8_t hevc_hvcc_zeroed[] = {
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0xf0, 0x00, 0xfc, 0xfd, 0xf8, 0xf8, 0x00, 0x00, 0x0f, 0x00,
+};
+
 typedef struct TestCase {
     const char *name;
     enum AVCodecID codec_id;
@@ -76,7 +86,11 @@ static const TestCase cases[] = {
       AV_PROFILE_UNKNOWN, hevc_hvcc,   sizeof(hevc_hvcc)   },
     { "hevc-hvcc-hev1",       AV_CODEC_ID_HEVC, MKTAG('h', 'e', 'v', '1'),
       AV_PROFILE_UNKNOWN, hevc_hvcc,   sizeof(hevc_hvcc)   },
-    { "aac-lc",               AV_CODEC_ID_AAC,  0,
+    { "hevc-hvcc-version0",   AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1'),
+      AV_PROFILE_UNKNOWN, hevc_hvcc_version0, sizeof(hevc_hvcc_version0) },
+    { "hevc-hvcc-zeroed",     AV_CODEC_ID_HEVC, MKTAG('h', 'v', 'c', '1'),
+      AV_PROFILE_HEVC_MAIN, hevc_hvcc_zeroed, sizeof(hevc_hvcc_zeroed) },
+    { "aac-lc",              AV_CODEC_ID_AAC,  0,
       AV_PROFILE_AAC_LOW, NULL,        0                   },
 };
 

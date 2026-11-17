@@ -4,6 +4,8 @@ h264-avcc: avc1.64000b
 hevc-annexb-hvc1: hvc1.1.6.L30.90
 hevc-annexb-hev1: hev1.1.6.L30.90
 hevc-annexb-untagged: error
-hevc-hvcc-hvc1: error
-hevc-hvcc-hev1: error
+hevc-hvcc-hvc1: hvc1.1.6.L30.90
+hevc-hvcc-hev1: hev1.1.6.L30.90
+hevc-hvcc-version0: hvc1.1.6.L30.90
+hevc-hvcc-zeroed: error
 aac-lc: mp4a.40.2
