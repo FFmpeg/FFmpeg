@@ -553,6 +553,8 @@ typedef struct H264Context {
 
     int has_recovery_point;
 
+    int film_grain_warning_shown;
+
     int missing_fields;
 
     /* for frame threading, this is set to 1

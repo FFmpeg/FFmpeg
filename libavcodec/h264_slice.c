@@ -41,6 +41,7 @@
 #include "h264data.h"
 #include "h264chroma.h"
 #include "h264_ps.h"
+#include "h274.h"
 #include "golomb.h"
 #include "mathops.h"
 #include "mpegutils.h"
@@ -445,6 +446,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
                        FF_ARRAY_ELEMS(h->delayed_pic), h, h1);
 
     h->frame_recovered       = h1->frame_recovered;
+    h->film_grain_warning_shown = h1->film_grain_warning_shown;
 
     ret = ff_h2645_sei_ctx_replace(&h->sei.common, &h1->sei.common);
     if (ret < 0)
@@ -529,6 +531,14 @@ static int h264_frame_start(H264Context *h)
         !ff_decode_skip_all_pixels(h->avctx) &&
         !h->avctx->hwaccel &&
         !(h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
+
+    if (pic->needs_fg &&
+        !ff_h274_film_grain_params_supported(h->sei.common.film_grain_characteristics->model_id,
+                                             h->avctx->pix_fmt)) {
+        av_log_once(h->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &h->film_grain_warning_shown,
+                    "Unsupported film grain parameters. Ignoring film grain.\n");
+        pic->needs_fg = 0;
+    }
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
