@@ -262,6 +262,8 @@ typedef struct MOVStreamContext {
     int *extradata_size;
     int last_stsd_index;
     int stsd_count;
+    int stsd_gama_trc;  ///< transfer from the gama atom of the sample description being read
+    int stsd_colr_trc;  ///< the colr atom of the sample description being read sets the transfer
     int stsd_version;
 
     int32_t *display_matrix;
