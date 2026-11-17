@@ -1,5 +1,5 @@
 /*
- * MMX/SSE constants used across x86 dsp optimizations.
+ * XMM/YMM constants used across x86 dsp optimizations.
  *
  * This file is part of FFmpeg.
  *
@@ -36,9 +36,7 @@ extern const xmm_reg  ff_pw_9;
 extern const xmm_reg  ff_pw_16;
 extern const xmm_reg  ff_pw_18;
 extern const xmm_reg  ff_pw_32;
-extern const uint64_t ff_pw_53;
 extern const xmm_reg  ff_pw_64;
-extern const uint64_t ff_pw_128;
 extern const ymm_reg  ff_pw_255;
 extern const ymm_reg  ff_pw_256;
 extern const ymm_reg  ff_pw_512;

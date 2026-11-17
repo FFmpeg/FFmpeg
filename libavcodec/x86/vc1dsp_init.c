@@ -1,5 +1,5 @@
 /*
- * VC-1 and WMV3 - DSP functions MMX-optimized
+ * VC-1 and WMV3 - ASM-optimized DSP functions
  * Copyright (c) 2007 Christophe GISQUET <christophe.gisquet@free.fr>
  *
  * Permission is hereby granted, free of charge, to any person
@@ -28,7 +28,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vc1dsp.h"
-#include "vc1dsp.h"
 #include "config.h"
 
 #define LOOP_FILTER4(EXT) \
@@ -98,16 +97,6 @@ void ff_vc1_inv_trans_8x8_avx2(int16_t block[64]);
 av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
-
-#if HAVE_X86_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL
-    if (HAVE_X86_6REGS && INLINE_MMX(cpu_flags))
-        if (EXTERNAL_MMX(cpu_flags))
-        ff_vc1dsp_init_mmx(dsp);
-
-    if (HAVE_X86_6REGS && INLINE_MMXEXT(cpu_flags))
-        if (EXTERNAL_MMXEXT(cpu_flags))
-        ff_vc1dsp_init_mmxext(dsp);
-#endif /* HAVE_X86_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL */
 
 #define ASSIGN_LF4(EXT) \
         dsp->vc1_v_loop_filter4  = ff_vc1_v_loop_filter4_ ## EXT; \

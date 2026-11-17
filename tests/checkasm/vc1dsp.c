@@ -483,7 +483,7 @@ static void check_mspel_pixels(void)
             for (unsigned dxy = 0; dxy < 16; ++dxy) {
                 if (!check_func(func[j][dxy], "vc1dsp.%s_mc%u%u_%u", tests[k].name, dxy & 3, dxy >> 2, blocksize))
                     continue;
-                declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, const uint8_t*, ptrdiff_t, int);
+                declare_func(void, uint8_t *, const uint8_t*, ptrdiff_t, int);
                 size_t dst_offset = (rnd() % (MAX_BLOCK_SIZE / blocksize)) * blocksize;
                 ptrdiff_t stride  = (rnd() % (MAX_STRIDE / blocksize) + 1) * blocksize;
                 size_t src_offset = 1 + stride + rnd() % MAX_BLOCK_SIZE;

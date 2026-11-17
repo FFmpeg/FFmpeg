@@ -1,5 +1,5 @@
 /*
- * MMX/SSE/AVX constants used across x86 dsp optimizations.
+ * XMM/YMM constants used across x86 dsp optimizations.
  *
  * This file is part of FFmpeg.
  *
@@ -36,9 +36,7 @@ DECLARE_ASM_ALIGNED(16, const xmm_reg,  ff_pw_9)    = { 0x0009000900090009ULL, 0
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_16)   = { 0x0010001000100010ULL, 0x0010001000100010ULL };
 DECLARE_ASM_ALIGNED(16, const xmm_reg,  ff_pw_18)   = { 0x0012001200120012ULL, 0x0012001200120012ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_32)   = { 0x0020002000200020ULL, 0x0020002000200020ULL };
-DECLARE_ASM_ALIGNED(8,  const uint64_t, ff_pw_53)   =   0x0035003500350035ULL;
 DECLARE_ASM_ALIGNED(16, const xmm_reg,  ff_pw_64)   = { 0x0040004000400040ULL, 0x0040004000400040ULL };
-DECLARE_ASM_ALIGNED(8,  const uint64_t, ff_pw_128)  =   0x0080008000800080ULL;
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_255)  = { 0x00ff00ff00ff00ffULL, 0x00ff00ff00ff00ffULL,
                                                     0x00ff00ff00ff00ffULL, 0x00ff00ff00ff00ffULL };
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_256)  = { 0x0100010001000100ULL, 0x0100010001000100ULL,
