@@ -29,6 +29,7 @@
 #include <stddef.h>
 
 #include "libavcodec/cabac.h"
+#include "libavutil/sanitizer.h"
 #include "cabac.h"
 
 #if HAVE_INLINE_ASM
@@ -41,7 +42,7 @@
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
-#if HAVE_X86_7REGS && !BROKEN_COMPILER
+#if HAVE_X86_7REGS && !BROKEN_COMPILER && !HAVE_ASAN
 #define decode_significance decode_significance_x86
 static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
