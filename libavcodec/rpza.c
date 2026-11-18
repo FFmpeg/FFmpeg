@@ -177,20 +177,20 @@ static int rpza_decode_stream(RpzaContext *s)
             /* red components */
             ta = (colorA >> 10) & 0x1F;
             tb = (colorB >> 10) & 0x1F;
-            color4[1] |= ((11 * ta + 21 * tb) >> 5) << 10;
-            color4[2] |= ((21 * ta + 11 * tb) >> 5) << 10;
+            color4[1] |= ((ta + 3 * tb) >> 2) << 10;
+            color4[2] |= ((3 * ta + tb) >> 2) << 10;
 
             /* green components */
             ta = (colorA >> 5) & 0x1F;
             tb = (colorB >> 5) & 0x1F;
-            color4[1] |= ((11 * ta + 21 * tb) >> 5) << 5;
-            color4[2] |= ((21 * ta + 11 * tb) >> 5) << 5;
+            color4[1] |= ((ta + 3 * tb) >> 2) << 5;
+            color4[2] |= ((3 * ta + tb) >> 2) << 5;
 
             /* blue components */
             ta = colorA & 0x1F;
             tb = colorB & 0x1F;
-            color4[1] |= ((11 * ta + 21 * tb) >> 5);
-            color4[2] |= ((21 * ta + 11 * tb) >> 5);
+            color4[1] |= ((ta + 3 * tb) >> 2);
+            color4[2] |= ((3 * ta + tb) >> 2);
 
             if (bytestream2_get_bytes_left(&s->gb) < n_blocks * 4)
                 return AVERROR_INVALIDDATA;
