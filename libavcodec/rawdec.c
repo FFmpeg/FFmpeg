@@ -123,8 +123,14 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         context->is_nut_pal8 = 1;
 
     if (avctx->codec_tag == AV_RL32("yuv2") &&
-        avctx->pix_fmt   == AV_PIX_FMT_YUYV422)
+        avctx->pix_fmt   == AV_PIX_FMT_YUYV422) {
         context->is_yuv2 = 1;
+        /* QuickTime Component Video is full range BT.601 */
+        if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
+            avctx->color_range = AVCOL_RANGE_JPEG;
+        if (avctx->colorspace == AVCOL_SPC_UNSPECIFIED)
+            avctx->colorspace = AVCOL_SPC_SMPTE170M;
+    }
 
     return 0;
 }
