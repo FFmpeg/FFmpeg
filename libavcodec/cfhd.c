@@ -695,6 +695,13 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             s->coded_format = AV_PIX_FMT_NONE;
             got_buffer = 1;
         } else if (tag == FrameIndex && data == 1 && s->sample_type == 1 && s->frame_type == 2) {
+            if (avctx->coded_width  != s->a_width  ||
+                avctx->coded_height != s->a_height ||
+                avctx->pix_fmt      != s->a_format) {
+                av_log(avctx, AV_LOG_ERROR, "Frame parameters do not match the allocated buffers\n");
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
             pic->width = pic->height = 0;
 
             if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
