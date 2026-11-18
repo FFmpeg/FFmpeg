@@ -1,38 +1,38 @@
-ef9e4953d3814dcd548c37ecb743ff65 *tests/data/fate/matroska-encoding-delay.matroska
-961246 tests/data/fate/matroska-encoding-delay.matroska
+bea95e8b4aca54240532ae8bd17267fa *tests/data/fate/matroska-encoding-delay.matroska
+961251 tests/data/fate/matroska-encoding-delay.matroska
 #extradata 0:       22, 0x32ea0490
-#tb 0: 1/1000
+#tb 0: 1/100000
 #media_type 0: video
 #codec_id 0: mpeg2video
 #dimensions 0: 720x608
 #sar 0: 152/135
-#tb 1: 1/1000
+#tb 1: 1/100000
 #media_type 1: audio
 #codec_id 1: mp2
 #sample_rate 1: 48000
 #channel_layout_name 1: stereo
-1,        -10,        -10,       24,     1152, 0x724077b8, S=1, Skip Samples,       10, 0x08d300e2
-0,          0,          0,       40,   237628, 0xeff25579
-1,         14,         14,       24,     1152, 0x80625572
-1,         38,         38,       24,     1152, 0x7d7f4dce
-0,         40,         40,       40,   238066, 0xb2265f41
-1,         62,         62,       24,     1152, 0xa6725739
-0,         80,         80,       40,   237723, 0x00d7cd24
-1,         86,         86,       24,     1152, 0xc9e85398
-1,        110,        110,       24,     1152, 0xda1287d3
-0,        120,        120,       40,   238290, 0xbe18b18f
-1,        134,        134,       24,     1152, 0x1c9a6102
+1,      -1002,      -1002,     2400,     1152, 0x724077b8, S=1, Skip Samples,       10, 0x08d300e2
+0,          0,          0,     4000,   237628, 0xeff25579
+1,       1398,       1398,     2400,     1152, 0x80625572
+1,       3798,       3798,     2400,     1152, 0x7d7f4dce
+0,       4000,       4000,     4000,   238066, 0xb2265f41
+1,       6198,       6198,     2400,     1152, 0xa6725739
+0,       8000,       8000,     4000,   237723, 0x00d7cd24
+1,       8598,       8598,     2400,     1152, 0xc9e85398
+1,      10998,      10998,     2400,     1152, 0xda1287d3
+0,      12000,      12000,     4000,   238290, 0xbe18b18f
+1,      13398,      13398,     2400,     1152, 0x1c9a6102
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=-10
-pts_time=-0.010000
-dts=-10
-dts_time=-0.010000
-duration=24
+pts=-1002
+pts_time=-0.010020
+dts=-1002
+dts_time=-0.010020
+duration=2400
 duration_time=0.024000
 size=1152
-pos=1263
+pos=1262
 flags=K__
 [SIDE_DATA]
 side_data_type=Skip Samples
@@ -49,33 +49,33 @@ pts=0
 pts_time=0.000000
 dts=0
 dts_time=0.000000
-duration=40
+duration=4000
 duration_time=0.040000
 size=237628
-pos=2423
+pos=2422
 flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=14
-pts_time=0.014000
-dts=14
-dts_time=0.014000
-duration=24
+pts=1398
+pts_time=0.013980
+dts=1398
+dts_time=0.013980
+duration=2400
 duration_time=0.024000
 size=1152
-pos=240058
+pos=240057
 flags=K__
 [/PACKET]
 [PACKET]
 codec_type=audio
 stream_index=1
-pts=38
-pts_time=0.038000
-dts=38
-dts_time=0.038000
-duration=24
+pts=3798
+pts_time=0.037980
+dts=3798
+dts_time=0.037980
+duration=2400
 duration_time=0.024000
 size=1152
 pos=241233
@@ -84,11 +84,11 @@ flags=K__
 [PACKET]
 codec_type=video
 stream_index=0
-pts=40
+pts=4000
 pts_time=0.040000
-dts=40
+dts=4000
 dts_time=0.040000
-duration=40
+duration=4000
 duration_time=0.040000
 size=238066
 pos=242393

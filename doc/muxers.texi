@@ -3031,7 +3031,21 @@ hardcoded fixed value.
 Store at most the provided number of milliseconds in a cluster.
 
 If not specified, the limit is set automatically to a sensible
-hardcoded fixed value.
+hardcoded fixed value. The limit cannot exceed 32767 ticks of the
+timestamp scale, 327 milliseconds at 10 microseconds.
+
+@item timestamp_scale @var{nanoseconds}
+Set the clock of the file, in nanoseconds.
+
+If set to @code{0}, the default, the muxer picks the coarsest power of
+ten of a nanosecond, up to a millisecond, that is finer than half a
+sample of every audio stream: 10 microseconds at 44.1 or 48 kHz. With a
+video stream the clock stays at 10 microseconds or above, so that frame
+reordering fits in a cluster. WebM files use a millisecond.
+A value set by this option applies to WebM files too.
+
+Set it to @code{1000000} to write the millisecond clock that most
+Matroska files use.
 
 @item dash @var{bool}
 Create a WebM file conforming to WebM DASH specification. By default

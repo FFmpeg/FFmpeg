@@ -1,46 +1,46 @@
-bdca53906b34c57192416a0f737b885e *tests/data/fate/matroska-mastering-display-metadata.matroska
-1669723 tests/data/fate/matroska-mastering-display-metadata.matroska
+8d449e76a98adc5ef2427069c21454c9 *tests/data/fate/matroska-mastering-display-metadata.matroska
+1669732 tests/data/fate/matroska-mastering-display-metadata.matroska
 #extradata 0:        4, 0x040901a3
 #extradata 3:      201, 0x9a706279
-#tb 0: 1/1000
+#tb 0: 1/100000
 #media_type 0: video
 #codec_id 0: prores
 #dimensions 0: 1280x720
 #sar 0: 1/1
-#tb 1: 1/1000
+#tb 1: 1/100000
 #media_type 1: audio
 #codec_id 1: pcm_s24le
 #sample_rate 1: 48000
 #channel_layout_name 1: mono
-#tb 2: 1/1000
+#tb 2: 1/100000
 #media_type 2: audio
 #codec_id 2: pcm_s16be
 #sample_rate 2: 48000
 #channel_layout_name 2: mono
-#tb 3: 1/1000
+#tb 3: 1/100000
 #media_type 3: video
 #codec_id 3: ffv1
 #dimensions 3: 1280x720
 #sar 3: 1/1
-0,          0,          0,       17,    57008, 0x43416399
-1,          0,          0,       16,     2403, 0xaa818522
-3,          0,          0,       17,   274884, 0x775840e5
-0,         17,         17,       17,    57248, 0xa06cd7b5
-1,         17,         17,       16,     2403, 0xe1a991e5
-2,         17,         17,       16,     1602, 0x5d868171
-3,         17,         17,       17,   273716, 0xa41fc5e3, F=0x0
-0,         33,         33,       17,    57200, 0x5623da10
-1,         33,         33,       16,     2400, 0x6650907f
-2,         33,         33,       16,     1600, 0xa90f0044
-3,         33,         33,       17,   272838, 0x3c308d03, F=0x0
-0,         50,         50,       17,    57152, 0x52d89d3f
-1,         50,         50,       16,     2403, 0x43398a08
-2,         50,         50,       16,     1602, 0x3a350084
-3,         50,         50,       17,   271251, 0xe802cc77, F=0x0
-0,         67,         67,       17,    56960, 0x431d5189
-1,         67,         67,       16,     2403, 0x61cd96cb
-2,         67,         67,       16,     1602, 0xd74800c6
-3,         67,         67,       17,   270553, 0x36d83705, F=0x0
+0,          0,          0,     1668,    57008, 0x43416399
+1,          0,          0,     1668,     2403, 0xaa818522
+3,          0,          0,     1668,   274884, 0x775840e5
+0,       1668,       1668,     1668,    57248, 0xa06cd7b5
+3,       1668,       1668,     1668,   273716, 0xa41fc5e3, F=0x0
+1,       1669,       1669,     1668,     2403, 0xe1a991e5
+2,       1669,       1669,     1668,     1602, 0x5d868171
+0,       3337,       3337,     1668,    57200, 0x5623da10
+3,       3337,       3337,     1668,   272838, 0x3c308d03, F=0x0
+1,       3338,       3338,     1666,     2400, 0x6650907f
+2,       3338,       3338,     1666,     1600, 0xa90f0044
+1,       5004,       5004,     1668,     2403, 0x43398a08
+2,       5004,       5004,     1668,     1602, 0x3a350084
+0,       5005,       5005,     1668,    57152, 0x52d89d3f
+3,       5005,       5005,     1668,   271251, 0xe802cc77, F=0x0
+0,       6673,       6673,     1668,    56960, 0x431d5189
+1,       6673,       6673,     1668,     2403, 0x61cd96cb
+2,       6673,       6673,     1668,     1602, 0xd74800c6
+3,       6673,       6673,     1668,   270553, 0x36d83705, F=0x0
 [STREAM]
 index=0
 codec_name=prores
