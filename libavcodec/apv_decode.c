@@ -361,6 +361,12 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
     APVDerivedTileInfo           *tile_info = &apv->tile_info;
     int err, job_count;
 
+    if (!ff_thread_can_start_frame(avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "Multiple primary frames in a packet "
+               "are not supported with frame threading.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     err = apv_decode_check_format(avctx, &input->frame_header);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported format parameters.\n");
