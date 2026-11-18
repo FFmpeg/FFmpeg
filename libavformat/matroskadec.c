@@ -57,6 +57,7 @@
 #include "libavcodec/flac.h"
 #include "libavcodec/itut35.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavcodec/opus/tab.h"
 #include "packet_internal.h"
 
 #include "avformat.h"
@@ -290,6 +291,23 @@ typedef struct MatroskaTrack {
     AVStream *stream;
     int64_t end_timecode;
     int ms_compat;
+    /**
+     * best_fit_ts: the timestamps are in samples, rebuilt from the
+     * packet lengths, and the container's clock only places the first
+     * packet and the ones after a gap.
+     */
+    int exact_audio;
+    AVRational tick_tb;      ///< the container's clock for this track
+    /// samples per packet when fixed, 0 to read each packet
+    int packet_samples;
+    /// the rounding of the container's clock, in samples
+    int64_t ts_tolerance;
+    int64_t next_pts;        ///< where the next packet continues the last one
+    /// the timestamp of the first packet, in samples
+    int64_t grid_origin;
+    int grid_step;           ///< the length of the last packet
+    /// the packet lengths vary, so no grid places a packet after a seek
+    int grid_varies;
     int needs_decoding;
     uint64_t max_block_additional_id;
     EbmlList block_addition_mappings;
@@ -422,6 +440,7 @@ typedef struct MatroskaDemuxContext {
     /* What to skip before effectively reading a packet. */
     int skip_to_keyframe;
     uint64_t skip_to_timecode;
+    AVRational skip_to_tb;   ///< time base of skip_to_timecode
 
     /* File has a CUES element, but we defer parsing until it is needed. */
     int cues_parsing_deferred;
@@ -2021,11 +2040,17 @@ static void matroska_add_index_entries(MatroskaDemuxContext *matroska)
         for (j = 0; j < pos_list->nb_elem; j++) {
             MatroskaTrack *track = matroska_find_track_by_num(matroska,
                                                               pos[j].track);
-            if (track && track->stream)
+            if (track && track->stream) {
+                int64_t ts = index[i].time / index_scale;
+                // A cue holds a rounded block timestamp, before the codec
+                // delay; the skip after a seek absorbs the rounding.
+                if (track->exact_audio)
+                    ts = av_rescale_q(ts, track->tick_tb,
+                                      track->stream->time_base);
                 av_add_index_entry(track->stream,
                                    pos[j].pos + matroska->segment_start,
-                                   index[i].time / index_scale, 0, 0,
-                                   AVINDEX_KEYFRAME);
+                                   ts, 0, 0, AVINDEX_KEYFRAME);
+            }
         }
     }
 }
@@ -3180,6 +3205,100 @@ static int mkv_trust_default_duration(const MatroskaTrack *track,
     return 1;
 }
 
+/**
+ * Rebuild the timestamps of an audio track in samples, from the packet
+ * lengths, when the container's clock is coarser than a sample. The
+ * packet length comes from the codec where it is known from the packet or
+ * the stream, or from the track's default duration, which is in
+ * nanoseconds.
+ */
+static void mka_setup_exact_timestamps(MatroskaTrack *track, AVStream *st,
+                                       MatroskaDemuxContext *matroska)
+{
+    AVCodecParameters *par = st->codecpar;
+    int rate = par->codec_id == AV_CODEC_ID_OPUS ? OPUS_TIMESTAMP_RATE
+                                                 : par->sample_rate;
+    const char *reason;
+    int samples = 0;
+
+    if (track->ms_compat || track->audio.buf) {
+        reason = "packets stored in a compatibility or interleaved mode";
+        goto keep_clock;
+    }
+    // A full parser re-times the packets it splits or merges.
+    if (ffstream(st)->need_parsing == AVSTREAM_PARSE_FULL ||
+        ffstream(st)->need_parsing == AVSTREAM_PARSE_FULL_RAW) {
+        reason = "packets re-timed by a parser";
+        goto keep_clock;
+    }
+    if (rate <= 0) {
+        reason = "sample rate unknown";
+        goto keep_clock;
+    }
+    if (av_cmp_q(st->time_base, (AVRational){ 1, rate }) <= 0) {
+        av_log(matroska->ctx, AV_LOG_DEBUG,
+               "Track %"PRIu64": the clock of the file resolves each sample\n",
+               track->num);
+        return;
+    }
+    switch (par->codec_id) {
+    case AV_CODEC_ID_OPUS:
+        break;
+    // The packets mix block sizes, so no grid places a packet after a seek.
+    case AV_CODEC_ID_VORBIS:
+        reason = "packet lengths vary";
+        goto keep_clock;
+    case AV_CODEC_ID_AAC: {
+        MPEG4AudioConfig cfg = { 0 };
+        int frame_length;
+
+        if (avpriv_mpeg4audio_get_config2(&cfg, par->extradata,
+                                          par->extradata_size, 1,
+                                          matroska->ctx) < 0 ||
+            cfg.sample_rate <= 0) {
+            reason = "invalid AudioSpecificConfig";
+            goto keep_clock;
+        }
+        // A frame holds its samples at the core rate, whatever the SBR
+        // signalling.
+        frame_length = cfg.frame_length;
+        if (frame_length <= 0 ||
+            (int64_t)frame_length * rate % cfg.sample_rate) {
+            reason = "frame length unknown";
+            goto keep_clock;
+        }
+        samples = (int64_t)frame_length * rate / cfg.sample_rate;
+        break;
+    }
+    default:
+        if (mkv_trust_default_duration(track, par))
+            samples = av_rescale_rnd(track->default_duration, rate,
+                                     1000000000, AV_ROUND_NEAR_INF);
+        if (samples <= 0) {
+            reason = "packet lengths unknown";
+            goto keep_clock;
+        }
+    }
+    track->exact_audio    = 1;
+    track->packet_samples = samples;
+    track->tick_tb        = st->time_base;
+    track->next_pts       = AV_NOPTS_VALUE;
+    track->grid_origin    = AV_NOPTS_VALUE;
+    track->ts_tolerance   = av_rescale_q_rnd(1, track->tick_tb,
+                                             (AVRational){ 1, rate },
+                                             AV_ROUND_UP);
+    track->codec_delay_in_track_tb = av_rescale_q(track->codec_delay,
+                                                  (AVRational){ 1, 1000000000 },
+                                                  (AVRational){ 1, rate });
+    avpriv_set_pts_info(st, 64, 1, rate);
+    return;
+
+keep_clock:
+    av_log(matroska->ctx, AV_LOG_VERBOSE,
+           "Track %"PRIu64" (%s): %s, keeping the clock of the file\n",
+           track->num, avcodec_get_name(par->codec_id), reason);
+}
+
 static int matroska_parse_tracks(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
@@ -3368,6 +3487,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 return ret;
             memcpy(par->extradata, src, extra_size);
         }
+
+        if (type == MATROSKA_TRACK_TYPE_AUDIO &&
+            matroska->best_fit_ts)
+            mka_setup_exact_timestamps(track, st, matroska);
 
         ret = mkv_parse_block_addition_mappings(s, st, track);
         if (ret < 0)
@@ -4313,6 +4436,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     AVStream *st;
     int16_t block_time;
     uint32_t lace_size[256];
+    int64_t lace_samples[256];
+    int64_t explicit_duration;
+    int laces_in_samples = 0;
     int n, flags, laces = 0;
     uint64_t num;
 
@@ -4351,13 +4477,39 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     if (cluster_time != (uint64_t) -1 &&
         (block_time >= 0 || cluster_time >= -block_time)) {
         uint64_t timecode_cluster_in_track_tb = (double) cluster_time / track->time_scale;
-        timecode = timecode_cluster_in_track_tb + block_time - track->codec_delay_in_track_tb;
+        timecode = timecode_cluster_in_track_tb + block_time;
+        if (track->exact_audio) {
+            int64_t ts = av_rescale_q(timecode, track->tick_tb, st->time_base);
+            // The clock only places the packets after a gap: the others
+            // continue the one before, or, after a seek, sit on the grid
+            // of packets that starts at the earliest one read.
+            if (track->grid_origin == AV_NOPTS_VALUE || ts < track->grid_origin)
+                track->grid_origin = ts;
+            if (track->next_pts != AV_NOPTS_VALUE &&
+                FFABS(ts - track->next_pts) <= track->ts_tolerance) {
+                ts = track->next_pts;
+            } else if (track->grid_step > 0 && !track->grid_varies) {
+                int64_t on_grid = track->grid_origin +
+                    av_rescale_rnd(ts - track->grid_origin, 1,
+                                   track->grid_step, AV_ROUND_NEAR_INF) *
+                    track->grid_step;
+                if (FFABS(on_grid - ts) <= track->ts_tolerance)
+                    ts = on_grid;
+            }
+            timecode = ts;
+        }
+        timecode -= track->codec_delay_in_track_tb;
         if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE &&
             timecode < track->end_timecode)
             is_keyframe = 0;  /* overlapping subtitles are not key frame */
         if (is_keyframe) {
+            // The index of a best-fit track holds block timestamps, as cues
+            // do.
+            int64_t index_ts = timecode;
+            if (track->exact_audio)
+                index_ts += track->codec_delay_in_track_tb;
             ff_reduce_index(matroska->ctx, st->index);
-            av_add_index_entry(st, cluster_pos, timecode, 0, 0,
+            av_add_index_entry(st, cluster_pos, index_ts, 0, 0,
                                AVINDEX_KEYFRAME);
         }
     }
@@ -4367,7 +4519,14 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         // Compare signed timecodes. Timecode may be negative due to codec delay
         // offset. We don't support timestamps greater than int64_t anyway - see
         // AVPacket's pts.
-        if ((int64_t)timecode < (int64_t)matroska->skip_to_timecode)
+        int64_t block_ts = timecode;
+        // A best-fit index holds block timestamps, and the seek target can
+        // be a rounded cue up to ts_tolerance after the block it names.
+        if (track->exact_audio && timecode != AV_NOPTS_VALUE)
+            block_ts += track->codec_delay_in_track_tb + track->ts_tolerance;
+        if (timecode == AV_NOPTS_VALUE ||
+            av_compare_ts(block_ts, st->time_base,
+                          matroska->skip_to_timecode, matroska->skip_to_tb) < 0)
             return res;
         if (is_keyframe)
             matroska->skip_to_keyframe = 0;
@@ -4384,17 +4543,63 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         return res;
     }
 
+    if (track->exact_audio) {
+        int64_t duration = av_rescale_q(block_duration, track->tick_tb,
+                                        st->time_base);
+        // av_rescale_q() returns INT64_MIN on overflow.
+        block_duration = duration < 0 ? INT64_MAX : duration;
+    }
+    explicit_duration = block_duration;
+
     if (!block_duration && mkv_trust_default_duration(track, st->codecpar))
         block_duration = av_rescale_q(track->default_duration * laces,
                                       (AVRational) { 1, 1000000000 },
                                       st->time_base);
+
+    if (track->exact_audio) {
+        const uint8_t *lace_data = data;
+        int64_t block_samples = 0;
+
+        for (n = 0; n < laces; n++) {
+            int samples = track->packet_samples;
+            if (!samples && st->codecpar->codec_id == AV_CODEC_ID_OPUS &&
+                !track->needs_decoding)
+                samples = ff_opus_packet_samples(lace_data, lace_size[n]);
+            if (samples <= 0) {
+                block_samples = -1;
+                break;
+            }
+            if ((track->grid_step && samples != track->grid_step) ||
+                (n && samples != lace_samples[0]))
+                track->grid_varies = 1;
+            lace_samples[n] = samples;
+            block_samples  += samples;
+            lace_data      += lace_size[n];
+        }
+        // A BlockDuration other than the packet lengths trims the block.
+        if (block_samples > 0 && explicit_duration &&
+            FFABS(explicit_duration - block_samples) > track->ts_tolerance)
+            block_samples = -1;
+        if (block_samples > 0 && timecode != AV_NOPTS_VALUE) {
+            block_duration   = block_samples;
+            track->next_pts  = timecode + track->codec_delay_in_track_tb +
+                               block_samples;
+            track->grid_step = lace_samples[0];
+        } else {
+            block_samples   = 0;
+            track->next_pts = AV_NOPTS_VALUE;
+        }
+        laces_in_samples = block_samples > 0;
+    }
 
     if (cluster_time != (uint64_t)-1 && (block_time >= 0 || cluster_time >= -block_time))
         track->end_timecode =
             FFMAX(track->end_timecode, timecode + block_duration);
 
     for (n = 0; n < laces; n++) {
-        int64_t lace_duration = block_duration*(n+1) / laces - block_duration*n / laces;
+        int64_t lace_duration = laces_in_samples ? lace_samples[n] :
+                                block_duration*(n+1) / laces -
+                                block_duration*n / laces;
         uint8_t *out_data = data;
         int      out_size = lace_size[n];
 
@@ -4559,6 +4764,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         tracks[i].audio.sub_packet_cnt = 0;
         tracks[i].audio.buf_timecode   = AV_NOPTS_VALUE;
         tracks[i].end_timecode         = 0;
+        tracks[i].next_pts             = AV_NOPTS_VALUE;
     }
 
     /* We seek to a level 1 element, so set the appropriate status. */
@@ -4570,6 +4776,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         sti->skip_to_keyframe = 1;
         matroska->skip_to_timecode = sti->index_entries[index].timestamp;
     }
+    matroska->skip_to_tb       = st->time_base;
     matroska->skip_to_keyframe = 1;
     matroska->done             = 0;
     avpriv_update_cur_dts(s, st, sti->index_entries[index].timestamp);
