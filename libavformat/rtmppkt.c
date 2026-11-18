@@ -275,6 +275,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
     toread = FFMIN(size, chunk_size);
     if (ffurl_read_complete(h, p->data + p->offset, toread) != toread) {
         ff_rtmp_packet_destroy(p);
+        prev_pkt[channel_id].read = 0;
         return AVERROR(EIO);
     }
     size      -= toread;
