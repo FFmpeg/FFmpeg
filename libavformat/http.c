@@ -2417,6 +2417,11 @@ static int http_proxy_close(URLContext *h)
     HTTPContext *s = h->priv_data;
     if (s->hd)
         ffurl_closep(&s->hd);
+#if CONFIG_ZLIB
+    inflateEnd(&s->inflate_stream);
+#endif
+    av_dict_free(&s->cookie_dict);
+    av_freep(&s->new_location);
     return 0;
 }
 
@@ -2535,6 +2540,8 @@ static int http_proxy_read(URLContext *h, uint8_t *buf, int size)
     return ffurl_read(s->hd, buf, size);
 }
 
+HTTP_CLASS(httpproxy);
+
 const URLProtocol ff_httpproxy_protocol = {
     .name                = "httpproxy",
     .url_open            = http_proxy_open,
@@ -2543,6 +2550,7 @@ const URLProtocol ff_httpproxy_protocol = {
     .url_close           = http_proxy_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size      = sizeof(HTTPContext),
+    .priv_data_class     = &httpproxy_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };
 #endif /* CONFIG_HTTPPROXY_PROTOCOL */
