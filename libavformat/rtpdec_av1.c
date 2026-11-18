@@ -44,6 +44,7 @@
  * RTP/AV1 specific private data.
  */
 struct PayloadContext {
+    AVPacket *pkt;      ///< temporal unit being assembled
     uint32_t timestamp; ///< last received timestamp for frame
     uint8_t profile;    ///< profile (main/high/professional)
     uint8_t level_idx;  ///< level (0-31)
@@ -78,9 +79,10 @@ static int sdp_parse_fmtp_config_av1(AVFormatContext *s,
 
 // return 0 on complete packet, -1 on partial packet
 static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
-                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             AVStream *st, AVPacket *out_pkt, uint32_t *timestamp,
                              const uint8_t *buf, int len, uint16_t seq,
                              int flags) {
+    AVPacket *pkt = data->pkt;
     uint8_t aggr_hdr;
     int result = 0;
     int is_frag_cont;
@@ -398,6 +400,11 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 #endif
     pkt->stream_index = st->index;
 
+    if (!result) {
+        av_packet_unref(out_pkt);
+        av_packet_move_ref(out_pkt, pkt);
+    }
+
     return result;
 
 drop_fragment:
@@ -413,7 +420,19 @@ drop_fragment:
     return AVERROR_INVALIDDATA;
 }
 
+static av_cold int av1_init(AVFormatContext *s, int st_index,
+                            PayloadContext *data)
+{
+    if (!data->pkt)
+        data->pkt = av_packet_alloc();
+    if (!data->pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static void av1_close_context(PayloadContext *data) {
+    av_packet_free(&data->pkt);
 }
 
 static int av1_need_keyframe(PayloadContext *data)
@@ -450,6 +469,7 @@ const RTPDynamicProtocolHandler ff_av1_dynamic_handler = {
         .need_parsing     = AVSTREAM_PARSE_FULL,
         .priv_data_size   = sizeof(PayloadContext),
         .parse_sdp_a_line = parse_av1_sdp_line,
+        .init             = av1_init,
         .close            = av1_close_context,
         .parse_packet     = av1_handle_packet,
         .need_keyframe    = av1_need_keyframe,
