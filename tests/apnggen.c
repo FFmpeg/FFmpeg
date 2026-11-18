@@ -7,6 +7,16 @@
  * here, the same way audiogen builds its wave files, so the tests do not
  * need media from the fate-suite.
  *
+ * A file name containing "biganc" gets a large private ancillary chunk
+ * before the first IDAT, to check that probing still finds the animation
+ * (issue #26132). A file name containing "plain" omits acTL/fcTL and emits
+ * a single frame, giving a non-animated PNG control case.
+ *
+ * "bndhdr" inserts a caBX immediately after IHDR sized so the next chunk
+ * starts at offset 4096, where the probe buffer ends on a header boundary.
+ * "bndplte" inserts a 4000-byte caBX there, so a 4-bit PLTE crosses offset
+ * 4096. Both names require the depth marker as well.
+ *
  * Copyright (c) 2026 Jun Zhao
  *
  * This file is part of FFmpeg.
@@ -32,7 +42,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum { CANVAS_W = 24, CANVAS_H = 20, FRAMES = 6 };
+/* Large enough to push the first IDAT past the 2048-byte probe buffer. */
+enum { CANVAS_W = 24, CANVAS_H = 20, FRAMES = 6, ANC_SIZE = 4096 };
+
+static const uint8_t ancillary[ANC_SIZE] = { 0 };
 
 static const uint8_t palette[16][3] = {
     {   0,   0,   0 }, { 255,   0,   0 }, {   0, 255,   0 }, {   0,   0, 255 },
@@ -42,7 +55,7 @@ static const uint8_t palette[16][3] = {
 };
 
 typedef struct {
-    uint8_t data[2048];
+    uint8_t data[ANC_SIZE + 2048];
     int len;
 } Buf;
 
@@ -153,7 +166,8 @@ static void put_stored(Buf *b, const uint8_t *raw, int n)
     put_be32(b, (s << 16) | a);
 }
 
-static void write_apng(const char *path, int depth)
+static void write_apng(const char *path, int depth, int big_anc, int plain,
+                        int anc_after_ihdr)
 {
     static const uint8_t sig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
     uint8_t ihdr[13] = { 0, 0, 0, CANVAS_W, 0, 0, 0, CANVAS_H, depth, 3 };
@@ -161,32 +175,44 @@ static void write_apng(const char *path, int depth)
     uint8_t plte[16 * 3], raw[512], fctl[26];
     Buf out = { 0 }, image = { 0 };
     FILE *f;
-    int colors = 1 << depth, seq = 0, frame, i;
+    int colors = 1 << depth, seq = 0, frame, frames = plain ? 1 : FRAMES, i;
+
+    if (anc_after_ihdr < 0 || anc_after_ihdr > ANC_SIZE) {
+        fprintf(stderr, "apnggen: ancillary payload does not fit\n");
+        exit(1);
+    }
 
     for (i = 0; i < colors; i++)
         memcpy(plte + 3 * i, palette[i], 3);
 
     put(&out, sig, 8);
     chunk(&out, "IHDR", ihdr, sizeof(ihdr));
-    chunk(&out, "acTL", actl, sizeof(actl));
+    if (anc_after_ihdr)
+        chunk(&out, "caBX", ancillary, anc_after_ihdr);
+    if (!plain)
+        chunk(&out, "acTL", actl, sizeof(actl));
     chunk(&out, "PLTE", plte, colors * 3);
+    if (big_anc)
+        chunk(&out, "caBX", ancillary, sizeof(ancillary));
 
-    for (frame = 0; frame < FRAMES; frame++) {
+    for (frame = 0; frame < frames; frame++) {
         int sub = frame != 0;
         int x = sub ? 1 + 2 * (frame - 1) : 0;
         int y = sub ? 1 + (frame - 1) : 0;
         int w = sub ? 7 : CANVAS_W;
         int h = sub ? 5 : CANVAS_H;
 
-        memset(fctl, 0, sizeof(fctl));
-        fctl[3] = seq++;
-        fctl[7] = w;
-        fctl[11] = h;
-        fctl[15] = x;
-        fctl[19] = y;
-        fctl[21] = 1;  /* delay numerator */
-        fctl[23] = 10; /* delay denominator: 1/10 s */
-        chunk(&out, "fcTL", fctl, sizeof(fctl));
+        if (!plain) {
+            memset(fctl, 0, sizeof(fctl));
+            fctl[3] = seq++;
+            fctl[7] = w;
+            fctl[11] = h;
+            fctl[15] = x;
+            fctl[19] = y;
+            fctl[21] = 1;  /* delay numerator */
+            fctl[23] = 10; /* delay denominator: 1/10 s */
+            chunk(&out, "fcTL", fctl, sizeof(fctl));
+        }
 
         image.len = 0;
         if (sub)
@@ -204,7 +230,7 @@ static void write_apng(const char *path, int depth)
 int main(int argc, char **argv)
 {
     const char *path = argc == 2 ? argv[1] : NULL;
-    int depth = 0;
+    int depth = 0, anc_after_ihdr = 0;
 
     if (!path) {
         fprintf(stderr, "usage: apnggen OUTPUT.png\n");
@@ -220,6 +246,20 @@ int main(int argc, char **argv)
         fprintf(stderr, "apnggen: unsupported file name %s\n", path);
         return 1;
     }
-    write_apng(path, depth);
+    /* IHDR ends at offset 33. A 4051-byte payload plus its 12-byte wrapper
+     * ends at 4096, so the next header is absent from that probe buffer.
+     * A 4000-byte payload leaves a 4-bit PLTE crossing the same offset:
+     * the chunk ends at 4045, acTL at 4065, and PLTE at 4125. */
+    if (strstr(path, "bndhdr"))
+        anc_after_ihdr = 4051;
+    else if (strstr(path, "bndplte")) {
+        if (depth != 4) {
+            fprintf(stderr, "apnggen: bndplte requires a 4-bit file name\n");
+            return 1;
+        }
+        anc_after_ihdr = 4000;
+    }
+    write_apng(path, depth, strstr(path, "biganc") != NULL,
+               strstr(path, "plain") != NULL, anc_after_ihdr);
     return 0;
 }

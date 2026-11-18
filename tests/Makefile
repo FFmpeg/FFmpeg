@@ -77,6 +77,16 @@ tests/data/fate/apng-small-bpp-%.png: TAG = GEN
 tests/data/fate/apng-small-bpp-%.png: tests/apnggen$(HOSTEXESUF) | tests/data/fate
 	$(M)./$< $@
 
+# Large ancillary chunk before the first IDAT (issue #26132).
+tests/data/fate/apng-biganc-%.png: TAG = GEN
+tests/data/fate/apng-biganc-%.png: tests/apnggen$(HOSTEXESUF) | tests/data/fate
+	$(M)./$< $@
+
+# Ancillary chunk placed so a probe boundary splits the next header or PLTE.
+tests/data/fate/apng-bnd%.png: TAG = GEN
+tests/data/fate/apng-bnd%.png: tests/apnggen$(HOSTEXESUF) | tests/data/fate
+	$(M)./$< $@
+
 RUNNING_FATE := $(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS)))
 
 # Check sanity of dependencies when running FATE tests.
