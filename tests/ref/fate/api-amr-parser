@@ -1,0 +1,42 @@
+amr_nb, channels 1
+exact: input 13, consumed 13, output 13, duration 160, bitrate 5200, 00010000000000000000000000
+split start: input 12, consumed 12, output 0
+split end: input 1, consumed 1, output 13, duration 160, bitrate 5200, 00010000000000000000000000
+combined: input 26, consumed 13, output 13, duration 160, bitrate 5200, 00010000000000000000000000
+remainder: input 13, consumed 13, output 13, duration 160, bitrate 5200, 00020000000000000000000000
+truncated block: input 12, consumed 12, output 0
+eof: input 0, consumed 0, output 12, duration 160, bitrate 5200, 000100000000000000000000
+complete frames: input 26, consumed 26, output 26, duration 160, bitrate 0, 0001000000000000000000000000020000000000000000000000
+complete frames eof: input 0, consumed 0, output 0
+amr_nb, channels 2
+exact: input 26, consumed 26, output 26, duration 160, bitrate 10400, 0001000000000000000000000000020000000000000000000000
+split start: input 25, consumed 25, output 0
+split end: input 1, consumed 1, output 26, duration 160, bitrate 10400, 0001000000000000000000000000020000000000000000000000
+first channel: input 13, consumed 13, output 0
+last channel: input 13, consumed 13, output 26, duration 160, bitrate 10400, 0001000000000000000000000000020000000000000000000000
+combined: input 52, consumed 26, output 26, duration 160, bitrate 10400, 0001000000000000000000000000020000000000000000000000
+remainder: input 26, consumed 26, output 26, duration 160, bitrate 10400, 0003000000000000000000000000040000000000000000000000
+eof: input 0, consumed 0, output 0
+complete frames: input 52, consumed 52, output 52, duration 160, bitrate 0, 00010000000000000000000000000200000000000000000000000003000000000000000000000000040000000000000000000000
+complete frames eof: input 0, consumed 0, output 0
+amr_wb, channels 1
+exact: input 18, consumed 18, output 18, duration 320, bitrate 7200, 000100000000000000000000000000000000
+split start: input 17, consumed 17, output 0
+split end: input 1, consumed 1, output 18, duration 320, bitrate 7200, 000100000000000000000000000000000000
+combined: input 36, consumed 18, output 18, duration 320, bitrate 7200, 000100000000000000000000000000000000
+remainder: input 18, consumed 18, output 18, duration 320, bitrate 7200, 000200000000000000000000000000000000
+truncated block: input 17, consumed 17, output 0
+eof: input 0, consumed 0, output 17, duration 320, bitrate 7200, 0001000000000000000000000000000000
+complete frames: input 36, consumed 36, output 36, duration 320, bitrate 0, 000100000000000000000000000000000000000200000000000000000000000000000000
+complete frames eof: input 0, consumed 0, output 0
+amr_wb, channels 2
+exact: input 36, consumed 36, output 36, duration 320, bitrate 14400, 000100000000000000000000000000000000000200000000000000000000000000000000
+split start: input 35, consumed 35, output 0
+split end: input 1, consumed 1, output 36, duration 320, bitrate 14400, 000100000000000000000000000000000000000200000000000000000000000000000000
+first channel: input 18, consumed 18, output 0
+last channel: input 18, consumed 18, output 36, duration 320, bitrate 14400, 000100000000000000000000000000000000000200000000000000000000000000000000
+combined: input 72, consumed 36, output 36, duration 320, bitrate 14400, 000100000000000000000000000000000000000200000000000000000000000000000000
+remainder: input 36, consumed 36, output 36, duration 320, bitrate 14400, 000300000000000000000000000000000000000400000000000000000000000000000000
+eof: input 0, consumed 0, output 0
+complete frames: input 72, consumed 72, output 72, duration 320, bitrate 0, 000100000000000000000000000000000000000200000000000000000000000000000000000300000000000000000000000000000000000400000000000000000000000000000000
+complete frames eof: input 0, consumed 0, output 0

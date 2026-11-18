@@ -88,7 +88,8 @@ static int amr_parse(AVCodecParserContext *s1,
             }
 
             offset += next;
-            if (offset >= buf_size) {
+            if (offset > buf_size ||
+                (offset == buf_size && ch + 1 < avctx->ch_layout.nb_channels)) {
                 s->remaining = offset - buf_size;
                 next = END_NOT_FOUND;
                 break;
@@ -101,18 +102,17 @@ static int amr_parse(AVCodecParserContext *s1,
         if (s->remaining < 0)
             next = offset;
 
-        if (next != END_NOT_FOUND) {
-            if (s->cumulated_size < UINT64_MAX - next) {
-                s->cumulated_size += next;
-                /* Both AMR formats have 50 frames per second */
-                avctx->bit_rate = s->cumulated_size / ++s->block_count * 8 * 50;
-            }
-        }
-
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf      = NULL;
             *poutbuf_size = 0;
             return buf_size;
+        }
+
+        if (next != END_NOT_FOUND &&
+            s->cumulated_size <= UINT64_MAX - buf_size) {
+            s->cumulated_size += buf_size;
+            /* Both AMR formats have 50 frame-blocks per second. */
+            avctx->bit_rate = s->cumulated_size / ++s->block_count * 8 * 50;
         }
     }
 
