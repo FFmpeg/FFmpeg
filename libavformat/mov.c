@@ -11033,6 +11033,7 @@ static void mov_free_stream_context(AVFormatContext *s, AVStream *st)
     mov_free_encryption_index(&sc->cenc.encryption_index);
     av_encryption_info_free(sc->cenc.default_encrypted_sample);
     av_aes_ctr_free(sc->cenc.aes_ctr);
+    av_freep(&sc->cenc.aes_ctx);
 
     av_freep(&sc->stereo3d);
     av_freep(&sc->spherical);
