@@ -788,6 +788,7 @@ TESTPROGS = codecstring                                                 \
             url                                                         \
             seek_utils
 TESTPROGS-$(CONFIG_RTPDEC)               += rtpdec
+TESTPROGS-$(and $(CONFIG_AC3_PARSER),$(CONFIG_AC3_DECODER)) += parse_skip_samples
 #           async                                                       \
 
 FIFO-MUXER-TESTPROGS-$(CONFIG_NETWORK)   += fifo_muxer

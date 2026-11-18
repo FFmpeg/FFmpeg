@@ -1,0 +1,13 @@
+skip 2000/0 reason 0/0
+packet 0: pts 0 size 1536 skip 2000/0 reason 0/0
+packets 62, decoded samples 93232
+skip 3500/0 reason 0/0
+packet 0: pts 0 size 1536 skip 3500/0 reason 0/0
+packets 62, decoded samples 91732
+skip 1000/0 reason 0/0
+packet 0: pts 0 size 1536 skip 1000/0 reason 0/0
+packet 4: pts 6144 size 1536 skip 1100/0 reason 0/0
+packets 62, decoded samples 93132
+skip 3500/100 reason 1/1
+packet 0: pts 0 size 1536 skip 3500/100 reason 1/1
+packet 3: pts 4608 size 1536 skip 0/100 reason 0/1

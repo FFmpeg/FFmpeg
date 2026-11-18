@@ -1254,26 +1254,39 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 
         got_output = !!out_pkt->size;
 
-        if (pkt->side_data && !out_pkt->side_data) {
-            /* for the first iteration, side_data are simply moved to output.
-             * in case of additional iterations, they are duplicated each time. */
+        if (pkt->side_data && !out_pkt->side_data && !sti->parse_skip_filtered) {
+            /* Move side data to the first output. Later outputs get a copy
+             * with any leading skip removed. */
             if (!pkt_side_data_consumed) {
                 pkt_side_data_consumed = 1;
                 out_pkt->side_data       = pkt->side_data;
                 out_pkt->side_data_elems = pkt->side_data_elems;
             } else for (int i = 0; i < pkt->side_data_elems; i++) {
                 const AVPacketSideData *const src_sd = &pkt->side_data[i];
-                uint8_t *dst_data = av_packet_new_side_data(out_pkt, src_sd->type, src_sd->size);
+                uint8_t *dst_data;
+                int skip_samples = src_sd->type == AV_PKT_DATA_SKIP_SAMPLES &&
+                                   src_sd->size >= 10;
+
+                if (skip_samples && !AV_RL32(src_sd->data + 4)) {
+                    sti->parse_skip_filtered = !got_output;
+                    continue;
+                }
+                dst_data = av_packet_new_side_data(out_pkt, src_sd->type, src_sd->size);
                 if (!dst_data) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
                 memcpy(dst_data, src_sd->data, src_sd->size);
+                if (skip_samples) {
+                    AV_WL32(dst_data, 0);
+                    dst_data[8] = 0;
+                }
             }
         }
 
         if (!out_pkt->size)
             continue;
+        sti->parse_skip_filtered = 0;
 
         if (pkt->buf && out_pkt->data == pkt->data) {
             /* reference pkt->buf only when out_pkt->data is guaranteed to point
@@ -1349,8 +1362,10 @@ fail:
         pkt->side_data_elems    = 0;
     }
 
-    if (ret < 0)
+    if (ret < 0) {
+        sti->parse_skip_filtered = 0;
         av_packet_unref(out_pkt);
+    }
     av_packet_unref(pkt);
     return ret;
 }
@@ -1504,6 +1519,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                    pkt->size, pkt->duration, pkt->flags);
 
         if (sti->need_parsing && !sti->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
+            sti->parse_skip_filtered = 0;
             sti->parser = av_parser_init(st->codecpar->codec_id);
             if (!sti->parser) {
                 av_log(s, AV_LOG_VERBOSE, "parser not found for codec "
@@ -2719,6 +2735,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         /* check if the caller has overridden the codec id */
         // only for the split stuff
         if (!sti->parser && !(ic->flags & AVFMT_FLAG_NOPARSE) && sti->request_probe <= 0) {
+            sti->parse_skip_filtered = 0;
             sti->parser = av_parser_init(st->codecpar->codec_id);
             if (sti->parser) {
                 if (sti->need_parsing == AVSTREAM_PARSE_HEADERS) {

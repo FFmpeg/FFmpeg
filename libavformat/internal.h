@@ -344,6 +344,8 @@ typedef struct FFStream {
 
     /* av_read_frame() support */
     enum AVStreamParseType need_parsing;
+    /** The buffered parser output already had its leading-only skip removed. */
+    int parse_skip_filtered;
     struct AVCodecParserContext *parser;
 
     /**

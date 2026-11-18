@@ -113,6 +113,12 @@ FATE_LIBAVFORMAT += fate-seek_utils
 fate-seek_utils: libavformat/tests/seek_utils$(EXESUF)
 fate-seek_utils: CMD = run libavformat/tests/seek_utils$(EXESUF)
 
+FATE_LIBAVFORMAT_SAMPLES-$(call ALLYES, AVFORMAT AC3_PARSER AC3_DECODER) += fate-parse-skip-samples
+fate-parse-skip-samples: libavformat/tests/parse_skip_samples$(EXESUF)
+fate-parse-skip-samples: CMD = run libavformat/tests/parse_skip_samples$(EXESUF) $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
+
+FATE_EXTERN += $(FATE_LIBAVFORMAT_SAMPLES-yes)
+
 FATE_LIBAVFORMAT += $(FATE_LIBAVFORMAT-yes)
 FATE-$(CONFIG_AVFORMAT) += $(FATE_LIBAVFORMAT)
-fate-libavformat: $(FATE_LIBAVFORMAT)
+fate-libavformat: $(FATE_LIBAVFORMAT) $(if $(SAMPLES),$(FATE_LIBAVFORMAT_SAMPLES-yes))
