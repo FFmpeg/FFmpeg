@@ -1993,7 +1993,7 @@ SEI_FUNC(sei_pic_timing, (CodedBitstreamContext *ctx, RWContext *rw,
             // than HEVC_MAX_SLICE_SEGMENTS slice segments (A.4.2), which is also
             // the size of the arrays indexed by it.
             ue(num_decoding_units_minus1, 0,
-               FFMIN(pic_width_in_ctbs_y * pic_height_in_ctbs_y, HEVC_MAX_SLICE_SEGMENTS) - 1);
+               FFMIN(pic_width_in_ctbs_y * pic_height_in_ctbs_y - 1, HEVC_MAX_SLICE_SEGMENTS - 1));
             flag(du_common_cpb_removal_delay_flag);
 
             length = hrd->du_cpb_removal_delay_increment_length_minus1 + 1;
