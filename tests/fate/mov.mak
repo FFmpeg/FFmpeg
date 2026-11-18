@@ -56,6 +56,11 @@ fate-mov-vpcc-reserved-color-tags: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -v erro
 FATE_MOV-$(call DEMDEC, MOV, RAWVIDEO) += fate-mov-uncv-rgb24
 fate-mov-uncv-rgb24: CMD = framecrc -i $(TARGET_SAMPLES)/mov/uncv-rgb24.mp4
 
+# Qclp with a version 0 sound description, no frame size stored;
+# 30 packets cross the first 25-packet chunk
+FATE_MOV-$(call DEMMUX, MOV, FRAMECRC, PIPE_PROTOCOL) += fate-mov-qclp-stsd-v0
+fate-mov-qclp-stsd-v0: CMD = framecrc -i $(TARGET_SAMPLES)/mov/clip43qt3-hi.mov -map 0:a -c copy -frames:a 30
+
 FATE_MOV_FFPROBE-$(CONFIG_MOV_DEMUXER) += fate-ffprobe-stream-entries-tmcd \
                                        fate-ffprobe-group-stream-entries-tmcd \
                                        fate-ffprobe-show-groups-tmcd
