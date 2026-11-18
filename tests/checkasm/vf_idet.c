@@ -27,29 +27,45 @@ static void check_idet(int depth)
 {
     IDETDSPContext dsp;
 
-    LOCAL_ALIGNED_32(uint8_t, in0, [WIDTH]);
-    LOCAL_ALIGNED_32(uint8_t, in1, [WIDTH]);
-    LOCAL_ALIGNED_32(uint8_t, in2, [WIDTH]);
+    LOCAL_ALIGNED_32(uint16_t, in0_16, [WIDTH]);
+    LOCAL_ALIGNED_32(uint16_t, in1_16, [WIDTH]);
+    LOCAL_ALIGNED_32(uint16_t, in2_16, [WIDTH]);
+    uint8_t *in0 = (uint8_t *)in0_16;
+    uint8_t *in1 = (uint8_t *)in1_16;
+    uint8_t *in2 = (uint8_t *)in2_16;
 
     declare_func(int, const uint8_t *a, const uint8_t *b,
                  const uint8_t *c, int w);
 
-    ff_idet_dsp_init(&dsp, depth > 8);
+    ff_idet_dsp_init(&dsp, depth);
 
-    for (int x = 0; x < WIDTH; x++) {
-        in0[x] = rnd() & 0xFF;
-        in1[x] = rnd() & 0xFF;
-        in2[x] = rnd() & 0xFF;
+    if (depth > 8) {
+        for (int x = 0; x < WIDTH; x++) {
+            in0_16[x] = rnd() & ((1 << depth) - 1);
+            in1_16[x] = rnd() & ((1 << depth) - 1);
+            in2_16[x] = rnd() & ((1 << depth) - 1);
+        }
+    } else {
+        for (int x = 0; x < WIDTH; x++) {
+            in0[x] = rnd() & 0xFF;
+            in1[x] = rnd() & 0xFF;
+            in2[x] = rnd() & 0xFF;
+        }
     }
 
     if (check_func(dsp.filter_line, "idet%d", depth)) {
-        /* Ensure odd tail is handled correctly */
-        int res_ref = call_ref(in0, in1, in2, WIDTH - 8);
-        int res_new = call_new(in0, in1, in2, WIDTH - 8);
-        if (res_ref != res_new) {
-            fprintf(stderr, "idet%d: result mismatch: %u != %u\n",
-                    depth, res_ref, res_new);
-            fail();
+        /* Ensure short rows and odd tails are handled correctly */
+        static const int widths[] = { 1, 7, 8, 9, 15, 16, 17, 31, 32, 33,
+                                      41, 42, 43, 44, 45, 46, 47,
+                                      WIDTH - 8, WIDTH };
+        for (int i = 0; i < FF_ARRAY_ELEMS(widths); i++) {
+            int res_ref = call_ref(in0, in1, in2, widths[i]);
+            int res_new = call_new(in0, in1, in2, widths[i]);
+            if (res_ref != res_new) {
+                fprintf(stderr, "idet%d: width %d: result mismatch: %u != %u\n",
+                        depth, widths[i], res_ref, res_new);
+                fail();
+            }
         }
         bench_new(in0, in1, in2, WIDTH);
     }
@@ -59,6 +75,12 @@ void checkasm_check_idet(void)
 {
     check_idet(8);
     report("idet8");
+
+    check_idet(10);
+    report("idet10");
+
+    check_idet(15);
+    report("idet15");
 
     check_idet(16);
     report("idet16");
