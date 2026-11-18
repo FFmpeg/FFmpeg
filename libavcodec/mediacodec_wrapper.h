@@ -431,6 +431,13 @@ int ff_AMediaFormatColorStandard_from_AVColorSpace(enum AVColorSpace color_space
 enum AVColorPrimaries ff_AMediaFormatColorStandard_to_AVColorPrimaries(int color_standard);
 
 /**
+ * Map AVColorPrimaries to MediaFormat color standard.
+ *
+ * return COLOR_STANDARD_UNSPECIFIED when failed.
+ */
+int ff_AMediaFormatColorStandard_from_AVColorPrimaries(enum AVColorPrimaries color_primaries);
+
+/**
  * Map MediaFormat color transfer to AVColorTransferCharacteristic.
  *
  * return AVCOL_TRC_UNSPECIFIED when failed.

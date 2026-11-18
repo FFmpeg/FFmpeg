@@ -2771,6 +2771,15 @@ enum AVColorPrimaries ff_AMediaFormatColorStandard_to_AVColorPrimaries(int color
     return AVCOL_PRI_UNSPECIFIED;
 }
 
+int ff_AMediaFormatColorStandard_from_AVColorPrimaries(enum AVColorPrimaries color_primaries)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(color_primaries_map); i++)
+        if (color_primaries_map[i].primaries == color_primaries)
+            return color_primaries_map[i].mf_standard;
+
+    return COLOR_STANDARD_UNSPECIFIED;
+}
+
 enum AVColorTransferCharacteristic
 ff_AMediaFormatColorTransfer_to_AVColorTransfer(int color_transfer)
 {

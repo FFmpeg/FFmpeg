@@ -307,6 +307,24 @@ static int common_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 }
 #endif
 
+/* A MediaFormat color standard fixes both the primaries and the matrix.
+ * Only hint one when the container's primaries and matrix agree on it.
+ * BT470BG and SMPTE170M are the same matrix,
+ * so for BT.601 the primaries decide between PAL and NTSC.
+ */
+static int mediacodec_color_standard_hint(AVCodecContext *avctx)
+{
+    int standard = ff_AMediaFormatColorStandard_from_AVColorPrimaries(avctx->color_primaries);
+    enum AVColorSpace space = avctx->colorspace;
+
+    if (standard == COLOR_STANDARD_BT601_PAL || standard == COLOR_STANDARD_BT601_NTSC)
+        return space == AVCOL_SPC_BT470BG || space == AVCOL_SPC_SMPTE170M ?
+               standard : COLOR_STANDARD_UNSPECIFIED;
+
+    return ff_AMediaFormatColorStandard_from_AVColorSpace(space) == standard ?
+           standard : COLOR_STANDARD_UNSPECIFIED;
+}
+
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
     int ret;
@@ -436,6 +454,17 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         ff_AMediaFormat_setInt32(format, "width", avctx->width);
         ff_AMediaFormat_setInt32(format, "height", avctx->height);
+
+        ret = ff_AMediaFormatColorRange_from_AVColorRange(avctx->color_range);
+        if (ret != COLOR_RANGE_UNSPECIFIED)
+            ff_AMediaFormat_setInt32(format, "color-range", ret);
+        ret = mediacodec_color_standard_hint(avctx);
+        if (ret != COLOR_STANDARD_UNSPECIFIED)
+            ff_AMediaFormat_setInt32(format, "color-standard", ret);
+        ret = ff_AMediaFormatColorTransfer_from_AVColorTransfer(avctx->color_trc);
+        if (ret != COLOR_TRANSFER_UNSPECIFIED)
+            ff_AMediaFormat_setInt32(format, "color-transfer", ret);
+        ret = 0;
     } else {
         ff_AMediaFormat_setInt32(format, "channel-count", avctx->ch_layout.nb_channels);
         ff_AMediaFormat_setInt32(format, "sample-rate", avctx->sample_rate);
