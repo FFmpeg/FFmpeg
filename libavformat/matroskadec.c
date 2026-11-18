@@ -433,6 +433,8 @@ typedef struct MatroskaDemuxContext {
     MatroskaCluster current_cluster;
 
     int is_webm;
+    /// fit timestamps to the units of each stream, where the clock is coarser
+    int best_fit_ts;
 
     /* WebM DASH Manifest live flag */
     int is_live;
@@ -4598,6 +4600,8 @@ static int matroska_read_close(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(MatroskaDemuxContext, x)
+
 #if CONFIG_WEBM_DASH_MANIFEST_DEMUXER
 typedef struct {
     int64_t start_time_ns;
@@ -5029,7 +5033,6 @@ static int webm_dash_manifest_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-#define OFFSET(x) offsetof(MatroskaDemuxContext, x)
 static const AVOption options[] = {
     { "live", "flag indicating that the input is a live file that only has the headers.", OFFSET(is_live), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { "bandwidth", "bandwidth of this stream to be specified in the DASH manifest.", OFFSET(bandwidth), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
@@ -5055,11 +5058,24 @@ const FFInputFormat ff_webm_dash_manifest_demuxer = {
 };
 #endif
 
+static const AVOption matroska_options[] = {
+    { "best_fit_ts", "fit timestamps to the units of each stream where the clock of the file is coarser", OFFSET(best_fit_ts), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass matroska_class = {
+    .class_name = "Matroska / WebM demuxer",
+    .item_name  = av_default_item_name,
+    .option     = matroska_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFInputFormat ff_matroska_demuxer = {
     .p.name         = "matroska,webm",
     .p.long_name    = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
     .p.extensions   = "mkv,mk3d,mka,mks,webm",
     .p.mime_type    = "audio/webm,audio/x-matroska,video/webm,video/x-matroska",
+    .p.priv_class   = &matroska_class,
     .priv_data_size = sizeof(MatroskaDemuxContext),
     .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
     .read_probe     = matroska_probe,

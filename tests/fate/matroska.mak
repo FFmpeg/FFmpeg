@@ -18,28 +18,28 @@ FATE_MATROSKA-$(call FRAMECRC, MATROSKA,,  VORBIS_PARSER) += fate-matroska-xiph-
 fate-matroska-xiph-lacing: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/xiph_lacing.mka -c:a copy
 
 FATE_MATROSKA-$(call FRAMECRC, MATROSKA,, OPUS_PARSER) += fate-matroska-opus-best-fit-ts
-fate-matroska-opus-best-fit-ts: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv -c copy
+fate-matroska-opus-best-fit-ts: CMD = framecrc -best_fit_ts 1 -i $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv -c copy
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OPUS_PARSER OPUS_DECODER) += fate-matroska-opus-best-fit-ts-remux
-fate-matroska-opus-best-fit-ts-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy" "-c copy"
+fate-matroska-opus-best-fit-ts-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy" "-c copy" "" "" "" "-best_fit_ts 1"
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OPUS_PARSER OPUS_DECODER SETTS_BSF) += fate-matroska-opus-best-fit-ts-gap
-fate-matroska-opus-best-fit-ts-gap: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy -bsf:a setts=ts=TS+sgn(N)*100/48000/TB" "-c copy"
+fate-matroska-opus-best-fit-ts-gap: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy -bsf:a setts=ts=TS+sgn(N)*100/48000/TB" "-c copy" "" "" "-best_fit_ts 1" "-best_fit_ts 1"
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, OPUS_PARSER OPUS_DECODER SETTS_BSF) += fate-matroska-opus-best-fit-ts-sample-gap
-fate-matroska-opus-best-fit-ts-sample-gap: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy -bsf:a setts=ts=TS+sgn(N)*1/48000/TB" "-c copy"
+fate-matroska-opus-best-fit-ts-sample-gap: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv matroska "-c copy -bsf:a setts=ts=TS+sgn(N)*1/48000/TB" "-c copy" "" "" "-best_fit_ts 1" "-best_fit_ts 1"
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MOV_DEMUXER AAC_DECODER) += fate-matroska-aac-eld-best-fit-ts
-fate-matroska-aac-eld-best-fit-ts: CMD = transcode mov $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4 matroska "-c copy -frames:a 16" "-c copy"
+fate-matroska-aac-eld-best-fit-ts: CMD = transcode mov $(TARGET_SAMPLES)/aac/er_eld2000np_48_ep0.mp4 matroska "-c copy -frames:a 16" "-c copy" "" "" "-best_fit_ts 1"
 
 FATE_MATROSKA-$(call FRAMECRC, MATROSKA,, VORBIS_PARSER) += fate-matroska-vorbis-best-fit-ts
-fate-matroska-vorbis-best-fit-ts: CMD = framecrc -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -map 0:a -c copy -frames:a 50
+fate-matroska-vorbis-best-fit-ts: CMD = framecrc -best_fit_ts 1 -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -map 0:a -c copy -frames:a 50
 
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S16LE, MATROSKA, H264_PARSER H264_DECODER LAVFI_INDEV SINE_FILTER) += fate-matroska-h264-pcm96k-remux
 fate-matroska-h264-pcm96k-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/test7_cut.mkv matroska "-map 0:v -map 1:a -c:v copy -c:a pcm_s16le -t 2" "-map 0:v -c copy" "" "-f lavfi -i sine=r=96000:d=2"
 
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-opus-best-fit-ts-seek
-fate-matroska-opus-best-fit-ts-seek: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -read_intervals 0%+\#1,1%+\#1 -show_entries packet=pts,pos -print_format compact $(TARGET_SAMPLES)/audiomatch/tones_opus_48000_stereo.mka
+fate-matroska-opus-best-fit-ts-seek: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -best_fit_ts 1 -read_intervals 0%+\#1,1%+\#1 -show_entries packet=pts,pos -print_format compact $(TARGET_SAMPLES)/audiomatch/tones_opus_48000_stereo.mka
 
 # This tests that the Matroska demuxer correctly demuxes WavPack
 # without CodecPrivate; it also tests zlib compressed WavPack.

@@ -200,7 +200,7 @@ fate-seek-test-iibbibb-mp4:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_
 fate-seek-test-iibbibb-neg-ctts-mp4:  CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mov/test_iibbibb_neg_ctts.mp4 -duration 13 -frames 4
 fate-seek-cache-pipe: CMD = cat $(SAMPLES)/gapless/gapless.mp3 | run libavformat/tests/seek$(EXESUF) cache:pipe:0 -read_ahead_limit -1
 fate-seek-mkv-codec-delay:   CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mkv/codec_delay_opus.mkv
-fate-seek-mkv-best-fit-ts:   CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mkv/test7_cut.mkv -duration 4 -frames 3
+fate-seek-mkv-best-fit-ts:   CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/mkv/test7_cut.mkv -duration 4 -frames 3 -best_fit_ts 1
 fate-seek-sacd: CMD = run libavformat/tests/seek$(EXESUF) $(TARGET_SAMPLES)/sacd/2ch-dsd_5ch-dst.iso -duration 2
 
 # A master playlist with separate audio and video media playlists with different DTS.
