@@ -115,7 +115,7 @@ static void cinepak_decode_codebook (cvid_codebook *codebook,
                 p -= 12;
                 for(k=0; k<4; ++k) {
                     r = *p++ + v*2;
-                    g = *p++ - (u/2) - v;
+                    g = *p++ - (u >> 1) - v;
                     b = *p   + u*2;
                     p -= 2;
                     *p++ = av_clip_uint8(r);
