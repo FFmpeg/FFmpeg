@@ -56,7 +56,9 @@ int ff_idet_filter_line_c_16bit(const uint8_t *a, const uint8_t *b, const uint8_
 void av_cold ff_idet_dsp_init(IDETDSPContext *dsp, int depth)
 {
     dsp->filter_line = depth > 8 ? ff_idet_filter_line_c_16bit : ff_idet_filter_line_c;
-#if ARCH_X86 && HAVE_X86ASM
+#if ARCH_AARCH64
+    ff_idet_dsp_init_aarch64(dsp, depth);
+#elif ARCH_X86 && HAVE_X86ASM
     ff_idet_dsp_init_x86(dsp, depth);
 #endif
 }

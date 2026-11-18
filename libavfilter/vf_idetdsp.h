@@ -29,6 +29,7 @@ typedef struct IDETDSPContext {
 
 void ff_idet_dsp_init(IDETDSPContext *idet, int depth);
 
+void ff_idet_dsp_init_aarch64(IDETDSPContext *idet, int depth);
 void ff_idet_dsp_init_x86(IDETDSPContext *idet, int depth);
 
 /* main fall-back for left-over */
