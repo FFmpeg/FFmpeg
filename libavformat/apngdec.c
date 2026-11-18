@@ -84,6 +84,12 @@ static int apng_probe(const AVProbeData *p)
         return 0;
 
     for (;;) {
+        /* Fewer than 8 bytes left means the next length and type are not
+         * both present. bytestream2_get_be32() then returns 0, so the type
+         * looks critical and a valid APNG is rejected. Ask for the header. */
+        if (bytestream2_get_bytes_left(&gb) < 8)
+            return AVERROR(EAGAIN);
+
         len = bytestream2_get_be32(&gb);
         if (len > 0x7fffffff)
             return 0;
@@ -92,8 +98,16 @@ static int apng_probe(const AVProbeData *p)
         /* we don't check IDAT size, as this is the last tag
          * we check, and it may be larger than the probe buffer */
         if (tag != MKTAG('I', 'D', 'A', 'T') &&
-            len + 4 > bytestream2_get_bytes_left(&gb))
+            len + 4 > bytestream2_get_bytes_left(&gb)) {
+            /* Ancillary chunks (bit 5 of the first type byte set, i.e. a
+             * lowercase first letter) may be large, e.g. a C2PA manifest.
+             * A PLTE is critical but small, and it can still straddle the
+             * probe buffer. acTL/IDAT may follow either of them. Other
+             * critical chunks still reject the file. */
+            if ((tag & 0x20) || tag == MKTAG('P', 'L', 'T', 'E'))
+                return AVERROR(EAGAIN);
             return 0;
+        }
 
         switch (tag) {
         case MKTAG('I', 'H', 'D', 'R'):
