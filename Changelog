@@ -17,6 +17,7 @@ version 9.1:
 - ffmpeg CLI dual track LCEVC handling
 - MVR demuxer
 - latticepal filter
+- Add AMF Video Quality Enhancer (vf_vqe_amf) filter
 - DVD-Audio LPCM decoder and demuxing support
 - AVFoundation input device selection by unique ID and USB serial number
 - NVIDIA optical flow accelerated interpolation filter (vf_fruc_vulkan)
@@ -55,7 +56,6 @@ version 9.0:
 - Add AMF hardware memory mapping support.
 - ONNX Runtime DNN backend with GPU execution provider support
 - Remove deprecated NVENC options and support for pre-11.1 SDK versions
-- Add AMF Video Quality Enhancer (vf_vqe_amf) filter
 
 
 version 8.1:
