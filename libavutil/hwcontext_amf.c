@@ -25,6 +25,7 @@
 #include "hwcontext_amf.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_amf_internal.h"
+#include "internal.h"
 
 #include "libavutil/thread.h"
 #include "libavutil/avassert.h"
@@ -33,6 +34,7 @@
 #include <AMF/core/Trace.h>
 
 #if CONFIG_VULKAN
+#include <AMF/core/VulkanAMF.h>
 #include "hwcontext_vulkan.h"
 #endif
 #if CONFIG_D3D11VA
@@ -51,6 +53,13 @@
 #include <dlfcn.h>
 #endif
 #define FFMPEG_AMF_WRITER_ID L"ffmpeg_amf"
+
+typedef struct AMFDevicePriv {
+    AVAMFDeviceContext p;
+#if CONFIG_VULKAN
+    AMFVulkanDevice    vk_dev;
+#endif
+} AMFDevicePriv;
 
 static void amf_lock_default(void *opaque)
 {
@@ -494,6 +503,7 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                     const AVFrame *src)
 {
     AMFSurface* surface = (AMFSurface*)src->data[0];
+    AVAMFDeviceContext *amf_ctx = ctx->device_ctx->hwctx;
     AMFPlane *plane;
     uint8_t  *src_data[4];
     int       src_linesize[4];
@@ -506,8 +516,10 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     if (src->hw_frames_ctx->data != (uint8_t *)ctx || dst->format != ctx->sw_format)
         return AVERROR(EINVAL);
 
+    amf_ctx->lock(amf_ctx->lock_ctx);
     ret = surface->pVtbl->Convert(surface, AMF_MEMORY_HOST);
-    AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "Convert(amf::AMF_MEMORY_HOST) failed with error %d\n", AVERROR_UNKNOWN);
+    amf_ctx->unlock(amf_ctx->lock_ctx);
+    AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "Convert(amf::AMF_MEMORY_HOST) failed with error %d\n", ret);
 
     planes = (int)surface->pVtbl->GetPlanesCount(surface);
     av_assert0(planes < FF_ARRAY_ELEMS(src_data));
@@ -532,8 +544,12 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
     AMFTrace           *trace;
 
     if (amf_ctx->context) {
+        if (amf_ctx->lock)
+            amf_ctx->lock(amf_ctx->lock_ctx);
         amf_ctx->context->pVtbl->Terminate(amf_ctx->context);
         amf_ctx->context->pVtbl->Release(amf_ctx->context);
+        if (amf_ctx->unlock)
+            amf_ctx->unlock(amf_ctx->lock_ctx);
         amf_ctx->context = NULL;
     }
 
@@ -552,7 +568,7 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
         amf_writer_free(amf_ctx->trace_writer);
     }
 
-    if (amf_ctx->lock_ctx == amf_lock_default) {
+    if (amf_ctx->lock == amf_lock_default) {
         ff_mutex_destroy((AVMutex*)amf_ctx->lock_ctx);
         av_freep(&amf_ctx->lock_ctx);
         amf_ctx->lock = NULL;
@@ -878,6 +894,148 @@ static int amf_init_from_d3d12_device(AVAMFDeviceContext* amf_ctx, AVHWDeviceCon
 }
 #endif
 
+#if CONFIG_VULKAN
+static int amf_vk_ext_enabled(const char * const *exts, int nb_exts, const char *name)
+{
+    for (int i = 0; i < nb_exts; i++)
+        if (!strcmp(exts[i], name))
+            return 1;
+    return 0;
+}
+
+// AMF loads vkGetPhysicalDeviceProperties2KHR and the VK_KHR_swapchain entry points (swapchain depends on VK_KHR_surface).
+static void amf_vulkan_log_missing_exts(AVHWDeviceContext *child_device_ctx, const AVVulkanDeviceContext *hwctx)
+{
+    static const struct {
+        const char *name;
+        int dev;
+    } required_exts[] = {
+        { VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, 0 },
+        { VK_KHR_SURFACE_EXTENSION_NAME,                          0 },
+        { VK_KHR_SWAPCHAIN_EXTENSION_NAME,                        1 },
+    };
+    int missing = 0;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(required_exts); i++) {
+        int enabled = required_exts[i].dev ?
+            amf_vk_ext_enabled(hwctx->enabled_dev_extensions,  hwctx->nb_enabled_dev_extensions,  required_exts[i].name) :
+            amf_vk_ext_enabled(hwctx->enabled_inst_extensions, hwctx->nb_enabled_inst_extensions, required_exts[i].name);
+        if (!enabled) {
+            av_log(child_device_ctx, AV_LOG_ERROR, "Vulkan %s extension %s is not enabled.\n",
+                   required_exts[i].dev ? "device" : "instance", required_exts[i].name);
+            missing = 1;
+        }
+    }
+
+    if (missing)
+        av_log(child_device_ctx, AV_LOG_ERROR, "AMF requires them, create the Vulkan device with instance_extensions="
+               VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME "+" VK_KHR_SURFACE_EXTENSION_NAME
+               ",device_extensions=" VK_KHR_SWAPCHAIN_EXTENSION_NAME ".\n");
+}
+
+#if FF_API_VULKAN_SYNC_QUEUES
+// qf may list a family more than once and in any order. Queues are walked once each, in ascending family and
+// queue index order, so that queue locks shared with other users are always taken in the same order.
+static int amf_vk_nb_families(const AVVulkanDeviceContext *hwctx)
+{
+    int nb = 0;
+    for (int i = 0; i < hwctx->nb_qf; i++)
+        nb = FFMAX(nb, hwctx->qf[i].idx + 1);
+    return nb;
+}
+
+static int amf_vk_family_queues(const AVVulkanDeviceContext *hwctx, int family)
+{
+    int num = 0;
+    for (int i = 0; i < hwctx->nb_qf; i++)
+        if (hwctx->qf[i].idx == family)
+            num = FFMAX(num, hwctx->qf[i].num);
+    return num;
+}
+
+// AMF submits to the queues of the Vulkan device it was derived from, so its lock takes all of them.
+// The queue callbacks must allow holding several queue locks at once and need not be recursive, so no FFmpeg
+// Vulkan work may be submitted on this thread while they are held.
+static void amf_lock_vulkan(void *opaque)
+{
+    AVHWDeviceContext *vk_ctx = opaque;
+    AVVulkanDeviceContext *hwctx = vk_ctx->hwctx;
+    int nb_families = amf_vk_nb_families(hwctx);
+
+FF_DISABLE_DEPRECATION_WARNINGS
+    for (int i = 0; i < nb_families; i++) {
+        int nb_queues = amf_vk_family_queues(hwctx, i);
+        for (int j = 0; j < nb_queues; j++)
+            hwctx->lock_queue(vk_ctx, i, j);
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+}
+
+static void amf_unlock_vulkan(void *opaque)
+{
+    AVHWDeviceContext *vk_ctx = opaque;
+    AVVulkanDeviceContext *hwctx = vk_ctx->hwctx;
+    int nb_families = amf_vk_nb_families(hwctx);
+
+FF_DISABLE_DEPRECATION_WARNINGS
+    for (int i = 0; i < nb_families; i++) {
+        int nb_queues = amf_vk_family_queues(hwctx, i);
+        for (int j = 0; j < nb_queues; j++)
+            hwctx->unlock_queue(vk_ctx, i, j);
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+}
+#endif
+
+static int amf_init_from_vulkan_device(AMFDevicePriv *priv, AVHWDeviceContext *child_device_ctx)
+{
+    AVVulkanDeviceContext *hwctx = child_device_ctx->hwctx;
+    AMFVulkanDevice *vk_dev = &priv->vk_dev;
+    AMFContext1 *context1 = NULL;
+    AMFGuid guid = IID_AMFContext1();
+    AMF_RESULT res;
+
+    res = AMF_IFACE_CALL(priv->p.context, QueryInterface, &guid, (void**)&context1);
+    AMF_RETURN_IF_FALSE(child_device_ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(AMFContext1) failed with error %d\n", res);
+
+    vk_dev->cbSizeof        = sizeof(*vk_dev);
+    vk_dev->pNext           = NULL;
+    vk_dev->hInstance       = hwctx->inst;
+    vk_dev->hPhysicalDevice = hwctx->phys_dev;
+    vk_dev->hDevice         = hwctx->act_dev;
+
+    AMF_ASSIGN_PROPERTY_BOOL(res, context1, AMF_CONTEXT_VULKAN_USE_TIMELINE_SEMAPHORES, 1);
+    if (res != AMF_OK)
+        av_log(child_device_ctx, AV_LOG_WARNING, "Failed to enable Vulkan timeline semaphores on the AMF context: %d.\n", res);
+
+#if FF_API_VULKAN_SYNC_QUEUES
+    priv->p.lock     = amf_lock_vulkan;
+    priv->p.unlock   = amf_unlock_vulkan;
+    priv->p.lock_ctx = child_device_ctx;
+#endif
+    if (priv->p.lock)
+        priv->p.lock(priv->p.lock_ctx);
+    res = AMF_IFACE_CALL(context1, InitVulkan, vk_dev);
+    if (priv->p.unlock)
+        priv->p.unlock(priv->p.lock_ctx);
+    AMF_IFACE_CALL(context1, Release);
+    if (res != AMF_OK && res != AMF_ALREADY_INITIALIZED) {
+        if (res == AMF_NOT_SUPPORTED)
+            av_log(child_device_ctx, AV_LOG_ERROR, "AMF via Vulkan is not supported on the given device.\n");
+        else
+            av_log(child_device_ctx, AV_LOG_ERROR, "AMF failed to initialise on the given Vulkan device: %d.\n", res);
+
+        amf_vulkan_log_missing_exts(child_device_ctx, hwctx);
+        if (hwctx->queue_flags)
+            av_log(child_device_ctx, AV_LOG_ERROR, "The Vulkan queues were created with flags 0x%x (e.g. internally "
+                   "synchronized queues), which some AMF runtimes cannot use.\n", hwctx->queue_flags);
+
+        return AVERROR(ENODEV);
+    }
+    av_log(child_device_ctx, AV_LOG_INFO, "AMF via Vulkan.\n");
+    return 0;
+}
+#endif
 
 static int amf_device_derive(AVHWDeviceContext *device_ctx,
                               AVHWDeviceContext *child_device_ctx, AVDictionary *opts,
@@ -905,6 +1063,10 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
     case AV_HWDEVICE_TYPE_D3D12VA:
         return amf_init_from_d3d12_device(amf_ctx, child_device_ctx);
 #endif
+#if CONFIG_VULKAN
+    case AV_HWDEVICE_TYPE_VULKAN:
+        return amf_init_from_vulkan_device(device_ctx->hwctx, child_device_ctx);
+#endif
     default:
         av_log(child_device_ctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
                av_hwdevice_get_type_name(child_device_ctx->type));
@@ -912,15 +1074,19 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
     }
 }
 
-static void amf_unmap_frame(av_unused AVHWFramesContext *unused, HWMapDescriptor *hwmap)
+static void amf_unmap_frame(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
 {
+    AVAMFDeviceContext *amf_ctx = ctx->device_ctx->hwctx;
     AMFSurface1 *surface1 = hwmap->priv;
+    amf_ctx->lock(amf_ctx->lock_ctx);
     AMF_IFACE_CALL(surface1, Unmap);
+    amf_ctx->unlock(amf_ctx->lock_ctx);
     AMF_IFACE_CALL(surface1, Release);
 }
 
 static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFrame *src, int flags)
 {
+    AVAMFDeviceContext *amf_ctx = device_ctx->device_ctx->hwctx;
     AMFSurface *surface = (AMFSurface *)src->data[0];
     AMFSurface1 *surface1 = NULL;
     size_t *linesizes = NULL;
@@ -951,7 +1117,9 @@ static int amf_map_frame(AVHWFramesContext *device_ctx, AVFrame *dst, const AVFr
 
     dst->format = av_amf_to_av_format(AMF_IFACE_CALL(surface, GetFormat));
 
+    amf_ctx->lock(amf_ctx->lock_ctx);
     res = AMF_IFACE_CALL(surface1, Map, amf_mem_flags, plane_count, linesizes, (void**)map);
+    amf_ctx->unlock(amf_ctx->lock_ctx);
     AMF_GOTO_FAIL_IF_FALSE(device_ctx, res == AMF_OK, AVERROR_UNKNOWN, "AMFSurface1->Map() failed with error %d\n", res);
 
     ret = ff_hwframe_map_create(src->hw_frames_ctx, dst, src, &amf_unmap_frame, surface1);
@@ -987,7 +1155,7 @@ const HWContextType ff_hwcontext_type_amf = {
     .type                 = AV_HWDEVICE_TYPE_AMF,
     .name                 = "AMF",
 
-    .device_hwctx_size    = sizeof(AVAMFDeviceContext),
+    .device_hwctx_size    = sizeof(AMFDevicePriv),
     .frames_hwctx_size    = sizeof(AMFFramesContext),
 
     .device_create        = amf_device_create,

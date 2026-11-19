@@ -9,6 +9,7 @@ version <next>:
 - PCM PAMF decoder
 - Super Audio CD (SACD) demuxer
 - DSS variable rate SP (format 1) support
+- Added the ability to derive an AMF hwdevice from a Vulkan hwdevice
 
 version 9.1:
 - ASTC image encoding and decoding via libastcenc, with .astc and KTX 1.0 muxers and demuxers
