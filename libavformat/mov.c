@@ -4944,6 +4944,15 @@ truncated:
 
     // Update av stream length, if it ends up shorter than the track's media duration
     st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
+    // The skipped samples are counted in the track's clock. With explicit SBR
+    // signalling, HE-AAC often keeps it at the core rate, half the output
+    // rate. A sample rate below the clock may be the core rate of implicit
+    // SBR. With several sample descriptions, the rate may come from one the
+    // packets do not use.
+    if (st->codecpar->codec_id == AV_CODEC_ID_AAC && msc->stsd_count == 1 &&
+        st->codecpar->sample_rate > msc->time_scale && msc->time_scale > 0)
+        sti->skip_samples = FFMIN(av_rescale(sti->skip_samples, st->codecpar->sample_rate,
+                                             msc->time_scale), INT_MAX);
     st->codecpar->initial_padding = sti->skip_samples;
 
     // Free the old index and the old CTTS structures
