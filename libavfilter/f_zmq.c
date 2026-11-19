@@ -68,6 +68,10 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR_EXTERNAL;
     }
 
+    if (av_strstart(zmq->bind_address, "tcp://*:", NULL))
+        av_log(ctx, AV_LOG_WARNING,
+               "Listening on all interfaces for unauthenticated commands\n");
+
     if (zmq_bind(zmq->responder, zmq->bind_address) == -1) {
         av_log(ctx, AV_LOG_ERROR,
                "Could not bind ZMQ socket to address '%s': %s\n",

@@ -34814,7 +34814,8 @@ For more information about libzmq see:
 The @code{zmq} and @code{azmq} filters work as a libzmq server, which
 receives messages sent through a network interface defined by the
 @option{bind_address} (or the abbreviation "@option{b}") option.
-Default value of this option is @file{tcp://localhost:5555}. You may
+Default value of this option is @file{tcp://*:5555}, which listens on
+all interfaces and is unsafe on an untrusted network. You may
 want to alter this value to your needs, but do not forget to escape any
 ':' signs (see @ref{filtergraph escaping}).
 
