@@ -58,6 +58,9 @@ typedef struct VPPContext{
     mfxExtVPPRotation rotation_conf;
     mfxExtVPPMirroring mirroring_conf;
     mfxExtVPPScaling scale_conf;
+#if QSV_VERSION_ATLEAST(2, 13)
+    mfxExtVPPAISuperResolution ai_sr_conf;
+#endif
 #if QSV_ONEVPL
     /** Video signal info attached on the input frame */
     mfxExtVideoSignalInfo invsi_conf;
@@ -122,6 +125,7 @@ typedef struct VPPContext{
     int has_passthrough;        /* apply pass through mode if possible */
     int field_rate;             /* Generate output at frame rate or field rate for deinterlace mode, 0: frame, 1: field */
     int tonemap;                /* 1: perform tonemapping if the input has HDR metadata, 0: always disable tonemapping */
+    int ai_sr;
 } VPPContext;
 
 static const char *const var_names[] = {
@@ -687,7 +691,25 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    if (inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format) {
+#if QSV_VERSION_ATLEAST(2, 13)
+    if (vpp->ai_sr) {
+        if (!inl->hw_frames_ctx && !ctx->hw_device_ctx) {
+            av_log(ctx, AV_LOG_ERROR, "AI super resolution requires a QSV device context.\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (!QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 2, 13)) {
+            av_log(ctx, AV_LOG_ERROR, "AI super resolution requires a oneVPL 2.13 or newer runtime.\n");
+            return AVERROR(ENOSYS);
+        }
+
+        INIT_MFX_EXTBUF(ai_sr_conf, MFX_EXTBUFF_VPP_AI_SUPER_RESOLUTION);
+        SET_MFX_PARAM_FIELD(ai_sr_conf, SRMode, MFX_AI_SUPER_RESOLUTION_MODE_DEFAULT);
+    }
+#endif
+
+    if ((inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format) &&
+        !vpp->ai_sr) {
         if (QSV_RUNTIME_VERSION_ATLEAST(mfx_version, 1, 19)) {
             int mode = vpp->scale_mode;
 
@@ -708,6 +730,7 @@ static int config_output(AVFilterLink *outlink)
 
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
+        vpp->ai_sr ||
         inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format ||
         vpp->color_range != AVCOL_RANGE_UNSPECIFIED ||
         vpp->color_primaries != AVCOL_PRI_UNSPECIFIED ||
@@ -928,6 +951,10 @@ static const AVOption vpp_options[] = {
       OFFSET(color_transfer_str),  AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
 
     {"tonemap", "Perform tonemapping (0=disable tonemapping, 1=perform tonemapping if the input has HDR metadata)", OFFSET(tonemap), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, .flags = FLAGS},
+
+#if QSV_VERSION_ATLEAST(2, 13)
+    { "ai_sr", "Enable AI super resolution", OFFSET(ai_sr), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = FLAGS },
+#endif
 
     { NULL }
 };

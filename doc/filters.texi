@@ -30579,6 +30579,34 @@ To enable compilation of these filters you need to configure FFmpeg with
 
 To use QSV filters, you need to setup the QSV device correctly. For more information, please read @url{https://trac.ffmpeg.org/wiki/Hardware/QuickSync}
 
+@section vpp_qsv
+Apply Quick Sync Video VPP filters.
+
+The following options are relevant to AI super resolution:
+
+@table @option
+@item ai_sr
+Enable AI super resolution. The default is disabled. The option is available
+in builds compiled with oneVPL 2.13 or later headers. It requires a runtime
+supporting API 2.13 or later and a QSV device that supports AI super
+resolution. Set @option{w} and @option{h} to the desired output dimensions.
+Supported scale factors, pixel formats and combinations with other VPP filters
+depend on the implementation.
+When @option{ai_sr} is enabled, @option{scale_mode} is ignored.
+
+@item w
+@item h
+Set the output width and height expressions. @option{w} defaults to @code{cw},
+the width of the input crop area, and @option{h} defaults to @code{w*ch/cw},
+which keeps the aspect ratio of the crop area. Setting only @option{w}
+therefore also changes @option{h}.
+@end table
+
+For example, to upscale a 960x540 NV12 input to 1920x1080:
+@example
+vpp_qsv=ai_sr=1:w=1920:h=1080
+@end example
+
 @section hstack_qsv
 Stack input videos horizontally.
 
