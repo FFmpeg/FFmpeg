@@ -2,11 +2,11 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
-2026-10-xx - ad74ac4cee9 - lavc 63.23.102 - avcodec.h
+2026-10-23 - ad74ac4cee9 - lavc 63.23.102 - avcodec.h
   AVCodecContext.seek_preroll may be raised by a decoder to the pre-roll it
   needs, as the AAC decoder does.
 
-2026-10-xx - 23c1a2dcb40 - lavc 63.23.101 - codec_par.h
+2026-10-23 - 23c1a2dcb40 - lavc 63.23.101 - codec_par.h
   avcodec_parameters_to_context() no longer sets AVCodecContext.delay from
   AVCodecParameters.initial_padding.
 
@@ -53,14 +53,14 @@ API changes, most recent first:
 2026-10-03 - 2983c23762a - lavu 61.11.100 - pixfmt.h
   Add AV_PIX_FMT_XYZP12LE, AV_PIX_FMT_XYZP12BE, and AV_PIX_FMT_XYZP12.
 
-2026-09-xx - 30e7a93bee1 - lavfi 12.5.100 - avfilter.h buffersrc.h buffersink.h
+2026-10-01 - 30e7a93bee1 - lavfi 12.5.100 - avfilter.h buffersrc.h buffersink.h
   Add AVFilterLink.chroma_location, AVBufferSrcParameters.chroma_location and
   av_buffersink_get_chroma_location().
 
-2026-09-xx - c200628eace - lavc 63.16.100 - avcodec.h
+2026-10-01 - c200628eace - lavc 63.16.100 - avcodec.h
   Add AV_CODEC_CONFIG_CHROMA_LOCATION.
 
-2026-08-xx - b2f001ae9ae - lavf 63.8.100 - avformat.h
+2026-10-04 - b2f001ae9ae - lavf 63.8.100 - avformat.h
   Add AV_STREAM_GROUP_PARAMS_GAIN_MAP.
 
 2026-09-30 - b917a0fe1e3 - lavu 61.10.100 - frame.h gain_map.h
@@ -130,7 +130,7 @@ API changes, most recent first:
 2026-07-14 - ef3dcf4ea61 - lavu 61.5.100 - hwcontext_cuda.h
   Add AVCUDAFramesContext and AVCUDAArrayFrameDescriptor.
 
-2026-07-14 - xxxxxxxxxx - lavu 61.5.100 - pixfmt.h
+2026-07-14 - c7546ce0ea6 - lavu 61.5.100 - pixfmt.h
   Add AV_PIX_FMT_CUARRAY.
 
 2026-07-11 - 7e68fdd4dab - lavu 61.4.100 - frame.h
@@ -181,7 +181,7 @@ API changes, most recent first:
 2026-05-30 - 5f6dff5e7db - lavc 62.35.100 - packet.h
   Add AV_PKT_DATA_HEVC_CONF side data type.
 
-2026-05-14 - xxxxxxxxxxx - lavf 62.18.100 - avformat.h
+2026-05-14 - 274bc5f9ae6 - lavf 62.18.100 - avformat.h
   Add AV_FDEBUG_ID3V2 debug flag, deprecate FF_FDEBUG_TS in favor of
   AV_FDEBUG_TS.
 
@@ -300,7 +300,7 @@ Add IAMF frame side data types to enum AVFrameSideDataType:
 2025-10-24 - 00e43619cd3 - lavu 60.14.100 - csp.h
   Add av_csp_approximate_eotf_gamma().
 
-2025-08-xx - xxxxxxxxxx - lavf 62.6.100 - oggparsevorbis.h oggparseopus.h oggparseflac.h
+2025-10-01 - de8d57e4c57 - lavf 62.6.100 - oggparsevorbis.h oggparseopus.h oggparseflac.h
   Drop header packets from secondary chained ogg/{flac, opus, vorbis} streams
   from demuxer output.
 
