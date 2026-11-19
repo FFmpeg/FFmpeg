@@ -173,6 +173,14 @@ fate-mov-aac-2048-priming-preroll: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_e
 FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-2048-priming-seek-landing
 fate-mov-aac-2048-priming-seek-landing: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -seek_flags preroll -read_intervals 2.3%+\#3 -show_entries packet=pts,dts,duration -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
+# HE-AAC whose track clock is the core rate, half the output rate.
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-he-core-rate-priming
+fate-mov-aac-he-core-rate-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=sample_rate,time_base,initial_padding -print_format compact $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_he.m4a
+
+# The edit starts 64 core ticks into the third packet.
+FATE_MOV_FFPROBE-$(call DEMDEC, MOV, AAC) += fate-mov-aac-he-core-rate-mid-packet
+fate-mov-aac-he-core-rate-mid-packet: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -read_intervals %+\#3 -show_entries frame=pts,nb_samples -print_format compact $(TARGET_SAMPLES)/aac/sbr_edit_end.mp4
+
 # Seeking into the stream must not drop samples to the container's priming.
 FATE_MOV-$(call FRAMECRC, MOV, AAC, PCM_S16LE_ENCODER ARESAMPLE_FILTER VOLUME_FILTER) += fate-mov-aac-2048-priming-seek
 fate-mov-aac-2048-priming-seek: CMD = framecrc -ss 2.3 -t 0.15 -i $(TARGET_SAMPLES)/mov/aac-2048-priming.mov -af volume=0,aresample -c:a pcm_s16le
