@@ -2490,7 +2490,7 @@ redo:
                                &h->interrupt_callback, NULL,
                                h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     authstr = ff_http_auth_create_response(&s->proxy_auth_state, auth,
                                            path, "CONNECT");
