@@ -2,6 +2,8 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+-------- 8< --------- FFmpeg 9.1 was cut here -------- 8< ---------
+
 2026-10-23 - ad74ac4cee9 - lavc 63.23.102 - avcodec.h
   AVCodecContext.seek_preroll may be raised by a decoder to the pre-roll it
   needs, as the AAC decoder does.
