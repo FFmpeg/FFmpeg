@@ -7,18 +7,25 @@ version 9.1:
 - APV Vulkan encoder
 - iTerm2 inline image protocol muxer
 - LCEVC payload merging bitstream filter
+- Graph based bitstream filtering API
 - ffmpeg CLI dual track LCEVC handling
 - MVR demuxer
 - latticepal filter
 - Add AMF Video Quality Enhancer (vf_vqe_amf) filter
+- NVDEC CUARRAY hwaccels
+- libcurl protocol
 - DVD-Audio LPCM decoder and demuxing support
 - AVFoundation input device selection by unique ID and USB serial number
 - NVIDIA optical flow accelerated interpolation filter (vf_fruc_vulkan)
 - H.264 data partitioning support
 - DSD (dsd_msbf) encoder
+- trim bitstream filter
 - Rhetorex ADPCM decoder
+- gainmap filter
+- JPEG Multi-Picture Format muxer
 - ADPCM IMA Citrix decoder
 - Panasonic RW2 decoder
+- Windows handle protocol
 - xHE-AAC encoding via libfdk-xhe-aac
 - jpegapp bitstream filter
 - LCEVC track muxing support in MPEG-TS muxer
