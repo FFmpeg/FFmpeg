@@ -46,6 +46,8 @@ API changes, most recent first:
   range. This also applies to av_seek_frame() with a demuxer that only
   implements read_seek2.
 
+-------- 8< --------- FFmpeg 9.1 was cut here -------- 8< ---------
+
 2026-10-xx - ad74ac4cee9 - lavc 63.23.102 - avcodec.h
   AVCodecContext.seek_preroll may be raised by a decoder to the pre-roll it
   needs, as the AAC decoder does.
