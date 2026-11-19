@@ -1,0 +1,11 @@
+b3c337efc274d4585bc0444bad40c3b0 *tests/data/fate/mov-qdmc-remux.mov
+2398 tests/data/fate/mov-qdmc-remux.mov
+#extradata 0:       64, 0x269b07fa
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: qdmc
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     8192,      556, 0x7be0f27e
+0,       8192,       8192,     8192,      556, 0x7b53f4cc
+0,      16384,      16384,     8192,      556, 0x8973efc3

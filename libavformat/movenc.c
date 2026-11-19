@@ -1151,6 +1151,12 @@ static int mov_write_wave_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     avio_wb32(pb, 0);     /* size */
     ffio_wfourcc(pb, "wave");
 
+    if (track->par->codec_id == AV_CODEC_ID_QDMC) {
+        /* Extradata already contains the complete wave atom payload. */
+        mov_write_extradata_tag(pb, track);
+        return update_size(pb, pos);
+    }
+
     if (track->par->codec_id != AV_CODEC_ID_QDM2) {
         avio_wb32(pb, 12);    /* size */
         ffio_wfourcc(pb, "frma");
@@ -1582,6 +1588,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
          track->par->codec_id == AV_CODEC_ID_ADPCM_MS      ||
          track->par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
          track->par->codec_id == AV_CODEC_ID_QDM2          ||
+         track->par->codec_id == AV_CODEC_ID_QDMC          ||
          (mov_pcm_le_gt16(track->par->codec_id) && version==1) ||
          (mov_pcm_be_gt16(track->par->codec_id) && version==1)))
         ret = mov_write_wave_tag(s, pb, track);

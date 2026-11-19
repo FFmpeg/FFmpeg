@@ -371,6 +371,10 @@ FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_PARSER) \
                           += fate-mov-mp4-edst-remainder
 fate-mov-mp4-edst-remainder: CMD = stream_remux mov $(TARGET_SAMPLES)/audiomatch/tones_fdkaac_44100_stereo_aac_lc.m4a "" mp4 "" "" "-c:a copy"
 
+# QDMC configuration must be written back in a wave atom
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MOV) += fate-mov-qdmc-remux
+fate-mov-qdmc-remux: CMD = transcode mov $(TARGET_SAMPLES)/qdmc/rumcoke.mov mov "-c copy -t 0.4" "-c copy"
+
 # Reserved colour values must not be written to colr
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV, H264_PARSER H264_DECODER) += fate-mov-colr-reserved-color-tags
 fate-mov-colr-reserved-color-tags: CMD = stream_remux mov $(TARGET_SAMPLES)/mov/test_iibbibb.mp4 "" mp4 \
