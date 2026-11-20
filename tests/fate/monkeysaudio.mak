@@ -19,6 +19,12 @@ fate-lossless-monkeysaudio-399: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/lu
 FATE_APE += fate-lossless-monkeysaudio-legacy
 fate-lossless-monkeysaudio-legacy: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/NoLegacy-cut.ape -f s32le -af aresample
 
+fate-lossless-monkeysaudio-399-max-samples: CMD = md5 -max_samples 1000 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.ape -f s16le -af atrim=end_sample=73728,aresample
+
+fate-lossless-monkeysaudio-legacy-max-samples: CMD = md5 -max_samples 2 -i $(TARGET_SAMPLES)/lossless-audio/NoLegacy-cut.ape -f s32le -af atrim=end_sample=13824,aresample
+
 FATE_APE := $(if $(call CRC, APE, APE, ARESAMPLE_FILTER), $(FATE_APE))
+FATE_APE += $(if $(call FILTERDEMDECENCMUX, ARESAMPLE ATRIM, APE, APE, PCM_S16LE, PCM_S16LE), fate-lossless-monkeysaudio-399-max-samples)
+FATE_APE += $(if $(call FILTERDEMDECENCMUX, ARESAMPLE ATRIM, APE, APE, PCM_S32LE, PCM_S32LE), fate-lossless-monkeysaudio-legacy-max-samples)
 FATE_SAMPLES_FFMPEG += $(FATE_APE)
 fate-lossless-monkeysaudio: $(FATE_APE)
