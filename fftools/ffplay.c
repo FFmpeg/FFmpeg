@@ -3115,6 +3115,27 @@ out:
     return ret;
 }
 
+/**
+ * The largest pre-roll of the audio streams, in AV_TIME_BASE units. A seek
+ * with AVSEEK_FLAG_PREROLL lands that much before its target, but no lower
+ * than min_ts, and discards it in full from the first packet.
+ */
+static int64_t seek_preroll(const AVFormatContext *ic)
+{
+    int64_t preroll = 0;
+
+    for (unsigned i = 0; i < ic->nb_streams; i++) {
+        const AVCodecParameters *par = ic->streams[i]->codecpar;
+
+        if (par->codec_type == AVMEDIA_TYPE_AUDIO && par->seek_preroll > 0 &&
+            par->sample_rate > 0)
+            preroll = FFMAX(preroll, av_rescale_rnd(par->seek_preroll, AV_TIME_BASE,
+                                                    par->sample_rate, AV_ROUND_UP));
+    }
+
+    return preroll;
+}
+
 static int decode_interrupt_cb(void *ctx)
 {
     VideoState *is = ctx;
@@ -3487,6 +3508,9 @@ static int read_thread(void *arg)
             int64_t seek_max    = is->seek_rel < 0 ? seek_target - is->seek_rel - 2: INT64_MAX;
 // FIXME the +-2 is due to rounding being not done in the correct direction in generation
 //      of the seek_pos/seek_rel variables
+            if (seek_min != INT64_MIN && !(is->seek_flags & AVSEEK_FLAG_BYTE) &&
+                (is->ic->seek_flags & AVSEEK_FLAG_PREROLL))
+                seek_min -= seek_preroll(is->ic);
 
             ret = avformat_seek_file(is->ic, -1, seek_min, seek_target, seek_max, is->seek_flags);
             if (ret < 0) {
