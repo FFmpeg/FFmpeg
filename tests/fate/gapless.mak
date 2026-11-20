@@ -36,6 +36,12 @@ fate-gapless-mp3-itunes-side-data: CMD = ffprobe_demux $(TARGET_SAMPLES)/gapless
 FATE_GAPLESSENC_PROBE-$(call ALLYES, MP3_DEMUXER MP3_MUXER NULL_MUXER) += fate-gapless-mp3-itunes-remux
 fate-gapless-mp3-itunes-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 mp3 "-c copy" "-c copy" "-of compact -show_entries stream=start_pts,duration_ts" "" "" "" null
 
+# Only the start is checked, as the encoded data and the end of the stream
+# depend on the shine version.
+FATE_GAPLESSENC_LOCAL-$(call ALLYES, FFMPEG FFPROBE FILE_PROTOCOL LIBSHINE_ENCODER MP3_MUXER MP3_DEMUXER WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-gaplessenc-pcm-to-mp3-libshine
+fate-gaplessenc-pcm-to-mp3-libshine: tests/data/asynth-44100-2.wav
+fate-gaplessenc-pcm-to-mp3-libshine: CMD = enc_external tests/data/asynth-44100-2.wav mp3 "-af aresample -c:a libshine" "-of compact -show_entries stream=start_pts"
+
 FATE_GAPLESS-$(call DEMDEC, MP3, MP3, ARESAMPLE_FILTER WAV_MUXER) += fate-audiomatch-square-mp3
 fate-audiomatch-square-mp3: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/square3.mp3 $(SAMPLES)/audiomatch/square3.wav
 
@@ -166,5 +172,6 @@ FATE_GAPLESSENC = $(FATE_GAPLESSENC-yes)
 FATE_SAMPLES_AVCONV += $(FATE_GAPLESS)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_GAPLESSENC)
 FATE_SAMPLES_FFPROBE += $(FATE_GAPLESSINFO)
+FATE_FFMPEG_FFPROBE += $(FATE_GAPLESSENC_LOCAL-yes)
 
-fate-gapless: $(FATE_GAPLESS) $(FATE_GAPLESSINFO) $(FATE_GAPLESSENC)
+fate-gapless: $(FATE_GAPLESS) $(FATE_GAPLESSINFO) $(FATE_GAPLESSENC) $(FATE_GAPLESSENC_LOCAL-yes)
