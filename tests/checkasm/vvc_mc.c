@@ -335,8 +335,8 @@ static av_noinline void check_avg(void)
 #define SR_RANGE 2
 static av_noinline void check_dmvr(void)
 {
-    LOCAL_ALIGNED_32(uint16_t, dst0, [DST_BUF_SIZE]);
-    LOCAL_ALIGNED_32(uint16_t, dst1, [DST_BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint16_t, dst0, [DST_BUF_SIZE / 2]);
+    LOCAL_ALIGNED_32(uint16_t, dst1, [DST_BUF_SIZE / 2]);
     LOCAL_ALIGNED_32(uint8_t,  src0, [SRC_BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t,  src1, [SRC_BUF_SIZE]);
     const int dst_stride = MAX_PB_SIZE;
