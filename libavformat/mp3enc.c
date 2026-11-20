@@ -393,7 +393,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
                 /* Padding longer than a frame is spread over several packets. */
                 mp3->padding = discard_padding ? mp3->padding + discard_padding : 0;
                 if (!mp3->delay)
-                    mp3->delay =  FFMAX((int64_t)AV_RL32(side_data) - 528 - 1, 0);
+                    mp3->delay =  FFMAX((int64_t)AV_RL32(side_data) - MP3_DECODER_DELAY, 0);
             } else {
                 mp3->padding = 0;
             }
@@ -510,7 +510,7 @@ static void mp3_update_xing(AVFormatContext *s)
 
     /* write encoder delay/padding */
     if (mp3->padding)
-        mp3->padding += 528 + 1;
+        mp3->padding += MP3_DECODER_DELAY;
     if (mp3->delay >= 1 << 12) {
         mp3->delay = (1 << 12) - 1;
         av_log(s, AV_LOG_WARNING, "Too many samples of initial padding.\n");

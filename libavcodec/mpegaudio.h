@@ -39,6 +39,12 @@
 /* max compressed frame size */
 #define MPA_MAX_CODED_FRAME_SIZE 1792
 
+/**
+ * Delay of the layer III synthesis filterbank, in samples. The LAME tag and
+ * iTunSMPB store the encoder delay and padding without it.
+ */
+#define MP3_DECODER_DELAY (528 + 1)
+
 #define MPA_MAX_CHANNELS 2
 
 #define SBLIMIT 32 /* number of subbands */

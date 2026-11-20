@@ -313,9 +313,9 @@ static int mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
 
         mp3->start_pad = v>>12;
         mp3->  end_pad = v&4095;
-        sti->start_skip_samples = mp3->start_pad + 528 + 1;
+        sti->start_skip_samples = mp3->start_pad + MP3_DECODER_DELAY;
         if (mp3->frames) {
-            sti->first_discard_sample = -mp3->end_pad + 528 + 1 + mp3->frames * (int64_t)spf;
+            sti->first_discard_sample = -mp3->end_pad + MP3_DECODER_DELAY + mp3->frames * (int64_t)spf;
             sti->last_discard_sample = mp3->frames * (int64_t)spf;
         }
         av_log(s, AV_LOG_DEBUG, "pad %d %d\n", mp3->start_pad, mp3->  end_pad);
@@ -421,11 +421,11 @@ static void mp3_parse_itunes_smpb(AVFormatContext *s, AVStream *st,
         priming + samples + remainder != mp3->frames * (int64_t)spf)
         return;
 
-    /* As in the LAME tag, priming and remainder exclude the 528 + 1 samples of
-     * decoder delay: Core Audio (afconvert) outputs the sample count starting
-     * that far past the priming. */
-    sti->start_skip_samples   = priming + 528 + 1;
-    sti->first_discard_sample = priming + 528 + 1 + samples;
+    /* As in the LAME tag, priming and remainder exclude the decoder delay:
+     * Core Audio (afconvert) outputs the sample count starting that far past
+     * the priming. */
+    sti->start_skip_samples   = priming + MP3_DECODER_DELAY;
+    sti->first_discard_sample = priming + MP3_DECODER_DELAY + samples;
     sti->last_discard_sample  = priming + samples + remainder;
 
     st->duration = av_rescale_q(samples, (AVRational){ 1, c->sample_rate },
