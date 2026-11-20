@@ -1,4 +1,4 @@
-2f0259126dbe5ae99ddba6d071f82b7b *tests/data/fate/vsynth2-vc2-t5_3.mov
+985369d4806cd59df4b31ef1f14b1ae1 *tests/data/fate/vsynth2-vc2-t5_3.mov
 1335772 tests/data/fate/vsynth2-vc2-t5_3.mov
 8f629e5cea24cc804d6aeadceacf0b2a *tests/data/fate/vsynth2-vc2-t5_3.out.rawvideo
 stddev:    0.37 PSNR: 56.66 MAXDIFF:    7 bytes:  7603200/   760320

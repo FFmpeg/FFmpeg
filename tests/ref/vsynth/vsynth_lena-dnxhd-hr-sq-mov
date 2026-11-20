@@ -1,4 +1,4 @@
-7c90dad4a13ad01055169b4964c76c7b *tests/data/fate/vsynth_lena-dnxhd-hr-sq-mov.mov
+dc0d76663320db7498d818bfc5926449 *tests/data/fate/vsynth_lena-dnxhd-hr-sq-mov.mov
 2560763 tests/data/fate/vsynth_lena-dnxhd-hr-sq-mov.mov
 95e7da46fc066ed795de4ec1cf4d4ab5 *tests/data/fate/vsynth_lena-dnxhd-hr-sq-mov.out.rawvideo
 stddev:    1.35 PSNR: 45.51 MAXDIFF:   23 bytes:  7603200/   760320

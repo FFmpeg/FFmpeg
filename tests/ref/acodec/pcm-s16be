@@ -1,4 +1,4 @@
-b361cd5381d41fb7aa42ce1cb5601a15 *tests/data/fate/acodec-pcm-s16be.mov
+54f786099b164d085ebff083e0470a40 *tests/data/fate/acodec-pcm-s16be.mov
 1059069 tests/data/fate/acodec-pcm-s16be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-s16be.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

@@ -1,4 +1,4 @@
-b38ce71638e8edbf06fcb3a0b8a9a944 *tests/data/fate/vsynth_lena-dnxhd-1080i.mov
+e6d5409349ca293439ad5b763219544e *tests/data/fate/vsynth_lena-dnxhd-1080i.mov
 3031911 tests/data/fate/vsynth_lena-dnxhd-1080i.mov
 7d0ca92f12711535d57eff3609462b31 *tests/data/fate/vsynth_lena-dnxhd-1080i.out.rawvideo
 stddev:    1.29 PSNR: 45.87 MAXDIFF:   22 bytes:  7603200/   760320

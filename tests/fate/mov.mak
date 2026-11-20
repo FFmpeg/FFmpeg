@@ -433,7 +433,7 @@ fate-mov-vfr: CMD = md5 -filter_complex testsrc=size=2x2:duration=1,setpts=N*N:s
 FATE_MOV_FFMPEG-$(call TRANSCODE, DFPWM, MOV, LAVFI_INDEV SINE_FILTER ATRIM_FILTER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-dfpwm-last-packet
 fate-mov-dfpwm-last-packet: CMD = transcode lavfi "sine=r=48000,atrim=end_sample=85" mov "-auto_conversion_filters -c:a dfpwm -movie_timescale 48000" "-c copy"
 fate-mov-vfr: CMP = oneline
-fate-mov-vfr: REF = 88254b80b6cfbd116b935c8c2263ffab
+fate-mov-vfr: REF = 54167f70fb0c2d164587b6af1aad9623
 
 # The QuickTime user data list has to carry the composer atom the demuxer
 # already reads: without it a mov to mov remux dropped the tag.

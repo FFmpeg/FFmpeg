@@ -1,4 +1,4 @@
-6ae836303fc545318836eee103dccfee *tests/data/fate/vsynth3-prores_ks.mov
+726e9b2c99a24e011c2cb16669fc1451 *tests/data/fate/vsynth3-prores_ks.mov
 95053 tests/data/fate/vsynth3-prores_ks.mov
 9ab6d3e3cc7749796cd9fa984c60d890 *tests/data/fate/vsynth3-prores_ks.out.rawvideo
 stddev:    4.09 PSNR: 35.88 MAXDIFF:   35 bytes:    86700/    86700

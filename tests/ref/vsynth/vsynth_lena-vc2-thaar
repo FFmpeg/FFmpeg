@@ -1,4 +1,4 @@
-75d72bb310e671d7b66d8106a8e3c1d5 *tests/data/fate/vsynth_lena-vc2-thaar.mov
+2c6b7236fb5a64f6c94afc7e7b3b6446 *tests/data/fate/vsynth_lena-vc2-thaar.mov
 1431772 tests/data/fate/vsynth_lena-vc2-thaar.mov
 e5ea17416bda234ae58f27dea27e8135 *tests/data/fate/vsynth_lena-vc2-thaar.out.rawvideo
 stddev:    0.30 PSNR: 58.58 MAXDIFF:    5 bytes:  7603200/   760320

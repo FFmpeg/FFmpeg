@@ -4260,6 +4260,8 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
             display_matrix = (uint32_t *)sd->data;
     }
 
+    if (mov->mode == MODE_MOV)
+        flags |= MOV_TKHD_FLAG_IN_POSTER;
     if (track->flags & MOV_TRACK_ENABLED)
         flags |= MOV_TKHD_FLAG_ENABLED;
 

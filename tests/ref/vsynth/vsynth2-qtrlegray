@@ -1,4 +1,4 @@
-9fc46b14e3ae01e146c003c52084b55d *tests/data/fate/vsynth2-qtrlegray.mov
+9fcff370cb34d8ed3da156a015e770b4 *tests/data/fate/vsynth2-qtrlegray.mov
 4988372 tests/data/fate/vsynth2-qtrlegray.mov
 510a92a21b552c51fcafab8188982f4d *tests/data/fate/vsynth2-qtrlegray.out.rawvideo
 stddev:   16.31 PSNR: 23.88 MAXDIFF:   89 bytes:  7603200/  7603200
