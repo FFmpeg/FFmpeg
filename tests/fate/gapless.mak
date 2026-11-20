@@ -31,6 +31,11 @@ fate-gapless-mp3-itunes: CMD = gapless $(TARGET_SAMPLES)/gapless/gapless-itunes.
 FATE_GAPLESSINFO_PROBE-$(call ALLYES, MP3_DEMUXER FILE_PROTOCOL) += fate-gapless-mp3-itunes-side-data
 fate-gapless-mp3-itunes-side-data: CMD = ffprobe_demux $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 -show_entries packet=pts:packet_side_data:stream=codec_name,start_pts,start_time,duration_ts,duration:format=start_time,duration
 
+# The iTunSMPB priming and padding of this sample have to survive a remux,
+# which stores them in the LAME tag.
+FATE_GAPLESSENC_PROBE-$(call ALLYES, MP3_DEMUXER MP3_MUXER NULL_MUXER) += fate-gapless-mp3-itunes-remux
+fate-gapless-mp3-itunes-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/gapless/gapless-itunes.mp3 mp3 "-c copy" "-c copy" "-of compact -show_entries stream=start_pts,duration_ts" "" "" "" null
+
 FATE_GAPLESS-$(call DEMDEC, MP3, MP3, ARESAMPLE_FILTER WAV_MUXER) += fate-audiomatch-square-mp3
 fate-audiomatch-square-mp3: CMD = audio_match $(TARGET_SAMPLES)/audiomatch/square3.mp3 $(SAMPLES)/audiomatch/square3.wav
 
