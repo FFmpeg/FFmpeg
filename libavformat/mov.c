@@ -2669,7 +2669,7 @@ static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                     return AVERROR(ENOMEM);
                 st->codecpar->extradata_size = ALAC_EXTRADATA_SIZE;
                 AV_WB32(st->codecpar->extradata    , ALAC_EXTRADATA_SIZE);
-                AV_WB32(st->codecpar->extradata + 4, MKTAG('a','l','a','c'));
+                AV_WL32(st->codecpar->extradata + 4, MKTAG('a','l','a','c'));
                 AV_WB64(st->codecpar->extradata + 12, buffer);
                 avio_read(pb, st->codecpar->extradata + 20, 16);
                 avio_skip(pb, atom.size - 24);

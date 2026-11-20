@@ -1,0 +1,9 @@
+a3fb319cc6e24b49158feefcbad691d0 *tests/data/fate/mov-alac-bare-wave-remux.mp4
+13095 tests/data/fate/mov-alac-bare-wave-remux.mp4
+#extradata 0:       36, 0x504d04a7
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: alac
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     4096,    12372, 0x4d82c14e
