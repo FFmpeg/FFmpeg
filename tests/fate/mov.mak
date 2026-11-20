@@ -270,6 +270,12 @@ FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, AVIF OBU, AV1_DECODER AV1_PARSER) \
 fate-mov-avif-mux-still-image-1-item: CMD = stream_remux obu $(TARGET_SAMPLES)/av1/still_picture_rgb.obu "" avif \
   "" "-c:v av1" "-c:v copy"
 
+# Loop a color tile and its alpha tile to exercise animated AVIF track headers.
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, AVIF MOV, AV1_DECODER AV1_PARSER) \
+                           += fate-mov-avif-mux-animated-alpha
+fate-mov-avif-mux-animated-alpha: CMD = stream_remux mov $(TARGET_SAMPLES)/avif/gain_map_alpha_grid.avif \
+  "-c:v av1 -stream_loop 1" avif "-map 0:0 -map 0:12" "-c:v av1" "-map 0 -c:v copy"
+
 # avif demuxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-1-item

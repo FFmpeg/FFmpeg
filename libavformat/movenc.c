@@ -4265,6 +4265,9 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     /* QuickTime hint tracks are not part of the movie, preview or poster */
     if (mov->mode == MODE_MOV && track->tag == MKTAG('r','t','p',' '))
         flags = 0;
+    /* auxiliary image sequences are not displayed as such */
+    if (mov->mode == MODE_AVIF && track != &mov->tracks[0])
+        flags &= ~(MOV_TKHD_FLAG_IN_MOVIE | MOV_TKHD_FLAG_IN_PREVIEW);
     if (track->flags & MOV_TRACK_ENABLED)
         flags |= MOV_TKHD_FLAG_ENABLED;
 

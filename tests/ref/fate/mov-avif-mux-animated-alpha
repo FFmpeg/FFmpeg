@@ -1,0 +1,32 @@
+b83c37a8f9c386a9593552341ac09953 *tests/data/fate/mov-avif-mux-animated-alpha.avif
+3070 tests/data/fate/mov-avif-mux-animated-alpha.avif
+#extradata 0:        4, 0x02e400e1
+#extradata 1:        4, 0x02bc00dd
+#extradata 2:        4, 0x02e400e1
+#extradata 3:        4, 0x02bc00dd
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: av1
+#dimensions 0: 128x200
+#sar 0: 0/1
+#tb 1: 1/1
+#media_type 1: video
+#codec_id 1: av1
+#dimensions 1: 128x200
+#sar 1: 0/1
+#tb 2: 1/16384
+#media_type 2: video
+#codec_id 2: av1
+#dimensions 2: 128x200
+#sar 2: 1/1
+#tb 3: 1/16384
+#media_type 3: video
+#codec_id 3: av1
+#dimensions 3: 128x200
+#sar 3: 1/1
+0,          0,          0,        1,      446, 0xa4d2e70e
+1,          0,          0,        1,      222, 0xdbb76fe9
+2,          0,          0,    16384,      446, 0xa4d2e70e
+3,          0,          0,    16384,      222, 0xdbb76fe9
+2,      16384,      16384,    16384,      446, 0xa4d2e70e
+3,      16384,      16384,    16384,      222, 0xdbb76fe9
