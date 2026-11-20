@@ -1252,6 +1252,7 @@ static void predictor_decode_stereo_3950(APEContext *ctx, int count)
     ape_apply_filters(ctx, ctx->decoded[0], ctx->decoded[1], count);
     if (ctx->interim_mode == -1) {
         p_interim = *p_default;
+        p_interim.buf = p_interim.historybuffer + (p_default->buf - p_default->historybuffer);
         num_passes ++;
         memcpy(ctx->interim[0], ctx->decoded[0], sizeof(*ctx->interim[0])*count);
         memcpy(ctx->interim[1], ctx->decoded[1], sizeof(*ctx->interim[1])*count);
@@ -1271,7 +1272,6 @@ static void predictor_decode_stereo_3950(APEContext *ctx, int count)
             decoded0 = ctx->decoded[0];
             decoded1 = ctx->decoded[1];
         }
-        p->buf = p->historybuffer;
 
         count = lcount;
         while (count--) {
@@ -1310,7 +1310,7 @@ static void predictor_decode_stereo_3950(APEContext *ctx, int count)
         memcpy(ctx->decoded[0], ctx->interim[0], sizeof(*ctx->interim[0])*lcount);
         memcpy(ctx->decoded[1], ctx->interim[1], sizeof(*ctx->interim[1])*lcount);
         *p_default = p_interim;
-        p_default->buf = p_default->historybuffer;
+        p_default->buf = p_default->historybuffer + (p_interim.buf - p_interim.historybuffer);
     }
 }
 
