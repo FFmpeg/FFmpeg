@@ -706,7 +706,7 @@ static inline int16_t adpcm_ms_expand_nibble(ADPCMChannelStatus *c, int nibble)
 {
     int predictor;
 
-    predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) / 64;
+    predictor = (((c->sample1) * (c->coeff1)) + ((c->sample2) * (c->coeff2))) >> 6;
     predictor += ((nibble & 0x08)?(nibble - 0x10):(nibble)) * c->idelta;
 
     c->sample2 = c->sample1;
