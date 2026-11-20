@@ -1558,6 +1558,35 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
     return nb_frames * 32 * sizeof(OUT_INT) * s->hdr.nb_channels;
 }
 
+/**
+ * Samples a decoder started inside the stream outputs before its output is
+ * exact: the synthesis history, then for layer III the IMDCT overlap and
+ * the granules whose main data begins before the first frame decoded. The
+ * bit reservoir reach is bounded for the smallest frames this stream format
+ * allows, as an encoder may use all of it.
+ */
+static int seek_preroll(const MPADecodeHeader2 *hdr)
+{
+    const int synth_history = 512 - 32;
+    const int imdct_overlap = 576;
+
+    if (hdr->layer != 3)
+        return synth_history;
+
+    const int samples_per_frame   = hdr->lsf ? 576 : 1152;
+    const int max_main_data_begin = hdr->lsf ? 255 : 511;
+    const int side_info_size      = hdr->lsf ? (hdr->nb_channels == 1 ?  9 : 17)
+                                             : (hdr->nb_channels == 1 ? 17 : 32);
+    const int min_frame_size      = ff_mpa_bitrate_tab[hdr->lsf][2][1] * 144000 /
+                                    (hdr->sample_rate << hdr->lsf);
+    /* header and CRC */
+    const int min_main_data       = min_frame_size - 4 - 2 - side_info_size;
+
+    return synth_history + imdct_overlap +
+           (max_main_data_begin + min_main_data - 1) / min_main_data *
+           samples_per_frame;
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -1599,6 +1628,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                              (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     if (!avctx->bit_rate)
         avctx->bit_rate = s->hdr.bit_rate;
+    avctx->seek_preroll = FFMAX(avctx->seek_preroll, seek_preroll(&s->hdr));
 
     if (s->hdr.frame_size <= 0) {
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
