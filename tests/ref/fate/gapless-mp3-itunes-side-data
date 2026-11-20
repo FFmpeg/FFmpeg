@@ -1,4 +1,4 @@
-packet|pts=0|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=528|side_datum/skip_samples:discard_padding=0|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
+packet|pts=0|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=1057|side_datum/skip_samples:discard_padding=0|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
 packet|pts=368640
 packet|pts=737280
 packet|pts=1105920
@@ -362,7 +362,7 @@ packet|pts=132710400
 packet|pts=133079040
 packet|pts=133447680
 packet|pts=133816320
-packet|pts=134184960|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=0|side_datum/skip_samples:discard_padding=1002|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
+packet|pts=134184960|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=0|side_datum/skip_samples:discard_padding=473|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
 packet|pts=134553600|side_datum/skip_samples:side_data_type=Skip Samples|side_datum/skip_samples:skip_samples=0|side_datum/skip_samples:discard_padding=1152|side_datum/skip_samples:skip_reason=0|side_datum/skip_samples:discard_reason=0
-stream|codec_name=mp3|start_pts=168960|start_time=0.011973|duration_ts=134064000|duration=9.500000|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|disposition:multilayer=0
-format|start_time=0.011973|duration=9.500000|tag:title=7rk|tag:comment-iTunPGAP-eng=0|tag:encoded_by=iTunes 12.7.0.166|tag:comment-iTunNORM-eng= 00000362 000004C0 0000308F 00003CC5 00000DAC 00000DAC 00007D14 00007AC9 000007C1 0000175E|tag:comment-iTunSMPB-eng= 00000000 00000210 0000086A 0000000000066486 00000000 0002DA9D 00000000 00000000 00000000 00000000 00000000 00000000
+stream|codec_name=mp3|start_pts=338240|start_time=0.023968|duration_ts=134064000|duration=9.500000|disposition:default=0|disposition:dub=0|disposition:original=0|disposition:comment=0|disposition:lyrics=0|disposition:karaoke=0|disposition:forced=0|disposition:hearing_impaired=0|disposition:visual_impaired=0|disposition:clean_effects=0|disposition:attached_pic=0|disposition:timed_thumbnails=0|disposition:non_diegetic=0|disposition:captions=0|disposition:descriptions=0|disposition:metadata=0|disposition:dependent=0|disposition:still_image=0|disposition:multilayer=0
+format|start_time=0.023968|duration=9.500000|tag:title=7rk|tag:comment-iTunPGAP-eng=0|tag:encoded_by=iTunes 12.7.0.166|tag:comment-iTunNORM-eng= 00000362 000004C0 0000308F 00003CC5 00000DAC 00000DAC 00007D14 00007AC9 000007C1 0000175E|tag:comment-iTunSMPB-eng= 00000000 00000210 0000086A 0000000000066486 00000000 0002DA9D 00000000 00000000 00000000 00000000 00000000 00000000

@@ -421,9 +421,11 @@ static void mp3_parse_itunes_smpb(AVFormatContext *s, AVStream *st,
         priming + samples + remainder != mp3->frames * (int64_t)spf)
         return;
 
-    /* Contrary to the LAME tag, the priming count covers the decoder delay. */
-    sti->start_skip_samples   = priming;
-    sti->first_discard_sample = priming + samples;
+    /* As in the LAME tag, priming and remainder exclude the 528 + 1 samples of
+     * decoder delay: Core Audio (afconvert) outputs the sample count starting
+     * that far past the priming. */
+    sti->start_skip_samples   = priming + 528 + 1;
+    sti->first_discard_sample = priming + 528 + 1 + samples;
     sti->last_discard_sample  = priming + samples + remainder;
 
     st->duration = av_rescale_q(samples, (AVRational){ 1, c->sample_rate },

@@ -400,15 +400,18 @@ int ff_find_stream_index(const AVFormatContext *s, int id);
  *
  *   <reserved> <priming> <remainder> <valid samples>
  *
- * The decoded stream holds the three sample counts back to back, the priming
- * and remainder samples being encoder artifacts.
+ * The encoded frames hold the three sample counts back to back, the priming
+ * and remainder samples being encoder artifacts. The counts are returned as
+ * the tag stores them: a caller whose decoder adds a delay of its own, as the
+ * MP3 one does, shifts the valid samples later by that delay, adding it to
+ * the priming and subtracting it from the remainder.
  *
  * The counts are returned small enough to be added and rescaled without
  * overflowing.
  *
  * @param value     tag contents
- * @param priming   number of samples to discard at the start of the stream
- * @param remainder number of samples to discard at the end of the stream
+ * @param priming   samples the encoder added at the start of the stream
+ * @param remainder samples the encoder added at the end of the stream
  * @param samples   number of valid samples between the two
  * @return >= 0 if OK, AVERROR_INVALIDDATA if the tag could not be parsed or
  *         holds counts too large to be sample counts
