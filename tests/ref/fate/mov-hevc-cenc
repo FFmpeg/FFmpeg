@@ -1,4 +1,4 @@
-67d984d1166e68b085e85dabac1d69fb *tests/data/fate/mov-hevc-cenc.mp4
+80281ce5ab24371d19a00554ef4a6b0b *tests/data/fate/mov-hevc-cenc.mp4
 6166 tests/data/fate/mov-hevc-cenc.mp4
 #extradata 0:      101, 0x8d351483
 #tb 0: 1/1200000

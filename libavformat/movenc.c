@@ -4232,7 +4232,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVMuxContext *mov,
                                       mov->movie_timescale, track->timescale,
                                       AV_ROUND_UP);
     int version;
-    int flags   = MOV_TKHD_FLAG_IN_MOVIE;
+    int flags   = MOV_TKHD_FLAG_IN_MOVIE | MOV_TKHD_FLAG_IN_PREVIEW;
     int group   = 0;
 
     uint32_t *display_matrix = NULL;

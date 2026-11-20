@@ -1,4 +1,4 @@
-e79b0af25dc089c090f0d9defb2a4e0d *tests/data/fate/mov-dfpwm-last-packet.mov
+bd94707a0ff0d7b4bc7c55fb8776454f *tests/data/fate/mov-dfpwm-last-packet.mov
 656 tests/data/fate/mov-dfpwm-last-packet.mov
 #tb 0: 1/48000
 #media_type 0: audio

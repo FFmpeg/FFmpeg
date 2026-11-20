@@ -1,4 +1,4 @@
-c8e9859d8361a7da554c469c778762da *tests/data/fate/h264-bsf-dts2pts.mov
+f12965cbc25d327895f96591ea37b2ba *tests/data/fate/h264-bsf-dts2pts.mov
 243937 tests/data/fate/h264-bsf-dts2pts.mov
 #extradata 0:       26, 0x75e2093d
 #tb 0: 1/1200000

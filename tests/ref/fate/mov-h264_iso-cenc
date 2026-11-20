@@ -1,4 +1,4 @@
-03e458edc426f90f52b560e175ad32d2 *tests/data/fate/mov-h264_iso-cenc.mp4
+41e7103de3ffc8f060b59310f55c391b *tests/data/fate/mov-h264_iso-cenc.mp4
 15542 tests/data/fate/mov-h264_iso-cenc.mp4
 #extradata 0:       40, 0xcd870951
 #tb 0: 1/16000
