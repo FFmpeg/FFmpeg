@@ -32,6 +32,12 @@
 
 #define BUFFER_SIZE (4096 * 20)
 
+/**
+ * Delay of the analysis filterbank, polyphase (240) and MDCT (288), as broken
+ * down in LAME's libmp3lame/encoder.h. shine adds no padding of its own.
+ */
+#define SHINE_ENCODER_DELAY 528
+
 typedef struct SHINEContext {
     shine_config_t  config;
     shine_t         shine;
@@ -57,7 +63,8 @@ static av_cold int libshine_encode_init(AVCodecContext *avctx)
     s->shine = shine_initialise(&s->config);
     if (!s->shine)
         return AVERROR(ENOMEM);
-    avctx->frame_size = shine_samples_per_pass(s->shine);
+    avctx->frame_size      = shine_samples_per_pass(s->shine);
+    avctx->initial_padding = SHINE_ENCODER_DELAY + MP3_DECODER_DELAY;
     ff_af_queue_init(avctx, &s->afq);
     return 0;
 }
