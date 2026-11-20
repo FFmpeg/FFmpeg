@@ -5,7 +5,8 @@
 # the first packets read after a seek, and the timing of the decoded output
 # after a seek, with and without the samples before the target. The output
 # is silenced, as only its timing is compared and the decoders are not
-# bit-exact across platforms.
+# bit-exact across platforms. The match tests below compare two decodes made
+# in the same run instead, which are equal on any platform once converged.
 
 PREROLL_SEEK_TS = 0.53
 PREROLL_OPT = -seek_flags preroll
@@ -34,6 +35,19 @@ $(eval $(call FATE_PREROLL_TEST,opus-caf,CAF,OPUS,caf/opus.caf))
 $(eval $(call FATE_PREROLL_TEST,opus-mpegts,MPEGTS,OPUS,opus/test-8-7.1.opus-small.ts))
 $(eval $(call FATE_PREROLL_TEST,mp3,MP3,MP3FLOAT,gapless/gapless.mp3))
 $(eval $(call FATE_PREROLL_TEST,mp3-itunes,MP3,MP3FLOAT,gapless/gapless-itunes.mp3))
+
+# Decoded output after a seek, compared with the same span decoded from the
+# start of the stream: only the frames that match it exactly are printed. A
+# decoder that converges to the exact output once its pre-roll is discarded
+# prints every frame from the target on.
+# 1: test name, 2: demuxer, 3: decoder, 4: decoder name, 5: sample
+define FATE_PREROLL_MATCH_TEST
+FATE_PREROLL_FFMPEG-$(call FRAMECRC, $(2), $(3), PCM_S16LE_ENCODER ARESAMPLE_FILTER AMIX_FILTER ASTATS_FILTER AMETADATA_FILTER ATRIM_FILTER ASETPTS_FILTER) += fate-preroll-$(1)-match
+fate-preroll-$(1)-match: CMD = framecrc $(PREROLL_OPT) -ss $(PREROLL_SEEK_TS) -t 0.3 -c:a $(4) -i $(TARGET_SAMPLES)/$(5) -c:a $(4) -i $(TARGET_SAMPLES)/$(5) -filter_complex "[0:a:0]asetpts=PTS-STARTPTS[seek];[1:a:0]atrim=start=$(PREROLL_SEEK_TS):duration=0.3,asetpts=PTS-STARTPTS[full];[seek][full]amix=inputs=2:weights=1|-1:duration=shortest,astats=metadata=1:reset=1:measure_overall=Peak_level:measure_perchannel=none,ametadata=mode=select:key=lavfi.astats.Overall.Peak_level:value=-inf:function=expr:expr=eq(FRAMEVAL\,USERVAL),aresample" -c:a pcm_s16le
+endef
+
+$(eval $(call FATE_PREROLL_MATCH_TEST,mp3,MP3,MP3FLOAT,mp3float,gapless/gapless.mp3))
+$(eval $(call FATE_PREROLL_MATCH_TEST,mp3-itunes,MP3,MP3FLOAT,mp3float,gapless/gapless-itunes.mp3))
 
 # A seek that lands inside the priming, which here spans the first three
 # packets: the rest of the priming, or the pre-roll if longer, is skipped.
