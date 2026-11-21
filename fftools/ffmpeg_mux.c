@@ -671,6 +671,12 @@ int of_stream_init(OutputFile *of, OutputStream *ost,
                                          ost->st->time_base);
     }
 
+    /* Bitstream filters can change packet timing. A finer output time base
+     * can hide the loss of precision at an earlier stage. */
+    if (mux->have_sq_enc && ms->sq_idx_mux >= 0 && !ms->bsf_ctx && enc_ctx &&
+        ost->type == AVMEDIA_TYPE_AUDIO && !enc_ctx->frame_size)
+        sq_cut_upstream(mux->sq_mux, ms->sq_idx_mux, enc_ctx->sample_rate);
+
     if (ms->sch_idx >= 0)
         return sch_mux_stream_ready(mux->sch, of->index, ms->sch_idx);
 

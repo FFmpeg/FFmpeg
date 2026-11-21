@@ -117,6 +117,7 @@ typedef struct Muxer {
     atomic_int_least64_t    last_filesize;
     int                     header_written;
 
+    int                     have_sq_enc;
     SyncQueue              *sq_mux;
     AVPacket               *sq_pkt;
 } Muxer;

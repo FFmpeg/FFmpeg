@@ -72,6 +72,14 @@ void sq_limit_frames(SyncQueue *sq, unsigned int stream_idx,
                      uint64_t max_frames);
 
 /**
+ * Allow nearest-tick cutoff for packets from an audio stream that can be cut
+ * by a frame queue, with no intervening bitstream filter. The packet time
+ * base must be at least as fine as 1/sample_rate. Can only be used with
+ * SYNC_QUEUE_PACKETS queues.
+ */
+void sq_cut_upstream(SyncQueue *sq, unsigned int stream_idx, int sample_rate);
+
+/**
  * Set a constant output audio frame size, in samples. Can only be used with
  * SYNC_QUEUE_FRAMES queues and audio streams.
  *

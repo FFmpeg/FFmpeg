@@ -2258,6 +2258,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc,
         sq_idx = sch_add_sq_enc(mux->sch, buf_size_us, mux);
         if (sq_idx < 0)
             return sq_idx;
+        mux->have_sq_enc = 1;
 
         for (int i = 0; i < oc->nb_streams; i++) {
             OutputStream *ost = of->streams[i];

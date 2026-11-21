@@ -85,6 +85,8 @@ typedef struct SyncQueueStream {
     uint64_t         samples_sent;
     uint64_t         frames_max;
     int              frame_samples;
+    /* sample rate for audio that can be cut by a frame queue, or zero */
+    int              cut_sample_rate;
 } SyncQueueStream;
 
 struct SyncQueue {
@@ -549,6 +551,13 @@ static int receive_for_stream(SyncQueue *sq, unsigned int stream_idx,
                       av_rescale_q(peek.f->pts, st->tb, sample_tb);
                 cut = FFMIN(cut, peek.f->nb_samples);
             }
+
+            /* Allow the nearest tick for cut audio if that tick is no longer
+             * than a sample. A coarse packet time base can otherwise admit a
+             * whole packet that the frame queue released without cutting. */
+            if (cmp > 0 && st_head->finished && st->cut_sample_rate &&
+                av_cmp_q(st->tb, (AVRational){ 1, st->cut_sample_rate }) <= 0)
+                cmp = ts > av_rescale_q(st_head->head_ts, st_head->tb, st->tb);
         }
 
         /* We can release frames that do not end after the queue head.
@@ -664,6 +673,14 @@ void sq_limit_frames(SyncQueue *sq, unsigned int stream_idx, uint64_t frames)
     st->frames_max = frames;
     if (st->frames_sent >= st->frames_max)
         finish_stream(sq, stream_idx);
+}
+
+void sq_cut_upstream(SyncQueue *sq, unsigned int stream_idx, int sample_rate)
+{
+    av_assert0(sq->type == SYNC_QUEUE_PACKETS);
+    av_assert0(stream_idx < sq->nb_streams);
+    av_assert0(sample_rate > 0);
+    sq->streams[stream_idx].cut_sample_rate = sample_rate;
 }
 
 void sq_frame_samples(SyncQueue *sq, unsigned int stream_idx,

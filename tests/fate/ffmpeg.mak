@@ -158,6 +158,18 @@ fate-ffmpeg-frames-cut-audio-round: CMD = framecrc \
     -f lavfi -i "color=s=16x16:r=30000/1001:d=2[out0];sine=r=48000:samples_per_frame=1602:d=2[out1]" \
     -map 0:v -map 0:a -frames:v 1
 
+# the cut audio ending at 14715, after 14714.7, passes the muxing sync queue
+FATE_FFMPEG-$(call ALLYES, LAVFI_INDEV COLOR_FILTER SINE_FILTER \
+                           AFORMAT_FILTER ARESAMPLE_FILTER \
+                           WRAPPED_AVFRAME_DECODER \
+                           PCM_S16$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER \
+                           RAWVIDEO_ENCODER PCM_S16LE_ENCODER FRAMECRC_MUXER \
+                           PIPE_PROTOCOL) \
+                           += fate-ffmpeg-frames-cut-audio-copy
+fate-ffmpeg-frames-cut-audio-copy: CMD = framecrc \
+    -f lavfi -i "color=s=16x16:r=30000/1001:d=2[out0];sine=r=44100:samples_per_frame=4410:d=2[out1];sine=r=44100:samples_per_frame=4410:d=2,aformat=u8[out2]" \
+    -map 0:v -map 0:a:0 -map 0:a:1 -c:a:1 copy -frames:v 10
+
 # test interleaving video with a sparse subtitle stream
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MATROSKA,, COLOR_FILTER VOBSUB_DEMUXER \
                            RAWVIDEO_ENCODER MATROSKA_MUXER) += fate-shortest-sub
