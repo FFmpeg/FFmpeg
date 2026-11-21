@@ -19,6 +19,9 @@ fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5 -fflags +bitexact
 FATE_FFMPEG-$(call FILTERFRAMECRC, TESTSRC2 FORMAT SETPARAMS SCALE, LAVFI_INDEV WRAPPED_AVFRAME_DECODER MPEG2VIDEO_ENCODER) += fate-ffmpeg-chroma-location
 fate-ffmpeg-chroma-location: CMD = framecrc -auto_conversion_filters -f lavfi -i testsrc2=s=64x64:r=25:d=1,format=yuv420p,setparams=chroma_location=topleft -sws_flags +accurate_rnd+bitexact -flags +bitexact -idct simple -dct fastint -threads 1 -c:v mpeg2video -qscale:v 2 -frames:v 1
 
+FATE_FFMPEG-$(call FILTERFRAMECRC, TESTSRC2 FORMAT, LAVFI_INDEV WRAPPED_AVFRAME_DECODER SPEEDHQ_ENCODER) += fate-ffmpeg-speedhq-444-psnr
+fate-ffmpeg-speedhq-444-psnr: CMD = framecrc -f lavfi -i testsrc2=s=128x64:r=25:d=1,format=yuv444p -flags +bitexact+psnr -idct simple -dct fastint -threads 1 -c:v speedhq -qscale:v 3 -frames:v 1
+
 FATE_FFMPEG-$(if $(CONFIG_SMALL),no,$(call ALLYES, TESTSRC2_FILTER SCALE_FILTER FORMAT_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER RAWVIDEO_ENCODER NULL_MUXER)) += fate-ffmpeg-print-graphs-compact
 fate-ffmpeg-print-graphs-compact: CMD = ffmpeg -f lavfi -i testsrc2=s=64x64:r=25:d=0.08 -filter_complex "[0:v]scale=32:32,format=yuv420p[v]" -map "[v]" -c:v rawvideo -print_graphs_file - -print_graphs_format compact -f null -
 
