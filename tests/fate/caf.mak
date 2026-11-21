@@ -7,6 +7,14 @@ fate-caf-ima4-demux: CMD = framecrc -i $(TARGET_SAMPLES)/caf/ima4.caf -c copy
 FATE_CAF_FFMPEG-$(call DEMMUX, CAF, FRAMECRC, PIPE_PROTOCOL) += fate-caf-ilbc-demux
 fate-caf-ilbc-demux: CMD = framecrc -i $(TARGET_SAMPLES)/caf/ilbc.caf -c copy
 
+FATE_CAF_FFMPEG-$(call DEMMUX, CAF, FRAMECRC, PIPE_PROTOCOL) += fate-caf-ima4-pipe
+fate-caf-ima4-pipe: CMD = cat $(SAMPLES)/caf/ima4.caf | framecrc -i pipe: -c copy
+fate-caf-ima4-pipe: REF = $(SRC_PATH)/tests/ref/fate/caf-ima4-demux
+
+FATE_CAF_FFMPEG-$(call DEMMUX, CAF, FRAMECRC, PIPE_PROTOCOL) += fate-caf-ilbc-pipe
+fate-caf-ilbc-pipe: CMD = cat $(SAMPLES)/caf/ilbc.caf | framecrc -i pipe: -c copy
+fate-caf-ilbc-pipe: REF = $(SRC_PATH)/tests/ref/fate/caf-ilbc-demux
+
 FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-alac-remux
 fate-caf-alac-remux: CMD = transcode m4a $(TARGET_SAMPLES)/lossless-audio/inside.m4a caf "-map 0:a -c copy -metadata major_brand= " "-c copy -t 0.2" "-show_entries format_tags"
 

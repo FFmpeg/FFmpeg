@@ -452,7 +452,9 @@ static int read_header(AVFormatContext *s)
             break;
         }
 
-        if (size > 0 && (pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        /* skip the rest of the chunk, without skipping data on pipes */
+        if (size > 0 && (tag != MKBETAG('d','a','t','a') ||
+                         (pb->seekable & AVIO_SEEKABLE_NORMAL))) {
             if (pos > INT64_MAX - size)
                 return AVERROR_INVALIDDATA;
             avio_seek(pb, pos + size, SEEK_SET);
