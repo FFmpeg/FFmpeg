@@ -114,6 +114,18 @@ static int read_desc_chunk(AVFormatContext *s)
     return 0;
 }
 
+/**
+ * Store the priming in the OpusHead pre-skip, which is limited to 16 bits.
+ * initial_padding keeps the full priming.
+ */
+static void set_opus_pre_skip(AVFormatContext *s, AVCodecParameters *par)
+{
+    if (par->initial_padding > UINT16_MAX)
+        av_log(s, AV_LOG_WARNING, "priming of %d frames does not fit "
+               "in the Opus pre-skip, clamping\n", par->initial_padding);
+    AV_WL16A(par->extradata + 10, FFMIN(par->initial_padding, UINT16_MAX));
+}
+
 /** Read magic cookie chunk */
 static int read_kuki_chunk(AVFormatContext *s, int64_t size)
 {
@@ -244,7 +256,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         AV_WB32A(st->codecpar->extradata + 4, MKBETAG('H','e','a','d'));
         AV_WB8(st->codecpar->extradata + 8, 1); /* OpusHead version */
         AV_WB8(st->codecpar->extradata + 9, st->codecpar->ch_layout.nb_channels);
-        AV_WL16A(st->codecpar->extradata + 10, st->codecpar->initial_padding);
+        set_opus_pre_skip(s, st->codecpar);
         AV_WL32A(st->codecpar->extradata + 12, st->codecpar->sample_rate);
         AV_WL16A(st->codecpar->extradata + 16, 0);
         AV_WB8(st->codecpar->extradata + 18, 0);
@@ -286,7 +298,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
     st->nb_frames += caf->remainder;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_OPUS && st->codecpar->extradata_size)
-        AV_WL16A(st->codecpar->extradata + 10, st->codecpar->initial_padding);
+        set_opus_pre_skip(s, st->codecpar);
 
     if (caf->bytes_per_packet > 0 && caf->frames_per_packet > 0) {
         if (!num_packets) {

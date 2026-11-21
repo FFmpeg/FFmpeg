@@ -21,6 +21,11 @@ fate-caf-pcm_s24-remux: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/di
 FATE_CAF_FFMPEG-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-mace6-remux
 fate-caf-mace6-remux: CMD = transcode mov $(TARGET_SAMPLES)/qtrle/Animation-16Greys.mov caf "-map 0:a -c copy" "-c copy -t 0.003"
 
+# priming beyond the 16-bit OpusHead pre-skip
+FATE_CAF_FFPROBE-$(call DEMDEC, CAF, OPUS) += fate-caf-opus-large-priming
+fate-caf-opus-large-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_data -show_entries stream=initial_padding,extradata $(TARGET_SAMPLES)/caf/opus-large-priming.caf
+
 FATE_SAMPLES_FFMPEG         += $(FATE_CAF_FFMPEG-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_CAF_FFMPEG_FFPROBE-yes)
-fate-caf: $(FATE_CAF_FFMPEG-yes) $(FATE_CAF_FFMPEG_FFPROBE-yes)
+FATE_SAMPLES_FFPROBE        += $(FATE_CAF_FFPROBE-yes)
+fate-caf: $(FATE_CAF_FFMPEG-yes) $(FATE_CAF_FFMPEG_FFPROBE-yes) $(FATE_CAF_FFPROBE-yes)

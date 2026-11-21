@@ -1,0 +1,7 @@
+[STREAM]
+initial_padding=70000
+extradata=
+00000000: 4f70 7573 4865 6164 0102 ffff 80bb 0000  OpusHead........
+00000010: 0000 00                                  ...
+
+[/STREAM]
