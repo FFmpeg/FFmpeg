@@ -57,7 +57,7 @@
 #include "libavcodec/flac.h"
 #include "libavcodec/itut35.h"
 #include "libavcodec/mpeg4audio.h"
-#include "libavcodec/opus/tab.h"
+#include "libavcodec/opus/parse.h"
 #include "packet_internal.h"
 
 #include "avformat.h"

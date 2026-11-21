@@ -70,7 +70,7 @@
 #include "libavcodec/itut35.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
-#include "libavcodec/opus/tab.h"
+#include "libavcodec/opus/parse.h"
 
 /* Level 1 elements we create a SeekHead entry for:
  * Info, Tracks, Chapters, Attachments, Tags (potentially twice) and Cues */

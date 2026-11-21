@@ -37,36 +37,6 @@
 FF_VISIBILITY_PUSH_HIDDEN
 extern const uint16_t ff_opus_frame_duration[32];
 
-/**
- * @return the duration of an Opus packet in samples at OPUS_TIMESTAMP_RATE,
- *         read from its TOC, or AVERROR_INVALIDDATA if the packet is too
- *         short or longer than 120 ms
- */
-static inline int ff_opus_packet_samples(const uint8_t *buf, int buf_size)
-{
-    int frame_count, samples;
-
-    if (buf_size < 1)
-        return AVERROR_INVALIDDATA;
-    switch (buf[0] & 3) {
-    case 0:
-        frame_count = 1;
-        break;
-    case 3:
-        if (buf_size < 2)
-            return AVERROR_INVALIDDATA;
-        frame_count = buf[1] & 0x3F;
-        break;
-    default:
-        frame_count = 2;
-        break;
-    }
-    samples = frame_count * ff_opus_frame_duration[buf[0] >> 3];
-    // A packet holds at most 120 ms.
-    return samples > 120 * OPUS_TIMESTAMP_RATE / 1000 ? AVERROR_INVALIDDATA
-                                                    : samples;
-}
-
 extern const uint8_t  ff_celt_band_end[];
 
 extern const uint8_t  ff_opus_default_coupled_streams[];
