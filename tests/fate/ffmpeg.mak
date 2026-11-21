@@ -448,7 +448,7 @@ FATE_FFMPEG-$(call ALLYES, LAVFI_INDEV ANULLSRC_FILTER PCM_U8_DECODER PCM_U8_ENC
 # test input -bsf
 # use -stream_loop, because it tests flushing bsfs
 fate-ffmpeg-bsf-input: CMD = framecrc -stream_loop 2 -bsf setts=PTS*2 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -c copy
-FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, , SETTS_BSF) += fate-ffmpeg-bsf-input
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, SETTS_BSF) += fate-ffmpeg-bsf-input
 
 # Test behaviour when a complex filtergraph returns EOF on one of its inputs,
 # but other inputs are still active.
