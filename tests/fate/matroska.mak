@@ -38,6 +38,11 @@ fate-matroska-vorbis-best-fit-ts: CMD = framecrc -best_fit_ts 1 -i $(TARGET_SAMP
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, PCM_S16LE, MATROSKA, H264_PARSER H264_DECODER LAVFI_INDEV SINE_FILTER) += fate-matroska-h264-pcm96k-remux
 fate-matroska-h264-pcm96k-remux: CMD = transcode matroska $(TARGET_SAMPLES)/mkv/test7_cut.mkv matroska "-map 0:v -map 1:a -c:v copy -c:a pcm_s16le -t 2" "-map 0:v -c copy" "" "-f lavfi -i sine=r=96000:d=2"
 
+# The Opus parser gives a block without a duration the length of its TOC, in
+# units of the declared sample rate, here 44100.
+FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER OPUS_PARSER) += fate-matroska-opus-rate44100
+fate-matroska-opus-rate44100: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries packet=pts,duration -print_format compact $(TARGET_SAMPLES)/mkv/opus-rate44100.mka
+
 FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-opus-best-fit-ts-seek
 fate-matroska-opus-best-fit-ts-seek: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -best_fit_ts 1 -read_intervals 0%+\#1,1%+\#1 -show_entries packet=pts,pos -print_format compact $(TARGET_SAMPLES)/audiomatch/tones_opus_48000_stereo.mka
 
