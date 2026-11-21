@@ -91,7 +91,8 @@ static int set_frame_duration(AVCodecParserContext *ctx, AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    ctx->duration = s->pkt.frame_count * s->pkt.frame_duration;
+    ctx->duration = av_rescale(s->pkt.frame_count * s->pkt.frame_duration,
+                               avctx->sample_rate, OPUS_TIMESTAMP_RATE);
 
     return 0;
 }
