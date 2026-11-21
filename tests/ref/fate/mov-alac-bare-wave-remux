@@ -1,4 +1,4 @@
-a3fb319cc6e24b49158feefcbad691d0 *tests/data/fate/mov-alac-bare-wave-remux.mp4
+e5e54368846cd80ce489bca7938f63bb *tests/data/fate/mov-alac-bare-wave-remux.mp4
 13095 tests/data/fate/mov-alac-bare-wave-remux.mp4
 #extradata 0:       36, 0x504d04a7
 #tb 0: 1/44100
