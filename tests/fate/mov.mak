@@ -441,6 +441,12 @@ FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_F32LE, MP4 MOV, WAV_DEMUXER PAN_FILTER) \
 fate-mov-mp4-pcm-float: tests/data/asynth-44100-1.wav
 fate-mov-mp4-pcm-float: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mp4 "-af aresample,pan=FR+FL+FR|c0=c0|c1=c0|c2=c0 -c:a pcm_f32le" "-map 0 -c copy -frames:a 0"
 
+# Test IMA4 above 65535 Hz, in a version 2 sound description
+FATE_MOV_FFMPEG-$(call REMUX, MOV, ADPCM_IMA_QT_ENCODER WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) \
+                          += fate-mov-ima4-96k
+fate-mov-ima4-96k: tests/data/asynth-96000-1.wav
+fate-mov-ima4-96k: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-96000-1.wav mov "-af aresample -t 0.002 -c:a adpcm_ima_qt" "-c copy"
+
 fate-mov-pcm-remux: tests/data/asynth-44100-1.wav
 fate-mov-pcm-remux: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -map 0 -c copy -fflags +bitexact -f mp4
 fate-mov-pcm-remux: CMP = oneline

@@ -1522,7 +1522,12 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         avio_wb64(pb, av_double2int(track->par->sample_rate));
         avio_wb32(pb, track->par->ch_layout.nb_channels);
         avio_wb32(pb, 0x7F000000);
-        avio_wb32(pb, av_get_bits_per_sample(track->par->codec_id));
+        /* constBitsPerChannel: keep the PCM depth, including 8 for A-law and mu-law */
+        if (track->par->codec_id >= AV_CODEC_ID_PCM_S16LE &&
+            track->par->codec_id <  AV_CODEC_ID_ADPCM_IMA_QT)
+            avio_wb32(pb, av_get_bits_per_sample(track->par->codec_id));
+        else
+            avio_wb32(pb, 0);
         avio_wb32(pb, mov_get_lpcm_flags(track->par->codec_id));
         avio_wb32(pb, track->sample_size);
         avio_wb32(pb, get_samples_per_packet(track));

@@ -1,0 +1,10 @@
+de230f69f5ffae2812c3328050cbab50 *tests/data/fate/mov-ima4-96k.mov
+791 tests/data/fate/mov-ima4-96k.mov
+#tb 0: 1/96000
+#media_type 0: audio
+#codec_id 0: adpcm_ima_qt
+#sample_rate 0: 96000
+#channel_layout_name 0: mono
+0,          0,          0,       64,       34, 0x33061145
+0,         64,         64,       64,       34, 0xcfc30fe0
+0,        128,        128,       64,       34, 0x20990c9a
