@@ -537,6 +537,29 @@ fate-mov-yuv2-color-colr: CMD = run_with_temp \
 fate-mov-yuv2-color-range: CMD = run_with_temp \
     "$(call MOV_YUV2_GEN,$(MOV_YUV2_SRC))" "$(MOV_YUV2_PROBE) -color_range tv" mov
 
+# The numeric QuickTime keys keep their type through a remux, a non-number
+# stays a string.
+FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER MPEG4_ENCODER MOV_MUXER \
+                                      MOV_DEMUXER FRAMECRC_MUXER         \
+                                      FILE_PROTOCOL PIPE_PROTOCOL)       \
+                                      += fate-mov-mdta-numeric
+tests/data/mov-mdta-numeric.mov: TAG = GEN
+tests/data/mov-mdta-numeric.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin -v error \
+	    -filter_complex color=c=black:s=2x2:r=1 -frames:v 1 -c:v mpeg4 -threads 1 \
+	    -flags +bitexact -fflags +bitexact -movflags use_metadata_tags \
+	    -metadata com.apple.quicktime.full-frame-rate-playback-intent=1 \
+	    -metadata com.apple.quicktime.live-photo.auto=1 \
+	    -metadata com.apple.quicktime.live-photo.vitality-score=0.918638 \
+	    -metadata com.apple.quicktime.live-photo.vitality-scoring-version=4294967296 \
+	    -metadata com.apple.quicktime.location.role=north \
+	    -metadata com.apple.quicktime.rating.user=-0 \
+	    -f mov $(TARGET_PATH)/$@ -y
+
+fate-mov-mdta-numeric: tests/data/mov-mdta-numeric.mov
+fate-mov-mdta-numeric: CMD = stream_remux mov tests/data/mov-mdta-numeric.mov "" \
+    mov "-map 0 -movflags use_metadata_tags" "" "-c copy" "-show_entries format_tags"
+
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER SETPTS_FILTER MPEG4_ENCODER \
                                       MOV_MUXER MOV_DEMUXER FILE_PROTOCOL)      \
                                       += fate-mov-vfr-bframes-derived-duration

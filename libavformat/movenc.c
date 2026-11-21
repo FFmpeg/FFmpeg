@@ -5186,6 +5186,60 @@ static int mov_write_mdta_keys_tag(AVIOContext *pb, MOVMuxContext *mov,
     return update_size(pb, pos);
 }
 
+/* Numeric keys keep their type, even for values outside their documented range.
+ * location.role and rating.user are from the QuickTime File Format, the others
+ * as in Apple files, e.g. the 8-byte type 21 of iPhone Live Photos.
+ * full-frame-rate-playback-intent is written as Compressor does, some iPhone
+ * recordings use type 21 with 8 bytes. */
+static int mov_write_mdta_data_tag(AVIOContext *pb, const char *key, const char *value)
+{
+    static const struct {
+        const char *key;
+        int type; /* 21: BE signed, 22: BE unsigned, 23: BE float32 */
+        int size;
+    } numeric[] = {
+        { "com.apple.quicktime.full-frame-rate-playback-intent",     22, 1 },
+        { "com.apple.quicktime.live-photo.auto",                     22, 1 },
+        { "com.apple.quicktime.live-photo.vitality-score",           23, 4 },
+        { "com.apple.quicktime.live-photo.vitality-scoring-version", 21, 8 },
+        { "com.apple.quicktime.location.role",                       22, 1 },
+        { "com.apple.quicktime.rating.user",                         23, 4 },
+    };
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(numeric); i++) {
+        int type = numeric[i].type, size = numeric[i].size;
+        int64_t v;
+
+        if (strcmp(key, numeric[i].key))
+            continue;
+        if (type == 23) {
+            float f;
+            int len = 0;
+            if (av_sscanf(value, "%f%n", &f, &len) != 1 || value[len] || !isfinite(f))
+                break;
+            /* the sign of -0 is lost with -fno-signed-zeros */
+            v = av_float2int(f) | (value[strspn(value, " \t\n\v\f\r")] == '-' ? 0x80000000 : 0);
+        } else {
+            int64_t max = size == 8 ? INT64_MAX :
+                          (INT64_C(1) << (8 * size - (type == 21))) - 1;
+            int64_t min = type == 22 ? 0 : -max - 1;
+            char buf[32], *end;
+            v = strtoll(value, &end, 10);
+            snprintf(buf, sizeof(buf), "%"PRId64, v);
+            if (strcmp(buf, value) || v < min || v > max)
+                break;
+        }
+        avio_wb32(pb, 16 + size); /* size */
+        ffio_wfourcc(pb, "data");
+        avio_wb32(pb, type);
+        avio_wb32(pb, 0);
+        for (int b = size - 1; b >= 0; b--)
+            avio_w8(pb, v >> (8 * b) & 0xff);
+        return 16 + size;
+    }
+    return mov_write_string_data_tag(pb, value, 0, 1);
+}
+
 static int mov_write_mdta_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
                                    AVFormatContext *s)
 {
@@ -5200,7 +5254,7 @@ static int mov_write_mdta_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
         int64_t entry_pos = avio_tell(pb);
         avio_wb32(pb, 0); /* size */
         avio_wb32(pb, count); /* key */
-        mov_write_string_data_tag(pb, t->value, 0, 1);
+        mov_write_mdta_data_tag(pb, t->key, t->value);
         update_size(pb, entry_pos);
         count += 1;
     }
