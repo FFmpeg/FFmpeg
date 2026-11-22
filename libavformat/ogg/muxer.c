@@ -224,7 +224,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     // them as such, otherwise seeking will not work correctly at the very
     // least with old libogg versions.
     // Do not try to flush header packets though, that will create broken files.
-    if ((st->codecpar->codec_id == AV_CODEC_ID_THEORA || st->codecpar->codec_id == AV_CODEC_ID_VP8) && !header &&
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !header &&
         (ogg_granule_to_timestamp(oggstream, granule) >
          ogg_granule_to_timestamp(oggstream, oggstream->last_granule) + 1 ||
          ogg_key_granule(oggstream, granule))) {
