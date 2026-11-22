@@ -108,14 +108,8 @@ static void ogg_cleanup_stream(AVStream *st)
 {
     OGGStreamContext *oggstream = st->priv_data;
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
-        st->codecpar->codec_id == AV_CODEC_ID_SPEEX ||
-        st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
-        st->codecpar->codec_id == AV_CODEC_ID_VP8) {
-        av_freep(&oggstream->header[0]);
-    }
-
-    av_freep(&oggstream->header[1]);
+    for (int i = 0; i < 3; i++)
+        av_freep(&oggstream->header[i]);
 }
 
 static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
@@ -603,6 +597,7 @@ static int ogg_init(AVFormatContext *s)
                 return err;
             }
         } else {
+            const uint8_t *header[3];
             uint8_t *p;
             const char *cstr = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? "vorbis" : "theora";
             int header_type = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 3 : 0x81;
@@ -611,12 +606,16 @@ static int ogg_init(AVFormatContext *s)
 
             if (avpriv_split_xiph_headers(st->codecpar->extradata, st->codecpar->extradata_size,
                                       first_header_size,
-                                      (const uint8_t**)oggstream->header, oggstream->header_len) < 0 ||
+                                      header, oggstream->header_len) < 0 ||
                 oggstream->header_len[0] < first_header_size) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
-                oggstream->header[1] = NULL;
                 return AVERROR_INVALIDDATA;
             }
+
+            oggstream->header[0] = av_memdup(header[0], oggstream->header_len[0]);
+            oggstream->header[2] = av_memdup(header[2], oggstream->header_len[2]);
+            if (!oggstream->header[0] || !oggstream->header[2])
+                return AVERROR(ENOMEM);
 
             p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
                                         &oggstream->header_len[1], &st->metadata,
