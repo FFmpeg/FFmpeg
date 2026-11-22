@@ -455,6 +455,21 @@ fate-mov-mp4-mpegh-5_1_4: CMD = stream_demux mp4 $(TARGET_SAMPLES)/mov/mpegh_lay
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call REMUX, MP4 MOV) += fate-mov-mp4-mpegh-5_1_4-copy
 fate-mov-mp4-mpegh-5_1_4-copy: CMD = stream_remux mp4 $(TARGET_SAMPLES)/mov/mpegh_layout16.mp4 "" mp4 "" "" "-c:a copy" "-show_entries stream=profile,level,codec_tag_string"
 
+# The 1080-line DV bitstream does not signal progressive frames: keep dvh2.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ALLYES, FFMPEG FFPROBE MOV_MUXER MOV_DEMUXER FILE_PROTOCOL) += fate-mov-dv-tag-copy-1080p25
+fate-mov-dv-tag-copy-1080p25: CMD = run_with_temp \
+    "$(FFMPEG) -nostdin -v error -i $(TARGET_SAMPLES)/dv/dvcprohd_1080p25.mov -map 0:v -write_tmcd 0 -c copy -f mov -y" \
+    "ffprobe$(PROGSSUF)$(EXESUF) -v error -bitexact -show_data_hash CRC32 \
+    -show_entries packet=size,data_hash:stream=codec_tag_string -of compact=p=0" mov
+
+# The first packet must correct the provisional 60 Hz tag before the moov.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call ALLYES, FFMPEG FFPROBE MOV_MUXER MOV_DEMUXER FILE_PROTOCOL) += fate-mov-dv-tag-delay-720p50
+fate-mov-dv-tag-delay-720p50: CMD = run_with_temp \
+    "$(FFMPEG) -nostdin -v error -nofind_stream_info -i $(TARGET_SAMPLES)/dv/dvcprohd_720p50.mov \
+    -map 0:v -write_tmcd 0 -c copy -tag:v dvhp -movflags +delay_moov -f mov -y" \
+    "ffprobe$(PROGSSUF)$(EXESUF) -v error -bitexact -show_data_hash CRC32 \
+    -show_entries packet=size,data_hash:stream=codec_tag_string -of compact=p=0" mov
+
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
 FATE_SAMPLES_FFMPEG += $(FATE_MOV_FFMPEG_SAMPLES-yes)
 

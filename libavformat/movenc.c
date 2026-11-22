@@ -42,6 +42,7 @@
 #include "lcevc.h"
 #include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/dnxhddata.h"
+#include "libavcodec/dv_profile.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/get_bits.h"
@@ -1975,9 +1976,34 @@ static int mov_write_dpxe_tag(AVIOContext *pb, MOVTrack *track)
     return 0;
 }
 
+static int mov_is_dv_720_tag(unsigned tag)
+{
+    return tag == MKTAG('d','v','h','q') ||
+           tag == MKTAG('d','v','h','p') ||
+           tag == MKTAG('d','v','h','4');
+}
+
 static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
-    int tag;
+    int tag, rate_50hz;
+    /* The coded DV system can differ from the presentation frame rate. */
+    AVRational rate = track->par->framerate;
+    int coded_rate = rate.num && rate.den;
+    int64_t fps;
+    int progressive = track->par->field_order == AV_FIELD_PROGRESSIVE;
+
+    if (!coded_rate)
+        rate = track->st->avg_frame_rate;
+    if (!rate.num || !rate.den)
+        rate = av_inv_q(track->st->time_base);
+    /* average frame rates may be slightly off */
+    fps = rate.den > 0 ? av_rescale(rate.num, 1, rate.den) : 0;
+    rate_50hz = fps == 25 || fps == 50;
+
+    /* the 1080-line bitstream does not signal progressive frames */
+    if (track->par->field_order == AV_FIELD_UNKNOWN)
+        progressive = track->par->codec_tag == MKTAG('d','v','h','2') ||
+                      track->par->codec_tag == MKTAG('d','v','h','3');
 
     if (track->par->width == 720) { /* SD */
         if (track->par->height == 480) { /* NTSC */
@@ -1987,11 +2013,16 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
         else if (track->par->format == AV_PIX_FMT_YUV420P) tag = MKTAG('d','v','c','p');
         else                                                tag = MKTAG('d','v','p','p');
     } else if (track->par->height == 720) { /* HD 720 line */
-        if  (track->st->time_base.den == 50)                tag = MKTAG('d','v','h','q');
+        if (!coded_rate && mov_is_dv_720_tag(track->par->codec_tag))
+            tag = track->par->codec_tag;
+        else if (rate_50hz)                                 tag = MKTAG('d','v','h','q');
         else                                                tag = MKTAG('d','v','h','p');
     } else if (track->par->height == 1080) { /* HD 1080 line */
-        if  (track->st->time_base.den == 25)                tag = MKTAG('d','v','h','5');
-        else                                                tag = MKTAG('d','v','h','6');
+        if  (track->par->width == 1440 ||
+             (track->par->width != 1280 && rate_50hz))
+            tag = progressive ? MKTAG('d','v','h','2') : MKTAG('d','v','h','5');
+        else
+            tag = progressive ? MKTAG('d','v','h','3') : MKTAG('d','v','h','6');
     } else {
         av_log(s, AV_LOG_ERROR, "unsupported height for dv codec\n");
         return 0;
@@ -7404,6 +7435,20 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov_cts_out_of_range(mov, pkt)) {
         av_log(s, AV_LOG_WARNING, "pts/dts pair unsupported\n");
         return AVERROR_PATCHWELCOME;
+    }
+
+    /* The first frame gives the 720-line DV family. */
+    if (par->codec_id == AV_CODEC_ID_DVVIDEO && par->height == 720 &&
+        !trk->entry && !mov->moov_written && trk->mode == MODE_MOV &&
+        s->strict_std_compliance >= FF_COMPLIANCE_NORMAL &&
+        mov_is_dv_720_tag(trk->tag)) {
+        const AVDVProfile *sys = av_dv_frame_profile(NULL, pkt->data, pkt->size);
+        if (sys && sys->height == 720) {
+            if (sys->dsf)
+                trk->tag = MKTAG('d','v','h','q');
+            else if (trk->tag != MKTAG('d','v','h','4'))
+                trk->tag = MKTAG('d','v','h','p');
+        }
     }
 
     if (mov->flags & FF_MOV_FLAG_FRAGMENT || mov->mode == MODE_AVIF) {
