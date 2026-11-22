@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "amr.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -396,6 +397,46 @@ int ff_mp4_read_dec_config_descr(void *logctx, AVStream *st, AVIOContext *pb)
         }
     }
     return 0;
+}
+
+int ff_amr_write_config_atom(AVIOContext *pb,
+                             enum AVCodecID codec_id,
+                             int quicktime)
+{
+    avio_wb32(pb, FF_AMR_CONFIG_ATOM_SIZE);
+    /* Apple's layout uses samr for either codec. */
+    avio_write(pb, quicktime ? "samr" : "damr", 4);
+    avio_write(pb, "FFMP", 4);
+    avio_w8(pb, 0); /* decoder version */
+    /* All modes and comfort noise frames, per 3GPP TS 26.244, 6.7. */
+    avio_wb16(pb, codec_id == AV_CODEC_ID_AMR_WB ? 0x83FF : 0x81FF);
+    avio_w8(pb, 0); /* mode change period (no restriction) */
+    avio_w8(pb, 1); /* frames per sample */
+    return FF_AMR_CONFIG_ATOM_SIZE;
+}
+
+int ff_amr_check_frame_block(enum AVCodecID codec_id,
+                             const uint8_t *buf, int size,
+                             int channels)
+{
+    if (channels < 1)
+        return AVERROR_INVALIDDATA;
+
+    for (int ch = 0; ch < channels; ch++) {
+        int frame;
+
+        if (size <= 0)
+            return AVERROR_INVALIDDATA;
+        frame = ff_amr_frame_size(codec_id, *buf >> 3);
+        if (!frame)
+            return AVERROR_INVALIDDATA;
+        if (frame > size)
+            return codec_id == AV_CODEC_ID_AMR_NB && ch == channels - 1
+                   ? 0 : AVERROR_INVALIDDATA;
+        buf += frame;
+        size -= frame;
+    }
+    return size ? AVERROR_PATCHWELCOME : 0;
 }
 
 typedef struct MovChannelLayout {

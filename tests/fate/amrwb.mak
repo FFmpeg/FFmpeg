@@ -44,6 +44,14 @@ fate-amrwb-23k85-2: REF = $(SAMPLES)/amrwb/deus-23k85.pcm
 FATE_AMRWB_REMUX-$(call REMUX, AMR, MOV_DEMUXER AMR_PARSER) += fate-amrwb-remux
 fate-amrwb-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb amr "-c copy" "-c copy -t 1"
 
+# Exercise both the MOV wave configuration and the 3GP damr box, including
+# the AMR-WB mode set. The output file checksum covers the configuration.
+FATE_AMRWB_REMUX-$(call REMUX, MOV) += fate-amrwb-mov-remux
+fate-amrwb-mov-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb mov "-c copy" "-c copy -frames:a 2"
+
+FATE_AMRWB_REMUX-$(call REMUX, TGP MOV) += fate-amrwb-3gp-remux
+fate-amrwb-3gp-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb 3gp "-c copy" "-c copy -frames:a 2"
+
 $(FATE_AMRWB): CMP = stddev
 
 # Check that SID frames are decoded to comfort noise instead of being dropped,

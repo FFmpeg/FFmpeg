@@ -1,0 +1,9 @@
+c327814fbc3cc97c7476c1a984a15caf *tests/data/fate/amrwb-mov-remux.mov
+31923 tests/data/fate/amrwb-mov-remux.mov
+#tb 0: 1/16000
+#media_type 0: audio
+#codec_id 0: amr_wb
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,          0,          0,      320,       61, 0xc8891fe9
+0,        320,        320,      320,       61, 0xc2562027

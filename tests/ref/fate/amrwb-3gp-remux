@@ -1,0 +1,9 @@
+b08c0b4808df82b6217c12d08899a7c8 *tests/data/fate/amrwb-3gp-remux.3gp
+31843 tests/data/fate/amrwb-3gp-remux.3gp
+#tb 0: 1/16000
+#media_type 0: audio
+#codec_id 0: amr_wb
+#sample_rate 0: 16000
+#channel_layout_name 0: mono
+0,          0,          0,      320,       61, 0xc8891fe9
+0,        320,        320,      320,       61, 0xc2562027

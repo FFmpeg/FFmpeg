@@ -28,6 +28,7 @@ Write and read amr data according to RFC3267, http://www.ietf.org/rfc/rfc3267.tx
 #include "libavutil/attributes_internal.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
+#include "amr.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "demux.h"
@@ -44,13 +45,6 @@ static attribute_nonstring const uint8_t AMR_header[6]      = "#!AMR\x0a";
 static attribute_nonstring const uint8_t AMRMC_header[12]   = "#!AMR_MC1.0\x0a";
 static attribute_nonstring const uint8_t AMRWB_header[9]    = "#!AMR-WB\x0a";
 static attribute_nonstring const uint8_t AMRWBMC_header[15] = "#!AMR-WB_MC1.0\x0a";
-
-static const uint8_t amrnb_packed_size[16] = {
-    13, 14, 16, 18, 20, 21, 27, 32, 6, 1, 1, 1, 1, 1, 1, 1
-};
-static const uint8_t amrwb_packed_size[16] = {
-    18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 1, 1, 1, 1, 1, 1
-};
 
 #if CONFIG_AMR_DEMUXER
 static int amr_probe(const AVProbeData *p)
@@ -147,7 +141,7 @@ static int amrnb_probe(const AVProbeData *p)
         mode = b[i] >> 3 & 0x0F;
         if (mode < 9 && (b[i] & 0x4) == 0x4 && (b[i] & 0x03) == 0) {
             int last = b[i];
-            int size = amrnb_packed_size[mode];
+            int size = ff_amr_frame_size(AV_CODEC_ID_AMR_NB, mode);
             while (size--) {
                 if (b[++i] != last)
                     break;
@@ -204,7 +198,7 @@ static int amrwb_probe(const AVProbeData *p)
         mode = b[i] >> 3 & 0x0F;
         if (mode < 10 && (b[i] & 0x4) == 0x4 && (b[i] & 0x03) == 0) {
             int last = b[i];
-            int size = amrwb_packed_size[mode];
+            int size = ff_amr_frame_size(AV_CODEC_ID_AMR_WB, mode);
             while (size--) {
                 if (b[++i] != last)
                     break;

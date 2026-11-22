@@ -48,6 +48,23 @@ extern const AVCodecTag ff_codec_movdata_tags[];
 int ff_mov_iso639_to_lang(const char lang[4], int mp4);
 int ff_mov_lang_to_iso639(unsigned code, char to[4]);
 
+#define FF_AMR_CONFIG_ATOM_SIZE 17
+
+int ff_amr_write_config_atom(AVIOContext *pb,
+                             enum AVCodecID codec_id,
+                             int quicktime);
+
+/**
+ * Check that an AMR packet holds one RFC 4867 frame per channel.
+ * The MOV muxer historically allows a short final AMR-NB frame.
+ *
+ * @return 0 on success, AVERROR_INVALIDDATA for a missing or invalid frame,
+ *         or AVERROR_PATCHWELCOME if more data follows the frame block.
+ */
+int ff_amr_check_frame_block(enum AVCodecID codec_id,
+                             const uint8_t *buf, int size,
+                             int channels);
+
 struct AVAESCTR;
 
 /* the QuickTime file format is quite convoluted...
