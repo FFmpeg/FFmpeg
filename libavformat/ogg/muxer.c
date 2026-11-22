@@ -956,7 +956,7 @@ static int ogg_check_new_link(AVFormatContext *s, AVPacket *pkt)
 
     if (!oggstream->mapping->new_links)
         return ogg_skip_new_link(s, new_extradata,
-                                 "New links are only supported for vorbis, flac, opus and theora streams");
+                                 "This codec does not support starting a new Ogg link");
 
     if (oggstream->mapping->new_link_refused &&
         (refused = oggstream->mapping->new_link_refused(st, pkt, new_extradata, extradata_size)))
