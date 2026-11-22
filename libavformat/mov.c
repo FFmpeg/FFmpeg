@@ -636,11 +636,22 @@ retry:
             }
         } else if (data_type == 23 && str_size >= 4) {  // BE float32
             float val = av_int2float(avio_rb32(pb));
-            if (snprintf(str, str_size_alloc, "%f", val) >= str_size_alloc) {
+            int scientific = isfinite(val) && val != 0;
+            int len = scientific ? snprintf(str, str_size_alloc, "%.8e", val)
+                                 : snprintf(str, str_size_alloc, "%g", val);
+            if (len < 0 || len >= str_size_alloc) {
                 av_log(c->fc, AV_LOG_ERROR,
-                       "Failed to store the float32 number (%f) in string.\n", val);
+                       "Failed to store the float32 number (%.8e) in string.\n", val);
                 av_free(str);
                 return AVERROR_INVALIDDATA;
+            }
+            if (scientific) {
+                /* The radix separates one leading digit from eight digits
+                 * before the exponent, regardless of its encoding. */
+                char *radix = str + (*str == '-') + 1;
+                const char *fraction = strrchr(str, 'e') - 8;
+                *radix = '.';
+                memmove(radix + 1, fraction, strlen(fraction) + 1);
             }
         } else if (data_type > 1 && data_type != 4) {
             // data_type can be 0 if not set at all above. data_type 1 means

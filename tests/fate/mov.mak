@@ -569,7 +569,7 @@ fate-mov-yuv2-color-range: CMD = run_with_temp \
     "$(call MOV_YUV2_GEN,$(MOV_YUV2_SRC))" "$(MOV_YUV2_PROBE) -color_range tv" mov
 
 # The numeric QuickTime keys keep their type through a remux, a non-number
-# stays a string.
+# stays a string. The float32 3effffff (0.49999997) must not round to 0.5.
 FATE_MOV_FFMPEG_FFPROBE-$(call ALLYES, COLOR_FILTER MPEG4_ENCODER MOV_MUXER \
                                       MOV_DEMUXER FRAMECRC_MUXER         \
                                       FILE_PROTOCOL PIPE_PROTOCOL)       \
@@ -581,7 +581,7 @@ tests/data/mov-mdta-numeric.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	    -flags +bitexact -fflags +bitexact -movflags use_metadata_tags \
 	    -metadata com.apple.quicktime.full-frame-rate-playback-intent=1 \
 	    -metadata com.apple.quicktime.live-photo.auto=1 \
-	    -metadata com.apple.quicktime.live-photo.vitality-score=0.918638 \
+	    -metadata com.apple.quicktime.live-photo.vitality-score=0.49999997 \
 	    -metadata com.apple.quicktime.live-photo.vitality-scoring-version=4294967296 \
 	    -metadata com.apple.quicktime.location.role=north \
 	    -metadata com.apple.quicktime.rating.user=-0 \

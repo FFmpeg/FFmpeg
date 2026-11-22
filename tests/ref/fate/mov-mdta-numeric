@@ -1,4 +1,4 @@
-b99988f76ef12b0f73e1fad4c64d60fc *tests/data/fate/mov-mdta-numeric.mov
+f47ccb864f2f9e0d8fe30bc6eb2123a9 *tests/data/fate/mov-mdta-numeric.mov
 1337 tests/data/fate/mov-mdta-numeric.mov
 #extradata 0:       30, 0x434804d7
 #tb 0: 1/16384
@@ -11,10 +11,10 @@ b99988f76ef12b0f73e1fad4c64d60fc *tests/data/fate/mov-mdta-numeric.mov
 TAG:major_brand=qt  
 TAG:minor_version=512
 TAG:compatible_brands=qt  
-TAG:com.apple.quicktime.rating.user=-0.000000
+TAG:com.apple.quicktime.rating.user=-0
 TAG:com.apple.quicktime.location.role=north
 TAG:com.apple.quicktime.live-photo.vitality-scoring-version=4294967296
 TAG:com.apple.quicktime.full-frame-rate-playback-intent=1
 TAG:com.apple.quicktime.live-photo.auto=1
-TAG:com.apple.quicktime.live-photo.vitality-score=0.918638
+TAG:com.apple.quicktime.live-photo.vitality-score=4.99999970e-01
 [/FORMAT]
