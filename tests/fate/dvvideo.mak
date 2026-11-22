@@ -1,4 +1,11 @@
 
+# Check the profile rate independently of the raw DV timestamp clock.
+FATE_DVVIDEO-$(call ALLYES, FFMPEG MOV_DEMUXER RAWVIDEO_MUXER DV_DEMUXER FILE_PROTOCOL) += fate-dvvideo-raw-720p50-rate
+fate-dvvideo-raw-720p50-rate: $(APITESTSDIR)/api-dv-rate-test$(EXESUF)
+fate-dvvideo-raw-720p50-rate: CMD = run_with_temp \
+    "$(FFMPEG) -nostdin -v error -i $(TARGET_SAMPLES)/dv/dvcprohd_720p50.mov -map 0:v -c copy -f rawvideo -y" \
+    "$(APITESTSDIR)/api-dv-rate-test$(EXESUF)" dv
+
 fate-bsf-dv-error-marker: CMD = md5 -i $(TARGET_SAMPLES)/dv/dvcprohd_720p50.mov -flags +bitexact -fflags +bitexact -c:v copy -bsf noise=100,dv_error_marker=color=blue -f avi
 fate-bsf-dv-error-marker: CMP = oneline
 fate-bsf-dv-error-marker: REF = 3190a334b1ceef2d9fd050a1590da7c6

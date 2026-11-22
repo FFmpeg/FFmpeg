@@ -1,0 +1,4 @@
+coded_rate_at_open=50/1
+coded_rate_after_probe=50/1
+duration=1200
+avg_frame_rate=50/1|time_base=1/60000

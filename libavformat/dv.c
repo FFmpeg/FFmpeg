@@ -319,7 +319,7 @@ static int dv_extract_video_info(DVDemuxContext *c, const uint8_t *frame)
 
     par = c->vst->codecpar;
 
-    c->vst->avg_frame_rate = av_inv_q(c->vst->time_base);
+    c->vst->avg_frame_rate = par->framerate = av_inv_q(c->sys->time_base);
 
     /* finding out SAR is a little bit messy */
     vsc_pack = dv_extract_pack(frame, DV_VIDEO_CONTROL);
@@ -617,6 +617,7 @@ static int dv_read_header(AVFormatContext *s)
     s->bit_rate = av_rescale_q(c->dv_demux.sys->frame_size,
                                (AVRational) { 8, 1 },
                                c->dv_demux.sys->time_base);
+    c->dv_demux.vst->codecpar->framerate = av_inv_q(c->dv_demux.sys->time_base);
 
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         dv_read_timecode(s);
