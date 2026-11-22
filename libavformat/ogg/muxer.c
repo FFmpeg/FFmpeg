@@ -710,7 +710,8 @@ static int ogg_theora_rate_changed(const AVStream *st, const uint8_t *extradata,
     int header_len[3];
 
     if (size > INT_MAX ||
-        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0)
+        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0 ||
+        header_len[0] < 42)
         return 0;
     return av_cmp_q(st->time_base,
                     (AVRational){ AV_RB32(header[0] + 26), AV_RB32(header[0] + 22) }) != 0;
