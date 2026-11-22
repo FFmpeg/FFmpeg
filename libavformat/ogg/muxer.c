@@ -607,10 +607,12 @@ static int ogg_init(AVFormatContext *s)
             const char *cstr = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? "vorbis" : "theora";
             int header_type = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 3 : 0x81;
             int framing_bit = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 1 : 0;
+            int first_header_size = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 30 : 42;
 
             if (avpriv_split_xiph_headers(st->codecpar->extradata, st->codecpar->extradata_size,
-                                      st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 30 : 42,
-                                      (const uint8_t**)oggstream->header, oggstream->header_len) < 0) {
+                                      first_header_size,
+                                      (const uint8_t**)oggstream->header, oggstream->header_len) < 0 ||
+                oggstream->header_len[0] < first_header_size) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
                 oggstream->header[1] = NULL;
                 return AVERROR_INVALIDDATA;
