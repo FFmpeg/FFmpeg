@@ -44,8 +44,6 @@ typedef struct VC1DSPContext {
     void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
     void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
     void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
-    void (*vc1_v_overlap)(uint8_t *src, ptrdiff_t stride);
-    void (*vc1_h_overlap)(uint8_t *src, ptrdiff_t stride);
     void (*vc1_v_s_overlap)(int16_t *top,  int16_t *bottom);
     void (*vc1_h_s_overlap)(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags);
     void (*vc1_v_loop_filter4)(uint8_t *src, ptrdiff_t stride, int pq);

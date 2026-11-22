@@ -37,53 +37,6 @@
 #include "vc1_common.h"
 
 /* Apply overlap transform to horizontal edge */
-static void vc1_v_overlap_c(uint8_t *src, ptrdiff_t stride)
-{
-    int i;
-    int a, b, c, d;
-    int d1, d2;
-    int rnd = 1;
-    for (i = 0; i < 8; i++) {
-        a  = src[-2 * stride];
-        b  = src[-stride];
-        c  = src[0];
-        d  = src[stride];
-        d1 = (a - d + 3 + rnd) >> 3;
-        d2 = (a - d + b - c + 4 - rnd) >> 3;
-
-        src[-2 * stride] = a - d1;
-        src[-stride]     = av_clip_uint8(b - d2);
-        src[0]           = av_clip_uint8(c + d2);
-        src[stride]      = d + d1;
-        src++;
-        rnd = !rnd;
-    }
-}
-
-/* Apply overlap transform to vertical edge */
-static void vc1_h_overlap_c(uint8_t *src, ptrdiff_t stride)
-{
-    int i;
-    int a, b, c, d;
-    int d1, d2;
-    int rnd = 1;
-    for (i = 0; i < 8; i++) {
-        a  = src[-2];
-        b  = src[-1];
-        c  = src[0];
-        d  = src[1];
-        d1 = (a - d + 3 + rnd) >> 3;
-        d2 = (a - d + b - c + 4 - rnd) >> 3;
-
-        src[-2] = a - d1;
-        src[-1] = av_clip_uint8(b - d2);
-        src[0]  = av_clip_uint8(c + d2);
-        src[1]  = d + d1;
-        src    += stride;
-        rnd     = !rnd;
-    }
-}
-
 static void vc1_v_s_overlap_c(int16_t *top, int16_t *bottom)
 {
     int i;
@@ -110,6 +63,7 @@ static void vc1_v_s_overlap_c(int16_t *top, int16_t *bottom)
     }
 }
 
+/* Apply overlap transform to vertical edge */
 static void vc1_h_s_overlap_c(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags)
 {
     int i;
@@ -976,8 +930,6 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_8x4_dc = vc1_inv_trans_8x4_dc_c;
     dsp->vc1_inv_trans_4x4_dc = vc1_inv_trans_4x4_dc_c;
 
-    dsp->vc1_h_overlap        = vc1_h_overlap_c;
-    dsp->vc1_v_overlap        = vc1_v_overlap_c;
     dsp->vc1_h_s_overlap      = vc1_h_s_overlap_c;
     dsp->vc1_v_s_overlap      = vc1_v_s_overlap_c;
 

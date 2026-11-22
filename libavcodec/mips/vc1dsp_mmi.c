@@ -1374,30 +1374,6 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
     );
 }
 
-/* Apply overlap transform to horizontal edge */
-void ff_vc1_h_overlap_mmi(uint8_t *src, ptrdiff_t stride)
-{
-    int i;
-    int a, b, c, d;
-    int d1, d2;
-    int rnd = 1;
-    for (i = 0; i < 8; i++) {
-        a  = src[-2];
-        b  = src[-1];
-        c  = src[0];
-        d  = src[1];
-        d1 = (a - d + 3 + rnd) >> 3;
-        d2 = (a - d + b - c + 4 - rnd) >> 3;
-
-        src[-2] = a - d1;
-        src[-1] = av_clip_uint8(b - d2);
-        src[0]  = av_clip_uint8(c + d2);
-        src[1]  = d + d1;
-        src    += stride;
-        rnd     = !rnd;
-    }
-}
-
 void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, ptrdiff_t left_stride, ptrdiff_t right_stride, int flags)
 {
     int i;
@@ -1424,30 +1400,6 @@ void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, ptrdiff_t left_stride
             rnd2   = 7 - rnd2;
             rnd1   = 7 - rnd1;
         }
-    }
-}
-
-/* Apply overlap transform to vertical edge */
-void ff_vc1_v_overlap_mmi(uint8_t *src, ptrdiff_t stride)
-{
-    int i;
-    int a, b, c, d;
-    int d1, d2;
-    int rnd = 1;
-    for (i = 0; i < 8; i++) {
-        a  = src[-2 * stride];
-        b  = src[-stride];
-        c  = src[0];
-        d  = src[stride];
-        d1 = (a - d + 3 + rnd) >> 3;
-        d2 = (a - d + b - c + 4 - rnd) >> 3;
-
-        src[-2 * stride] = a - d1;
-        src[-stride]     = av_clip_uint8(b - d2);
-        src[0]           = av_clip_uint8(c + d2);
-        src[stride]      = d + d1;
-        src++;
-        rnd = !rnd;
     }
 }
 

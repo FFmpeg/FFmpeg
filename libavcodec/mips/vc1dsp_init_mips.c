@@ -44,8 +44,6 @@ av_cold void ff_vc1dsp_init_mips(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_mmi;
         dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_mmi;
 
-        dsp->vc1_h_overlap        = ff_vc1_h_overlap_mmi;
-        dsp->vc1_v_overlap        = ff_vc1_v_overlap_mmi;
         dsp->vc1_h_s_overlap      = ff_vc1_h_s_overlap_mmi;
         dsp->vc1_v_s_overlap      = ff_vc1_v_s_overlap_mmi;
 
