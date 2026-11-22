@@ -34,7 +34,7 @@
 #include "libavutil/mem.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/demux.h"
-#include "mapping.h"
+#include "demuxer.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 

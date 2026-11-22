@@ -25,7 +25,7 @@
 #include "libavcodec/flac.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavformat/ogg/mapping.h"
+#include "libavformat/ogg/demuxer.h"
 #include "libavformat/vorbis/comment.h"
 
 #define OGG_FLAC_METADATA_TYPE_STREAMINFO 0x7F

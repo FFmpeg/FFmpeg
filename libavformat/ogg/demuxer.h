@@ -22,8 +22,8 @@
     DEALINGS IN THE SOFTWARE.
 **/
 
-#ifndef AVFORMAT_OGG_MAPPING_H
-#define AVFORMAT_OGG_MAPPING_H
+#ifndef AVFORMAT_OGG_DEMUXER_H
+#define AVFORMAT_OGG_DEMUXER_H
 
 #include "libavformat/avformat.h"
 
@@ -188,4 +188,4 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
     return pts;
 }
 
-#endif /* AVFORMAT_OGG_MAPPING_H */
+#endif /* AVFORMAT_OGG_DEMUXER_H */

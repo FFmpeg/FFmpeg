@@ -24,7 +24,7 @@
 #include "libavcodec/dirac.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavformat/ogg/mapping.h"
+#include "libavformat/ogg/demuxer.h"
 
 static int dirac_header(AVFormatContext *s, int idx)
 {

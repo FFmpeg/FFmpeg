@@ -394,7 +394,8 @@ feature, for example Ogg or ID3v2.
 A subsystem made of more than one file lives in its own directory inside its
 library, for example @file{libavformat/ogg/}.
 A nested directory groups related files within a subsystem, for example the
-per-codec mappings (@code{struct ogg_codec}) in @file{libavformat/ogg/mapping/}.
+per-codec mappings of the demuxer (@code{struct ogg_codec}) in
+@file{libavformat/ogg/demuxer/}.
 
 @subsection File names
 
@@ -418,9 +419,9 @@ Files that predate these rules keep their names until a commit moves them.
 @subsection Includes
 
 A file includes headers from its own directory by their bare name, for example
-@code{#include "mapping.h"}.
+@code{#include "demuxer.h"}.
 It includes all other headers by their path from the source root, for example
-@code{#include "libavformat/ogg/mapping.h"}.
+@code{#include "libavformat/ogg/demuxer.h"}.
 The include path then names the group each header belongs to.
 
 @subsection Build system

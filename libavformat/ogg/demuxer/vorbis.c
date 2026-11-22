@@ -33,7 +33,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/demux.h"
 #include "libavformat/internal.h"
-#include "libavformat/ogg/mapping.h"
+#include "libavformat/ogg/demuxer.h"
 #include "libavformat/vorbis/comment.h"
 #include "libavformat/replaygain.h"
 

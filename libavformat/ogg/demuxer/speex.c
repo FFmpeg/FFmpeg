@@ -28,7 +28,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavformat/ogg/mapping.h"
+#include "libavformat/ogg/demuxer.h"
 #include "libavformat/vorbis/comment.h"
 
 struct speex_params {

@@ -21,7 +21,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
-#include "libavformat/ogg/mapping.h"
+#include "libavformat/ogg/demuxer.h"
 
 static int skeleton_header(AVFormatContext *s, int idx)
 {
