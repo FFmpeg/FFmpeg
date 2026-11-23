@@ -54,7 +54,6 @@ typedef struct VC1DSPContext {
     void (*vc1_h_loop_filter16)(uint8_t *src, ptrdiff_t stride, int pq);
 
     /* put 8x8 block with bicubic interpolation and quarterpel precision
-     * last argument is actually round value instead of height
      */
     vc1op_pixels_func put_vc1_mspel_pixels_tab[2][16];
     vc1op_pixels_func avg_vc1_mspel_pixels_tab[2][16];
