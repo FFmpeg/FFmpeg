@@ -1,0 +1,12 @@
+8560b9a8020f9da1b4d4f0a45ab84f3b *tests/data/fate/mov-pcm-delay-moov.mov
+9664 tests/data/fate/mov-pcm-delay-moov.mov
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,          0,          0,     2205,     8820, 0xc3813291
+[STREAM]
+duration_ts=2205
+nb_frames=N/A
+[/STREAM]
