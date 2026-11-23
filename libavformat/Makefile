@@ -453,12 +453,9 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += replaygain.o     \
                                             vorbis/comment/reader.o \
                                             vorbis/comment/writer.o \
                                             flac_picture.o
-OBJS-$(CONFIG_OGA_MUXER)                 += vorbis/comment/writer.o
 OBJS-$(CONFIG_OGG_MUXER)                 += vorbis/comment/writer.o
-OBJS-$(CONFIG_OGV_MUXER)                 += vorbis/comment/writer.o
 OBJS-$(CONFIG_OMA_DEMUXER)               += omadec.o pcm.o oma.o
 OBJS-$(CONFIG_OMA_MUXER)                 += omaenc.o rawenc.o oma.o id3v2/writer.o
-OBJS-$(CONFIG_OPUS_MUXER)                += vorbis/comment/writer.o
 OBJS-$(CONFIG_OSQ_DEMUXER)               += osq.o rawdec.o
 OBJS-$(CONFIG_PAF_DEMUXER)               += paf.o
 OBJS-$(CONFIG_PCM_ALAW_DEMUXER)          += pcmdec.o pcm.o
@@ -584,7 +581,6 @@ OBJS-$(CONFIG_SOX_DEMUXER)               += soxdec.o pcm.o
 OBJS-$(CONFIG_SOX_MUXER)                 += soxenc.o rawenc.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)             += spdif.o spdifdec.o
 OBJS-$(CONFIG_SPDIF_MUXER)               += spdif.o spdifenc.o
-OBJS-$(CONFIG_SPEEX_MUXER)               += vorbis/comment/writer.o
 OBJS-$(CONFIG_SRT_DEMUXER)               += srtdec.o subtitles.o
 OBJS-$(CONFIG_SRT_MUXER)                 += srtenc.o
 OBJS-$(CONFIG_STL_DEMUXER)               += stldec.o subtitles.o

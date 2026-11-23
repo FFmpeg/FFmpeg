@@ -28,53 +28,16 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
-#include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
-#include "libavcodec/flac.h"
-#include "libavcodec/opus/tab.h"
+#include "libavcodec/xiph.h"
 #include "libavformat/avformat.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
+#include "libavformat/metadata.h"
 #include "libavformat/mux.h"
 #include "libavformat/version.h"
 #include "libavformat/vorbis/comment.h"
-
-#define MAX_PAGE_SIZE 65025
-
-typedef struct OGGPage {
-    int64_t start_granule;
-    int64_t granule;
-    int stream_index;
-    uint8_t flags;
-    uint8_t segments_count;
-    uint8_t segments[255];
-    uint8_t data[MAX_PAGE_SIZE];
-    uint16_t size;
-} OGGPage;
-
-typedef struct OGGMuxerMapping OGGMuxerMapping;
-
-typedef struct OGGStreamContext {
-    unsigned page_counter;
-    uint8_t *header[3];
-    int header_len[3];
-    const OGGMuxerMapping *mapping;
-    void *priv_data; ///< state of the mapping
-    /**
-     * Granule layout, set by the mapping. The timestamp of a granule is its
-     * high part, above granule_shift bits, plus its granule_delta_mask bits.
-     */
-    unsigned granule_shift;
-    int64_t granule_delta_mask;
-    int64_t granule_key_mask;  ///< bits all clear on keyframes, 0 when no granule marks one
-    int packet_granule_offset; ///< added to the end timestamp of a packet without packet_granule
-    int eos;
-    unsigned page_count; ///< number of page buffered
-    OGGPage page; ///< current page
-    unsigned serial_num; ///< serial number
-    int64_t last_granule; ///< last packet granule
-    int packet_seen; ///< true when packets have been submitted
-} OGGStreamContext;
+#include "muxer.h"
 
 typedef struct OGGPageList {
     OGGPage page;
@@ -89,34 +52,6 @@ typedef struct OGGContext {
     int failed; // if true all packet submission will fail.
     int ended;  ///< a new link could not be started, the packets that follow are dropped
 } OGGContext;
-
-/**
- * Codec mapping of the muxer: the parts of the Ogg encapsulation that depend
- * on the codec.
- */
-struct OGGMuxerMapping {
-    enum AVCodecID codec_id;
-    size_t priv_data_size;  ///< size of OGGStreamContext.priv_data
-    int optional_extradata; ///< the headers can be built without extradata
-    int new_links;          ///< a new link can replace the current one
-    /**
-     * Build the header packets in OGGStreamContext.header, adjusting the
-     * stream time base when the codec sets its own.
-     */
-    int (*init)(AVFormatContext *s, AVStream *st);
-    /**
-     * @return why a new link cannot start with this packet, NULL if it can.
-     *         When the callback is NULL, the codec imposes no additional
-     *         packet restriction.
-     */
-    const char *(*new_link_refused)(const AVStream *st, const AVPacket *pkt,
-                                    const uint8_t *new_extradata, size_t size);
-    /**
-     * @return the granule of a packet. When NULL, the granule is the
-     *         packet's end timestamp plus OGGStreamContext.packet_granule_offset.
-     */
-    int64_t (*packet_granule)(AVStream *st, const AVPacket *pkt);
-};
 
 #define OFFSET(x) offsetof(OGGContext, x)
 #define PARAM AV_OPT_FLAG_ENCODING_PARAM
@@ -319,9 +254,9 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
     return 0;
 }
 
-static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
-                                        int *header_len, AVDictionary **m, int framing_bit,
-                                        AVChapter **chapters, unsigned int nb_chapters)
+uint8_t *ff_ogg_write_vorbiscomment(int64_t offset, int bitexact,
+                                    int *header_len, AVDictionary **m, int framing_bit,
+                                    AVChapter **chapters, unsigned int nb_chapters)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     FFIOContext pb;
@@ -349,257 +284,9 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
     return p;
 }
 
-static int flac_build_headers(AVCodecParameters *par,
-                              OGGStreamContext *oggstream, int bitexact,
-                              AVDictionary **m)
-{
-    uint8_t *p;
-
-    if (par->extradata_size < FLAC_STREAMINFO_SIZE)
-        return AVERROR(EINVAL);
-
-    // first packet: STREAMINFO
-    oggstream->header_len[0] = 51;
-    oggstream->header[0] = av_mallocz(51); // per ogg flac specs
-    p = oggstream->header[0];
-    if (!p)
-        return AVERROR(ENOMEM);
-    bytestream_put_byte(&p, 0x7F);
-    bytestream_put_buffer(&p, "FLAC", 4);
-    bytestream_put_byte(&p, 1); // major version
-    bytestream_put_byte(&p, 0); // minor version
-    bytestream_put_be16(&p, 1); // headers packets without this one
-    bytestream_put_buffer(&p, "fLaC", 4);
-    bytestream_put_byte(&p, 0x00); // streaminfo
-    bytestream_put_be24(&p, 34);
-    bytestream_put_buffer(&p, par->extradata, FLAC_STREAMINFO_SIZE);
-
-    // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m, 0, NULL, 0);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[1] = p;
-    bytestream_put_byte(&p, 0x84); // last metadata block and vorbis comment
-    bytestream_put_be24(&p, oggstream->header_len[1] - 4);
-
-    return 0;
-}
-
-static int flac_init(AVFormatContext *s, AVStream *st)
-{
-    int err = flac_build_headers(st->codecpar, st->priv_data,
-                                 s->flags & AVFMT_FLAG_BITEXACT,
-                                 &st->metadata);
-    if (err)
-        av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
-    return err;
-}
-
-static const OGGMuxerMapping flac_mapping = {
-    .codec_id  = AV_CODEC_ID_FLAC,
-    .new_links = 1,
-    .init      = flac_init,
-};
-
-#define SPEEX_HEADER_SIZE 80
-
-static int speex_build_headers(AVCodecParameters *par,
-                               OGGStreamContext *oggstream, int bitexact,
-                               AVDictionary **m)
-{
-    uint8_t *p;
-
-    if (par->extradata_size < SPEEX_HEADER_SIZE)
-        return AVERROR_INVALIDDATA;
-
-    // first packet: Speex header
-    p = av_mallocz(SPEEX_HEADER_SIZE);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[0] = p;
-    oggstream->header_len[0] = SPEEX_HEADER_SIZE;
-    bytestream_put_buffer(&p, par->extradata, SPEEX_HEADER_SIZE);
-    AV_WL32(&oggstream->header[0][68], 0);  // set extra_headers to 0
-
-    // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m, 0, NULL, 0);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[1] = p;
-
-    return 0;
-}
-
-static int speex_init(AVFormatContext *s, AVStream *st)
-{
-    int err = speex_build_headers(st->codecpar, st->priv_data,
-                                  s->flags & AVFMT_FLAG_BITEXACT,
-                                  &st->metadata);
-    if (err)
-        av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
-    return err;
-}
-
-static const OGGMuxerMapping speex_mapping = {
-    .codec_id = AV_CODEC_ID_SPEEX,
-    .init     = speex_init,
-};
-
-#define OPUS_HEADER_SIZE 19
-
-static int opus_build_headers(AVCodecParameters *par,
-                              OGGStreamContext *oggstream, int bitexact,
-                              AVDictionary **m, AVChapter **chapters,
-                              unsigned int nb_chapters)
-{
-    uint8_t *p;
-
-    if (par->extradata_size < OPUS_HEADER_SIZE)
-        return AVERROR_INVALIDDATA;
-
-    /* first packet: Opus header */
-    p = av_mallocz(par->extradata_size);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[0] = p;
-    oggstream->header_len[0] = par->extradata_size;
-    bytestream_put_buffer(&p, par->extradata, par->extradata_size);
-
-    /* second packet: VorbisComment */
-    p = ogg_write_vorbiscomment(8, bitexact, &oggstream->header_len[1], m, 0, chapters, nb_chapters);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[1] = p;
-    bytestream_put_buffer(&p, "OpusTags", 8);
-
-    return 0;
-}
-
-static int opus_init(AVFormatContext *s, AVStream *st)
-{
-    OGGStreamContext *oggstream = st->priv_data;
-    int err;
-
-    avpriv_set_pts_info(st, 64, 1, OPUS_TIMESTAMP_RATE);
-    err = opus_build_headers(st->codecpar, oggstream,
-                             s->flags & AVFMT_FLAG_BITEXACT,
-                             &st->metadata, s->chapters, s->nb_chapters);
-    if (err) {
-        av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
-        return err;
-    }
-
-    /* The pre-skip of the link's OpusHead, in the 48 kHz time base. */
-    oggstream->packet_granule_offset = AV_RL16(oggstream->header[0] + 10);
-    return 0;
-}
-
-static const OGGMuxerMapping opus_mapping = {
-    .codec_id  = AV_CODEC_ID_OPUS,
-    .new_links = 1,
-    .init      = opus_init,
-};
-
-#define VP8_HEADER_SIZE 26
-
-static int vp8_build_headers(AVFormatContext *s, AVStream *st,
-                             OGGStreamContext *oggstream, int bitexact)
-{
-    AVCodecParameters *par = st->codecpar;
-    uint8_t *p;
-
-    /* first packet: VP8 header */
-    p = av_mallocz(VP8_HEADER_SIZE);
-    if (!p)
-        return AVERROR(ENOMEM);
-    oggstream->header[0] = p;
-    oggstream->header_len[0] = VP8_HEADER_SIZE;
-    bytestream_put_byte(&p, 0x4f); // HDRID
-    bytestream_put_buffer(&p, "VP80", 4); // Identifier
-    bytestream_put_byte(&p, 1); // HDRTYP
-    bytestream_put_byte(&p, 1); // VMAJ
-    bytestream_put_byte(&p, 0); // VMIN
-    bytestream_put_be16(&p, par->width);
-    bytestream_put_be16(&p, par->height);
-    bytestream_put_be24(&p, par->sample_aspect_ratio.num);
-    bytestream_put_be24(&p, par->sample_aspect_ratio.den);
-    if (st->r_frame_rate.num > 0 && st->r_frame_rate.den > 0) {
-        // OggVP8 requires pts to increase by 1 per visible frame, so use the least common
-        // multiple framerate if available.
-        av_log(s, AV_LOG_DEBUG, "Changing time base from %d/%d to %d/%d\n",
-               st->time_base.num, st->time_base.den,
-               st->r_frame_rate.den, st->r_frame_rate.num);
-        avpriv_set_pts_info(st, 64, st->r_frame_rate.den, st->r_frame_rate.num);
-    }
-    bytestream_put_be32(&p, st->time_base.den);
-    bytestream_put_be32(&p, st->time_base.num);
-
-    /* optional second packet: VorbisComment */
-    if (av_dict_count(st->metadata)) {
-        p = ogg_write_vorbiscomment(7, bitexact, &oggstream->header_len[1], &st->metadata, 0, NULL, 0);
-        if (!p)
-            return AVERROR(ENOMEM);
-        oggstream->header[1] = p;
-        bytestream_put_byte(&p, 0x4f); // HDRID
-        bytestream_put_buffer(&p, "VP80", 4); // Identifier
-        bytestream_put_byte(&p, 2); // HDRTYP
-        bytestream_put_byte(&p, 0x20);
-    }
-
-    return 0;
-}
-
-static int vp8_init(AVFormatContext *s, AVStream *st)
-{
-    OGGStreamContext *oggstream = st->priv_data;
-    int err = vp8_build_headers(s, st, oggstream,
-                                s->flags & AVFMT_FLAG_BITEXACT);
-    if (err) {
-        av_log(s, AV_LOG_ERROR, "Error writing VP8 headers\n");
-        return err;
-    }
-
-    /* The timestamp, then 2 bits of inverse count and 27 bits of distance
-       to the last keyframe, above 3 reserved bits. */
-    oggstream->granule_shift    = 32;
-    oggstream->granule_key_mask = INT64_C(0x07ffffff) << 3;
-    return 0;
-}
-
-static int64_t vp8_packet_granule(AVStream *st, const AVPacket *pkt)
-{
-    const OGGStreamContext *oggstream = st->priv_data;
-    int64_t pts, invcnt, dist;
-    int visible;
-
-    visible = (pkt->data[0] >> 4) & 1;
-    pts     = pkt->pts + pkt->duration;
-    invcnt  = (oggstream->last_granule >> 30) & 3;
-    invcnt  = visible ? 3 : (invcnt == 3 ? 0 : invcnt + 1);
-    dist    = (pkt->flags & AV_PKT_FLAG_KEY) ? 0 : ((oggstream->last_granule >> 3) & 0x07ffffff) + 1;
-
-    return (pts << 32) | (invcnt << 30) | (dist << 3);
-}
-
-static const OGGMuxerMapping vp8_mapping = {
-    .codec_id           = AV_CODEC_ID_VP8,
-    .optional_extradata = 1,
-    .init               = vp8_init,
-    .packet_granule     = vp8_packet_granule,
-};
-
-/**
- * Build the headers of a codec using the Xiph header layout: identification,
- * comment and setup packets laced in the extradata.
- *
- * @param first_header_size the size of the identification header
- * @param comment_type      the packet type of the comment header
- * @param name              the codec name in the comment header
- * @param framing_bit       whether the comment header ends with a framing bit
- */
-static int ogg_build_xiph_headers(AVFormatContext *s, AVStream *st,
-                                  int first_header_size, int comment_type,
-                                  const char *name, int framing_bit)
+int ff_ogg_build_xiph_headers(AVFormatContext *s, AVStream *st,
+                              int first_header_size, int comment_type,
+                              const char *name, int framing_bit)
 {
     OGGStreamContext *oggstream = st->priv_data;
     const uint8_t *header[3];
@@ -617,9 +304,9 @@ static int ogg_build_xiph_headers(AVFormatContext *s, AVStream *st,
     if (!oggstream->header[0] || !oggstream->header[2])
         return AVERROR(ENOMEM);
 
-    p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
-                                &oggstream->header_len[1], &st->metadata,
-                                framing_bit, NULL, 0);
+    p = ff_ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
+                                   &oggstream->header_len[1], &st->metadata,
+                                   framing_bit, NULL, 0);
     oggstream->header[1] = p;
     if (!p)
         return AVERROR(ENOMEM);
@@ -630,114 +317,13 @@ static int ogg_build_xiph_headers(AVFormatContext *s, AVStream *st,
     return 0;
 }
 
-static int vorbis_init(AVFormatContext *s, AVStream *st)
-{
-    return ogg_build_xiph_headers(s, st, 30, 3, "vorbis", 1);
-}
-
-static const OGGMuxerMapping vorbis_mapping = {
-    .codec_id  = AV_CODEC_ID_VORBIS,
-    .new_links = 1,
-    .init      = vorbis_init,
-};
-
-typedef struct TheoraMuxerContext {
-    int vrev;     ///< bitstream revision
-    int64_t last_kf_pts;
-} TheoraMuxerContext;
-
-static int theora_init(AVFormatContext *s, AVStream *st)
-{
-    OGGStreamContext *oggstream = st->priv_data;
-    TheoraMuxerContext *theora = oggstream->priv_data;
-    int den, num;
-    int err = ogg_build_xiph_headers(s, st, 42, 0x81, "theora", 0);
-
-    if (err < 0)
-        return err;
-
-    den = AV_RB32(oggstream->header[0] + 22);
-    num = AV_RB32(oggstream->header[0] + 26);
-    /* Make sure to use time base stored in the Theora stream header to write
-       correct timestamps */
-    if (st->time_base.num != num || st->time_base.den != den) {
-        av_log(s, AV_LOG_DEBUG, "Changing time base from %d/%d to %d/%d\n",
-               st->time_base.num, st->time_base.den, num, den);
-        avpriv_set_pts_info(st, 64, num, den);
-    }
-    /** KFGSHIFT is the width of the less significant section of the granule position
-        The less significant section is the frame count since the last keyframe */
-    oggstream->granule_shift = ((oggstream->header[0][40]&3)<<3)|(oggstream->header[0][41]>>5);
-    oggstream->granule_delta_mask = (INT64_C(1) << oggstream->granule_shift) - 1;
-    oggstream->granule_key_mask = oggstream->granule_delta_mask;
-    theora->vrev = oggstream->header[0][9];
-    av_log(s, AV_LOG_DEBUG, "theora kfgshift %u, vrev %d\n",
-           oggstream->granule_shift, theora->vrev);
-
-    return 0;
-}
-
-/**
- * Whether Theora headers set a frame rate other than the stream time base,
- * which packets keep across links.
- */
-static int theora_rate_changed(const AVStream *st, const uint8_t *extradata, size_t size)
-{
-    const uint8_t *header[3];
-    int header_len[3];
-
-    if (size > INT_MAX ||
-        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0 ||
-        header_len[0] < 42)
-        return 0;
-    return av_cmp_q(st->time_base,
-                    (AVRational){ AV_RB32(header[0] + 26), AV_RB32(header[0] + 22) }) != 0;
-}
-
-static const char *theora_new_link_refused(const AVStream *st, const AVPacket *pkt,
-                                           const uint8_t *new_extradata, size_t size)
-{
-    if (!new_extradata && !(pkt->flags & AV_PKT_FLAG_KEY))
-        return "New Theora links must start on a keyframe";
-    if (new_extradata && theora_rate_changed(st, new_extradata, size))
-        return "New Theora links cannot change the frame rate";
-    return NULL;
-}
-
-static int64_t theora_packet_granule(AVStream *st, const AVPacket *pkt)
-{
-    OGGStreamContext *oggstream = st->priv_data;
-    TheoraMuxerContext *theora = oggstream->priv_data;
-    int64_t pts = theora->vrev < 1 ? pkt->pts : pkt->pts + pkt->duration;
-    int pframe_count;
-
-    if (pkt->flags & AV_PKT_FLAG_KEY)
-        theora->last_kf_pts = pts;
-    pframe_count = pts - theora->last_kf_pts;
-    // prevent frame count from overflow if key frame flag is not set
-    if (pframe_count >= (INT64_C(1)<<oggstream->granule_shift)) {
-        theora->last_kf_pts += pframe_count;
-        pframe_count = 0;
-    }
-    return (theora->last_kf_pts<<oggstream->granule_shift) | pframe_count;
-}
-
-static const OGGMuxerMapping theora_mapping = {
-    .codec_id         = AV_CODEC_ID_THEORA,
-    .priv_data_size   = sizeof(TheoraMuxerContext),
-    .new_links        = 1,
-    .init             = theora_init,
-    .new_link_refused = theora_new_link_refused,
-    .packet_granule   = theora_packet_granule,
-};
-
 static const OGGMuxerMapping *const ogg_mappings[] = {
-    &flac_mapping,
-    &opus_mapping,
-    &speex_mapping,
-    &theora_mapping,
-    &vorbis_mapping,
-    &vp8_mapping,
+    &ff_ogg_flac_muxer_mapping,
+    &ff_ogg_opus_muxer_mapping,
+    &ff_ogg_speex_muxer_mapping,
+    &ff_ogg_theora_muxer_mapping,
+    &ff_ogg_vorbis_muxer_mapping,
+    &ff_ogg_vp8_muxer_mapping,
 };
 
 static const OGGMuxerMapping *ogg_find_mapping(enum AVCodecID codec_id)

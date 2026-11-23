@@ -471,7 +471,8 @@ Muxers/Demuxers:
   nut*                                  Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
   ogg/demuxer.c, ogg/demuxer.h          David Conrad, Romain Beauxis
-  ogg/muxer.c                           Baptiste Coudurier, Romain Beauxis
+  ogg/muxer.c, ogg/muxer.h              Baptiste Coudurier, Romain Beauxis
+  ogg/muxer/*                           Baptiste Coudurier, Romain Beauxis
   ogg/demuxer/*                         David Conrad, Romain Beauxis
   oma.c                                 Maxim Poliakovski
   pp_bnk.c                              Zane van Iperen
