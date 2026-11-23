@@ -288,20 +288,21 @@ LCEVC_BLOCK_FUNC(encoded_data, (CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(byte_alignment)(ctx, rw));
 
 #ifdef READ
-    if (!ff_cbs_h2645_read_more_rbsp_data(rw))
-        return AVERROR_INVALIDDATA;
-
     int pos = get_bits_count(rw) - start;
     int len = state->payload_size;
 
+    // The process block is size-delimited and may contain only chunk flags,
+    // with no residual data when all chunks are empty.
     current->data_offset = get_bits_count(rw) / 8;
     current->data_size = len - pos / 8;
     skip_bits_long(rw, current->data_size * 8);
 #else
-    err = ff_cbs_h2645_write_slice_data(ctx, rw, current->data,
-                                     current->data_size, 0);
-    if (err < 0)
-        return err;
+    if (current->data_size) {
+        err = ff_cbs_h2645_write_slice_data(ctx, rw, current->data,
+                                            current->data_size, 0);
+        if (err < 0)
+            return err;
+    }
 #endif
 
     av_refstruct_replace(&current->sc, priv->sc);
