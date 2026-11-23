@@ -202,7 +202,21 @@ $(foreach N,$(FATE_CBS_LCEVC_SAMPLES),$(eval $(call FATE_CBS_NO_DEC_TEST,lcevc,$
 FATE_CBS_LCEVC-$(call ALLYES, LCEVC_DEMUXER LCEVC_PARSER LCEVC_METADATA_BSF LCEVC_MUXER) = $(FATE_CBS_lcevc)
 
 FATE_SAMPLES_AVCONV += $(FATE_CBS_LCEVC-yes)
-fate-cbs-lcevc: $(FATE_CBS_LCEVC-yes)
+
+# A 1080p global config, picture config and encoded-data block containing
+# only flags for 32 empty chunks. Reading and writing must preserve it.
+tests/data/lcevc-empty-residual.lcevc: TAG = GEN
+tests/data/lcevc-empty-residual.lcevc: tests/data
+	$(M)printf '\000\000\000\001\173\377\241\065\103\330\200\000\142\002\016\240\343\010\125\125\125\125\125\125\125\125\200' > $@
+
+FATE_CBS_LCEVC_SYNTHETIC-$(call ALLYES, LCEVC_DEMUXER LCEVC_PARSER LCEVC_METADATA_BSF LCEVC_MUXER FILE_PROTOCOL) += fate-cbs-lcevc-empty-residual
+fate-cbs-lcevc-empty-residual: tests/data/lcevc-empty-residual.lcevc
+fate-cbs-lcevc-empty-residual: CMD = md5 -f lcevc -i $(TARGET_PATH)/tests/data/lcevc-empty-residual.lcevc -c:v copy -bsf:v lcevc_metadata -f lcevc
+fate-cbs-lcevc-empty-residual: CMP = oneline
+fate-cbs-lcevc-empty-residual: REF = 25906d54d813549ab710bcf37393d764
+
+FATE_FFMPEG += $(FATE_CBS_LCEVC_SYNTHETIC-yes)
+fate-cbs-lcevc: $(FATE_CBS_LCEVC-yes) $(FATE_CBS_LCEVC_SYNTHETIC-yes)
 
 # MPEG-2 read/write
 
