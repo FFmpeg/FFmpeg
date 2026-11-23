@@ -59,7 +59,7 @@ jobs:
           echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
         uses: actions/cache/save@v5
-        if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
+        if: ${{ forge.event_name != 'pull_request' && format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
         with:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
@@ -143,7 +143,7 @@ jobs:
           echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
         uses: actions/cache/save@v5
-        if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
+        if: ${{ forge.event_name != 'pull_request' && format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
         with:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
