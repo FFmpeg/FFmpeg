@@ -414,44 +414,47 @@ cglobal vc1_inv_trans_8x8, 1, 1, 12, block
     ; 0|7: m6, 1|6: m7, 2|5: m10, 3|4: m9 (columns 0-3)
     VC1_IDCT8_1D 0, 1, 2, 3, 4, 5, 8, 11, pd_4, 3, 0
     ; 0|7: m8, 1|6: m11, 2|5: m2, 3|4: m1 (columns 4-7)
-    punpcklqdq  m0, m6, m8
-    punpckhqdq  m6, m8
-    punpcklqdq  m3, m7, m11
-    punpckhqdq  m7, m11
-    punpcklqdq  m4, m10, m2
-    punpckhqdq  m10, m2
-    punpcklqdq  m5, m9, m1
-    punpckhqdq  m9, m1
-    TRANSPOSE8x8W 0, 3, 4, 5, 9, 10, 7, 6, 1
-    ; second pass down the columns of the transposed intermediate
-    punpcklwd   m1, m0, m9
-    punpckhwd   m0, m9
-    punpcklwd   m2, m3, m10
-    punpckhwd   m3, m10
-    punpcklwd   m8, m4, m7
-    punpckhwd   m4, m7
-    punpcklwd   m11, m5, m6
-    punpckhwd   m5, m6
-    VC1_IDCT8_1D 1, 2, 8, 11, 9, 10, 7, 6, pd_64, 7, 1
-    ; 0|7: m7, 1|6: m6, 2|5: m8, 3|4: m2 (columns 0-3)
-    VC1_IDCT8_1D 0, 3, 4, 5, 1, 11, 9, 10, pd_64, 7, 1
-    ; 0|7: m9, 1|6: m10, 2|5: m4, 3|4: m3 (columns 4-7)
-    punpcklqdq  m0, m7, m9
-    mova [blockq+  0], m0
-    punpckhqdq  m7, m9
-    mova [blockq+112], m7
-    punpcklqdq  m1, m6, m10
-    mova [blockq+ 16], m1
-    punpckhqdq  m6, m10
-    mova [blockq+ 96], m6
-    punpcklqdq  m5, m8, m4
-    mova [blockq+ 32], m5
-    punpckhqdq  m8, m4
-    mova [blockq+ 80], m8
-    punpcklqdq  m11, m2, m3
-    mova [blockq+ 48], m11
-    punpckhqdq  m2, m3
-    mova [blockq+ 64], m2
+    ; perform two transpose steps on registers holding columns 0-3
+    punpcklwd   m0, m6, m7
+    punpckhwd   m7, m6
+    punpcklwd   m6, m10, m9
+    punpckhwd   m9, m10
+    SBUTTERFLY  dq, 0, 6, 3
+    SBUTTERFLY  dq, 9, 7, 3
+
+    ; perform two transpose steps on registers holding columns 4-7
+    punpcklwd   m10, m8, m11
+    punpckhwd   m11, m8
+    punpcklwd    m8, m2, m1
+    punpckhwd    m1, m2
+    SBUTTERFLY   dq, 10, 8, 3
+    SBUTTERFLY   dq, 1, 11, 3
+
+    ; combine the registers to create (col0,col4), (col1,col5) etc. pairs
+    SBUTTERFLY   wd, 0, 10, 3
+    SBUTTERFLY   wd, 6,  8, 3
+    SBUTTERFLY   wd, 9,  1, 3
+    SBUTTERFLY   wd, 7, 11, 3
+    VC1_IDCT8_1D 0, 10, 6, 8, 2, 3, 4, 5, pd_64, 7, 1
+    ; 0|7: m4, 1|6: m5, 2|5: m6, 3|4: m10 (columns 0-3)
+    VC1_IDCT8_1D 9, 1, 7, 11, 2, 3, 0, 8, pd_64, 7, 1
+    ; 0|7: m0, 1|6: m8, 2|5: m7, 3|4: m1 (columns 4-7)
+    punpcklqdq  m2, m4, m0
+    mova [blockq+  0], m2
+    punpckhqdq  m4, m0
+    mova [blockq+112], m4
+    punpcklqdq  m2, m5, m8
+    mova [blockq+ 16], m2
+    punpckhqdq  m5, m8
+    mova [blockq+ 96], m5
+    punpcklqdq  m2, m6, m7
+    mova [blockq+ 32], m2
+    punpckhqdq  m6, m7
+    mova [blockq+ 80], m6
+    punpcklqdq  m2, m10, m1
+    mova [blockq+ 48], m2
+    punpckhqdq  m10, m1
+    mova [blockq+ 64], m10
     RET
 
 %if HAVE_AVX2_EXTERNAL
