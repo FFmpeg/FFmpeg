@@ -52,16 +52,22 @@ typedef struct OGGPage {
     uint16_t size;
 } OGGPage;
 
+typedef struct OGGMuxerMapping OGGMuxerMapping;
+
 typedef struct OGGStreamContext {
     unsigned page_counter;
     uint8_t *header[3];
     int header_len[3];
-    /** for theora granule */
-    int kfgshift;
-    int64_t last_kf_pts;
-    int vrev;
-    /* for VP8 granule */
-    int isvp8;
+    const OGGMuxerMapping *mapping;
+    void *priv_data; ///< state of the mapping
+    /**
+     * Granule layout, set by the mapping. The timestamp of a granule is its
+     * high part, above granule_shift bits, plus its granule_delta_mask bits.
+     */
+    unsigned granule_shift;
+    int64_t granule_delta_mask;
+    int64_t granule_key_mask;  ///< bits all clear on keyframes, 0 when no granule marks one
+    int packet_granule_offset; ///< added to the end timestamp of a packet without packet_granule
     int eos;
     unsigned page_count; ///< number of page buffered
     OGGPage page; ///< current page
@@ -83,6 +89,34 @@ typedef struct OGGContext {
     int failed; // if true all packet submission will fail.
     int ended;  ///< a new link could not be started, the packets that follow are dropped
 } OGGContext;
+
+/**
+ * Codec mapping of the muxer: the parts of the Ogg encapsulation that depend
+ * on the codec.
+ */
+struct OGGMuxerMapping {
+    enum AVCodecID codec_id;
+    size_t priv_data_size;  ///< size of OGGStreamContext.priv_data
+    int optional_extradata; ///< the headers can be built without extradata
+    int new_links;          ///< a new link can replace the current one
+    /**
+     * Build the header packets in OGGStreamContext.header, adjusting the
+     * stream time base when the codec sets its own.
+     */
+    int (*init)(AVFormatContext *s, AVStream *st);
+    /**
+     * @return why a new link cannot start with this packet, NULL if it can.
+     *         When the callback is NULL, the codec imposes no additional
+     *         packet restriction.
+     */
+    const char *(*new_link_refused)(const AVStream *st, const AVPacket *pkt,
+                                    const uint8_t *new_extradata, size_t size);
+    /**
+     * @return the granule of a packet. When NULL, the granule is the
+     *         packet's end timestamp plus OGGStreamContext.packet_granule_offset.
+     */
+    int64_t (*packet_granule)(AVStream *st, const AVPacket *pkt);
+};
 
 #define OFFSET(x) offsetof(OGGContext, x)
 #define PARAM AV_OPT_FLAG_ENCODING_PARAM
@@ -110,6 +144,7 @@ static void ogg_cleanup_stream(AVStream *st)
 
     for (int i = 0; i < 3; i++)
         av_freep(&oggstream->header[i]);
+    av_freep(&oggstream->priv_data);
 }
 
 static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
@@ -140,21 +175,14 @@ static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
     oggstream->page_count--;
 }
 
-static int ogg_key_granule(OGGStreamContext *oggstream, int64_t granule)
+static int ogg_key_granule(const OGGStreamContext *oggstream, int64_t granule)
 {
-    return (oggstream->kfgshift && !(granule & ((INT64_C(1)<<oggstream->kfgshift)-1))) ||
-           (oggstream->isvp8    && !((granule >> 3) & 0x07ffffff));
+    return oggstream->granule_key_mask && !(granule & oggstream->granule_key_mask);
 }
 
-static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, int64_t granule)
+static int64_t ogg_granule_to_timestamp(const OGGStreamContext *oggstream, int64_t granule)
 {
-    if (oggstream->kfgshift)
-        return (granule>>oggstream->kfgshift) +
-            (granule & ((INT64_C(1)<<oggstream->kfgshift)-1));
-    else if (oggstream->isvp8)
-        return granule >> 32;
-    else
-        return granule;
+    return (granule >> oggstream->granule_shift) + (granule & oggstream->granule_delta_mask);
 }
 
 static int ogg_compare_granule(AVFormatContext *s, OGGPage *next, OGGPage *page)
@@ -357,6 +385,22 @@ static int ogg_build_flac_headers(AVCodecParameters *par,
     return 0;
 }
 
+static int flac_init(AVFormatContext *s, AVStream *st)
+{
+    int err = ogg_build_flac_headers(st->codecpar, st->priv_data,
+                                     s->flags & AVFMT_FLAG_BITEXACT,
+                                     &st->metadata);
+    if (err)
+        av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
+    return err;
+}
+
+static const OGGMuxerMapping flac_mapping = {
+    .codec_id  = AV_CODEC_ID_FLAC,
+    .new_links = 1,
+    .init      = flac_init,
+};
+
 #define SPEEX_HEADER_SIZE 80
 
 static int ogg_build_speex_headers(AVCodecParameters *par,
@@ -385,6 +429,21 @@ static int ogg_build_speex_headers(AVCodecParameters *par,
 
     return 0;
 }
+
+static int speex_init(AVFormatContext *s, AVStream *st)
+{
+    int err = ogg_build_speex_headers(st->codecpar, st->priv_data,
+                                      s->flags & AVFMT_FLAG_BITEXACT,
+                                      &st->metadata);
+    if (err)
+        av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
+    return err;
+}
+
+static const OGGMuxerMapping speex_mapping = {
+    .codec_id = AV_CODEC_ID_SPEEX,
+    .init     = speex_init,
+};
 
 #define OPUS_HEADER_SIZE 19
 
@@ -415,6 +474,31 @@ static int ogg_build_opus_headers(AVCodecParameters *par,
 
     return 0;
 }
+
+static int opus_init(AVFormatContext *s, AVStream *st)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+    int err;
+
+    avpriv_set_pts_info(st, 64, 1, OPUS_TIMESTAMP_RATE);
+    err = ogg_build_opus_headers(st->codecpar, oggstream,
+                                 s->flags & AVFMT_FLAG_BITEXACT,
+                                 &st->metadata, s->chapters, s->nb_chapters);
+    if (err) {
+        av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
+        return err;
+    }
+
+    /* The pre-skip of the link's OpusHead, in the 48 kHz time base. */
+    oggstream->packet_granule_offset = AV_RL16(oggstream->header[0] + 10);
+    return 0;
+}
+
+static const OGGMuxerMapping opus_mapping = {
+    .codec_id  = AV_CODEC_ID_OPUS,
+    .new_links = 1,
+    .init      = opus_init,
+};
 
 #define VP8_HEADER_SIZE 26
 
@@ -462,9 +546,206 @@ static int ogg_build_vp8_headers(AVFormatContext *s, AVStream *st,
         bytestream_put_byte(&p, 0x20);
     }
 
-    oggstream->isvp8 = 1;
+    return 0;
+}
+
+static int vp8_init(AVFormatContext *s, AVStream *st)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+    int err = ogg_build_vp8_headers(s, st, oggstream,
+                                    s->flags & AVFMT_FLAG_BITEXACT);
+    if (err) {
+        av_log(s, AV_LOG_ERROR, "Error writing VP8 headers\n");
+        return err;
+    }
+
+    /* The timestamp, then 2 bits of inverse count and 27 bits of distance
+       to the last keyframe, above 3 reserved bits. */
+    oggstream->granule_shift    = 32;
+    oggstream->granule_key_mask = INT64_C(0x07ffffff) << 3;
+    return 0;
+}
+
+static int64_t vp8_packet_granule(AVStream *st, const AVPacket *pkt)
+{
+    const OGGStreamContext *oggstream = st->priv_data;
+    int64_t pts, invcnt, dist;
+    int visible;
+
+    visible = (pkt->data[0] >> 4) & 1;
+    pts     = pkt->pts + pkt->duration;
+    invcnt  = (oggstream->last_granule >> 30) & 3;
+    invcnt  = visible ? 3 : (invcnt == 3 ? 0 : invcnt + 1);
+    dist    = (pkt->flags & AV_PKT_FLAG_KEY) ? 0 : ((oggstream->last_granule >> 3) & 0x07ffffff) + 1;
+
+    return (pts << 32) | (invcnt << 30) | (dist << 3);
+}
+
+static const OGGMuxerMapping vp8_mapping = {
+    .codec_id           = AV_CODEC_ID_VP8,
+    .optional_extradata = 1,
+    .init               = vp8_init,
+    .packet_granule     = vp8_packet_granule,
+};
+
+/**
+ * Build the headers of a codec using the Xiph header layout: identification,
+ * comment and setup packets laced in the extradata.
+ *
+ * @param first_header_size the size of the identification header
+ * @param comment_type      the packet type of the comment header
+ * @param name              the codec name in the comment header
+ * @param framing_bit       whether the comment header ends with a framing bit
+ */
+static int ogg_build_xiph_headers(AVFormatContext *s, AVStream *st,
+                                  int first_header_size, int comment_type,
+                                  const char *name, int framing_bit)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+    const uint8_t *header[3];
+    uint8_t *p;
+
+    if (avpriv_split_xiph_headers(st->codecpar->extradata, st->codecpar->extradata_size,
+                                  first_header_size, header, oggstream->header_len) < 0 ||
+        oggstream->header_len[0] < first_header_size) {
+        av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    oggstream->header[0] = av_memdup(header[0], oggstream->header_len[0]);
+    oggstream->header[2] = av_memdup(header[2], oggstream->header_len[2]);
+    if (!oggstream->header[0] || !oggstream->header[2])
+        return AVERROR(ENOMEM);
+
+    p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
+                                &oggstream->header_len[1], &st->metadata,
+                                framing_bit, NULL, 0);
+    oggstream->header[1] = p;
+    if (!p)
+        return AVERROR(ENOMEM);
+
+    bytestream_put_byte(&p, comment_type);
+    bytestream_put_buffer(&p, name, 6);
 
     return 0;
+}
+
+static int vorbis_init(AVFormatContext *s, AVStream *st)
+{
+    return ogg_build_xiph_headers(s, st, 30, 3, "vorbis", 1);
+}
+
+static const OGGMuxerMapping vorbis_mapping = {
+    .codec_id  = AV_CODEC_ID_VORBIS,
+    .new_links = 1,
+    .init      = vorbis_init,
+};
+
+typedef struct TheoraMuxerContext {
+    int vrev;     ///< bitstream revision
+    int64_t last_kf_pts;
+} TheoraMuxerContext;
+
+static int theora_init(AVFormatContext *s, AVStream *st)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+    TheoraMuxerContext *theora = oggstream->priv_data;
+    int den, num;
+    int err = ogg_build_xiph_headers(s, st, 42, 0x81, "theora", 0);
+
+    if (err < 0)
+        return err;
+
+    den = AV_RB32(oggstream->header[0] + 22);
+    num = AV_RB32(oggstream->header[0] + 26);
+    /* Make sure to use time base stored in the Theora stream header to write
+       correct timestamps */
+    if (st->time_base.num != num || st->time_base.den != den) {
+        av_log(s, AV_LOG_DEBUG, "Changing time base from %d/%d to %d/%d\n",
+               st->time_base.num, st->time_base.den, num, den);
+        avpriv_set_pts_info(st, 64, num, den);
+    }
+    /** KFGSHIFT is the width of the less significant section of the granule position
+        The less significant section is the frame count since the last keyframe */
+    oggstream->granule_shift = ((oggstream->header[0][40]&3)<<3)|(oggstream->header[0][41]>>5);
+    oggstream->granule_delta_mask = (INT64_C(1) << oggstream->granule_shift) - 1;
+    oggstream->granule_key_mask = oggstream->granule_delta_mask;
+    theora->vrev = oggstream->header[0][9];
+    av_log(s, AV_LOG_DEBUG, "theora kfgshift %u, vrev %d\n",
+           oggstream->granule_shift, theora->vrev);
+
+    return 0;
+}
+
+/**
+ * Whether Theora headers set a frame rate other than the stream time base,
+ * which packets keep across links.
+ */
+static int ogg_theora_rate_changed(const AVStream *st, const uint8_t *extradata, size_t size)
+{
+    const uint8_t *header[3];
+    int header_len[3];
+
+    if (size > INT_MAX ||
+        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0 ||
+        header_len[0] < 42)
+        return 0;
+    return av_cmp_q(st->time_base,
+                    (AVRational){ AV_RB32(header[0] + 26), AV_RB32(header[0] + 22) }) != 0;
+}
+
+static const char *theora_new_link_refused(const AVStream *st, const AVPacket *pkt,
+                                           const uint8_t *new_extradata, size_t size)
+{
+    if (!new_extradata && !(pkt->flags & AV_PKT_FLAG_KEY))
+        return "New Theora links must start on a keyframe";
+    if (new_extradata && ogg_theora_rate_changed(st, new_extradata, size))
+        return "New Theora links cannot change the frame rate";
+    return NULL;
+}
+
+static int64_t theora_packet_granule(AVStream *st, const AVPacket *pkt)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+    TheoraMuxerContext *theora = oggstream->priv_data;
+    int64_t pts = theora->vrev < 1 ? pkt->pts : pkt->pts + pkt->duration;
+    int pframe_count;
+
+    if (pkt->flags & AV_PKT_FLAG_KEY)
+        theora->last_kf_pts = pts;
+    pframe_count = pts - theora->last_kf_pts;
+    // prevent frame count from overflow if key frame flag is not set
+    if (pframe_count >= (INT64_C(1)<<oggstream->granule_shift)) {
+        theora->last_kf_pts += pframe_count;
+        pframe_count = 0;
+    }
+    return (theora->last_kf_pts<<oggstream->granule_shift) | pframe_count;
+}
+
+static const OGGMuxerMapping theora_mapping = {
+    .codec_id         = AV_CODEC_ID_THEORA,
+    .priv_data_size   = sizeof(TheoraMuxerContext),
+    .new_links        = 1,
+    .init             = theora_init,
+    .new_link_refused = theora_new_link_refused,
+    .packet_granule   = theora_packet_granule,
+};
+
+static const OGGMuxerMapping *const ogg_mappings[] = {
+    &flac_mapping,
+    &opus_mapping,
+    &speex_mapping,
+    &theora_mapping,
+    &vorbis_mapping,
+    &vp8_mapping,
+};
+
+static const OGGMuxerMapping *ogg_find_mapping(enum AVCodecID codec_id)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(ogg_mappings); i++)
+        if (ogg_mappings[i]->codec_id == codec_id)
+            return ogg_mappings[i];
+    return NULL;
 }
 
 static void ogg_write_pages(AVFormatContext *s, int flush)
@@ -527,25 +808,19 @@ static int ogg_init(AVFormatContext *s)
         AVStream *st = s->streams[i];
         unsigned serial_num;
 
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (st->codecpar->codec_id == AV_CODEC_ID_OPUS)
-                avpriv_set_pts_info(st, 64, 1, OPUS_TIMESTAMP_RATE);
-            else
-                avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-        }
+        const OGGMuxerMapping *mapping = ogg_find_mapping(st->codecpar->codec_id);
+        int err;
 
-        if (st->codecpar->codec_id != AV_CODEC_ID_VORBIS &&
-            st->codecpar->codec_id != AV_CODEC_ID_THEORA &&
-            st->codecpar->codec_id != AV_CODEC_ID_SPEEX  &&
-            st->codecpar->codec_id != AV_CODEC_ID_FLAC   &&
-            st->codecpar->codec_id != AV_CODEC_ID_OPUS   &&
-            st->codecpar->codec_id != AV_CODEC_ID_VP8) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+
+        if (!mapping) {
             av_log(s, AV_LOG_ERROR, "Unsupported codec id in stream %d\n", i);
             return AVERROR(EINVAL);
         }
 
         if ((!st->codecpar->extradata || !st->codecpar->extradata_size) &&
-            st->codecpar->codec_id != AV_CODEC_ID_VP8) {
+            !mapping->optional_extradata) {
             av_log(s, AV_LOG_ERROR, "No extradata present\n");
             return AVERROR_INVALIDDATA;
         }
@@ -562,88 +837,18 @@ static int ogg_init(AVFormatContext *s)
         }
 
         oggstream->page.stream_index = i;
+        oggstream->mapping = mapping;
+        if (mapping->priv_data_size) {
+            oggstream->priv_data = av_mallocz(mapping->priv_data_size);
+            if (!oggstream->priv_data)
+                return AVERROR(ENOMEM);
+        }
 
         av_dict_copy(&st->metadata, s->metadata, AV_DICT_DONT_OVERWRITE);
 
-        if (st->codecpar->codec_id == AV_CODEC_ID_FLAC) {
-            int err = ogg_build_flac_headers(st->codecpar, oggstream,
-                                             s->flags & AVFMT_FLAG_BITEXACT,
-                                             &st->metadata);
-            if (err) {
-                av_log(s, AV_LOG_ERROR, "Error writing FLAC headers\n");
-                return err;
-            }
-        } else if (st->codecpar->codec_id == AV_CODEC_ID_SPEEX) {
-            int err = ogg_build_speex_headers(st->codecpar, oggstream,
-                                              s->flags & AVFMT_FLAG_BITEXACT,
-                                              &st->metadata);
-            if (err) {
-                av_log(s, AV_LOG_ERROR, "Error writing Speex headers\n");
-                return err;
-            }
-        } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
-            int err = ogg_build_opus_headers(st->codecpar, oggstream,
-                                             s->flags & AVFMT_FLAG_BITEXACT,
-                                             &st->metadata, s->chapters, s->nb_chapters);
-            if (err) {
-                av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
-                return err;
-            }
-        } else if (st->codecpar->codec_id == AV_CODEC_ID_VP8) {
-            int err = ogg_build_vp8_headers(s, st, oggstream,
-                                            s->flags & AVFMT_FLAG_BITEXACT);
-            if (err) {
-                av_log(s, AV_LOG_ERROR, "Error writing VP8 headers\n");
-                return err;
-            }
-        } else {
-            const uint8_t *header[3];
-            uint8_t *p;
-            const char *cstr = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? "vorbis" : "theora";
-            int header_type = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 3 : 0x81;
-            int framing_bit = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 1 : 0;
-            int first_header_size = st->codecpar->codec_id == AV_CODEC_ID_VORBIS ? 30 : 42;
-
-            if (avpriv_split_xiph_headers(st->codecpar->extradata, st->codecpar->extradata_size,
-                                      first_header_size,
-                                      header, oggstream->header_len) < 0 ||
-                oggstream->header_len[0] < first_header_size) {
-                av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");
-                return AVERROR_INVALIDDATA;
-            }
-
-            oggstream->header[0] = av_memdup(header[0], oggstream->header_len[0]);
-            oggstream->header[2] = av_memdup(header[2], oggstream->header_len[2]);
-            if (!oggstream->header[0] || !oggstream->header[2])
-                return AVERROR(ENOMEM);
-
-            p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
-                                        &oggstream->header_len[1], &st->metadata,
-                                        framing_bit, NULL, 0);
-            oggstream->header[1] = p;
-            if (!p)
-                return AVERROR(ENOMEM);
-
-            bytestream_put_byte(&p, header_type);
-            bytestream_put_buffer(&p, cstr, 6);
-
-            if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
-                int den = AV_RB32(oggstream->header[0] + 22), num = AV_RB32(oggstream->header[0] + 26);
-                /* Make sure to use time base stored in the Theora stream header to write
-                   correct timestamps */
-                if (st->time_base.num != num || st->time_base.den != den) {
-                    av_log(s, AV_LOG_DEBUG, "Changing time base from %d/%d to %d/%d\n",
-                           st->time_base.num, st->time_base.den, num, den);
-                    avpriv_set_pts_info(st, 64, num, den);
-                }
-                /** KFGSHIFT is the width of the less significant section of the granule position
-                    The less significant section is the frame count since the last keyframe */
-                oggstream->kfgshift = ((oggstream->header[0][40]&3)<<3)|(oggstream->header[0][41]>>5);
-                oggstream->vrev = oggstream->header[0][9];
-                av_log(s, AV_LOG_DEBUG, "theora kfgshift %d, vrev %d\n",
-                       oggstream->kfgshift, oggstream->vrev);
-            }
-        }
+        err = mapping->init(s, st);
+        if (err < 0)
+            return err;
 
         if (s->flags & AVFMT_FLAG_BITEXACT && ogg->serial_offset >= 0)
             serial_num = i + ogg->serial_offset;
@@ -700,23 +905,6 @@ static int ogg_write_header(AVFormatContext *s)
 }
 
 /**
- * Whether Theora headers set a frame rate other than the stream time base,
- * which packets keep across links.
- */
-static int ogg_theora_rate_changed(const AVStream *st, const uint8_t *extradata, size_t size)
-{
-    const uint8_t *header[3];
-    int header_len[3];
-
-    if (size > INT_MAX ||
-        avpriv_split_xiph_headers(extradata, size, 42, header, header_len) < 0 ||
-        header_len[0] < 42)
-        return 0;
-    return av_cmp_q(st->time_base,
-                    (AVRational){ AV_RB32(header[0] + 26), AV_RB32(header[0] + 22) }) != 0;
-}
-
-/**
  * Keep the current link when a new one cannot be started. New metadata is
  * then dropped, while new extradata ends the output, as the packets that
  * follow need its headers.
@@ -739,6 +927,7 @@ static int ogg_skip_new_link(AVFormatContext *s, const uint8_t *new_extradata,
 static int ogg_check_new_link(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0;
+    const char *refused;
     size_t metadata_size, extradata_size;
     OGGContext *oggcontext = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
@@ -765,20 +954,13 @@ static int ogg_check_new_link(AVFormatContext *s, AVPacket *pkt)
     if (s->nb_streams > 1)
         return ogg_skip_new_link(s, new_extradata, "Multiple streams present");
 
-    if (par->codec_id != AV_CODEC_ID_VORBIS &&
-        par->codec_id != AV_CODEC_ID_FLAC &&
-        par->codec_id != AV_CODEC_ID_OPUS &&
-        par->codec_id != AV_CODEC_ID_THEORA)
+    if (!oggstream->mapping->new_links)
         return ogg_skip_new_link(s, new_extradata,
                                  "New links are only supported for vorbis, flac, opus and theora streams");
 
-    if (par->codec_id == AV_CODEC_ID_THEORA && !new_extradata &&
-        !(pkt->flags & AV_PKT_FLAG_KEY))
-        return ogg_skip_new_link(s, NULL, "New Theora links must start on a keyframe");
-
-    if (par->codec_id == AV_CODEC_ID_THEORA && new_extradata &&
-        ogg_theora_rate_changed(st, new_extradata, extradata_size))
-        return ogg_skip_new_link(s, new_extradata, "New Theora links cannot change the frame rate");
+    if (oggstream->mapping->new_link_refused &&
+        (refused = oggstream->mapping->new_link_refused(st, pkt, new_extradata, extradata_size)))
+        return ogg_skip_new_link(s, new_extradata, refused);
 
     ret = ogg_write_trailer(s);
     if (ret < 0)
@@ -830,34 +1012,10 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0 || oggcontext->ended)
         return ret;
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
-        int64_t pts = oggstream->vrev < 1 ? pkt->pts : pkt->pts + pkt->duration;
-        int pframe_count;
-        if (pkt->flags & AV_PKT_FLAG_KEY)
-            oggstream->last_kf_pts = pts;
-        pframe_count = pts - oggstream->last_kf_pts;
-        // prevent frame count from overflow if key frame flag is not set
-        if (pframe_count >= (INT64_C(1)<<oggstream->kfgshift)) {
-            oggstream->last_kf_pts += pframe_count;
-            pframe_count = 0;
-        }
-        granule = (oggstream->last_kf_pts<<oggstream->kfgshift) | pframe_count;
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS)
-        /* The pre-skip of the link's OpusHead, in the 48 kHz time base. */
-        granule = pkt->pts + pkt->duration + AV_RL16(oggstream->header[0] + 10);
-    else if (st->codecpar->codec_id == AV_CODEC_ID_VP8) {
-        int64_t pts, invcnt, dist;
-        int visible;
-
-        visible = (pkt->data[0] >> 4) & 1;
-        pts     = pkt->pts + pkt->duration;
-        invcnt  = (oggstream->last_granule >> 30) & 3;
-        invcnt  = visible ? 3 : (invcnt == 3 ? 0 : invcnt + 1);
-        dist    = (pkt->flags & AV_PKT_FLAG_KEY) ? 0 : ((oggstream->last_granule >> 3) & 0x07ffffff) + 1;
-
-        granule = (pts << 32) | (invcnt << 30) | (dist << 3);
-    } else
-        granule = pkt->pts + pkt->duration;
+    if (oggstream->mapping->packet_granule)
+        granule = oggstream->mapping->packet_granule(st, pkt);
+    else
+        granule = pkt->pts + pkt->duration + oggstream->packet_granule_offset;
 
     if (oggstream->page.start_granule == AV_NOPTS_VALUE)
         oggstream->page.start_granule = pkt->pts;
