@@ -304,52 +304,42 @@ cglobal vc1_inv_trans_4x4, 3, 4, 5, dest, linesize, block, linesize3
 ; void ff_vc1_inv_trans_8x4_sse2(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 cglobal vc1_inv_trans_8x4, 3, 4, 8+UNIX64, dest, linesize, block, linesize3
     mova        m0, [blockq+ 0]
-    mova        m1, [blockq+16]
-    mova        m2, [blockq+32]
+    mova        m2, [blockq+16]
+    mova        m1, [blockq+32]
     mova        m3, [blockq+48]
-    pshufd      m4, m0, q1032           ; (x0,x4) (x1,x5) (x2,x6) (x3,x7) per row
-    punpcklwd   m0, m4
-    pshufd      m4, m1, q1032
-    punpcklwd   m1, m4
-    pshufd      m4, m2, q1032
-    punpcklwd   m2, m4
-    pshufd      m4, m3, q1032
-    punpcklwd   m3, m4
-    TRANSPOSE4x4D 0, 1, 2, 3, 4         ; one row per lane
+    ; Transpose the block in such a way that each row's elements (0,4)..(3,7) are adjacent
+    SBUTTERFLY  wd, 0, 2, 4
+    SBUTTERFLY  wd, 1, 3, 4
+    SBUTTERFLY  wd, 0, 2, 4
+    SBUTTERFLY  wd, 1, 3, 4
+    SBUTTERFLY qdq, 0, 1, 4
+    SBUTTERFLY qdq, 2, 3, 4
     VC1_IDCT8_1D 0, 1, 2, 3, 4, 5, 6, 7, pd_4, 3, 0
     ; columns 0|7: m6, 1|6: m7, 2|5: m2, 3|4: m1, one row per word
-    pshuflw     m6, m6, q3120           ; row0 row2 row1 row3 per column
-    pshufhw     m6, m6, q3120
-    pshuflw     m7, m7, q3120
-    pshufhw     m7, m7, q3120
-    pshuflw     m2, m2, q3120
-    pshufhw     m2, m2, q3120
-    pshuflw     m1, m1, q3120
-    pshufhw     m1, m1, q3120
-    punpckldq   m0, m6, m7              ; (row0,row2) (row1,row3) pairs, columns 0 1
-    punpckhdq   m7, m6                  ;                              columns 6 7
-    punpckldq   m3, m2, m1              ;                              columns 2 3
-    punpckhdq   m1, m2                  ;                              columns 4 5
-    punpcklqdq  m2, m0, m3              ; (row0,row2) pairs, columns 0-3
-    punpckhqdq  m0, m3                  ; (row1,row3) pairs, columns 0-3
-    punpcklqdq  m3, m1, m7              ; (row0,row2) pairs, columns 4-7
-    punpckhqdq  m1, m7                  ; (row1,row3) pairs, columns 4-7
+    punpcklwd   m0, m6, m7
+    punpckhwd   m7, m6
+    punpcklwd   m6, m2, m1
+    punpckhwd   m1, m2
+    SBUTTERFLY  dq, 0, 6, 3
+    SBUTTERFLY  dq, 1, 7, 3
+    SBUTTERFLY  wd, 0, 6, 3             ; m0: (row0,row2) pairs, cols 0-3, m6: (row1,row3) pairs, cols 0-3
+    SBUTTERFLY  wd, 1, 7, 3             ; m1: (row0,row2) pairs, cols 4-7, m7: (row1,row3) pairs, cols 4-7
 %if UNIX64
-    VC1_IDCT4_1D 2, 0, 4, 5, pd_64, 7, 8; row 0: m5, 1: m2, 2: m0, 3: m4
-    VC1_IDCT4_1D 3, 1, 6, 7, pd_64, 7, 8; row 0: m7, 1: m3, 2: m1, 3: m6
+    VC1_IDCT4_1D 0, 6, 4, 5, pd_64, 7, 8; row 0: m5, 1: m0, 2: m6, 3: m4
+    VC1_IDCT4_1D 1, 7, 2, 3, pd_64, 7, 8; row 0: m3, 1: m1, 2: m7, 3: m2
 %else
-    VC1_IDCT4_1D 2, 0, 4, 5, pd_64, 7   ; row 0: m5, 1: m2, 2: m0, 3: m4
-    VC1_IDCT4_1D 3, 1, 6, 7, pd_64, 7   ; row 0: m7, 1: m3, 2: m1, 3: m6
+    VC1_IDCT4_1D 0, 6, 4, 5, pd_64, 7   ; row 0: m5, 1: m0, 2: m6, 3: m4
+    VC1_IDCT4_1D 1, 7, 2, 3, pd_64, 7   ; row 0: m3, 1: m1, 2: m7, 3: m2
 %endif
-    packssdw    m5, m7
-    packssdw    m2, m3
+    packssdw    m5, m3
     packssdw    m0, m1
-    packssdw    m4, m6
+    packssdw    m6, m7
+    packssdw    m4, m2
     pxor        m1, m1
     lea         linesize3q, [linesizeq*3]
     ADD_ROW_8   5, 3, destq, 1
-    ADD_ROW_8   2, 3, destq+linesizeq, 1
-    ADD_ROW_8   0, 3, destq+linesizeq*2, 1
+    ADD_ROW_8   0, 3, destq+linesizeq, 1
+    ADD_ROW_8   6, 3, destq+linesizeq*2, 1
     ADD_ROW_8   4, 3, destq+linesize3q, 1
     RET
 
