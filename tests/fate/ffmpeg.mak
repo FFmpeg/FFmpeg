@@ -554,6 +554,10 @@ FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) += fate-ffmpeg-heif
 fate-ffmpeg-heif-merge-filtergraph: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C007.heic -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:g:0]scale=w=1280:h=720[out]" -map "[out]"
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-filtergraph
 
+# Exercise noise-shaping weights for all twelve 4:4:4 blocks.
+FATE_FFMPEG-$(call ALLYES, TESTSRC2_FILTER FORMAT_FILTER NOISE_FILTER LAVFI_INDEV WRAPPED_AVFRAME_DECODER MJPEG_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-ffmpeg-mjpeg-444-qns
+fate-ffmpeg-mjpeg-444-qns: CMD = framecrc -cpuflags 0 -f lavfi -i "testsrc2=s=32x32,format=yuvj444p,noise=alls=100:allf=t+u" -flags +bitexact -dct fastint -idct simple -threads 1 -c:v mjpeg -huffman default -q:v 3 -quantizer_noise_shaping 1 -frames:v 2
+
 # alpha merging
 fate-ffmpeg-heif-merge-alpha: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/heif/alpha.heic
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-alpha

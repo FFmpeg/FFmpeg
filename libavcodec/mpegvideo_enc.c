@@ -2543,13 +2543,20 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             get_visual_weight(weight[4], ptr_cb                , wrap_c);
         if (!skip_dct[5])
             get_visual_weight(weight[5], ptr_cr                , wrap_c);
-        if (!chroma_y_shift) { /* 422 */
+        if (chroma_format == CHROMA_422) {
             if (!skip_dct[6])
                 get_visual_weight(weight[6], ptr_cb + uv_dct_offset,
                                   wrap_c);
             if (!skip_dct[7])
                 get_visual_weight(weight[7], ptr_cr + uv_dct_offset,
                                   wrap_c);
+        } else if (chroma_format == CHROMA_444) {
+            for (i = 6; i < 12; i++) {
+                const uint8_t *ptr = i & 1 ? ptr_cr : ptr_cb;
+                if (!skip_dct[i])
+                    get_visual_weight(weight[i], ptr + (i >= 8) * uv_dct_offset +
+                                      ((i >> 1) & 1) * 8, wrap_c);
+            }
         }
         memcpy(orig[0], s->block[0], sizeof(int16_t) * 64 * mb_block_count);
     }
