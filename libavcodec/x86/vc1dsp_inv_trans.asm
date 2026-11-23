@@ -166,13 +166,13 @@ cglobal vc1_inv_trans_8x8_dc, 3,3,6, dest, linesize, block
     pmaddwd     m%3, [pw_6_m16]         ; t4 =  6 * x2 - 16 * x6
     paddd       m%5, [%9]
     paddd       m%1, [%9]
-    SUMSUB_BA    d, %6, %5              ; t5 = t1 + t3, t8 = t1 - t3
-    SUMSUB_BA    d, %3, %1              ; t6 = t2 + t4, t7 = t2 - t4
+    SUMSUB_BA     d, %6, %5, %7         ; t5 = t1 + t3, t8 = t1 - t3
+    SUMSUB_BA     d, %3, %1, %7         ; t6 = t2 + t4, t7 = t2 - t4
 
     pmaddwd     m%7, m%2, [pw_16_9]
     pmaddwd     m%8, m%4, [pw_15_4]
     paddd       m%7, m%8                ; 16 * x1 + 15 * x3 +  9 * x5 +  4 * x7
-    SUMSUB_BA    d, %7, %6              ; out0 = t5 + odd, out7 = t5 - odd
+    SUMSUB_BA     d, %7, %6, %8         ; out0 = t5 + odd, out7 = t5 - odd
 %if %11
     paddd       m%6, [pd_1]
 %endif
@@ -183,7 +183,7 @@ cglobal vc1_inv_trans_8x8_dc, 3,3,6, dest, linesize, block
     pmaddwd     m%8, m%2, [pw_15_m16]
     pmaddwd     m%6, m%4, [pw_m4_m9]
     paddd       m%8, m%6                ; 15 * x1 -  4 * x3 - 16 * x5 -  9 * x7
-    SUMSUB_BA    d, %8, %3              ; out1 = t6 + odd, out6 = t6 - odd
+    SUMSUB_BA     d, %8, %3, %6         ; out1 = t6 + odd, out6 = t6 - odd
 %if %11
     paddd       m%3, [pd_1]
 %endif
@@ -194,7 +194,7 @@ cglobal vc1_inv_trans_8x8_dc, 3,3,6, dest, linesize, block
     pmaddwd     m%3, m%2, [pw_9_4]
     pmaddwd     m%6, m%4, [pw_m16_15]
     paddd       m%3, m%6                ;  9 * x1 - 16 * x3 +  4 * x5 + 15 * x7
-    SUMSUB_BA    d, %3, %1              ; out2 = t7 + odd, out5 = t7 - odd
+    SUMSUB_BA     d, %3, %1, %6         ; out2 = t7 + odd, out5 = t7 - odd
 %if %11
     paddd       m%1, [pd_1]
 %endif
@@ -205,7 +205,7 @@ cglobal vc1_inv_trans_8x8_dc, 3,3,6, dest, linesize, block
     pmaddwd     m%2, [pw_4_15]
     pmaddwd     m%4, [pw_m9_m16]
     paddd       m%2, m%4                ;  4 * x1 -  9 * x3 + 15 * x5 - 16 * x7
-    SUMSUB_BA    d, %2, %5              ; out3 = t8 + odd, out4 = t8 - odd
+    SUMSUB_BA     d, %2, %5, %4         ; out3 = t8 + odd, out4 = t8 - odd
 %if %11
     paddd       m%5, [pd_1]
 %endif
@@ -217,18 +217,23 @@ cglobal vc1_inv_trans_8x8_dc, 3,3,6, dest, linesize, block
 ;-----------------------------------------------------------------------------
 ; 1-D 4-point inverse transform on the dword lanes of one register.
 ; %1 = (x0,x2) pairs, %2 = (x1,x3) pairs, %3-%4 = temporaries,
-; %5 = rounding constant, %6 = shift
+; %5 = rounding constant, %6 = shift[, %7 = temp reg]
 ; out (dwords): %4 = out0, %1 = out1, %2 = out2, %3 = out3
 ;-----------------------------------------------------------------------------
-%macro VC1_IDCT4_1D 6
+%macro VC1_IDCT4_1D 6-7
     pmaddwd     m%3, m%1, [pw_17]    ; t1 = 17 * (x0 + x2)
     pmaddwd     m%1, [pw_17_m17]        ; t2 = 17 * (x0 - x2)
     pmaddwd     m%4, m%2, [pw_22_10]    ; t3 = 22 * x1 + 10 * x3
     pmaddwd     m%2, [pw_m10_22]        ; t4 = 22 * x3 - 10 * x1
     paddd       m%3, [%5]
     paddd       m%1, [%5]
-    SUMSUB_BA    d, %4, %3              ; out0 = t1 + t3, out3 = t1 - t3
-    SUMSUB_BA    d, %2, %1              ; out2 = t2 + t4, out1 = t2 - t4
+%if %0 == 7
+    SUMSUB_BA     d, %4, %3, %7         ; out0 = t1 + t3, out3 = t1 - t3
+    SUMSUB_BA     d, %2, %1, %7         ; out2 = t2 + t4, out1 = t2 - t4
+%else
+    SUMSUB_BA     d, %4, %3             ; out0 = t1 + t3, out3 = t1 - t3
+    SUMSUB_BA     d, %2, %1             ; out2 = t2 + t4, out1 = t2 - t4
+%endif
     psrad       m%4, %6
     psrad       m%1, %6
     psrad       m%2, %6
@@ -279,7 +284,7 @@ cglobal vc1_inv_trans_4x4, 3, 4, 5, dest, linesize, block, linesize3
     mova        m1, m0
     shufps      m0, m2, q2020           ; (x0,x2) pairs, one row per lane
     shufps      m1, m2, q3131           ; (x1,x3) pairs
-    VC1_IDCT4_1D 0, 1, 2, 3, pd_4, 3    ; column 0: m3, 1: m0, 2: m1, 3: m2
+    VC1_IDCT4_1D 0, 1, 2, 3, pd_4, 3, 4 ; column 0: m3, 1: m0, 2: m1, 3: m2
     packssdw    m3, m0                  ; columns 0 and 1, one row per word
     packssdw    m1, m2                  ; columns 2 and 3
     pshuflw     m3, m3, q3120           ; row0 row2 row1 row3 per column
@@ -289,7 +294,7 @@ cglobal vc1_inv_trans_4x4, 3, 4, 5, dest, linesize, block, linesize3
     mova        m0, m3
     shufps      m3, m1, q2020           ; (row0,row2) pairs, one column per lane
     shufps      m0, m1, q3131           ; (row1,row3) pairs
-    VC1_IDCT4_1D 3, 0, 1, 2, pd_64, 7   ; row 0: m2, 1: m3, 2: m0, 3: m1
+    VC1_IDCT4_1D 3, 0, 1, 2, pd_64, 7, 4; row 0: m2, 1: m3, 2: m0, 3: m1
     packssdw    m2, m3                  ; rows 0, 1
     packssdw    m0, m1                  ; rows 2, 3
     pxor        m4, m4
@@ -299,7 +304,7 @@ cglobal vc1_inv_trans_4x4, 3, 4, 5, dest, linesize, block, linesize3
     RET
 
 ; void ff_vc1_inv_trans_8x4_sse2(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
-cglobal vc1_inv_trans_8x4, 3, 4, 8, dest, linesize, block, linesize3
+cglobal vc1_inv_trans_8x4, 3, 4, 8+UNIX64, dest, linesize, block, linesize3
     mova        m0, [blockq+ 0]
     mova        m1, [blockq+16]
     mova        m2, [blockq+32]
@@ -331,8 +336,13 @@ cglobal vc1_inv_trans_8x4, 3, 4, 8, dest, linesize, block, linesize3
     punpckhqdq  m0, m3                  ; (row1,row3) pairs, columns 0-3
     punpcklqdq  m3, m1, m7              ; (row0,row2) pairs, columns 4-7
     punpckhqdq  m1, m7                  ; (row1,row3) pairs, columns 4-7
+%if UNIX64
+    VC1_IDCT4_1D 2, 0, 4, 5, pd_64, 7, 8; row 0: m5, 1: m2, 2: m0, 3: m4
+    VC1_IDCT4_1D 3, 1, 6, 7, pd_64, 7, 8; row 0: m7, 1: m3, 2: m1, 3: m6
+%else
     VC1_IDCT4_1D 2, 0, 4, 5, pd_64, 7   ; row 0: m5, 1: m2, 2: m0, 3: m4
     VC1_IDCT4_1D 3, 1, 6, 7, pd_64, 7   ; row 0: m7, 1: m3, 2: m1, 3: m6
+%endif
     packssdw    m5, m7
     packssdw    m2, m3
     packssdw    m0, m1
@@ -346,7 +356,7 @@ cglobal vc1_inv_trans_8x4, 3, 4, 8, dest, linesize, block, linesize3
     RET
 
 ; void ff_vc1_inv_trans_4x8_sse2(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
-cglobal vc1_inv_trans_4x8, 3, 5, 8, dest, linesize, block, linesize3, dest4
+cglobal vc1_inv_trans_4x8, 3, 5, 8+UNIX64, dest, linesize, block, linesize3, dest4
     movq        m0, [blockq+  0]
     movhps      m0, [blockq+ 16]        ; rows 0, 1
     movq        m1, [blockq+ 32]
@@ -369,8 +379,13 @@ cglobal vc1_inv_trans_4x8, 3, 5, 8, dest, linesize, block, linesize3, dest4
     mova        m5, m2
     shufps      m2, m3, q2020           ; (x0,x2) pairs, rows 4-7
     shufps      m5, m3, q3131           ; (x1,x3) pairs, rows 4-7
+%if UNIX64
+    VC1_IDCT4_1D 0, 4, 1, 3, pd_4, 3, 8 ; column 0: m3, 1: m0, 2: m4, 3: m1 (rows 0-3)
+    VC1_IDCT4_1D 2, 5, 6, 7, pd_4, 3, 8 ; column 0: m7, 1: m2, 2: m5, 3: m6 (rows 4-7)
+%else
     VC1_IDCT4_1D 0, 4, 1, 3, pd_4, 3    ; column 0: m3, 1: m0, 2: m4, 3: m1 (rows 0-3)
     VC1_IDCT4_1D 2, 5, 6, 7, pd_4, 3    ; column 0: m7, 1: m2, 2: m5, 3: m6 (rows 4-7)
+%endif
     packssdw    m3, m7                  ; column 0, one row per word
     packssdw    m0, m2                  ; column 1
     packssdw    m4, m5                  ; column 2
