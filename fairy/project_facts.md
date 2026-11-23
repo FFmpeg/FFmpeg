@@ -3,7 +3,7 @@
 ##FFmpeg project facts:
 
 Implementation definitions:
-* int is 32bit or more, 1 byte is 8 bit
+* `int` is 32 bits wide, and a byte is 8 bits.
 * two’s complement
 * Signed >> acts on negative numbers by sign extension
 
