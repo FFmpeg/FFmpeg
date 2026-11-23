@@ -33,6 +33,6 @@ av_cold void ff_bitpacked_init_aarch64(struct BitpackedContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (!HAVE_BIGENDIAN && have_neon(cpu_flags))
+    if (have_neon(cpu_flags))
         s->unpack_yuv422p10 = ff_bitpacked_unpack_yuv422p10_neon;
 }
