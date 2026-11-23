@@ -436,17 +436,27 @@ Other components list the subsystem objects they use in their own
 
 @subsection Moving files
 
-A commit that moves files changes nothing else.
-It updates only what refers to the moved files: includes, Makefiles,
-@file{MAINTAINERS} and @file{.forgejo/CODEOWNERS}.
-This lets git's rename detection carry pending patches and backports across
-the move.
-Patches written against the old paths apply with @command{git am -3}.
+A commit that moves files should leave the moved code verifiable as
+unchanged.
+For a rename, git's rename detection shows it, and patches written against
+the old paths then apply across the move with @command{git am -3}.
+For a split, the extracted code should be identical to the code it
+replaces.
 
-Renaming symbols to match the new layout happens in one commit after the move.
+The move should change only what follows from the new paths: what refers to
+the moved files, such as includes, Makefiles, documentation, @file{MAINTAINERS}
+and @file{.forgejo/CODEOWNERS}, names derived from the file name, such as
+header guards, and the symbols that now cross a file boundary.
+A small change that completes the build integration of the moved code can go
+with it.
+
+Changes needed to make code movable should come before the move, in their
+own commits.
+Other renames go in a commit of their own, before or after the move, whichever
+keeps the move easier to verify.
 That commit also realigns the lines the rename shifts.
 
-Each subsystem moves in its own commit.
+Each subsystem should move in its own commit.
 
 @section Miscellaneous conventions
 
