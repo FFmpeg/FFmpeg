@@ -274,16 +274,14 @@ INIT_XMM sse2
 ; void ff_vc1_inv_trans_4x4_sse2(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 cglobal vc1_inv_trans_4x4, 3, 4, 5, dest, linesize, block, linesize3
     movq        m0, [blockq+ 0]
-    movhps      m0, [blockq+16]         ; rows 0, 1
-    movq        m2, [blockq+32]
-    movhps      m2, [blockq+48]         ; rows 2, 3
-    pshuflw     m0, m0, q3120           ; x0 x2 x1 x3 per row
-    pshufhw     m0, m0, q3120
-    pshuflw     m2, m2, q3120
-    pshufhw     m2, m2, q3120
-    mova        m1, m0
-    shufps      m0, m2, q2020           ; (x0,x2) pairs, one row per lane
-    shufps      m1, m2, q3131           ; (x1,x3) pairs
+    movq        m2, [blockq+16]
+    movq        m1, [blockq+32]
+    movq        m3, [blockq+48]
+    punpcklwd   m0, m2                  ; rows 0, 1
+    punpcklwd   m1, m3                  ; rows 2, 3
+    SBUTTERFLY  dq, 0, 1, 2             ; m0: columns 0,1, m1: columns 2,3
+    SBUTTERFLY  wd, 0, 1, 2             ; m0: (x0,x2) pairs, one row per lane
+                                        ; m1: (x1,x3) pairs, one row per lane
     VC1_IDCT4_1D 0, 1, 2, 3, pd_4, 3, 4 ; column 0: m3, 1: m0, 2: m1, 3: m2
     packssdw    m3, m0                  ; columns 0 and 1, one row per word
     packssdw    m1, m2                  ; columns 2 and 3
