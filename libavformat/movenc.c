@@ -6954,6 +6954,8 @@ static int mov_finish_fragment(MOVMuxContext *mov, MOVTrack *track,
                track->cluster, track->entry * sizeof(*track->cluster));
         track->entry_written += track->entry;
     }
+    if (track->cenc.aes_ctr)
+        ff_mov_cenc_flush(&track->cenc);
     track->entry = 0;
     track->entries_flushed = 0;
     track->end_reliable = 0;
@@ -7142,9 +7144,6 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
 
             mov_write_moof_tag(s->pb, mov, moof_tracks, mdat_size);
             mov->fragments++;
-
-            if (track->cenc.aes_ctr)
-                ff_mov_cenc_flush(&track->cenc);
 
             avio_wb32(s->pb, mdat_size + 8);
             ffio_wfourcc(s->pb, "mdat");

@@ -1,0 +1,32 @@
+fe01266aab7033000cbd8c1bfa564e1c *tests/data/fate/mov-aac-cenc-frag-2tracks.mp4
+6099 tests/data/fate/mov-aac-cenc-frag-2tracks.mp4
+#extradata 0:        9, 0x0320011c
+#extradata 1:        9, 0x0320011c
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: aac
+#sample_rate 0: 44100
+#channel_layout_name 0: mono
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: aac
+#sample_rate 1: 44100
+#channel_layout_name 1: mono
+0,          0,          0,     1024,      194, 0xd4bd423e
+1,          0,          0,     1024,      194, 0xd4bd423e
+0,       1024,       1024,     1024,      169, 0xb6834b02
+1,       1024,       1024,     1024,      169, 0xb6834b02
+0,       2048,       2048,     1024,      197, 0xc5f75be9
+1,       2048,       2048,     1024,      197, 0xc5f75be9
+0,       3072,       3072,     1024,      200, 0x65be5ab8
+1,       3072,       3072,     1024,      200, 0x65be5ab8
+0,       4096,       4096,     1024,      193, 0x130c5a84
+1,       4096,       4096,     1024,      193, 0x130c5a84
+0,       5120,       5120,     1024,      183, 0x7d505262
+1,       5120,       5120,     1024,      183, 0x7d505262
+0,       6144,       6144,     1024,      203, 0xf8665d27
+1,       6144,       6144,     1024,      203, 0xf8665d27
+0,       7168,       7168,     1024,      191, 0x4f765d5d
+1,       7168,       7168,     1024,      191, 0x4f765d5d
+0,       8192,       8192,     1024,      196, 0x4ac86327
+1,       8192,       8192,     1024,      196, 0x4ac86327

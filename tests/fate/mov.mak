@@ -281,6 +281,12 @@ $(eval $(call FATE_MOV_CENC_TEST,h264_iso,H264,matroska,MATROSKA,h264/dts_5frame
 $(eval $(call FATE_MOV_CENC_TEST,hevc,HEVC,hevc,HEVC,hevc-conformance/ipcm_A_NEC_3.bit))
 $(eval $(call FATE_MOV_CENC_TEST,hevc_iso,HEVC,mov,MOV,hevc/extradata-reload-multi-stsd.mov))
 
+# Two encrypted tracks sharing each moof.
+FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, MP4 MOV, AAC_DECODER) += fate-mov-aac-cenc-frag-2tracks
+fate-mov-aac-cenc-frag-2tracks: CMD = transcode mp4 $(TARGET_SAMPLES)/aac/al04_44.mp4 mp4 \
+  "-map 0:a -map 0:a -t 0.2 -c:a copy -movflags +empty_moov -frag_duration 50000 -encryption_scheme cenc-aes-ctr -encryption_key 00112233445566778899aabbccddeeff -encryption_kid 00112233445566778899aabbccddeeff" \
+  "-map 0:a -c copy" "" "" "-decryption_key 00112233445566778899aabbccddeeff"
+
 # avif muxing - still image with 1 item.
 FATE_MOV_FFMPEG_SAMPLES-$(call REMUX, AVIF OBU, AV1_DECODER AV1_PARSER) \
                            += fate-mov-avif-mux-still-image-1-item
