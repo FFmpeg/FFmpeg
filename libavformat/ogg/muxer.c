@@ -148,7 +148,7 @@ static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 
 static int ogg_key_granule(OGGStreamContext *oggstream, int64_t granule)
 {
-    return (oggstream->kfgshift && !(granule & ((1<<oggstream->kfgshift)-1))) ||
+    return (oggstream->kfgshift && !(granule & ((INT64_C(1)<<oggstream->kfgshift)-1))) ||
            (oggstream->isvp8    && !((granule >> 3) & 0x07ffffff));
 }
 
@@ -156,7 +156,7 @@ static int64_t ogg_granule_to_timestamp(OGGStreamContext *oggstream, int64_t gra
 {
     if (oggstream->kfgshift)
         return (granule>>oggstream->kfgshift) +
-            (granule & ((1<<oggstream->kfgshift)-1));
+            (granule & ((INT64_C(1)<<oggstream->kfgshift)-1));
     else if (oggstream->isvp8)
         return granule >> 32;
     else
@@ -838,7 +838,7 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             oggstream->last_kf_pts = pts;
         pframe_count = pts - oggstream->last_kf_pts;
         // prevent frame count from overflow if key frame flag is not set
-        if (pframe_count >= (1<<oggstream->kfgshift)) {
+        if (pframe_count >= (INT64_C(1)<<oggstream->kfgshift)) {
             oggstream->last_kf_pts += pframe_count;
             pframe_count = 0;
         }
