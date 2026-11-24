@@ -2409,6 +2409,11 @@ av_cold void ff_decode_flush_buffers(AVCodecContext *avctx)
 
     dc->nb_draining_errors = 0;
     dc->draining_started   = 0;
+
+#if CONFIG_LIBLCEVC_DEC
+    if (!avci->is_frame_mt)
+        ff_lcevc_flush(dc->lcevc.ctx);
+#endif
 }
 
 av_cold AVCodecInternal *ff_decode_internal_alloc(void)

@@ -168,6 +168,17 @@ static int lcevc_flush_pictures(FFLCEVCContext *lcevc)
     return 0;
 }
 
+void ff_lcevc_flush(FFLCEVCContext *lcevc)
+{
+    if (!lcevc || !lcevc->initialized)
+        return;
+
+    if (LCEVC_FlushDecoder(lcevc->decoder) != LCEVC_Success ||
+        LCEVC_SynchronizeDecoder(lcevc->decoder, 0) != LCEVC_Success ||
+        lcevc_flush_pictures(lcevc) < 0)
+        av_log(lcevc, AV_LOG_ERROR, "Failed to flush LCEVC decoder\n");
+}
+
 static int lcevc_send_frame(FFLCEVCFrame *frame_ctx, const AVFrame *in)
 {
     FFLCEVCContext *lcevc = frame_ctx->lcevc;
