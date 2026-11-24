@@ -2,6 +2,24 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 9.0.3:
+ avcodec/lcevcdec: flush pictures on decoder flush
+ avcodec/libaribcaption: free the render result after converting it
+ avcodec/vulkan_encode_av1: zero constantQIndex when rate control is on
+ avcodec/vulkan_encode_av1: name the second P reference consistently
+ avformat/cafdec: reject out of range priming and remainder frames
+ avcodec/hevc: initialize inverse quantization tables through QP 75
+ avcodec/dxva2: limit the surface pool to 127 surfaces
+ avcodec/vulkan_encode_av1: use PRIMARY_REF_NONE for key frames
+ avcodec/libaribcaption: iterate bitmap rects over images, not regions
+ avcodec/opus/rc: avoid a 32-bit shift when flushing raw bits
+ avformat/tls_gnutls, tls_openssl: fix AVERROR_EXIT in write callbacks
+ avfilter/dnn_filter_common: free the options of the DNN child contexts
+ configure: select bswapdsp for the h264 and vvc decoders
+ avformat/rtpdec: propagate SRTP setup errors to the caller
+ avcodec/j2kenc: init bitstream after writing SOP
+ avutil/hwcontext_opencl: don't fall through between mapping types
+ swscale/graph: ensure intermediate buffers have extra line padding
+ fftools/ffmpeg: disable stdin interaction when fd 0 is closed
  avcodec/v210dec: keep SIMD stores within the decoded row
  aarch64/vvc: Fix 16-bit overflow in SME2 ALF luma filter
  avformat/rtpdec_av1: assemble the temporal unit in a packet of the PayloadContext instead of the caller's shared AVPacket
