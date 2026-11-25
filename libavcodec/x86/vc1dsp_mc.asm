@@ -471,8 +471,13 @@ put_mspel_ver_%2_%1_ssse3:
     DEFINE_ARGS coeffs, src, stride, rnd1, tmp
 %endif
 %define hd     rnd1d
-; Necessary to ensure that reading memory args works.
+; Necessary to ensure that reading memory args works, after a call which
+; pushed a return address on the stack. If the stack had to be realigned,
+; memory args are accessed relative to the saved stack pointer (rstk)
+; instead of rsp, which is unaffected by the call.
+%ifidn rstk, rsp
 %assign stack_offset stack_offset+gprsize
+%endif
     neg          strideq
     dec             srcq
     movd              m0, rnd1d
@@ -627,7 +632,9 @@ put_mspel_ver_%2_%1_ssse3:
 %endif
     mov               hd, %1
     SPLATW            m0, m0
+%ifidn rstk, rsp
 %assign stack_offset stack_offset-gprsize
+%endif
     ret
 %endmacro
 
