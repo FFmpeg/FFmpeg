@@ -96,3 +96,26 @@ fate-mxf-opatom-index-segments: CMD = md5 -filter_complex color=s=64x64:r=25 -fr
 
 FATE_FFMPEG += $(FATE_MXF_INDEX-yes)
 fate-mxf: $(FATE_MXF_INDEX-yes)
+
+# DV CBE with PCM alternating 1602 and 1601 samples at 30000/1001 and
+# 136, 492 and 2 byte ANC packets keeps a constant edit unit byte count.
+FATE_MXF_INDEX_FFPROBE-$(call REMUX, MXF, LAVFI_INDEV TESTSRC2_FILTER FORMAT_FILTER ANULLSRC_FILTER AFORMAT_FILTER DVVIDEO_ENCODER PCM_S24LE_ENCODER \
+                                          PCM_S32$(if $(filter yes,$(HAVE_BIGENDIAN)),BE,LE)_DECODER PCM_RECHUNK_BSF WRAPPED_AVFRAME_DECODER \
+                                          MCC_DEMUXER) += fate-mxf-pcm-anc-cbe
+tests/data/mxf-anc.mcc: TAG = COPY
+tests/data/mxf-anc.mcc: $(SRC_PATH)/tests/mxf-anc.mcc | tests/data
+	$(M)cp $< $@
+
+fate-mxf-pcm-anc-cbe: tests/data/mxf-anc.mcc
+fate-mxf-pcm-anc-cbe: CMD = transcode lavfi "testsrc2=s=720x480:r=30000/1001:d=0.1001,format=yuv411p[out0];anullsrc=r=48000:cl=5.0:d=0.1001,aformat=s32[out1]" mxf "-map 0:v -map 0:a -map 1:d -c:v dvvideo -c:a pcm_s24le -c:d copy" "-map 0 -c copy" "-show_entries packet=stream_index,pos,size -of compact" "-eia608_extract 0 -f mcc -i $(TARGET_PATH)/tests/data/mxf-anc.mcc"
+
+# VBE with 27 channel s16 PCM at 30000/1001: the 1601 sample elements are padded
+# so the delta of the next track is constant, and the 1602 sample KLV, which ends
+# on the KAG, keeps its fill, ST 379-2 8.3.
+FATE_MXF_INDEX_FFPROBE-$(call REMUX, MXF, LAVFI_INDEV TESTSRC2_FILTER ANULLSRC_FILTER AFORMAT_FILTER ARESAMPLE_FILTER \
+                                          WRAPPED_AVFRAME_DECODER PCM_U8_DECODER PCM_S16LE_ENCODER PCM_RECHUNK_BSF MPEG2VIDEO_ENCODER \
+                                          MPEGVIDEO_PARSER EXTRACT_EXTRADATA_BSF) += fate-mxf-vbe-fill-audio
+fate-mxf-vbe-fill-audio: CMD = transcode lavfi "testsrc2=s=128x96:r=30000/1001[out0];anullsrc=r=48000:cl=27C,aformat=sample_fmts=u8[out1];anullsrc=r=48000:cl=mono,aformat=sample_fmts=u8[out2]" mxf "-map 0 -c:v mpeg2video -g 0 -q:v 29 -af aresample=osf=s16 -c:a pcm_s16le -t 0.1001" "-map 0 -c copy" "-show_entries packet=stream_index,pos,size -print_format compact"
+
+FATE_FFMPEG_FFPROBE += $(FATE_MXF_INDEX_FFPROBE-yes)
+fate-mxf: $(FATE_MXF_INDEX_FFPROBE-yes)

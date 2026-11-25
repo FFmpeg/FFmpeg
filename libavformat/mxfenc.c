@@ -116,6 +116,7 @@ typedef struct MXFStreamContext {
     int video_bit_rate;
     int slice_offset;
     int frame_size;          ///< frame size in bytes
+    int element_size;        ///< KAG aligned element size, constant for PCM and CBE
     int seq_closed_gop;      ///< all gops in sequence are closed, used in mpeg-2 descriptor
     int max_gop;             ///< maximum gop size, used by mpeg-2 descriptor
     int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
@@ -2055,6 +2056,13 @@ static unsigned klv_fill_size(uint64_t size)
         return pad & (KAG_SIZE-1);
 }
 
+// KAG-aligned size including the 16-byte key and 4-byte BER length,
+// and the fill KLV that always follows, ST 379-2 8.3.
+static unsigned mxf_element_size(unsigned payload)
+{
+    return FFALIGN(16 + 4 + payload + 16 + 4, KAG_SIZE);
+}
+
 /**
  * Number of slices minus 1. Elements following the VBE picture are in slice 1,
  * there should be no slices if the picture is the last element, ST 377-1 11.1.4.
@@ -2171,21 +2179,24 @@ static void mxf_write_index_table_segment_header(AVFormatContext *s, int64_t sta
         } else { // audio or data track
             avio_w8(pb, 1);
             avio_wb32(pb, element_delta);
-            // each element is KAG aligned and starts with its 16 byte key and 4 byte length
-            element_delta += 16 + 4 + sc->frame_size;
-            element_delta += klv_fill_size(element_delta);
+            element_delta += sc->element_size;
         }
     }
+}
+
+static void mxf_write_fill(AVIOContext *pb, unsigned size)
+{
+    avio_write(pb, klv_fill_key, 16);
+    size -= 16 + 4;
+    klv_encode_ber4_length(pb, size);
+    ffio_fill(pb, 0, size);
 }
 
 static void mxf_write_klv_fill(AVFormatContext *s)
 {
     unsigned pad = klv_fill_size(avio_tell(s->pb));
     if (pad) {
-        avio_write(s->pb, klv_fill_key, 16);
-        pad -= 16 + 4;
-        klv_encode_ber4_length(s->pb, pad);
-        ffio_fill(s->pb, 0, pad);
+        mxf_write_fill(s->pb, pad);
         av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     }
 }
@@ -3225,15 +3236,19 @@ static int mxf_init(AVFormatContext *s)
 
                 mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->ch_layout.nb_channels) >> 3;
                 sc->index = INDEX_WAV;
-            } else {
-                sc->frame_size = st->codecpar->ch_layout.nb_channels *
-                                 av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num, mxf->time_base.den, AV_ROUND_UP) *
-                                 av_get_bits_per_sample(st->codecpar->codec_id) / 8;
             }
             snprintf(bsf_arg, sizeof(bsf_arg), "r=%d/%d", mxf->tc.rate.num, mxf->tc.rate.den);
             ret = ff_stream_add_bitstream_filter(st, "pcm_rechunk", bsf_arg);
             if (ret < 0)
                 return ret;
+            if (!IS_D10(s) && !IS_OPATOM(s)) {
+                // pcm_rechunk checked the channel count and frame size
+                int sample_size = st->codecpar->ch_layout.nb_channels *
+                                  (av_get_bits_per_sample(st->codecpar->codec_id) / 8);
+                sc->frame_size = sample_size * av_rescale_rnd(st->codecpar->sample_rate, mxf->time_base.num,
+                                                              mxf->time_base.den, AV_ROUND_UP);
+                sc->element_size = mxf_element_size(sc->frame_size);
+            }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA || st->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
             AVDictionaryEntry* e = av_dict_get(st->metadata, "data_type", NULL, 0);
             if ((e && !strcmp(e->value, "vbi_vanc_smpte_436M")) ||
@@ -3513,8 +3528,12 @@ static void mxf_compute_edit_unit_byte_count(AVFormatContext *s)
         AVStream *st = s->streams[i];
         MXFStreamContext *sc = st->priv_data;
         sc->slice_offset = mxf->edit_unit_byte_count;
-        mxf->edit_unit_byte_count += 16 + 4 + sc->frame_size;
-        mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+        // ANC packets have no fixed size, keep a KAG of payload plus the fill
+        if (sc->index == INDEX_S436M)
+            sc->element_size = mxf_element_size(KAG_SIZE - 16 - 4);
+        else if (!sc->element_size)
+            sc->element_size = mxf_element_size(sc->frame_size);
+        mxf->edit_unit_byte_count += sc->element_size;
     }
 }
 
@@ -3525,7 +3544,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st = s->streams[pkt->stream_index];
     MXFStreamContext *sc = st->priv_data;
     MXFIndexEntry ie = {0};
-    int err;
+    int err, pad = 0;
 
     if (!mxf->header_written && pkt->stream_index != 0 &&
         !IS_OPATOM(s)) {
@@ -3647,6 +3666,22 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
             mxf->body_offset - mxf->index_entries[mxf->edit_units_count-1].offset;
     }
 
+    // keep fill presence consistent across content packages, ST 379-2 8.3,
+    // and pad to a constant element size
+    if (sc->index != INDEX_D10_AUDIO) {
+        unsigned element_size = sc->element_size ? sc->element_size : mxf_element_size(pkt->size);
+        unsigned max_size = element_size - 2 * (16 + 4);
+
+        if (sc->element_size && sc->frame_size)
+            max_size = FFMIN(max_size, sc->frame_size);
+        if ((unsigned)pkt->size > max_size) {
+            av_log(s, AV_LOG_ERROR, "track %d: packet size %d exceeds %u bytes per edit unit\n",
+                   st->index, pkt->size, max_size);
+            return AVERROR(EINVAL);
+        }
+        pad = element_size - 16 - 4 - pkt->size;
+    }
+
     mxf_write_klv_fill(s);
     avio_write(pb, sc->track_essence_element_key, 16); // write key
     if (IS_D10(s) && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -3654,7 +3689,8 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         klv_encode_ber4_length(pb, pkt->size); // write length
         avio_write(pb, pkt->data, pkt->size);
-        mxf->body_offset += 16+4+pkt->size + klv_fill_size(16+4+pkt->size);
+        mxf_write_fill(pb, pad);
+        mxf->body_offset += 16 + 4 + (unsigned)pkt->size + pad;
     }
 
     return 0;

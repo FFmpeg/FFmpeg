@@ -1,0 +1,36 @@
+54f12355523e485b285657d127ba1c78 *tests/data/fate/mxf-vbe-fill-audio.mxf
+286777 tests/data/fate/mxf-vbe-fill-audio.mxf
+#extradata 0:       22, 0x449e058b
+#tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: mpeg2video
+#dimensions 0: 128x96
+#sar 0: 1/1
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 48000
+#channel_layout_name 1: 27 channels
+#tb 2: 1/48000
+#media_type 2: audio
+#codec_id 2: pcm_s16le
+#sample_rate 2: 48000
+#channel_layout_name 2: mono
+0,         -1,          0,        1,     1016, 0xb524fc59
+0,          0,          1,        1,     1004, 0x1436ee54
+1,          0,          0,     1602,    86508, 0x00000000
+2,          0,          0,     1602,     3204, 0x00000000
+0,          1,          2,        1,     1004, 0xfe01f0b6
+1,       1602,       1602,     1601,    86454, 0x00000000
+2,       1602,       1602,     1601,     3202, 0x00000000
+1,       3203,       3203,     1602,    86508, 0x00000000
+2,       3203,       3203,     1602,     3204, 0x00000000
+packet|stream_index=0|size=1016|pos=8192
+packet|stream_index=1|size=86508|pos=9728
+packet|stream_index=2|size=3204|pos=96768
+packet|stream_index=0|size=1004|pos=100864
+packet|stream_index=1|size=86454|pos=102400
+packet|stream_index=2|size=3202|pos=189440
+packet|stream_index=0|size=1004|pos=193536
+packet|stream_index=1|size=86508|pos=195072
+packet|stream_index=2|size=3204|pos=282112

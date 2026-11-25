@@ -1,0 +1,33 @@
+48cd94e1c59f187995ef2d7b0bc6e22d *tests/data/fate/mxf-pcm-anc-cbe.mxf
+447533 tests/data/fate/mxf-pcm-anc-cbe.mxf
+#tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: dvvideo
+#dimensions 0: 720x480
+#sar 0: 8/9
+#tb 1: 1/48000
+#media_type 1: audio
+#codec_id 1: pcm_s24le
+#sample_rate 1: 48000
+#channel_layout_name 1: 5.0
+#tb 2: 1001/30000
+#media_type 2: data
+#codec_id 2: smpte_436m_anc
+0,          0,          0,        1,   120000, 0x7fc9c8da
+1,          0,          0,     1602,    24030, 0x00000000
+2,          0,          0,        1,      136, 0x9d18224f
+0,          1,          1,        1,   120000, 0x7e5fe0a5
+2,          1,          1,        1,      492, 0x49e2e054
+1,       1602,       1602,     1601,    24015, 0x00000000
+1,       3203,       3203,     1602,    24030, 0x00000000
+0,          2,          2,        1,   120000, 0x3e20d97c
+2,          2,          2,        1,        2, 0x00000000
+packet|stream_index=0|size=120000|pos=8192
+packet|stream_index=1|size=24030|pos=128512
+packet|stream_index=2|size=136|pos=153088
+packet|stream_index=0|size=120000|pos=154624
+packet|stream_index=1|size=24015|pos=274944
+packet|stream_index=2|size=492|pos=299520
+packet|stream_index=0|size=120000|pos=301056
+packet|stream_index=1|size=24030|pos=421376
+packet|stream_index=2|size=2|pos=445952
