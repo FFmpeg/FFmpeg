@@ -239,16 +239,16 @@ func ff_pred8x8_plane_8_rvv_vl\vlen, zve32x, zba
 
         vmul.vx v18, v4, t6
 
-        .irp n 19, 20, 21, 22, 23, 24, 25, 26
+        .irp n, 19, 20, 21, 22, 23, 24, 25, 26
         vadd.vx v\n, v18, a5
         add a5, a5, t5
         .endr
 
-        .irp n 19, 20, 21, 22, 23, 24, 25, 26
+        .irp n, 19, 20, 21, 22, 23, 24, 25, 26
         vmax.vx v\n, v\n, zero
         .endr
 
-        .irp n 19, 20, 21, 22, 23, 24, 25, 26
+        .irp n, 19, 20, 21, 22, 23, 24, 25, 26
         vsra.vi v\n, v\n, 5
         .endr
 
@@ -630,7 +630,7 @@ func ff_pred16x16_plane_8_rvv_vl\vlen, zve32x, zba
 
         vsetvlstatic16 16 \vlen 16
 
-        .irp n 2, 4, 6, 8, 10, 12, 14, 16
+        .irp n, 2, 4, 6, 8, 10, 12, 14, 16
         vadd.vx v\n, v24, a5
         add a5, a5, t2
         .endr
