@@ -18,7 +18,7 @@ fate-caf-ilbc-pipe: REF = $(SRC_PATH)/tests/ref/fate/caf-ilbc-demux
 FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-alac-remux
 fate-caf-alac-remux: CMD = transcode m4a $(TARGET_SAMPLES)/lossless-audio/inside.m4a caf "-map 0:a -c copy -metadata major_brand= " "-c copy -t 0.2" "-show_entries format_tags"
 
-FATE_CAF_FFMPEG-$(call REMUX, CAF, AMR_DEMUXER) += fate-caf-amr_nb-remux
+FATE_CAF_FFMPEG-$(call REMUX, CAF, AMR_DEMUXER AMR_PARSER) += fate-caf-amr_nb-remux
 fate-caf-amr_nb-remux: CMD = transcode amr $(TARGET_SAMPLES)/amrnb/4.75k.amr caf "-c copy" "-c copy -t 0.2"
 
 # Rounding each packet duration from a 999 Hz clock must not drop the last packet.
