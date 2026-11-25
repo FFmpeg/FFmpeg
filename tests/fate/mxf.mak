@@ -50,6 +50,10 @@ FATE_MXF_PROBE-$(call DEMDEC, MXF, PRORES PCM_S24LE) += fate-mxf-probe-applehdr1
 fate-mxf-probe-applehdr10: SRC = $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf
 fate-mxf-probe-applehdr10: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
+# JPEG 2000 sub descriptor Rsiz, Xsiz and Ysiz from a codestream with a nonzero image origin
+FATE_MXF-$(call DEMMUX, IMAGE_J2K_PIPE, MXF, JPEG2000_DECODER) += fate-mxf-jpeg2000-siz
+fate-mxf-jpeg2000-siz: CMD = md5 -y -i $(TARGET_SAMPLES)/jpeg2000/itu-iso/codestreams_profile1/p1_01.j2k -c:v copy -fflags +bitexact -f mxf
+
 # Tests remuxing ProRes as well as writing mastering display metadata.
 FATE_MXF_FFMPEG_FFPROBE-$(call REMUX, MXF, PRORES_DECODER) += fate-mxf-remux-applehdr10
 fate-mxf-remux-applehdr10: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Meridian-Apple_ProResProxy-HDR10.mxf mxf "-map 0 -c copy" "-c copy -t 0.3" "-show_entries format_tags:stream_side_data_list:stream=index,codec_name,codec_tag:stream_tags"
