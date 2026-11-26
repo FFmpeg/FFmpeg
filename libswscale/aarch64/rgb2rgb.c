@@ -27,7 +27,7 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
-// Only handle width aligned to 16
+// Only handles widths aligned to 16 and even heights.
 void ff_rgb24toyv12_neon(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                          uint8_t *vdst, int width, int height, int lumStride,
                          int chromStride, int srcStride, const int32_t *rgb2yuv);
@@ -36,18 +36,30 @@ static void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                         uint8_t *vdst, int width, int height, int lumStride,
                         int chromStride, int srcStride, const int32_t *rgb2yuv)
 {
-    int width_align = width & (~15);
+    int width_align = width & ~15;
+    int height_align = height & ~1;
 
-    if (width_align > 0)
-        ff_rgb24toyv12_neon(src, ydst, udst, vdst, width_align, height,
-                lumStride, chromStride, srcStride, rgb2yuv);
-    if (width_align < width) {
-        src += width_align * 3;
-        ydst += width_align;
-        udst += width_align / 2;
-        vdst += width_align / 2;
-        ff_rgb24toyv12_c(src, ydst, udst, vdst, width - width_align, height,
-                lumStride, chromStride, srcStride, rgb2yuv);
+    if (!width_align || !height_align) {
+        ff_rgb24toyv12_c(src, ydst, udst, vdst, width, height,
+                         lumStride, chromStride, srcStride, rgb2yuv);
+        return;
+    }
+
+    ff_rgb24toyv12_neon(src, ydst, udst, vdst, width_align, height_align,
+                        lumStride, chromStride, srcStride, rgb2yuv);
+    if (width_align < width)
+        ff_rgb24toyv12_c(src + width_align * 3, ydst + width_align,
+                         udst + width_align / 2, vdst + width_align / 2,
+                         width - width_align, height_align,
+                         lumStride, chromStride, srcStride, rgb2yuv);
+
+    if (height_align < height) {
+        ptrdiff_t chrom_offset = (ptrdiff_t)(height_align / 2) * chromStride;
+
+        ff_rgb24toyv12_c(src + (ptrdiff_t)height_align * srcStride,
+                         ydst + (ptrdiff_t)height_align * lumStride,
+                         udst + chrom_offset, vdst + chrom_offset, width, 1,
+                         lumStride, chromStride, srcStride, rgb2yuv);
     }
 }
 
