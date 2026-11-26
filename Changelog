@@ -2,6 +2,27 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 9.0.3:
+ avutil/hwcontext_cuda: drain queued copies on transfer error
+ avfilter/dnn: replace DNNCond by AVCond
+ avfilter/dnn_backend_torch: fix missing ret in async error path
+ avfilter/dnn: fix teardown hang in ONNX backend with nireq >= 2
+ avutil/hwcontext_cuda: return the error code from cuda_transfer_data()
+ avformat/dashdec: pace fragment-open retries to avoid exhausting max reloads on live content
+ avformat/dashdec: keep timeline position in ticks on manifest refresh
+ avformat/dashdec: compute segment bounds after refreshing manifest
+ avcodec/libaribcaption: seed the bitmap CLUT once per caption
+ avcodec/cavsdec: clear the residual after a failed dequant
+ avcodec/cavsdec: check decode_pic() return value
+ avformat/hls: accept EXT-X-START in Master Playlists
+ avfilter/dnn_backend_torch: wait only for the inference requests that were created
+ vulkan_decode: keep DRM modifiers off the DPB pool when DISTINCT is set
+ avformat/mov: allow explicit zero sample sizes in trun
+ avfilter/vf_scale_cuda: quantize generic output to source depth
+ avfilter/vf_scale_cuda: regenerate filters for cropped frames
+ avfilter/vf_scale_cuda: encapsulate generic filter resources
+ avfilter/vf_scale_cuda: select separable passes per plane
+ avfilter/dnn: fix race when querying queue length
+ avfilter/dnn: prevent crash on parameterless LibTorch models
  avcodec/lcevcdec: flush pictures on decoder flush
  avcodec/libaribcaption: free the render result after converting it
  avcodec/vulkan_encode_av1: zero constantQIndex when rate control is on
