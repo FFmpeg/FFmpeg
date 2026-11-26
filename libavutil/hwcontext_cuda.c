@@ -300,7 +300,7 @@ static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
-    return 0;
+    return ret;
 }
 
 static void cuda_device_uninit(AVHWDeviceContext *device_ctx)
