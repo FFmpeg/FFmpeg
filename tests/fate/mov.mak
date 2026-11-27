@@ -326,6 +326,12 @@ FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
 fate-mov-avif-demux-still-image-alpha-grid: CMD = stream_demux mov $(TARGET_SAMPLES)/avif/gain_map_alpha_grid.avif "-c:v av1" "-c:v copy -map 0:g:0 -map 0:g:1" \
   "-of compact -show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_side_data:stream_group_stream=index,id:stream_group_stream_disposition:stream_group_stream_side_data_list"
 
+# avif demuxing - grid items whose single idat extent uses an implied length, plus an mdat image item whose extent also uses an implied length.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
+                           += fate-mov-avif-demux-implied-extent
+fate-mov-avif-demux-implied-extent: CMD = stream_demux mov $(TARGET_SAMPLES)/avif/implied_grid.avif "-c:v av1" "-c:v copy -map 0:24" \
+  "-of compact -show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id,width,height"
+
 # avif item with extents across two mdat boxes, read through the root-parsing path.
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-item-two-mdats
